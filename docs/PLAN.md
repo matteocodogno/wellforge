@@ -74,16 +74,20 @@ overstepping its role.
 
 Goal: one entry point that routes work through the team instead of ad-hoc prompting.
 
-- ☐ `commands/orchestrate.md` — `/forge:orchestrate <goal>`: classifies the request
-  (new feature / bugfix / refactor / infra), then drives the pipeline:
-  - new feature → PO (spec) → Architect (plan) → [Designer ∥ if UI] → tasks → FE/BE devs
-    in parallel per task → QE verdict → done.
-  - bugfix → QE (repro test) → dev (fix) → QE (verify).
-- ☐ Handoff contract: each stage's artifact is written to disk before the next stage
-  starts (orchestrator passes file paths, not chat context — survives compaction).
-- ☐ Human gates: orchestrator pauses for user approval after spec and after plan
-  (AskUserQuestion), never auto-approves its own work.
-- ☐ Parallelism rule: FE/BE tasks with no dependency edge run as parallel subagents.
+- ☑ `commands/orchestrate.md` — `/welld-dev:orchestrate <goal>`: classifies the request
+  (feature / bugfix / refactor / infra), then drives the matching pipeline:
+  - feature → PO (spec) → gate → Architect (plan) → gate → [Designer if UI] → tasks →
+    FE/BE devs in parallel per task → QE verdict (max 2 fix rounds, then escalate) → done.
+  - bugfix → QE (repro test) → dev (fix) → QE (verify). refactor → architect mini-plan
+    w/ invariants → tasks → QE. infra → devops w/ gate on prod-like changes.
+- ☑ Handoff contract: each stage's artifact is written to disk before the next stage
+  starts (orchestrator passes file paths, not chat context — survives compaction);
+  drift reports pause the pipeline and route to the owning agent.
+- ☑ Human gates: orchestrator pauses for user approval after spec and after plan
+  (AskUserQuestion), never auto-approves; it records the user's decision in frontmatter.
+  Specialists dispatched at gates: adr-writer post-plan-approval, owasp-reviewer on QE
+  recommendation (findings ≥ medium = defects).
+- ☑ Parallelism rule: FE/BE tasks with no dependency edge run as parallel subagents.
 
 Acceptance: `/forge:orchestrate "add CSV export to reports"` runs the full chain on a
 sample project with exactly 2 human approval pauses.

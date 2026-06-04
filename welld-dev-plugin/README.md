@@ -55,6 +55,7 @@ Inside Claude Code:
 | `commands/spec.md` | `/welld-dev:spec` — interview → feature spec (step 1 of 3) |
 | `commands/plan.md` | `/welld-dev:plan` — approved spec → technical plan (step 2 of 3) |
 | `commands/tasks.md` | `/welld-dev:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
+| `commands/orchestrate.md` | `/welld-dev:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
 | `agents/architect.md` | Architect — plan.md: architecture, contracts, AC→test mapping |
 | `agents/designer.md` | Designer — design.md: flows, screens, component reuse, a11y |
