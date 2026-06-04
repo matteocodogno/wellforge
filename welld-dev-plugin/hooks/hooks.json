@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-start.sh" }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-bash-guard.sh" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Write|Edit|MultiEdit", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-lint.sh" }] }
+    ],
+    "Notification": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/notify.sh" }] }
+    ],
+    "Stop": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/stop-verify.sh" }] }
+    ],
+    "PreCompact": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-compact-backup.sh" }] }
+    ]
+  }
+}

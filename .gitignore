@@ -1,0 +1,14 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Claude Code local state
+.claude/settings.local.json
+
+# Python (copier tooling)
+__pycache__/
+.venv/

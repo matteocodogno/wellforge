@@ -1,0 +1,21 @@
+# Templates
+
+[Copier](https://copier.readthedocs.io) templates, one per stack preset. Semver-tagged via
+git tags in this repo (`templates/<name>/vX.Y.Z`).
+
+| Preset | Stack | Status |
+|---|---|---|
+| `spring-kotlin-react/` | Spring Boot + Kotlin + jOOQ + Liquibase / React + TS + Vite | planned (Phase 4) |
+| `hono-react/` | Hono + TS / React + TS + Vite | planned (Phase 4) |
+| `_shared/` | fragments included by all presets (`.forge/` manifest, CLAUDE.md, CI wiring) | planned (Phase 4) |
+
+## Contract
+
+Every template MUST emit:
+
+- `.forge/manifest.json` — `{ template, version, answers }`, the upgrade contract
+- `.copier-answers.yml` — Copier's own update record
+- a project-local `CLAUDE.md` + `.claude/settings.json` pre-wired for the welld-dev plugin
+- CI workflows that **call** `gates/workflows/` (pinned tag), never copy them
+
+Hard rule: max 2 presets until Phase 7 (pilot) proves the model.
