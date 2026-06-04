@@ -52,6 +52,9 @@ Inside Claude Code:
 | Path | What |
 |---|---|
 | `.mcp.json` | sequential-thinking, playwright, github MCP servers |
+| `commands/spec.md` | `/welld-dev:spec` — interview → feature spec (step 1 of 3) |
+| `commands/plan.md` | `/welld-dev:plan` — approved spec → technical plan (step 2 of 3) |
+| `commands/tasks.md` | `/welld-dev:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
 | `agents/owasp-reviewer.md` | OWASP Top 10 security review agent |
 | `agents/adr-writer.md` | Architecture Decision Record writer |
 | `hooks/hooks.json` | 6 lifecycle hooks |
@@ -61,6 +64,7 @@ Inside Claude Code:
 | `hooks/scripts/notify.sh` | macOS notification + Telegram DM |
 | `hooks/scripts/stop-verify.sh` | Checks spec drift + tsc before Claude stops |
 | `hooks/scripts/pre-compact-backup.sh` | Snapshots session state before compaction |
+| `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
 | `skills/react-ts-vite/` | React + TypeScript + Vite + Mantine + TanStack |
 | `skills/kotlin-springboot-welld/` | Spring Boot + Kotlin + jOOQ + Liquibase + Modulith |
 | `skills/springboot-scaffold/` | Scaffolds a new welld-style service |

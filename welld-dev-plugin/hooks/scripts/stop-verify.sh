@@ -3,12 +3,19 @@ INPUT=$(cat)
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 [ "$(echo "$INPUT" | jq -r '.stop_hook_active // false')" = "true" ] && exit 0
 
-# ── cc-sdd spec drift check ──────────────────────────────────────────────────
-SPECS_CHANGED=$(git -C "$PROJECT_DIR" diff --name-only 2>/dev/null | grep -E 'specs/.*(requirements|design)\.md')
-TASKS_CHANGED=$(git -C "$PROJECT_DIR" diff --name-only 2>/dev/null | grep -E 'specs/.*tasks\.md')
+# ── spec drift check (welld spec-driven workflow) ────────────────────────────
+# spec.md/plan.md changed without re-syncing tasks.md → block (drift rule)
+SPECS_CHANGED=$(git -C "$PROJECT_DIR" diff --name-only 2>/dev/null | grep -E 'specs/[^/]+/(spec|plan)\.md')
+TASKS_CHANGED=$(git -C "$PROJECT_DIR" diff --name-only 2>/dev/null | grep -E 'specs/[^/]+/tasks\.md')
 if [ -n "$SPECS_CHANGED" ] && [ -z "$TASKS_CHANGED" ]; then
-  echo "Specs changed but tasks.md not updated. Run /kiro:spec-tasks to sync." >&2
-  exit 2
+  # Only block if the changed spec dir actually has a tasks.md to drift from
+  for f in $SPECS_CHANGED; do
+    SPEC_DIR=$(dirname "$f")
+    if [ -f "$PROJECT_DIR/$SPEC_DIR/tasks.md" ]; then
+      echo "$f changed but $SPEC_DIR/tasks.md not re-synced. Run /welld-dev:tasks to sync (drift rule)." >&2
+      exit 2
+    fi
+  done
 fi
 
 # ── TypeScript compile check ─────────────────────────────────────────────────

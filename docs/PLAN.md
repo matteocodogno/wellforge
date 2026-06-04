@@ -27,16 +27,19 @@ Goal: lock the decisions everything else depends on.
 
 Goal: one standardized path from idea to reviewed task list, stored in the repo.
 
-- ☐ `commands/spec.md` — `/spec <feature>`: interview → write `specs/NNN-slug/spec.md`
-  (problem, user stories w/ acceptance criteria, non-goals, open questions).
-- ☐ `commands/plan.md` — `/plan`: read active spec → `plan.md` (architecture, data model,
-  API contracts, test strategy). Requires spec sign-off marker before proceeding.
-- ☐ `commands/tasks.md` — `/tasks`: derive ordered, dependency-aware task list
-  (`tasks.md`) with per-task acceptance checks; tasks reference spec sections.
-- ☐ `skills/spec-driven/SKILL.md` — conventions: directory layout (`specs/NNN-slug/`),
+- ☑ `commands/spec.md` — `/welld-dev:spec <feature>`: interview → write
+  `specs/NNN-slug/spec.md` (problem, user stories w/ acceptance criteria, non-goals,
+  open questions). User-only approval gate.
+- ☑ `commands/plan.md` — `/welld-dev:plan`: read approved spec → `plan.md` (architecture,
+  data model, API contracts, test strategy w/ AC↔test mapping). Refuses non-approved specs.
+- ☑ `commands/tasks.md` — `/welld-dev:tasks`: derive ordered, dependency-aware task list
+  (`tasks.md`) with per-task "done when" checks; bidirectional AC↔task coverage check;
+  re-sync mode preserves completed tasks.
+- ☑ `skills/spec-driven/SKILL.md` — conventions: directory layout (`specs/NNN-slug/`),
   status frontmatter (draft → approved → in-progress → done), drift rule
   (code change that contradicts spec ⇒ update spec first).
-- ☐ Wire existing `stop-verify.sh` hook to check spec drift against this format.
+- ☑ Wire existing `stop-verify.sh` hook to check spec drift against this format
+  (replaced old cc-sdd patterns; only fires when the spec dir already has a tasks.md).
 
 Acceptance: a feature can go idea → spec → plan → tasks entirely via commands, output
 files are diff-reviewable, and a second developer can pick up the tasks cold.
