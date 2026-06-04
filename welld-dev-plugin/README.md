@@ -55,8 +55,15 @@ Inside Claude Code:
 | `commands/spec.md` | `/welld-dev:spec` — interview → feature spec (step 1 of 3) |
 | `commands/plan.md` | `/welld-dev:plan` — approved spec → technical plan (step 2 of 3) |
 | `commands/tasks.md` | `/welld-dev:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
-| `agents/owasp-reviewer.md` | OWASP Top 10 security review agent |
-| `agents/adr-writer.md` | Architecture Decision Record writer |
+| `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
+| `agents/architect.md` | Architect — plan.md: architecture, contracts, AC→test mapping |
+| `agents/designer.md` | Designer — design.md: flows, screens, component reuse, a11y |
+| `agents/frontend-dev.md` | FE dev — implements tasks per react-ts-vite conventions |
+| `agents/backend-dev.md` | BE dev — implements tasks per stack skill conventions |
+| `agents/devops.md` | DevOps — CI/CD, infra, tool connections (verified, not assumed) |
+| `agents/quality-engineer.md` | QE — AC verification, gates run, evidence-based verdict |
+| `agents/owasp-reviewer.md` | Specialist: OWASP Top 10 security review |
+| `agents/adr-writer.md` | Specialist: Architecture Decision Record writer |
 | `hooks/hooks.json` | 6 lifecycle hooks |
 | `hooks/scripts/session-start.sh` | Injects git state + domain glossary at session start |
 | `hooks/scripts/pre-bash-guard.sh` | Blocks rm -rf /, SQL nukes, pipe-to-shell, .env writes |

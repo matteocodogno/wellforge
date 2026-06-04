@@ -58,11 +58,14 @@ Goal: 7 role agents with crisp boundaries, each producing a defined artifact.
 | `agents/devops.md` | CI/CD, IaC, MCP/CLI connections | pipeline + infra files | full |
 | `agents/quality-engineer.md` | test plans, gate verdicts, exploratory testing | test code + gate report | full + playwright |
 
-- ☐ Write the 7 agent definitions (system prompt: role, inputs it expects, artifact it
-  must return, what it must NOT do — e.g. PO never writes code).
-- ☐ Keep `owasp-reviewer` and `adr-writer` as specialists callable by QE/Architect.
-- ☐ Each agent's prompt references the spec format from Phase 1 (agents read
-  `specs/NNN-slug/` as their contract).
+- ☑ Write the 7 agent definitions (system prompt: role, inputs it expects, artifact it
+  must return, what it must NOT do — e.g. PO never writes code). Designer's artifact is
+  `design.md` in the spec dir (added to the spec-driven layout as optional, UI-only).
+- ☑ Keep `owasp-reviewer` and `adr-writer` as specialists: architect emits
+  `## ADR candidates`, QE recommends owasp passes — both invoked by the caller.
+- ☑ Each agent's prompt references the spec format from Phase 1 (agents read
+  `specs/NNN-slug/` as their contract; PO/architect carry the format template inline
+  since subagents run non-interactively and don't auto-load skills).
 
 Acceptance: each agent invoked standalone on a sample spec produces its artifact without
 overstepping its role.

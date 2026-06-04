@@ -1,7 +1,7 @@
 {
   "name": "welld-dev",
-  "version": "1.2.0",
-  "description": "Full-stack development plugin for welld Spring Boot Kotlin + React TypeScript projects. Bundles a spec-driven workflow (spec/plan/tasks commands), skills, security and ADR agents, lifecycle hooks, and MCP servers (sequential-thinking, playwright, github).",
+  "version": "1.3.0",
+  "description": "Full-stack development plugin for welld Spring Boot Kotlin + React TypeScript projects. Bundles a spec-driven workflow (spec/plan/tasks commands), a 7-role agent team (PO, architect, designer, FE/BE dev, devops, QE), skills, security and ADR specialist agents, lifecycle hooks, and MCP servers (sequential-thinking, playwright, github).",
   "author": {
     "name": "welld"
   },
