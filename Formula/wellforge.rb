@@ -12,8 +12,8 @@
 class Wellforge < Formula
   desc "welld internal platform: reproducible, AI-assisted project setup"
   homepage "https://github.com/matteocodogno/wellforge"
-  url "https://github.com/matteocodogno/wellforge/archive/refs/tags/v0.2.2.tar.gz"
-  sha256 "451dc6664ff597f76c5742b1511c9e71389c542400fcb7512d7125b844e4eb13"
+  url "https://github.com/matteocodogno/wellforge/archive/refs/tags/v0.2.3.tar.gz"
+  sha256 "865f00cc5ab1b97cc1c01debe0ec83fbbd2393df9d2fed907f9aadeb50292ec1"
   license "UNLICENSED" # internal welld tooling
   head "https://github.com/matteocodogno/wellforge.git", branch: "main"
 
@@ -41,5 +41,6 @@ class Wellforge < Formula
 
   test do
     assert_match "doctor", shell_output("#{bin}/wellforge help")
+    assert_match version.to_s, shell_output("#{bin}/wellforge --version")
   end
 end
