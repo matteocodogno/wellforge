@@ -105,7 +105,15 @@ check_docker() {
 
 check_gh_auth() {
   command -v gh >/dev/null || return 0
-  if gh auth status >/dev/null 2>&1; then ok "gh auth" "authenticated"; else
+  # NOTE: `gh auth status` is not a local check — it reads the token from the
+  # keychain and verifies it against the GitHub API. Distinguish the failure
+  # modes instead of mislabeling them all as "not logged in".
+  local out
+  if out=$(gh auth status 2>&1); then
+    ok "gh auth" "authenticated"
+  elif echo "$out" | grep -q "Logged in to"; then
+    warn "gh auth" "logged in, but verification failed (locked keychain / network / a second expired account?) — retry, or: gh auth status"
+  else
     warn "gh auth" "not logged in — run: gh auth login (needed by the connections layer)"
   fi
 }
