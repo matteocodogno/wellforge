@@ -2,7 +2,9 @@
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 [ -z "$COMMAND" ] && exit 0
-if echo "$COMMAND" | grep -qE 'rm\s+-rf\s+/|rm\s+-rf\s+\*|rm\s+-rf\s+~'; then
+# Block deleting /, /*, ~, ~/, ~/*, bare * — NOT legitimate paths like /tmp/foo
+# (the original unanchored "rm -rf /" matched every absolute-path deletion).
+if echo "$COMMAND" | grep -qE "rm\s+-[a-zA-Z]+\s+(/|/\*|~|~/\*?|\*)([[:space:];\"')]|$)"; then
   echo "BLOCKED: recursive deletion from root/home not allowed" >&2; exit 2
 fi
 if echo "$COMMAND" | grep -qiE 'DROP\s+DATABASE|DROP\s+TABLE\s+\w+\s*;|TRUNCATE\s+TABLE'; then

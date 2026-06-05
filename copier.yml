@@ -58,7 +58,7 @@ ci:
 gates_repo:
   type: str
   help: owner/repo hosting the reusable gate workflows
-  default: welld/wellforge
+  default: matteocodogno/wellforge
 
 gates_ref:
   type: str

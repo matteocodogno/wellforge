@@ -12,9 +12,12 @@ Copier template for a welld full-stack monorepo:
 ## Usage
 
 ```bash
-copier copy --trust gh:welld/wellforge/templates/spring-kotlin-react my-service \
-  --data generated=$(date +%F)
+uvx copier copy --trust gh:matteocodogno/wellforge my-service \
+  --data preset=spring-kotlin-react
 ```
+
+(Always the repo root — one `copier.yml` serves all presets; see
+`templates/_shared/CONTRACT.md`.)
 
 Or via the plugin: `/welld-dev:new` fills the common questions automatically.
 
@@ -26,7 +29,7 @@ Or via the plugin: `/welld-dev:new` fills the common questions automatically.
 | `project_slug` | str | derived | kebab-case dir + artifact name |
 | `description` | str | — | one line |
 | `ci` | choice | `github` | `github` / `none` |
-| `gates_repo` | str | `welld/wellforge` | owner/repo hosting gate workflows |
+| `gates_repo` | str | `matteocodogno/wellforge` | owner/repo hosting gate workflows |
 | `gates_ref` | str | `gates-v0` | tag pinned in generated CI |
 | `base_package` | str | `ch.welld.<slug>` | root Kotlin/Java package |
 | `db` | choice | `postgres` | `postgres` / `none` |

@@ -27,7 +27,7 @@ uvx copier copy --trust <wellforge repo/URL> <dest> --data preset=<preset>
 | `project_slug` | str | default derived from project_name (kebab-case); dir + artifact name |
 | `description` | str | one line |
 | `ci` | choice | `github` (default) / `none` |
-| `gates_repo` | str | default `welld/wellforge` — owner/repo hosting the reusable gate workflows |
+| `gates_repo` | str | default `matteocodogno/wellforge` — owner/repo hosting the reusable gate workflows |
 | `gates_ref` | str | default `gates-v0` — tag pinned in generated CI |
 
 No "generated date" question/field: hidden (`when: false`) answers are not persisted to

@@ -1,5 +1,5 @@
 # Reusable quality gate — Node/TypeScript packages (frontend or Hono backend).
-# Called by generated projects:  uses: welld/wellforge/.github/workflows/quality-node.yml@gates-v0
+# Called by generated projects:  uses: matteocodogno/wellforge/.github/workflows/quality-node.yml@gates-v0
 # Thresholds live HERE — changing them requires a PR to gates/ (the single discretion point).
 name: quality-node
 
@@ -14,7 +14,7 @@ on:
         description: owner/repo hosting gate configs
         required: false
         type: string
-        default: welld/wellforge
+        default: matteocodogno/wellforge
       gates-ref:
         description: tag/ref of the gates release
         required: false
