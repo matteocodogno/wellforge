@@ -100,7 +100,9 @@ brew upgrade wellforge
 ```
 
 > Installed `--HEAD` before the formula became versioned? Switch once with:
-> `brew uninstall wellforge && brew install matteocodogno/wellforge/wellforge`
+> `brew uninstall --force wellforge && brew install matteocodogno/wellforge/wellforge`
+> (`--force` matters: it removes **all** kegs — a leftover HEAD keg stays linked
+> otherwise, shadows every upgrade, and `brew upgrade` reports "already installed".)
 
 Plugin changes apply on the next Claude Code session (same marketplace path). Template
 and gate releases are consumed by projects explicitly — `/welld-dev:upgrade` for
