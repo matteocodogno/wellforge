@@ -5,6 +5,7 @@
 #   wellforge doctor    check the environment (add --fix to install/upgrade tools)
 #   wellforge update    update repo + tools + plugin
 #   wellforge telegram  configure Telegram notifications (guided, step by step)
+#   wellforge version   print CLI + checkout versions (also: --version, -v)
 #
 # Env overrides:
 #   WELLFORGE_HOME  checkout location (default ~/.ai/wellforge; setup asks and
@@ -356,10 +357,31 @@ cmd_update() {
   say "${DIM}  brew update && brew upgrade wellforge${RST}"
 }
 
+cmd_version() {
+  # CLI version: derived from the brew Cellar path (no hardcoded constant to
+  # forget at release time); a checkout run reports its git describe instead.
+  local src ver="unknown"
+  src="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || true
+  case "$src" in
+    */Cellar/wellforge/*)
+      ver="${src#*/Cellar/wellforge/}"; ver="${ver%%/*} (brew)" ;;
+    *)
+      local repo; repo="$(script_repo || true)"
+      [ -n "$repo" ] && ver="$(git -C "$repo" describe --tags --always 2>/dev/null || echo '?') (running from checkout)" ;;
+  esac
+  say "wellforge $ver"
+  if [ -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
+    say "checkout:  $WELLFORGE_HOME ($(git -C "$WELLFORGE_HOME" describe --tags --always 2>/dev/null || echo '?'))"
+  else
+    say "checkout:  none at $WELLFORGE_HOME — run: wellforge setup"
+  fi
+}
+
 case "${1:-help}" in
   setup)    shift; cmd_setup "$@" ;;
   doctor)   shift; cmd_doctor "$@" ;;
   update)   shift; cmd_update "$@" ;;
   telegram) shift; cmd_telegram "$@" ;;
-  *) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
+  version|--version|-v) cmd_version ;;
+  *) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac
