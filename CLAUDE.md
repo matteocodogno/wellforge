@@ -30,48 +30,63 @@ the AI session (versioned templates, CI workflows). WellForge is therefore three
 
 | Layer | Vehicle | Covers |
 |---|---|---|
-| `plugin/` (welld-dev) | Claude Code plugin: skills, agents, commands, hooks, MCP | Pillars 1, 2, 3 + local gate enforcement |
-| `templates/` | [Copier](https://copier.readthedocs.io) templates per stack (chosen for first-class `copier update` re-templating) | Pillars 4, 6 |
-| `gates/` | Reusable GitHub Actions workflows + shared lint/coverage/security configs, referenced (not copied) by scaffolds | Pillar 5 |
+| `welld-dev-plugin/` | Claude Code plugin: skills, agents, commands, hooks, MCP | Pillars 1, 2, 3 + local gate enforcement |
+| `copier.yml` + `templates/` | [Copier](https://copier.readthedocs.io) monorepo template (chosen for first-class `copier update` re-templating) | Pillars 4, 6 |
+| `.github/workflows/` + `gates/` | Reusable GitHub Actions workflows + central thresholds/SAST configs, referenced (not copied) by scaffolds | Pillar 5 |
 
-The plugin's `/forge:new` command is the front door: interview → stack recommendation →
-`copier copy` → MCP/CLI connection setup → first spec. `/forge:upgrade` re-runs
-`copier update` against the recorded template version.
+`/welld-dev:new` is the front door: interview → stack recommendation → `copier copy` →
+build verification → connection checklists → first spec. `/welld-dev:upgrade` re-runs
+`copier update` against the recorded template version with AI conflict resolution.
+`/welld-dev:orchestrate` drives the full agent pipeline on a goal.
 
-## Repository layout (target)
+## Repository layout
 
 ```
 wellforge/
 ├── CLAUDE.md
-├── docs/PLAN.md              # roadmap — read this before working on the project
-├── welld-dev-plugin/         # Claude Code plugin (exists, v1.1 — being extended)
+├── docs/PLAN.md              # roadmap + per-phase status — read before working here
+├── copier.yml                # SINGLE template entry point: preset question + templated
+│                             # _subdirectory (required for copier update; repo-wide vX.Y.Z tags)
+├── .github/workflows/        # reusable gates: quality-node.yml, quality-jvm.yml
+│                             # (must live here — GitHub only resolves workflow_call from this path)
+├── welld-dev-plugin/         # Claude Code plugin, v1.6.x (local marketplace install)
 │   ├── .claude-plugin/plugin.json
-│   ├── agents/               # PO, architect, designer, fe-dev, be-dev, devops, qe + existing
-│   ├── commands/             # /forge:new, /forge:upgrade, /spec, /plan, /tasks, /orchestrate
-│   ├── skills/               # stack skills (react-ts-vite, kotlin-springboot-welld, hono-ts-backend)
-│   ├── hooks/                # lifecycle hooks (exists)
+│   ├── commands/             # spec, plan, tasks, orchestrate, new, upgrade (→ /welld-dev:*)
+│   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
+│   │                         # devops, quality-engineer + specialists (owasp-reviewer, adr-writer)
+│   ├── skills/               # spec-driven, connections + stack skills (react-ts-vite,
+│   │                         # kotlin-springboot-welld, hono-ts-backend, mise, springboot-scaffold)
+│   ├── hooks/                # 6 lifecycle hooks
 │   └── .mcp.json             # sequential-thinking, playwright, github
-├── templates/                # copier templates, one per stack preset, semver-tagged
-│   ├── spring-kotlin-react/
-│   ├── hono-react/
-│   └── _shared/
-└── gates/                    # reusable CI workflows + shared tool configs
-    ├── workflows/            # GH Actions: coverage, lint, typecheck, semgrep, osv-scanner
-    └── configs/              # eslint-config-welld, ktlint rules, coverage thresholds
+├── templates/
+│   ├── _shared/CONTRACT.md   # binding contract: questions, required files, versioning
+│   ├── spring-kotlin-react/template/   # SB4 Kotlin + jOOQ + Liquibase / React TS Vite
+│   └── hono-react/template/            # Hono + Drizzle / React TS Vite
+├── gates/                    # configs (semgrep), scripts (check-jacoco.py), policy README
+└── scripts/fleet-status.sh   # org-wide table: project template versions vs latest tag
 ```
 
 ## Current state (2026-06)
 
-- `welld-dev-plugin/` exists: 3 stack skills, 2 agents (owasp-reviewer, adr-writer), 6 hooks,
-  3 MCP servers, 1 shell-script scaffolder (`skills/springboot-scaffold`). Installed via local
-  marketplace.
-- Everything else in the layout above is **planned, not built** — see `docs/PLAN.md` for
-  phases and status.
+- **All 6 pillars built** (Phases 0–6 ☑ — per-phase detail and honest deviations in
+  `docs/PLAN.md`). Lifecycle E2E-tested: scaffold v0.1.0 → template change → `copier
+  update` → zero conflicts.
+- Tags: `v0.1.0` (template release series, PEP440 — what copier resolves),
+  `gates-v0` (gate workflow pin series — separate, invisible to copier).
+- **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated
+  project, CI-green on GitHub (repo has no remote yet), threshold calibration, v1.0.0 cut.
 
 ## Conventions
 
 - Plugin agents/commands/skills are Markdown with YAML frontmatter (Claude Code plugin format).
-- Templates are semver-tagged; scaffolded projects carry a `.forge/manifest.json`
-  (template name, version, copier answers) — this is the upgrade contract, never edit it by hand.
-- Quality thresholds live in `gates/` and are referenced by templates, not duplicated into them.
+- Generation goes through the ROOT `copier.yml` (`--data preset=<name>`), never
+  `templates/<preset>/` directly; scaffolded projects carry `.forge/manifest.json`
+  (template, version, answers) — the upgrade contract, never edit either by hand.
+- No hidden copy-time-injected answers (e.g. dates) in templates — copier doesn't persist
+  `when: false` answers and every future `copier update` would conflict (learned the hard way).
+- Template releases: repo-wide `vX.Y.Z` tags, presets in lockstep; semver = patch cosmetic /
+  minor additive / major needs `_migrations`. Bump the `template_version` default in the
+  release commit.
+- Quality thresholds live in the gate workflows' `env` blocks — changed only via PR to
+  `gates/`/`.github/workflows/`; templates call them pinned to `gates-v*`.
 - All text/docs in English; this is internal welld tooling.
