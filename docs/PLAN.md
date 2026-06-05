@@ -154,17 +154,23 @@ an actionable message; fixing coverage turns it green; no per-project config edi
 
 Goal: presets evolve, fleets follow.
 
-- ☐ Semver discipline for templates: patch = cosmetic, minor = additive, major =
-  needs migration. Tag releases in this repo.
-- ☐ `commands/upgrade.md` — `/forge:upgrade`: reads `.forge/manifest.json`, runs
-  `copier update` to target version, resolves conflicts with AI assistance (this is
-  where the plugin shines — merge conflicts in templated files get explained and
-  resolved interactively), runs the quality gates, updates manifest.
-- ☐ Per-version migration tasks in templates (Copier `_migrations`) for mechanical
-  steps; AI handles the judgment calls.
-- ☐ `gates/` upgrades are decoupled: pinned tag bump in CI file, usually a one-line PR.
-- ☐ Fleet visibility: simple registry (`docs/fleet.md` or a script hitting GitHub API)
-  listing generated projects + their template versions → know what's outdated.
+- ☑ STRUCTURAL: moved to copier's monorepo pattern — ONE root `copier.yml` with a
+  `preset` question and templated `_subdirectory` (per-template copier.yml removed).
+  Required because `copier update` resolves the template from the git repo root with
+  PEP440 `vX.Y.Z` tags; per-template tags would be invisible to it. Presets release
+  in lockstep; `gates-v*` is a separate tag series.
+- ☑ Semver discipline documented in CONTRACT.md: patch = cosmetic, minor = additive,
+  major = needs migration. First release tagged `v0.1.0`.
+- ☑ `commands/upgrade.md` — `/welld-dev:upgrade`: manifest+answers pre-flight, clean
+  tree required, plan-of-record with changelog before running, `copier update
+  --skip-answered --conflict inline`, AI conflict resolution (keep project behavior /
+  adopt template structure; ambiguous → ask), gates verify, single revertable commit.
+- ☑ `_migrations` convention documented in root copier.yml + CONTRACT.md (mechanical
+  steps only; first entries land with the first breaking release).
+- ☑ `gates/` upgrades decoupled: pinned tag bump, one-line PR — upgrade.md forbids
+  bundling it into a template upgrade.
+- ☑ Fleet visibility: `scripts/fleet-status.sh` — GitHub code search (or --repo-list)
+  → reads each repo's `.forge/manifest.json` → table vs latest `v*` tag.
 
 Acceptance: scaffold with template v1.0.0 → evolve template to v1.1.0 (add a file,
 change a config) → `/forge:upgrade` brings the old project to v1.1.0 with green gates

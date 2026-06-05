@@ -1,0 +1,101 @@
+# WellForge template entry point (copier monorepo pattern).
+#
+# One root copier.yml + a templated _subdirectory selects the preset. This is what makes
+# `copier update` work: the template source is THIS repo (git URL or checkout), versioned
+# by repo-wide vX.Y.Z tags. Generate:
+#
+#   uvx copier copy --trust <wellforge repo/URL> <dest> \
+#     --data preset=spring-kotlin-react --data generated=$(date +%F)
+#
+# Upgrade an existing project (from inside it):  uvx copier update --trust
+# See templates/_shared/CONTRACT.md for the full contract.
+
+_subdirectory: "templates/{{ preset }}/template"
+_min_copier_version: "9.0.0"
+
+# ── Migrations (Phase 6 lifecycle) ──
+# Per-version migration tasks run by `copier update` when crossing a version boundary.
+# Mechanical steps only (file moves, renames); judgment calls are /welld-dev:upgrade's
+# job. Example:
+#   _migrations:
+#     - version: v0.2.0
+#       command: "rm -f {{ _copier_conf.dst_path }}/obsolete-file"
+# (none yet — first entries land with the first breaking template release)
+
+# ── Preset selection ──
+preset:
+  type: str
+  help: Stack preset (see templates/README.md for the sweet spots)
+  choices:
+    - spring-kotlin-react
+    - hono-react
+  default: spring-kotlin-react
+
+# ── Common questions (every preset — templates/_shared/CONTRACT.md) ──
+project_name:
+  type: str
+  help: Human-readable project name, e.g. "Order Service"
+  default: "My Service"
+
+project_slug:
+  type: str
+  help: Kebab-case slug — directory + artifact name
+  default: "{{ project_name | lower | replace(' ', '-') | replace('_', '-') }}"
+
+description:
+  type: str
+  help: One-line description of the project
+  default: "A welld full-stack service."
+
+ci:
+  type: str
+  help: CI provider to wire up
+  choices:
+    - github
+    - none
+  default: github
+
+gates_repo:
+  type: str
+  help: owner/repo hosting the reusable gate workflows
+  default: welld/wellforge
+
+gates_ref:
+  type: str
+  help: Tag pinning the gate workflows in generated CI
+  default: gates-v0
+
+generated:
+  type: str
+  help: Generation date (filled by /welld-dev:new via --data generated=$(date +%F))
+  default: "unknown"
+  when: false
+
+template_version:
+  type: str
+  default: "0.1.0"
+  when: false
+
+# ── Stack-specific questions ──
+base_package:
+  type: str
+  help: Root Kotlin/Java package for the backend
+  default: "ch.welld.{{ project_slug | replace('-', '') }}"
+  when: "{{ preset == 'spring-kotlin-react' }}"
+
+# Derived: package as filesystem path, used in templated directory names (a source dir
+# name cannot contain a literal "/"). Hidden — never asked.
+package_path:
+  type: str
+  default: "{{ base_package.replace('.', '/') }}"
+  when: false
+
+db:
+  type: str
+  help: >-
+    Database. postgres wires the full DB stack (Liquibase+jOOQ on JVM, Drizzle on Hono,
+    docker-compose); none omits all DB code.
+  choices:
+    - postgres
+    - none
+  default: postgres

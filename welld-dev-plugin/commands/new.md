@@ -33,17 +33,19 @@ and stop — don't force a preset. User confirms or overrides; their choice wins
 
 ## Stage 3 — Generate
 
-1. Locate templates: the wellforge repo (this plugin's sibling `templates/` dir if
-   working inside wellforge; otherwise ask for the wellforge checkout path or git URL —
-   remember it for the session).
-2. Collect the template's answers (read its `copier.yml` for stack questions):
-   project_name, project_slug, description, base_package (JVM), db, ci.
+1. Locate the wellforge repo (checkout path or git URL — ask once, remember for the
+   session). The template source is the REPO ROOT: one `copier.yml` serves all presets.
+2. Collect the answers (read the root `copier.yml` for the full list): preset,
+   project_name, project_slug, description, base_package (JVM preset), db, ci.
 3. Run, from the target parent directory:
    ```bash
-   uvx copier copy --trust <template-path> <project_slug> \
-     --data generated=$(date +%F) --data project_name=... [--data ...]
+   uvx copier copy --trust <wellforge repo/URL> <project_slug> \
+     --data preset=<preset> --data generated=$(date +%F) \
+     --data project_name=... [--data ...]
    ```
    (requires `uv`; if missing: `brew install uv` or `mise use -g uv`.)
+   Prefer the git URL over a local path once wellforge is hosted — it makes
+   `/welld-dev:upgrade` work for every team member, not just this machine.
 4. Initialize: `git init -b main && git add -A && git commit -m "chore: scaffold from <template> v<version>"`.
    The scaffold commit must be pristine — no manual edits before it.
 

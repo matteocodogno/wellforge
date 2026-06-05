@@ -4,12 +4,23 @@ Every WellForge Copier template MUST satisfy this contract. `/welld-dev:new` and
 `/welld-dev:upgrade` depend on it; CI gate wiring and the Phase 6 lifecycle break if a
 template drifts from it.
 
-## Copier configuration (`copier.yml`)
+## Copier configuration (root `copier.yml` — monorepo pattern)
 
-- `_subdirectory: template` — template files live under `template/`, keeping copier.yml
-  and docs out of generated output.
+ONE `copier.yml` at the **wellforge repo root** serves all presets: a `preset` question
+selects the stack and `_subdirectory: "templates/{{ preset }}/template"` picks the file
+tree. This is not cosmetic — `copier update` (Phase 6 lifecycle) requires the template
+source to be the git repo root, versioned by repo-wide `vX.Y.Z` tags. Presets do NOT
+have their own copier.yml; preset-specific questions live in the root file guarded with
+`when: "{{ preset == '<name>' }}"`.
+
+Generate:
+```bash
+uvx copier copy --trust <wellforge repo/URL> <dest> \
+  --data preset=<preset> --data generated=$(date +%F)
+```
+
 - `_min_copier_version: "9.0.0"`.
-- Common questions (every template, same names — `/welld-dev:new` fills them):
+- Common questions (every preset, same names — `/welld-dev:new` fills them):
 
 | Question | Type | Notes |
 |---|---|---|
@@ -38,12 +49,18 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 | `.gitignore` | stack-appropriate + `.mise.local.toml`, `.claude/settings.local.json` |
 | `README.md` | quickstart: `mise install && mise run dev`, layout table, link to CLAUDE.md |
 
-## Versioning
+## Versioning & lifecycle
 
-- Template version lives in `copier.yml` as a hidden question with a literal default:
-  `template_version: { type: str, default: "0.1.0", when: false }` — bumped on every
-  template release and git-tagged `<template-name>/v<version>`.
-- The manifest's `version` field reads this answer.
+- Releases are **repo-wide git tags `vX.Y.Z`** (copier resolves "latest" from
+  PEP440-parseable tags; per-template tags like `name/v1` would be invisible to it).
+  Both presets release in lockstep; a release touching one preset is a no-op update
+  for the other. `gates-v*` tags are a separate, non-template series.
+- Semver discipline: patch = cosmetic, minor = additive, major = needs migration.
+- The hidden `template_version` answer mirrors the release version (bump it in the
+  release commit); the manifest's `version` field reads it.
+- Mechanical migration steps go in root `copier.yml` `_migrations` (run by
+  `copier update` at version boundaries); judgment calls belong to
+  `/welld-dev:upgrade`'s conflict resolution.
 
 ## Rules
 
