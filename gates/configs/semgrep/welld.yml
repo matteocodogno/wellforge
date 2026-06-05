@@ -1,0 +1,34 @@
+# welld custom semgrep rules — extends the registry packs (p/typescript, p/kotlin)
+# referenced by the gate workflows. Add org-specific rules HERE; they propagate to
+# every project on the next gates-ref bump, no re-scaffold needed.
+rules:
+  - id: welld-hardcoded-secret
+    message: >
+      Possible hardcoded secret. Secrets belong in .mise.local.toml (local) or the CI
+      secret store — never in source.
+    severity: ERROR
+    languages: [generic]
+    paths:
+      exclude:
+        - "*.md"
+        - "*.lock"
+        - "*test*"
+        - "*Test*"
+        - "*.example*"
+    patterns:
+      - pattern-regex: (?i)(password|passwd|secret|api[_-]?key|auth[_-]?token|private[_-]?key)\s*[:=]\s*["'][A-Za-z0-9+/_\-]{16,}["']
+
+  - id: welld-kotlin-println
+    message: Use the project logger (kotlin-logging), not println, in production code.
+    severity: ERROR
+    languages: [kotlin]
+    paths:
+      include:
+        - "src/main/**"
+    pattern: println(...)
+
+  - id: welld-ts-debugger
+    message: Leftover debugger statement.
+    severity: ERROR
+    languages: [typescript]
+    pattern: debugger

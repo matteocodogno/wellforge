@@ -25,7 +25,7 @@ elif [[ "$EXT" == "kt" || "$EXT" == "kts" ]]; then
   done
   if [ -f "$MAVEN_DIR/mvnw" ]; then
     cd "$MAVEN_DIR" || exit 0
-    OUT=$(./mvnw ktlint:format -q --no-transfer-progress 2>&1)
+    OUT=$(./mvnw com.github.gantsign.maven:ktlint-maven-plugin:format -q --no-transfer-progress 2>&1)
     [ $? -ne 0 ] && { echo "ktlint failed on $FILE:" >&2; echo "$OUT" >&2; exit 2; }
   elif command -v ktlint &>/dev/null; then
     ktlint --format "$FILE" 2>/dev/null

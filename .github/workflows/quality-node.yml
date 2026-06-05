@@ -1,0 +1,86 @@
+# Reusable quality gate — Node/TypeScript packages (frontend or Hono backend).
+# Called by generated projects:  uses: welld/wellforge/.github/workflows/quality-node.yml@gates-v0
+# Thresholds live HERE — changing them requires a PR to gates/ (the single discretion point).
+name: quality-node
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Package directory (e.g. frontend, backend)
+        required: true
+        type: string
+      gates-repo:
+        description: owner/repo hosting gate configs
+        required: false
+        type: string
+        default: welld/wellforge
+      gates-ref:
+        description: tag/ref of the gates release
+        required: false
+        type: string
+        default: gates-v0
+
+env:
+  # ── Central thresholds ──────────────────────────────────────────────
+  COVERAGE_LINES: "80"
+  COVERAGE_BRANCHES: "70"
+  AUDIT_LEVEL: high
+  SEMGREP_VERSION: 1.96.0
+  SEMGREP_SEND_METRICS: "off"
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout gate configs
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.gates-repo }}
+          ref: ${{ inputs.gates-ref }}
+          path: .welld-gates
+
+      - name: Install toolchain (mise)
+        uses: jdx/mise-action@v2
+
+      - name: Require lockfile (reproducible builds)
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          if [ ! -f pnpm-lock.yaml ]; then
+            echo "::error::pnpm-lock.yaml missing in ${{ inputs.working-directory }} — run 'mise run install' locally and commit the lockfile."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm run lint
+
+      - name: Type check
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm run typecheck
+
+      - name: Tests + coverage (lines ≥ $COVERAGE_LINES%, branches ≥ $COVERAGE_BRANCHES%)
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          pnpm exec vitest run --coverage \
+            --coverage.thresholds.lines="$COVERAGE_LINES" \
+            --coverage.thresholds.branches="$COVERAGE_BRANCHES"
+
+      - name: Dependency audit (fail on ${{ env.AUDIT_LEVEL }}+)
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm audit --prod --audit-level "$AUDIT_LEVEL"
+
+      - name: Semgrep SAST
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          pipx run semgrep=="$SEMGREP_VERSION" scan \
+            --config "$GITHUB_WORKSPACE/.welld-gates/gates/configs/semgrep/welld.yml" \
+            --config p/typescript \
+            --error --severity ERROR \
+            --exclude .welld-gates

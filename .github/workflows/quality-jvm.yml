@@ -1,0 +1,89 @@
+# Reusable quality gate — JVM (Spring Boot Kotlin Maven) packages.
+# Called by generated projects:  uses: welld/wellforge/.github/workflows/quality-jvm.yml@gates-v0
+# Thresholds live HERE — changing them requires a PR to gates/ (the single discretion point).
+name: quality-jvm
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Maven module directory (e.g. backend)
+        required: true
+        type: string
+      gates-repo:
+        description: owner/repo hosting gate configs
+        required: false
+        type: string
+        default: welld/wellforge
+      gates-ref:
+        description: tag/ref of the gates release
+        required: false
+        type: string
+        default: gates-v0
+
+env:
+  # ── Central thresholds ──────────────────────────────────────────────
+  COVERAGE_LINES: "80"          # enforced
+  COVERAGE_BRANCHES: "70"       # reported, not yet enforced (see gates/README)
+  JACOCO_VERSION: 0.8.12
+  KTLINT_PLUGIN: com.github.gantsign.maven:ktlint-maven-plugin:3.2.0
+  OSV_SCANNER_VERSION: v2.0.0
+  SEMGREP_VERSION: 1.96.0
+  SEMGREP_SEND_METRICS: "off"
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout gate configs
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.gates-repo }}
+          ref: ${{ inputs.gates-ref }}
+          path: .welld-gates
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+        with:
+          install: false
+
+      - name: Install toolchain (maven plugin + tools)
+        run: |
+          mise plugins install maven https://github.com/mise-plugins/mise-maven || true
+          mise install
+          mise trust --yes || true
+
+      - name: Lint (ktlint)
+        working-directory: ${{ inputs.working-directory }}
+        run: mise exec -- mvn -B --no-transfer-progress "$KTLINT_PLUGIN:check"
+
+      - name: Tests + JaCoCo report
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          mise exec -- mvn -B --no-transfer-progress \
+            org.jacoco:jacoco-maven-plugin:$JACOCO_VERSION:prepare-agent \
+            test \
+            org.jacoco:jacoco-maven-plugin:$JACOCO_VERSION:report
+
+      - name: Enforce coverage (lines ≥ $COVERAGE_LINES%)
+        run: |
+          python3 "$GITHUB_WORKSPACE/.welld-gates/gates/scripts/check-jacoco.py" \
+            "${{ inputs.working-directory }}/target/site/jacoco/jacoco.xml" \
+            --min-line "$COVERAGE_LINES" --min-branch 0 --floor-lines 50
+
+      - name: Dependency audit (osv-scanner)
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          go install "github.com/google/osv-scanner/v2/cmd/osv-scanner@$OSV_SCANNER_VERSION"
+          "$(go env GOPATH)/bin/osv-scanner" scan source -r .
+
+      - name: Semgrep SAST
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          pipx run semgrep=="$SEMGREP_VERSION" scan \
+            --config "$GITHUB_WORKSPACE/.welld-gates/gates/configs/semgrep/welld.yml" \
+            --config p/kotlin \
+            --error --severity ERROR \
+            --exclude .welld-gates --exclude target

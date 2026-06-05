@@ -124,19 +124,28 @@ downloads) and CI-green (needs Phase 5 gate workflows) — both land in the Phas
 Goal: the same measurable bar everywhere; CI is the enforcement point, hooks are the
 fast local feedback.
 
-- ☐ `gates/workflows/` — reusable GitHub Actions (`workflow_call`):
-  - `quality-node.yml`: ESLint (error-level), `tsc --noEmit`, Vitest coverage ≥ **80%**
-    lines / **70%** branches, `osv-scanner` (fail on high+), `semgrep` SAST.
-  - `quality-jvm.yml`: ktlint, detekt, JaCoCo coverage ≥ **80%**, OWASP dep-check /
-    osv-scanner, semgrep.
-- ☐ `gates/configs/` — shared `eslint-config-welld`, detekt/ktlint rulesets, semgrep
-  ruleset; templates *reference* these (npm package / maven artifact / remote config),
-  never copy them — so a threshold bump propagates without re-scaffolding.
-- ☐ Templates call the reusable workflows pinned to a `gates` semver tag.
-- ☐ Plugin side: extend `post-lint.sh` + `stop-verify.sh` to run the same checks
-  locally (same configs ⇒ no local/CI drift); QE agent reads gate output and reports
-  pass/fail with numbers, not vibes.
-- ☐ Threshold changes require a PR to `gates/` (review = the only discretion point).
+- ☑ Reusable GitHub Actions (`workflow_call`) — live in `/.github/workflows/` (GitHub
+  resolves `workflow_call` only from that path; `gates/` holds configs+scripts+policy):
+  - `quality-node.yml`: lint (zero warnings), `typecheck`, Vitest coverage ≥ **80%**
+    lines / **70%** branches (CLI-enforced), lockfile required + frozen install,
+    `pnpm audit --audit-level high`, semgrep (welld rules + p/typescript).
+  - `quality-jvm.yml`: ktlint (full plugin coordinates), JaCoCo lines ≥ **80%** via
+    `gates/scripts/check-jacoco.py` (tested pass/fail/floor; <50-line modules skip with
+    notice), osv-scanner v2, semgrep (welld rules + p/kotlin). detekt deferred to
+    template v0.2 (not in pom).
+- ☑ `gates/configs/semgrep/welld.yml` — central SAST rules (secrets, kotlin println,
+  ts debugger). DEVIATION: eslint/ktlint configs stay template-shipped (central refs
+  need an npm/maven registry — future work); they propagate via Phase 6 upgrades.
+  Coverage thresholds + semgrep + audit ARE central.
+- ☑ Templates call the reusable workflows pinned to `gates-v0` (wired in Phase 4;
+  tag created).
+- ☑ Plugin side: fixed `post-lint.sh` ktlint invocation (full plugin coordinates —
+  prefix resolution was broken); hooks run the same project tasks as CI (lint/
+  typecheck/compile); the QE agent runs the full gate set with numbers. Template fixes
+  found by gate wiring: missing ktlint-maven-plugin in pom, missing @vitest/coverage-v8
+  in both frontends, `type-check`→`typecheck` script normalization.
+- ☑ Threshold changes require a PR to `gates/` (review = the only discretion point);
+  thresholds live in workflow env blocks, documented in `gates/README.md`.
 
 Acceptance: a scaffolded project with a deliberately under-tested module fails CI with
 an actionable message; fixing coverage turns it green; no per-project config edits.
