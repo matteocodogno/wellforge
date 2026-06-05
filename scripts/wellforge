@@ -1,0 +1,212 @@
+#!/usr/bin/env bash
+# wellforge — install, check, and update the WellForge environment on a Mac.
+#
+#   wellforge setup    full setup: doctor --fix, repo clone/update, plugin install
+#   wellforge doctor   check the environment (add --fix to install/upgrade tools)
+#   wellforge update   update repo + tools + plugin
+#
+# Env overrides:
+#   WELLFORGE_HOME  checkout location (default ~/.wellforge; an enclosing wellforge
+#                   checkout wins when the script is run from inside one)
+#   WELLFORGE_REPO  git URL/path to clone from
+#                   (default https://github.com/matteocodogno/wellforge.git)
+set -euo pipefail
+
+WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
+
+# ─── ui ──────────────────────────────────────────────────────────────────────
+if [ -t 1 ]; then
+  GRN=$'\033[32m'; RED=$'\033[31m'; YLW=$'\033[33m'; DIM=$'\033[2m'; RST=$'\033[0m'
+else
+  GRN=""; RED=""; YLW=""; DIM=""; RST=""
+fi
+ok()   { printf "  %s✓%s %-18s %s\n" "$GRN" "$RST" "$1" "${2:-}"; }
+bad()  { printf "  %s✗%s %-18s %s\n" "$RED" "$RST" "$1" "${2:-}"; }
+warn() { printf "  %s!%s %-18s %s\n" "$YLW" "$RST" "$1" "${2:-}"; }
+say()  { printf "%s\n" "$*"; }
+die()  { printf "%serror:%s %s\n" "$RED" "$RST" "$*" >&2; exit 1; }
+
+# ─── home resolution ─────────────────────────────────────────────────────────
+script_repo() {
+  # If this script lives inside a wellforge checkout, prefer it.
+  local src dir
+  src="${BASH_SOURCE[0]}"
+  dir="$(cd "$(dirname "$src")/.." 2>/dev/null && pwd)" || return 1
+  [ -f "$dir/.claude-plugin/marketplace.json" ] && echo "$dir"
+}
+WELLFORGE_HOME="${WELLFORGE_HOME:-$(script_repo || true)}"
+WELLFORGE_HOME="${WELLFORGE_HOME:-$HOME/.wellforge}"
+
+# ─── tool checks ─────────────────────────────────────────────────────────────
+BREW_TOOLS=(mise uv gh jq)
+FAILURES=0
+
+check_brew() {
+  if command -v brew >/dev/null; then ok "homebrew" "$(brew --version | head -1)"; else
+    bad "homebrew" 'install first: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    FAILURES=$((FAILURES+1)); return 1
+  fi
+}
+
+check_tool() { # name [fix]
+  local t="$1" fix="${2:-}"
+  if command -v "$t" >/dev/null; then
+    if [ -n "$fix" ] && brew outdated --quiet 2>/dev/null | grep -qx "$t"; then
+      say "  ${DIM}upgrading $t…${RST}"; brew upgrade "$t" >/dev/null
+      ok "$t" "upgraded → $("$t" --version 2>/dev/null | head -1)"
+    else
+      ok "$t" "$("$t" --version 2>/dev/null | head -1)"
+    fi
+  elif [ -n "$fix" ]; then
+    say "  ${DIM}installing $t…${RST}"; brew install "$t" >/dev/null
+    ok "$t" "installed"
+  else
+    bad "$t" "brew install $t"; FAILURES=$((FAILURES+1))
+  fi
+}
+
+check_claude() { # [fix]
+  if command -v claude >/dev/null; then ok "claude" "$(claude --version 2>/dev/null | head -1)"; return; fi
+  if [ -n "${1:-}" ] && command -v npm >/dev/null; then
+    say "  ${DIM}installing claude code via npm…${RST}"
+    npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 && { ok "claude" "installed"; return; }
+  fi
+  bad "claude" "npm i -g @anthropic-ai/claude-code  (or the desktop app)"
+  FAILURES=$((FAILURES+1))
+}
+
+check_node() { # [fix] — npx is needed by the plugin's MCP servers
+  if command -v npx >/dev/null; then ok "node/npx" "node $(node --version 2>/dev/null)"; return; fi
+  if [ -n "${1:-}" ]; then
+    say "  ${DIM}installing node via mise…${RST}"
+    mise use -g node@22 >/dev/null 2>&1 && { ok "node/npx" "installed via mise"; return; }
+  fi
+  bad "node/npx" "mise use -g node@22  (MCP servers run via npx)"
+  FAILURES=$((FAILURES+1))
+}
+
+check_docker() {
+  if command -v docker >/dev/null; then
+    if docker info >/dev/null 2>&1; then ok "docker" "daemon running"; else warn "docker" "installed but not running — start Docker Desktop"; fi
+  else
+    warn "docker" "not found — needed for local postgres/Testcontainers: brew install --cask docker-desktop"
+  fi
+}
+
+check_gh_auth() {
+  command -v gh >/dev/null || return 0
+  if gh auth status >/dev/null 2>&1; then ok "gh auth" "authenticated"; else
+    warn "gh auth" "not logged in — run: gh auth login (needed by the connections layer)"
+  fi
+}
+
+check_copier() {
+  command -v uvx >/dev/null || return 0
+  if uvx copier --version >/dev/null 2>&1; then ok "copier (uvx)" "$(uvx copier --version 2>/dev/null)"; else
+    warn "copier (uvx)" "uvx present but copier failed to run — check network/proxy"
+  fi
+}
+
+check_repo() {
+  if [ -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
+    ok "wellforge repo" "$WELLFORGE_HOME ($(git -C "$WELLFORGE_HOME" describe --tags --always 2>/dev/null || echo '?'))"
+  else
+    bad "wellforge repo" "not at $WELLFORGE_HOME — run: wellforge setup (with WELLFORGE_REPO=<url>)"
+    FAILURES=$((FAILURES+1))
+  fi
+}
+
+check_plugin() {
+  command -v claude >/dev/null || return 0
+  if claude plugin marketplace list 2>/dev/null | grep -q "welld"; then ok "marketplace" "welld registered"; else
+    bad "marketplace" "run: claude plugin marketplace add $WELLFORGE_HOME"; FAILURES=$((FAILURES+1))
+  fi
+  if claude plugin list 2>/dev/null | grep -q "welld-dev"; then ok "plugin" "welld-dev installed"; else
+    bad "plugin" "run: claude plugin install welld-dev@welld --scope user"; FAILURES=$((FAILURES+1))
+  fi
+}
+
+# ─── commands ────────────────────────────────────────────────────────────────
+cmd_doctor() {
+  local fix=""
+  [ "${1:-}" = "--fix" ] && fix=1
+  FAILURES=0
+  say "WellForge doctor ${DIM}(home: $WELLFORGE_HOME)${RST}"
+  say ""
+  say "tools:"
+  check_brew || true
+  if command -v brew >/dev/null; then
+    for t in "${BREW_TOOLS[@]}"; do check_tool "$t" "$fix"; done
+  fi
+  check_node "$fix"
+  check_claude "$fix"
+  check_docker
+  check_gh_auth
+  check_copier
+  say ""
+  say "wellforge:"
+  check_repo
+  check_plugin
+  say ""
+  if [ "$FAILURES" -eq 0 ]; then
+    say "${GRN}environment ready.${RST}"
+  else
+    say "${RED}$FAILURES check(s) failed.${RST} ${fix:+Some issues need manual action.}${fix:-Run: wellforge doctor --fix}"
+    return 1
+  fi
+}
+
+cmd_setup() {
+  say "WellForge setup ${DIM}(home: $WELLFORGE_HOME)${RST}"
+  command -v brew >/dev/null || die 'Homebrew first: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+
+  # 1. repo
+  if [ -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
+    say "  ${DIM}repo present — pulling latest…${RST}"
+    git -C "$WELLFORGE_HOME" pull --ff-only 2>/dev/null || warn "repo" "pull skipped (no upstream yet)"
+  else
+    say "  ${DIM}cloning $WELLFORGE_REPO…${RST}"
+    git clone "$WELLFORGE_REPO" "$WELLFORGE_HOME" \
+      || die "clone failed — private repo? run 'gh auth setup-git' or set WELLFORGE_REPO to an SSH URL"
+  fi
+
+  # 2. tools (doctor in fix mode does the installs/upgrades)
+  cmd_doctor --fix || true
+
+  # 3. marketplace + plugin (idempotent)
+  if command -v claude >/dev/null; then
+    claude plugin marketplace list 2>/dev/null | grep -q "welld" \
+      || claude plugin marketplace add "$WELLFORGE_HOME"
+    claude plugin list 2>/dev/null | grep -q "welld-dev" \
+      || claude plugin install welld-dev@welld --scope user
+  fi
+
+  say ""
+  cmd_doctor && say "
+${GRN}done.${RST} Open a Claude Code session and verify:
+  /plugin   → welld-dev installed
+  /mcp      → sequential-thinking, playwright, github
+Next: docs/QUICKSTART.md — /welld-dev:new for your first project."
+}
+
+cmd_update() {
+  say "WellForge update"
+  if [ -d "$WELLFORGE_HOME/.git" ]; then
+    git -C "$WELLFORGE_HOME" pull --ff-only 2>/dev/null \
+      && ok "repo" "$(git -C "$WELLFORGE_HOME" describe --tags --always 2>/dev/null)" \
+      || warn "repo" "pull skipped (no upstream / local changes)"
+  fi
+  if command -v brew >/dev/null; then
+    for t in "${BREW_TOOLS[@]}"; do
+      brew outdated --quiet 2>/dev/null | grep -qx "$t" && { brew upgrade "$t" >/dev/null; ok "$t" "upgraded"; } || true
+    done
+  fi
+  say "${DIM}plugin changes apply on the next Claude Code session (or /reload-plugins).${RST}"
+}
+
+case "${1:-help}" in
+  setup)  shift; cmd_setup "$@" ;;
+  doctor) shift; cmd_doctor "$@" ;;
+  update) shift; cmd_update "$@" ;;
+  *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
+esac

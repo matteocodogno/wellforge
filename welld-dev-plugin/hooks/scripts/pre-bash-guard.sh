@@ -11,8 +11,13 @@ fi
 if echo "$COMMAND" | grep -qE 'curl.+\|\s*(bash|sh)|wget.+\|\s*(bash|sh)'; then
   echo "BLOCKED: piping remote scripts into shell not allowed" >&2; exit 2
 fi
-for pattern in ".env" ".env.local" ".env.production" "*.pem" "*.key" "secrets.yml"; do
-  if echo "$COMMAND" | grep -q "$pattern"; then
+# Literal (-F) matching — these are filenames, not regexes (an unescaped ".env"
+# regex matches any char + "env", e.g. the word " environment").
+# .env.example and template .env.jinja files are legitimately referenced — strip
+# them before testing so they don't trip the .env substring.
+SCRUBBED=$(echo "$COMMAND" | sed 's/\.env\.example//g; s/\.env\.jinja//g')
+for pattern in ".env" ".pem" ".key" "secrets.yml"; do
+  if echo "$SCRUBBED" | grep -qF -- "$pattern"; then
     echo "BLOCKED: touches protected file ($pattern)" >&2; exit 2
   fi
 done

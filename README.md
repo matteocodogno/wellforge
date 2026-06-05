@@ -6,10 +6,16 @@ fleet that stays upgradeable as standards evolve.
 
 ## Documentation
 
+```bash
+brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge
+brew install --HEAD matteocodogno/wellforge/wellforge
+wellforge setup      # toolchain + repo + plugin, verified
+```
+
 | Doc | For |
 |---|---|
 | **[Features](docs/FEATURES.md)** | what WellForge does — the 6 pillars in detail |
-| **[Installation](docs/INSTALLATION.md)** | one-time machine setup (~10 min) |
+| **[Installation](docs/INSTALLATION.md)** | machine setup — brew fast path or manual |
 | **[Quick start](docs/QUICKSTART.md)** | scaffold a greenfield project (~30 min) |
 | [PLAN.md](docs/PLAN.md) | build roadmap, per-phase status, honest deviations |
 

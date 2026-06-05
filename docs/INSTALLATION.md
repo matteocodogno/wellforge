@@ -1,6 +1,23 @@
 # WellForge — Installation
 
-One-time setup per developer machine. ~10 minutes.
+One-time setup per developer machine.
+
+## Fast path (Homebrew)
+
+```bash
+brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge
+brew install --HEAD matteocodogno/wellforge/wellforge
+wellforge setup
+```
+
+`wellforge setup` checks/installs the whole toolchain, clones the repo to
+`~/.wellforge`, registers the plugin marketplace, and installs the welld-dev plugin —
+then prints a verification table. Day-2: `wellforge doctor` (health check),
+`wellforge update` (repo + tools).
+
+The manual path below does the same, step by step.
+
+---
 
 ## 1. Prerequisites
 
@@ -22,12 +39,11 @@ claude --version && mise --version && uvx copier --version && gh auth status && 
 ## 2. Get the WellForge repo
 
 ```bash
-git clone <wellforge-repo-url> ~/.ai/wellforge     # location is your choice
+git clone https://github.com/matteocodogno/wellforge.git ~/.wellforge
 ```
 
-> Until the repo is hosted, a shared checkout path works — but `/welld-dev:upgrade`
-> resolves the template source recorded at scaffold time, so prefer the git URL as soon
-> as one exists (it makes upgrades work for every team member).
+(Location is your choice; `~/.wellforge` is what `wellforge setup` uses. Private repo:
+`gh auth setup-git` first, or use the SSH URL.)
 
 ## 3. Install the welld-dev plugin
 
@@ -36,13 +52,13 @@ plugin source declared relative — no paths to edit):
 
 ```bash
 # 1. Register the marketplace (point it at the repo root)
-claude plugin marketplace add ~/.ai/wellforge
+claude plugin marketplace add ~/.wellforge
 
 # 2. Install
 claude plugin install welld-dev@welld --scope user
 ```
 
-One-shot alternative (testing only): `claude --plugin-dir ~/.ai/wellforge/welld-dev-plugin`
+One-shot alternative (testing only): `claude --plugin-dir ~/.wellforge/welld-dev-plugin`
 
 ## 4. Verify
 
@@ -70,7 +86,7 @@ Inside a Claude Code session:
 ## Updating
 
 ```bash
-cd ~/.ai/wellforge && git pull
+wellforge update        # or: cd ~/.wellforge && git pull
 ```
 
 Plugin changes apply on the next Claude Code session (same marketplace path). Template
