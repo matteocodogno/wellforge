@@ -361,7 +361,9 @@ cmd_version() {
   # CLI version: derived from the brew Cellar path (no hardcoded constant to
   # forget at release time); a checkout run reports its git describe instead.
   local src ver="unknown"
-  src="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || true
+  # resolve symlinks: brew links /opt/homebrew/bin/wellforge -> Cellar/…
+  src="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+  src="$(cd "$(dirname "$src")" 2>/dev/null && pwd)" || true
   case "$src" in
     */Cellar/wellforge/*)
       ver="${src#*/Cellar/wellforge/}"; ver="${ver%%/*} (brew)" ;;
