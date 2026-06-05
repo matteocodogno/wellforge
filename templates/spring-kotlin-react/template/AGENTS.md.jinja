@@ -1,4 +1,4 @@
-# {{ project_name }} — Claude Code context
+# {{ project_name }} — Project Context
 
 {{ description }}
 
@@ -58,7 +58,8 @@ welld full-stack monorepo: **Spring Boot 4 Kotlin** backend + **React TypeScript
 ├── specs/          spec-driven feature work
 ├── mise.toml       pinned tools + aggregate tasks
 {% if db == 'postgres' %}├── docker-compose.yml   local PostgreSQL
-{% endif %}└── CLAUDE.md
+{% endif %}├── AGENTS.md            # project context (canonical — CLAUDE.md imports it)
+└── CLAUDE.md
 ```
 
 ## Backend conventions

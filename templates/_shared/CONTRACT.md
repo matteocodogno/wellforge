@@ -43,7 +43,8 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 |---|---|
 | `.forge/manifest.json` | `{ "template": "<name>", "version": "<template version>", "answers": { …all answers… } }` — the upgrade contract |
 | `.copier-answers.yml` | standard copier answers file (`{{ _copier_answers\|to_nice_yaml }}`) — enables `copier update` |
-| `CLAUDE.md` | project context: stack + versions, dev commands (mise tasks), architecture pointers, spec-driven workflow note (`specs/` + plugin commands) |
+| `AGENTS.md` | project context (canonical, cross-tool standard): stack + versions, dev commands (mise tasks), architecture pointers, spec-driven workflow note (`specs/` + plugin commands) |
+| `CLAUDE.md` | one-line `@AGENTS.md` import for Claude Code — content lives in AGENTS.md only |
 | `.claude/settings.json` | pre-wired permissions for the stack's routine commands (mise/pnpm/mvnw test-build-lint) |
 | `specs/README.md` | one-paragraph pointer to the spec-driven workflow |
 | `mise.toml` (+ per-service) | per the `mise` skill: tools pinned at root, tasks per service, `install/build/test/lint/dev` aggregates at root |

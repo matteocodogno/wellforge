@@ -71,7 +71,7 @@ gates_ref:
 # conflicts (found by the Phase 6 E2E test). Generation date lives in git history.
 template_version:
   type: str
-  default: "0.1.1"
+  default: "0.2.0"
   when: false
 
 # ── Stack-specific questions ──

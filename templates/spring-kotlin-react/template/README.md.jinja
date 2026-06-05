@@ -25,7 +25,7 @@ mise run dev        # start backend + frontend
 | `specs/` | Spec-driven feature work (see `specs/README.md`) |
 | `mise.toml` | Pinned tools + root aggregate tasks |
 {% if db == 'postgres' %}| `docker-compose.yml` | Local PostgreSQL for the backend |
-{% endif %}| `CLAUDE.md` | Project context for Claude Code |
+{% endif %}| `AGENTS.md` | Project context for AI agents (CLAUDE.md imports it for Claude Code) |
 
 ## Commands
 
@@ -39,4 +39,4 @@ mise run dev        # start backend + frontend
 
 Single-service tasks: `mise run backend:<task>` / `mise run frontend:<task>`.
 
-See [CLAUDE.md](./CLAUDE.md) for the full stack reference and conventions.
+See [AGENTS.md](./AGENTS.md) for the full stack reference and conventions.
