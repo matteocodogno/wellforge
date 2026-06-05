@@ -113,6 +113,11 @@ check_gh_auth() {
     ok "gh auth" "authenticated"
   elif echo "$out" | grep -q "Logged in to"; then
     warn "gh auth" "logged in, but verification failed (locked keychain / network / a second expired account?) — retry, or: gh auth status"
+  elif grep -qs 'plugin run -- gh' "$HOME/.config/op/plugins.sh"; then
+    # 1Password shell plugin: gh is aliased to `op plugin run -- gh` in the
+    # INTERACTIVE shell only — raw gh (used by scripts, hooks, and Claude Code
+    # sessions) has no credentials.
+    warn "gh auth" "gh works in your shell via the 1Password plugin, but scripts & Claude Code call raw gh, which has no token — run 'gh auth login' once to cover automation too"
   else
     warn "gh auth" "not logged in — run: gh auth login (needed by the connections layer)"
   fi
