@@ -21,8 +21,9 @@ class Wellforge < Formula
 
   def caveats
     <<~EOS
-      Finish the setup (clones the wellforge repo to ~/.wellforge, checks the
-      toolchain, registers the Claude Code plugin):
+      Finish the setup (clones the wellforge repo — default ~/.ai/wellforge,
+      asked interactively — checks the toolchain, registers the Claude Code
+      plugin):
 
         wellforge setup
 

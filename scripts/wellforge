@@ -7,14 +7,17 @@
 #   wellforge telegram  configure Telegram notifications (guided, step by step)
 #
 # Env overrides:
-#   WELLFORGE_HOME  checkout location (default ~/.wellforge; an enclosing wellforge
-#                   checkout wins when the script is run from inside one)
+#   WELLFORGE_HOME  checkout location (default ~/.ai/wellforge; setup asks and
+#                   remembers your choice; an enclosing checkout wins when the
+#                   script is run from inside one)
 #   WELLFORGE_REPO  git URL/path to clone from
 #                   (default https://github.com/matteocodogno/wellforge.git)
 set -euo pipefail
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
-TELEGRAM_ENV_FILE="$HOME/.config/wellforge/telegram.env"
+CONFIG_DIR="$HOME/.config/wellforge"
+CONFIG_FILE="$CONFIG_DIR/config"           # remembers the chosen install location
+TELEGRAM_ENV_FILE="$CONFIG_DIR/telegram.env"
 
 # ─── ui ──────────────────────────────────────────────────────────────────────
 if [ -t 1 ]; then
@@ -36,8 +39,13 @@ script_repo() {
   dir="$(cd "$(dirname "$src")/.." 2>/dev/null && pwd)" || return 1
   [ -f "$dir/.claude-plugin/marketplace.json" ] && echo "$dir"
 }
+# Resolution order: env var > enclosing checkout > saved choice > default ~/.ai
 WELLFORGE_HOME="${WELLFORGE_HOME:-$(script_repo || true)}"
-WELLFORGE_HOME="${WELLFORGE_HOME:-$HOME/.wellforge}"
+if [ -z "$WELLFORGE_HOME" ] && [ -f "$CONFIG_FILE" ]; then
+  # shellcheck source=/dev/null
+  . "$CONFIG_FILE"
+fi
+WELLFORGE_HOME="${WELLFORGE_HOME:-$HOME/.ai/wellforge}"
 
 # ─── tool checks ─────────────────────────────────────────────────────────────
 BREW_TOOLS=(mise uv gh jq)
@@ -54,13 +62,13 @@ check_tool() { # name [fix]
   local t="$1" fix="${2:-}"
   if command -v "$t" >/dev/null; then
     if [ -n "$fix" ] && brew outdated --quiet 2>/dev/null | grep -qx "$t"; then
-      say "  ${DIM}upgrading $t…${RST}"; brew upgrade "$t" >/dev/null
+      say "  ${DIM}upgrading ${t}…${RST}"; brew upgrade "$t" >/dev/null
       ok "$t" "upgraded → $("$t" --version 2>/dev/null | head -1)"
     else
       ok "$t" "$("$t" --version 2>/dev/null | head -1)"
     fi
   elif [ -n "$fix" ]; then
-    say "  ${DIM}installing $t…${RST}"; brew install "$t" >/dev/null
+    say "  ${DIM}installing ${t}…${RST}"; brew install "$t" >/dev/null
     ok "$t" "installed"
   else
     bad "$t" "brew install $t"; FAILURES=$((FAILURES+1))
@@ -261,23 +269,37 @@ cmd_doctor() {
 }
 
 cmd_setup() {
-  say "WellForge setup ${DIM}(home: $WELLFORGE_HOME)${RST}"
+  say "WellForge setup"
   command -v brew >/dev/null || die 'Homebrew first: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
 
-  # 1. repo
+  # 1. install location (asked once, remembered; Enter keeps the default)
+  if [ -t 0 ] && [ ! -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
+    printf "Install location [%s]: " "$WELLFORGE_HOME"
+    read -r ans
+    if [ -n "$ans" ]; then
+      case "$ans" in "~"*) ans="$HOME${ans#\~}" ;; esac
+      case "$ans" in /*) WELLFORGE_HOME="$ans" ;; *) die "use an absolute path (got: $ans)" ;; esac
+    fi
+  fi
+  mkdir -p "$CONFIG_DIR"
+  echo "WELLFORGE_HOME=\"$WELLFORGE_HOME\"" > "$CONFIG_FILE"
+  say "  ${DIM}home: $WELLFORGE_HOME (saved to $CONFIG_FILE)${RST}"
+
+  # 2. repo
   if [ -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
     say "  ${DIM}repo present — pulling latest…${RST}"
     git -C "$WELLFORGE_HOME" pull --ff-only 2>/dev/null || warn "repo" "pull skipped (no upstream yet)"
   else
-    say "  ${DIM}cloning $WELLFORGE_REPO…${RST}"
+    say "  ${DIM}cloning ${WELLFORGE_REPO}…${RST}"
+    mkdir -p "$(dirname "$WELLFORGE_HOME")"
     git clone "$WELLFORGE_REPO" "$WELLFORGE_HOME" \
       || die "clone failed — private repo? run 'gh auth setup-git' or set WELLFORGE_REPO to an SSH URL"
   fi
 
-  # 2. tools (doctor in fix mode does the installs/upgrades)
+  # 3. tools (doctor in fix mode does the installs/upgrades)
   cmd_doctor --fix || true
 
-  # 3. marketplace + plugin (idempotent)
+  # 4. marketplace + plugin (idempotent)
   if command -v claude >/dev/null; then
     claude plugin marketplace list 2>/dev/null | grep -q "welld" \
       || claude plugin marketplace add "$WELLFORGE_HOME"
@@ -285,7 +307,7 @@ cmd_setup() {
       || claude plugin install welld-dev@welld --scope user
   fi
 
-  # 4. optional: Telegram notifications (interactive sessions only)
+  # 5. optional: Telegram notifications (interactive sessions only)
   if [ -t 0 ] && ! telegram_configured; then
     say ""
     printf "Enable Telegram notifications (DM when Claude needs permission / is waiting)? [y/N] "
