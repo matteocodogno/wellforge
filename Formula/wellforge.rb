@@ -1,13 +1,20 @@
 # Homebrew formula — the wellforge repo doubles as a tap:
 #
 #   brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge
-#   brew install --HEAD matteocodogno/wellforge/wellforge
+#   brew install matteocodogno/wellforge/wellforge
 #   wellforge setup
 #
-# Head-only while pre-1.0; pin a `url ... tag:` stanza at the v1.0.0 cut.
+# Versioned tarball install (NOT head-only): brew's git-based HEAD staging failed
+# inside the install sandbox on some machines ("no time information in ''"), and
+# plain tarballs also give normal `brew upgrade` semantics. Release procedure:
+# bump url/sha256 here in the same commit that tags vX.Y.Z (sha256: curl -sL
+# <url> | shasum -a 256).
 class Wellforge < Formula
   desc "welld internal platform: reproducible, AI-assisted project setup"
   homepage "https://github.com/matteocodogno/wellforge"
+  url "https://github.com/matteocodogno/wellforge/archive/refs/tags/v0.2.1.tar.gz"
+  sha256 "7eb7c2f6f57f6547fee01518eaafd0c2bd5d0444a857a814e35004ba77aed3bd"
+  license "UNLICENSED" # internal welld tooling
   head "https://github.com/matteocodogno/wellforge.git", branch: "main"
 
   depends_on "gh"
@@ -28,7 +35,7 @@ class Wellforge < Formula
         wellforge setup
 
       Anytime health check:  wellforge doctor
-      Stay current:          wellforge update
+      Stay current:          wellforge update  (checkout) · brew upgrade  (this CLI)
     EOS
   end
 
