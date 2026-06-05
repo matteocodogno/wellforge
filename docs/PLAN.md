@@ -172,9 +172,12 @@ Goal: presets evolve, fleets follow.
 - ☑ Fleet visibility: `scripts/fleet-status.sh` — GitHub code search (or --repo-list)
   → reads each repo's `.forge/manifest.json` → table vs latest `v*` tag.
 
-Acceptance: scaffold with template v1.0.0 → evolve template to v1.1.0 (add a file,
-change a config) → `/forge:upgrade` brings the old project to v1.1.0 with green gates
-and preserved local changes.
+Acceptance ☑ (E2E-tested 2026-06-05): scaffold at v0.1.0 → throwaway template v0.1.1
+(content change + version bump) → `copier update` → project at v0.1.1, marker file
+arrived, manifest auto-bumped, **zero conflicts**. The test also CAUGHT a real design
+flaw: a hidden `generated`-date answer isn't persisted by copier and produced spurious
+manifest conflicts on every update — removed (commit fe78f26). Gates-green verification
+on upgrade is wired into upgrade.md and lands with the Phase 7 pilot.
 
 ## Phase 7 — Pilot & rollout (1 week calendar, low effort)
 
