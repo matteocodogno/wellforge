@@ -73,10 +73,10 @@ Inside a Claude Code session:
 
 ## 5. Optional
 
-- **Telegram notifications** (used by the notify hook) — add to `~/.zshrc`, never commit:
+- **Telegram notifications** (DM when Claude needs permission / is waiting) — guided
+  wizard, also offered during `wellforge setup`:
   ```bash
-  export TELEGRAM_BOT_TOKEN="..."
-  export TELEGRAM_CHAT_ID="..."
+  wellforge telegram
   ```
 - **Settings to merge** into `~/.claude/settings.json` — see
   `welld-dev-plugin/settings-snippet.jsonc` (companion plugins, attribution).

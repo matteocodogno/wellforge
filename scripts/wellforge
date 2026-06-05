@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # wellforge — install, check, and update the WellForge environment on a Mac.
 #
-#   wellforge setup    full setup: doctor --fix, repo clone/update, plugin install
-#   wellforge doctor   check the environment (add --fix to install/upgrade tools)
-#   wellforge update   update repo + tools + plugin
+#   wellforge setup     full setup: doctor --fix, repo clone/update, plugin install
+#   wellforge doctor    check the environment (add --fix to install/upgrade tools)
+#   wellforge update    update repo + tools + plugin
+#   wellforge telegram  configure Telegram notifications (guided, step by step)
 #
 # Env overrides:
 #   WELLFORGE_HOME  checkout location (default ~/.wellforge; an enclosing wellforge
@@ -13,6 +14,7 @@
 set -euo pipefail
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
+TELEGRAM_ENV_FILE="$HOME/.config/wellforge/telegram.env"
 
 # ─── ui ──────────────────────────────────────────────────────────────────────
 if [ -t 1 ]; then
@@ -126,6 +128,105 @@ check_plugin() {
   fi
 }
 
+# ─── telegram ────────────────────────────────────────────────────────────────
+telegram_configured() {
+  { [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; } || [ -f "$TELEGRAM_ENV_FILE" ]
+}
+
+tg_api() { # token method [curl args…]
+  local token="$1" method="$2"; shift 2
+  curl -s --max-time 10 "https://api.telegram.org/bot${token}/${method}" "$@"
+}
+
+cmd_telegram() {
+  say "Telegram notifications — guided setup"
+  say "${DIM}The plugin's notify hook DMs you when Claude needs permission or is waiting.${RST}"
+  say ""
+
+  if telegram_configured && [ "${1:-}" != "--reconfigure" ]; then
+    # shellcheck source=/dev/null
+    [ -f "$TELEGRAM_ENV_FILE" ] && . "$TELEGRAM_ENV_FILE"
+    say "Already configured ${DIM}($TELEGRAM_ENV_FILE)${RST}."
+    printf "Send a test message now? [Y/n] "; read -r ans
+    case "$ans" in n|N) ;; *) tg_test && return 0 || say "${YLW}test failed — re-running setup.${RST}";; esac
+    printf "Reconfigure from scratch? [y/N] "; read -r ans
+    case "$ans" in y|Y) ;; *) return 0 ;; esac
+  fi
+
+  # ── step 1: create a bot ──
+  say ""
+  say "${YLW}Step 1/3 — create your bot${RST}"
+  say "  1. Open Telegram and start a chat with ${GRN}@BotFather${RST}  (opening now…)"
+  say "  2. Send:  ${GRN}/newbot${RST}"
+  say "  3. Pick any display name, then a username ending in ${DIM}bot${RST} (e.g. matteo_claude_bot)"
+  say "  4. BotFather replies with an ${GRN}HTTP API token${RST} — copy it"
+  command -v open >/dev/null && open "https://t.me/BotFather" 2>/dev/null
+  say ""
+
+  local token="" bot_user=""
+  while [ -z "$bot_user" ]; do
+    printf "Paste the bot token (input hidden): "
+    read -rs token; printf "\n"
+    [ -z "$token" ] && { say "  ${YLW}empty — try again (Ctrl-C to abort).${RST}"; continue; }
+    bot_user=$(tg_api "$token" getMe | jq -r 'select(.ok) .result.username // empty')
+    [ -z "$bot_user" ] && say "  ${RED}token rejected by the Telegram API${RST} — check for missing characters and retry."
+  done
+  ok "bot verified" "@$bot_user"
+
+  # ── step 2: get your chat id ──
+  say ""
+  say "${YLW}Step 2/3 — link your account${RST}"
+  say "  Open ${GRN}https://t.me/$bot_user${RST} (opening now…), press ${GRN}START${RST}, send any message."
+  command -v open >/dev/null && open "https://t.me/$bot_user" 2>/dev/null
+  printf "Press Enter once you've sent the message… "; read -r _
+
+  local chat_id="" tries=0
+  while [ -z "$chat_id" ] && [ $tries -lt 10 ]; do
+    chat_id=$(tg_api "$token" getUpdates | jq -r '[.result[].message.chat.id] | last // empty')
+    [ -z "$chat_id" ] && { tries=$((tries+1)); say "  ${DIM}no message yet — retrying ($tries/10)…${RST}"; sleep 2; }
+  done
+  if [ -z "$chat_id" ]; then
+    die "no message received by @$bot_user. Make sure you pressed START and sent something, then re-run: wellforge telegram"
+  fi
+  ok "chat detected" "id $chat_id"
+
+  # ── step 3: persist + verify ──
+  say ""
+  say "${YLW}Step 3/3 — save and verify${RST}"
+  mkdir -p "$(dirname "$TELEGRAM_ENV_FILE")"
+  {
+    echo "# WellForge Telegram notifications — written by 'wellforge telegram'. Never commit."
+    echo "export TELEGRAM_BOT_TOKEN=\"$token\""
+    echo "export TELEGRAM_CHAT_ID=\"$chat_id\""
+  } > "$TELEGRAM_ENV_FILE"
+  chmod 600 "$TELEGRAM_ENV_FILE"
+  ok "saved" "$TELEGRAM_ENV_FILE (chmod 600)"
+
+  local rc="$HOME/.zshrc" src_line="[ -f \"$TELEGRAM_ENV_FILE\" ] && . \"$TELEGRAM_ENV_FILE\""
+  if ! grep -qsF "$TELEGRAM_ENV_FILE" "$rc"; then
+    printf "\n# WellForge Telegram notifications\n%s\n" "$src_line" >> "$rc"
+    ok "shell wired" "source line appended to ~/.zshrc"
+  else
+    ok "shell wired" "~/.zshrc already sources it"
+  fi
+
+  export TELEGRAM_BOT_TOKEN="$token" TELEGRAM_CHAT_ID="$chat_id"
+  tg_test || die "test message failed — check your network and re-run: wellforge telegram"
+  say ""
+  say "${GRN}done.${RST} ${DIM}Open a new terminal (or 'source ~/.zshrc') so Claude Code sessions inherit the vars.${RST}"
+}
+
+tg_test() {
+  # shellcheck source=/dev/null
+  [ -f "$TELEGRAM_ENV_FILE" ] && [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && . "$TELEGRAM_ENV_FILE"
+  local out
+  out=$(tg_api "$TELEGRAM_BOT_TOKEN" sendMessage \
+    -d "chat_id=${TELEGRAM_CHAT_ID}" \
+    -d "text=🤖 WellForge: notifications are working." | jq -r '.ok')
+  if [ "$out" = "true" ]; then ok "test message" "delivered — check Telegram"; return 0; fi
+  bad "test message" "Telegram API returned an error"; return 1
+}
+
 # ─── commands ────────────────────────────────────────────────────────────────
 cmd_doctor() {
   local fix=""
@@ -147,6 +248,9 @@ cmd_doctor() {
   say "wellforge:"
   check_repo
   check_plugin
+  if telegram_configured; then ok "telegram" "configured ($TELEGRAM_ENV_FILE)"; else
+    warn "telegram" "not configured (optional) — run: wellforge telegram"
+  fi
   say ""
   if [ "$FAILURES" -eq 0 ]; then
     say "${GRN}environment ready.${RST}"
@@ -181,6 +285,17 @@ cmd_setup() {
       || claude plugin install welld-dev@welld --scope user
   fi
 
+  # 4. optional: Telegram notifications (interactive sessions only)
+  if [ -t 0 ] && ! telegram_configured; then
+    say ""
+    printf "Enable Telegram notifications (DM when Claude needs permission / is waiting)? [y/N] "
+    read -r ans
+    case "$ans" in
+      y|Y|yes) cmd_telegram ;;
+      *) say "  ${DIM}skipped — run 'wellforge telegram' anytime.${RST}" ;;
+    esac
+  fi
+
   say ""
   cmd_doctor && say "
 ${GRN}done.${RST} Open a Claude Code session and verify:
@@ -205,8 +320,9 @@ cmd_update() {
 }
 
 case "${1:-help}" in
-  setup)  shift; cmd_setup "$@" ;;
-  doctor) shift; cmd_doctor "$@" ;;
-  update) shift; cmd_update "$@" ;;
-  *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
+  setup)    shift; cmd_setup "$@" ;;
+  doctor)   shift; cmd_doctor "$@" ;;
+  update)   shift; cmd_update "$@" ;;
+  telegram) shift; cmd_telegram "$@" ;;
+  *) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

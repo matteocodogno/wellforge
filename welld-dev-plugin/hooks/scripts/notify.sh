@@ -1,8 +1,11 @@
 #!/bin/bash
-# Requires env vars in ~/.zshrc (never commit):
-#   export TELEGRAM_BOT_TOKEN="..."
-#   export TELEGRAM_CHAT_ID="..."
+# Telegram is optional. Configure with the guided wizard:  wellforge telegram
+# (writes ~/.config/wellforge/telegram.env; also sourced from ~/.zshrc)
 INPUT=$(cat)
+if [ -z "$TELEGRAM_BOT_TOKEN" ] && [ -f "$HOME/.config/wellforge/telegram.env" ]; then
+  # shellcheck source=/dev/null
+  . "$HOME/.config/wellforge/telegram.env"
+fi
 PROJECT_NAME=$(basename "${CLAUDE_PROJECT_DIR:-$(pwd)}")
 NOTIFICATION_TYPE=$(echo "$INPUT" | jq -r '.notification_type // "unknown"')
 MESSAGE=$(echo "$INPUT" | jq -r '.message // ""')

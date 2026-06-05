@@ -85,17 +85,15 @@ Inside Claude Code:
 
 ## Telegram notifications setup
 
-Add to `~/.zshrc` — **never commit**:
+Guided wizard (creates the bot with you, detects your chat id, sends a test message):
+
 ```bash
-export TELEGRAM_BOT_TOKEN="your-token-here"
-export TELEGRAM_CHAT_ID="your-chat-id-here"
+wellforge telegram
 ```
 
-Get your chat ID (send any message to your bot first):
-```bash
-curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates"
-# → find "chat":{"id": 123456789}
-```
+Config lands in `~/.config/wellforge/telegram.env` (chmod 600, sourced from `~/.zshrc`;
+the notify hook also reads it directly). Manual alternative: export
+`TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` yourself — **never commit them**.
 
 ## Settings to merge manually
 
