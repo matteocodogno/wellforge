@@ -11,30 +11,23 @@ There are two ways to use a local plugin. Pick one:
 Pass the plugin directory every time you launch:
 
 ```bash
-claude --plugin-dir ~/.ai/plugins/welld-dev-plugin
+claude --plugin-dir <wellforge-checkout>/welld-dev-plugin
 ```
 
 ### Option B — permanent via local marketplace (recommended)
 
-Set up once, works across all projects:
+The **wellforge repo root** is a plugin marketplace (`.claude-plugin/marketplace.json`
+with a relative plugin source — nothing to edit). Set up once, works across all projects:
 
 ```bash
-# 1. Edit marketplace.json: replace __PLUGIN_DIR__ with the absolute path to this folder
-#    Example: /Users/matteocodogno/.ai/plugins/welld-dev-plugin
-sed -i '' 's|__PLUGIN_DIR__|'"$HOME/.ai/plugins/welld-dev-plugin"'|' marketplace.json
+# 1. Register the marketplace (repo root, not this directory)
+claude plugin marketplace add <wellforge-checkout>
 
-# 2. Register the local marketplace with Claude Code
-claude plugin marketplace add ~/.ai/plugins/welld-dev-plugin/marketplace.json --scope user
-
-# 3. Inside Claude Code, install from the marketplace
-/plugin    # → find welld-dev → install → scope: user
-```
-
-Or install via CLI after registering the marketplace:
-
-```bash
+# 2. Install
 claude plugin install welld-dev@welld --scope user
 ```
+
+(or interactively: `/plugin` → welld-dev → install → scope: user)
 
 ### Verify
 

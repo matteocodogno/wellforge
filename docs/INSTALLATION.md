@@ -31,18 +31,14 @@ git clone <wellforge-repo-url> ~/.ai/wellforge     # location is your choice
 
 ## 3. Install the welld-dev plugin
 
-Permanent install via local marketplace (recommended):
+The wellforge repo root is itself a plugin marketplace (`.claude-plugin/marketplace.json`,
+plugin source declared relative — no paths to edit):
 
 ```bash
-cd ~/.ai/wellforge/welld-dev-plugin
+# 1. Register the marketplace (point it at the repo root)
+claude plugin marketplace add ~/.ai/wellforge
 
-# 1. Point marketplace.json at this directory
-sed -i '' 's|__PLUGIN_DIR__|'"$PWD"'|' marketplace.json
-
-# 2. Register the marketplace with Claude Code
-claude plugin marketplace add "$PWD/marketplace.json" --scope user
-
-# 3. Install
+# 2. Install
 claude plugin install welld-dev@welld --scope user
 ```
 
