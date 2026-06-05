@@ -189,6 +189,23 @@ on upgrade is wired into upgrade.md and lands with the Phase 7 pilot.
 
 ---
 
+## Phase 8 — Brownfield adoption (added 2026-06-05)
+
+Goal: existing projects get the workflow + calibrated gates without pretending to be
+scaffolds.
+
+- ☑ `commands/adopt.md` — `/welld-dev:adopt`: survey (read-only) → scope interview →
+  AI-readiness (AGENTS.md from OBSERVED conventions, existing CLAUDE.md content
+  migrated; settings merge; `.forge/adoption.json` marker — distinct from manifest,
+  upgrade stays unavailable) → gates with MEASURED baseline (interface check first;
+  npm/yarn and Gradle honestly unsupported → stop and report) → connections → single
+  revertable commit. Adds files only; never rewrites existing code/config.
+- ☑ Gates ratchet: both workflows accept `coverage-lines-baseline` (+ branches on
+  node), 0 = central thresholds; non-zero = per-project measured minimum, raise-only
+  via PR, gap-to-target notice on every run. Tagged `gates-v1` (gates-v0 unchanged
+  for existing scaffolds).
+- ☐ Pilot on a real brownfield repo (pairs with Phase 7).
+
 ## Order & dependencies
 
 ```

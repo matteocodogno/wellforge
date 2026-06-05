@@ -31,6 +31,20 @@ fail their own gate); the skip is printed as a CI notice, never silent.
 | `configs/semgrep/welld.yml` | org-specific SAST rules (secrets, println, debugger) |
 | `scripts/check-jacoco.py` | JaCoCo threshold enforcement (tested: pass/fail/floor) |
 
+## Brownfield ratchet (adopted projects)
+
+Legacy codebases can't start at 80% — and a permanently red gate teaches people to
+ignore gates. Both workflows accept an optional `coverage-lines-baseline` (node also
+`coverage-branches-baseline`): a **measured** per-project minimum set by
+`/welld-dev:adopt` at adoption time.
+
+- `0` (default) = central thresholds apply — scaffolded projects never set these.
+- Non-zero = that project's enforced minimum, with a CI notice showing the gap to the
+  central target on every run.
+- **Raise-only**: lowering a baseline must be rejected in PR review — it lives in the
+  project's `quality.yml`, so the change is always visible. When the baseline reaches
+  the central target, drop the input.
+
 ## Rules
 
 - CI is the enforcement point; plugin hooks (`post-lint.sh`, `stop-verify.sh`) run the

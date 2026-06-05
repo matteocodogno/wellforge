@@ -51,6 +51,7 @@ Inside Claude Code:
 | `commands/orchestrate.md` | `/welld-dev:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
 | `commands/new.md` | `/welld-dev:new` — interview → stack recommendation → Copier scaffold → build verify → connections |
 | `commands/upgrade.md` | `/welld-dev:upgrade` — copier update to a newer template version + AI conflict resolution + gates |
+| `commands/adopt.md` | `/welld-dev:adopt` — brownfield onboarding: AI-readiness, spec workflow, gates with measured baseline |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
 | `agents/architect.md` | Architect — plan.md: architecture, contracts, AC→test mapping |
 | `agents/designer.md` | Designer — design.md: flows, screens, component reuse, a11y |

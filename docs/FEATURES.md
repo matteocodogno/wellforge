@@ -111,6 +111,12 @@ Mechanics that make it reliable:
 Hard rule: max 2 presets until the pilot proves the model — template sprawl is how
 internal platforms die.
 
+**Brownfield:** existing projects onboard with `/welld-dev:adopt` — AI-readiness files
+generated from *observed* conventions, the spec workflow, and optionally the central
+gates with a **measured coverage baseline** (ratchet: raise-only, gap-to-target
+reported in CI) instead of the born-clean 80% bar. Adoption adds files, never rewrites
+code; `/welld-dev:upgrade` remains scaffold-only (no template ancestry to re-apply).
+
 ## 5. Quality gates
 
 Objective, central, enforceable. CI is the enforcement point; thresholds live in the

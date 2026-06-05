@@ -14,16 +14,14 @@ fi
 if echo "$COMMAND" | grep -qE '(curl|wget)[^|]+\|\s*(ba|z)?sh([[:space:]]|$|;)'; then
   echo "BLOCKED: piping remote scripts into shell not allowed" >&2; exit 2
 fi
-# Literal (-F) matching — these are filenames, not regexes (an unescaped ".env"
-# regex matches any char + "env", e.g. the word " environment").
-# .env.example and template .env.jinja files are legitimately referenced — strip
-# them before testing so they don't trip the .env substring.
+# Protected file extensions need BOTH boundaries: an unanchored ".env" regex
+# matched " environment"; a literal ".key" matched python's ".keys()". So:
+# extension must be followed by a non-alphanumeric or end-of-string.
+# .env.example / .env.jinja are legitimately referenced — scrub them first.
 SCRUBBED=$(echo "$COMMAND" | sed 's/\.env\.example//g; s/\.env\.jinja//g')
-for pattern in ".env" ".pem" ".key" "secrets.yml"; do
-  if echo "$SCRUBBED" | grep -qF -- "$pattern"; then
-    echo "BLOCKED: touches protected file ($pattern)" >&2; exit 2
-  fi
-done
+if echo "$SCRUBBED" | grep -qE '\.(env|pem|key)([^A-Za-z0-9_]|$)|secrets\.ya?ml'; then
+  echo "BLOCKED: touches protected file (.env/.pem/.key/secrets.yml)" >&2; exit 2
+fi
 if echo "$COMMAND" | grep -qE 'git\s+(push\s+--force|reset\s+--hard\s+HEAD~[2-9])'; then
   echo "BLOCKED: destructive git operation requires manual confirmation" >&2; exit 2
 fi

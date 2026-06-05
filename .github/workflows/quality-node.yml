@@ -20,6 +20,20 @@ on:
         required: false
         type: string
         default: gates-v0
+      # Ratchet baselines for brownfield adoption: 0 (default) = central
+      # thresholds apply. A non-zero baseline replaces the central minimum for
+      # THIS project — it may only ever be raised (PR review enforces that),
+      # and the gap to the central target is reported on every run.
+      coverage-lines-baseline:
+        description: per-project line-coverage ratchet (0 = central threshold)
+        required: false
+        type: number
+        default: 0
+      coverage-branches-baseline:
+        description: per-project branch-coverage ratchet (0 = central threshold)
+        required: false
+        type: number
+        default: 0
 
 env:
   # ── Central thresholds ──────────────────────────────────────────────
@@ -65,12 +79,21 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
         run: pnpm run typecheck
 
-      - name: Tests + coverage (lines ≥ $COVERAGE_LINES%, branches ≥ $COVERAGE_BRANCHES%)
+      - name: Tests + coverage
         working-directory: ${{ inputs.working-directory }}
         run: |
+          LINES="$COVERAGE_LINES" BRANCHES="$COVERAGE_BRANCHES"
+          if [ "${{ inputs.coverage-lines-baseline }}" != "0" ]; then
+            LINES="${{ inputs.coverage-lines-baseline }}"
+            echo "::notice::ratchet baseline in effect: lines ≥ ${LINES}% (central target ${COVERAGE_LINES}%) — raise-only, via PR"
+          fi
+          if [ "${{ inputs.coverage-branches-baseline }}" != "0" ]; then
+            BRANCHES="${{ inputs.coverage-branches-baseline }}"
+            echo "::notice::ratchet baseline in effect: branches ≥ ${BRANCHES}% (central target ${COVERAGE_BRANCHES}%)"
+          fi
           pnpm exec vitest run --coverage \
-            --coverage.thresholds.lines="$COVERAGE_LINES" \
-            --coverage.thresholds.branches="$COVERAGE_BRANCHES"
+            --coverage.thresholds.lines="$LINES" \
+            --coverage.thresholds.branches="$BRANCHES"
 
       - name: Dependency audit (fail on ${{ env.AUDIT_LEVEL }}+)
         working-directory: ${{ inputs.working-directory }}

@@ -20,6 +20,14 @@ on:
         required: false
         type: string
         default: gates-v0
+      # Ratchet baseline for brownfield adoption: 0 (default) = central
+      # threshold applies. Non-zero replaces the central minimum for THIS
+      # project — raise-only (PR review enforces that).
+      coverage-lines-baseline:
+        description: per-project line-coverage ratchet (0 = central threshold)
+        required: false
+        type: number
+        default: 0
 
 env:
   # ── Central thresholds ──────────────────────────────────────────────
@@ -67,11 +75,16 @@ jobs:
             test \
             org.jacoco:jacoco-maven-plugin:$JACOCO_VERSION:report
 
-      - name: Enforce coverage (lines ≥ $COVERAGE_LINES%)
+      - name: Enforce coverage
         run: |
+          LINES="$COVERAGE_LINES"
+          if [ "${{ inputs.coverage-lines-baseline }}" != "0" ]; then
+            LINES="${{ inputs.coverage-lines-baseline }}"
+            echo "::notice::ratchet baseline in effect: lines ≥ ${LINES}% (central target ${COVERAGE_LINES}%) — raise-only, via PR"
+          fi
           python3 "$GITHUB_WORKSPACE/.welld-gates/gates/scripts/check-jacoco.py" \
             "${{ inputs.working-directory }}/target/site/jacoco/jacoco.xml" \
-            --min-line "$COVERAGE_LINES" --min-branch 0 --floor-lines 50
+            --min-line "$LINES" --min-branch 0 --floor-lines 50
 
       - name: Dependency audit (osv-scanner)
         working-directory: ${{ inputs.working-directory }}
