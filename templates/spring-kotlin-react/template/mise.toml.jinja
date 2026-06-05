@@ -1,0 +1,37 @@
+# mise.toml — {{ project_slug }} (project root)
+# Requires: mise plugin install maven https://github.com/mise-plugins/mise-maven
+# Run `mise trust` once after cloning.
+
+[tools]
+java  = "temurin-21"
+node  = "22"
+maven = "3.9.9"
+pnpm  = "10"
+
+[env]
+# JAVA_HOME is set automatically by mise when using temurin.
+# Add project-level env vars here (non-sensitive only — secrets go in .mise.local.toml).
+# _.file = ".env"   ← uncomment to load .env automatically
+
+[settings]
+experimental = true    # required for monorepo task features
+
+[tasks.install]
+description = "Install all dependencies (backend + frontend)"
+depends     = ["backend:install", "frontend:install"]
+
+[tasks.build]
+description = "Build all services"
+depends     = ["backend:build", "frontend:build"]
+
+[tasks.test]
+description = "Test all services"
+depends     = ["backend:test", "frontend:test"]
+
+[tasks.lint]
+description = "Lint all services"
+depends     = ["backend:lint", "frontend:lint"]
+
+[tasks.dev]
+description = "Start all services in development mode"
+depends     = ["backend:dev", "frontend:dev"]

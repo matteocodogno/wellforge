@@ -1,0 +1,11 @@
+package {{ base_package }}
+
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.runApplication
+
+@SpringBootApplication
+class {{ base_package.rsplit('.', 1)[-1] | capitalize }}Application
+
+fun main(args: Array<String>) {
+    runApplication<{{ base_package.rsplit('.', 1)[-1] | capitalize }}Application>(*args)
+}

@@ -1,0 +1,48 @@
+package {{ base_package }}.common.web
+
+import {{ base_package }}.common.model.DatabaseException
+import {{ base_package }}.common.model.DomainError
+import {{ base_package }}.common.model.NotFoundException
+import {{ base_package }}.common.model.UnexpectedException
+import {{ base_package }}.common.model.ValidationException
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ControllerAdvice
+import org.springframework.web.bind.annotation.ExceptionHandler
+
+private val logger = KotlinLogging.logger {}
+
+data class ErrorResponse(val message: String)
+
+fun DomainError.toResponse(): ResponseEntity<ErrorResponse> =
+    when (this) {
+        is DomainError.NotFoundError   -> ResponseEntity.status(404).body(ErrorResponse(message))
+        is DomainError.ValidationError -> ResponseEntity.status(400).body(ErrorResponse(message))
+        is DomainError.StateError      -> ResponseEntity.status(409).body(ErrorResponse(message))
+        is DomainError.DatabaseError   -> ResponseEntity.status(500).body(ErrorResponse("Internal error"))
+        is DomainError.UnexpectedError -> ResponseEntity.status(500).body(ErrorResponse("Internal error"))
+    }
+
+@ControllerAdvice
+class GlobalExceptionHandler {
+
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFound(ex: NotFoundException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(404).body(ErrorResponse(ex.message ?: "Not found"))
+
+    @ExceptionHandler(ValidationException::class)
+    fun handleValidation(ex: ValidationException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(400).body(ErrorResponse(ex.message ?: "Bad request"))
+
+    @ExceptionHandler(DatabaseException::class)
+    fun handleDatabase(ex: DatabaseException): ResponseEntity<ErrorResponse> {
+        logger.error(ex) { "Database error" }
+        return ResponseEntity.status(500).body(ErrorResponse("Internal error"))
+    }
+
+    @ExceptionHandler(UnexpectedException::class)
+    fun handleUnexpected(ex: UnexpectedException): ResponseEntity<ErrorResponse> {
+        logger.error(ex) { "Unexpected error" }
+        return ResponseEntity.status(500).body(ErrorResponse("Internal error"))
+    }
+}

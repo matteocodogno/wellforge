@@ -1,0 +1,50 @@
+# frontend/mise.toml
+# Tools are inherited from root — do not redeclare them here
+
+[tasks.install]
+description = "Install frontend dependencies"
+run         = "pnpm install"
+sources     = ["package.json", "pnpm-lock.yaml"]
+outputs     = ["node_modules/.modules.yaml"]
+
+[tasks.dev]
+description = "Start Vite dev server"
+depends     = ["install"]
+run         = "pnpm dev"
+
+[tasks.build]
+description = "Production build"
+depends     = ["install"]
+run         = "pnpm build"
+sources     = ["src/**/*.{ts,tsx}", "index.html", "vite.config.ts"]
+outputs     = ["dist/**/*"]
+
+[tasks.lint]
+description = "ESLint check"
+depends     = ["install"]
+run         = "pnpm lint"
+sources     = ["src/**/*.{ts,tsx}"]
+
+[tasks."lint:fix"]
+description = "ESLint fix"
+run         = "pnpm lint:fix"
+
+[tasks.format]
+description = "Prettier format"
+run         = "pnpm format"
+
+[tasks."format:check"]
+description = "Prettier check"
+run         = "pnpm format:check"
+
+[tasks.typecheck]
+description = "Type-check without emitting"
+depends     = ["install"]
+run         = "pnpm typecheck"
+sources     = ["src/**/*.{ts,tsx}", "tsconfig.app.json"]
+
+[tasks.test]
+description = "Run Vitest unit tests"
+depends     = ["install"]
+run         = "pnpm test --run"
+sources     = ["src/**/*.{ts,tsx}"]

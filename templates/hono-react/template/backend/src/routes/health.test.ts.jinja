@@ -1,0 +1,22 @@
+import { describe, expect, it } from 'vitest'
+{% if db == "postgres" %}import { vi } from 'vitest'
+
+// Avoid opening a real DB connection in this example test: stub the db module so the
+// health check resolves to "up" without a running PostgreSQL.
+vi.mock('@/config/database', () => ({
+  db: { execute: () => Promise.resolve([]) },
+}))
+
+{% endif %}import { healthRouter } from './health'
+
+describe('GET /health', () => {
+  it('reports a healthy status', async () => {
+    const res = await healthRouter.request('/')
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json.status).toBe('healthy')
+    expect(typeof json.timestamp).toBe('string')
+{% if db == "postgres" %}    expect(json.services.database).toBe('up')
+{% endif %}  })
+})

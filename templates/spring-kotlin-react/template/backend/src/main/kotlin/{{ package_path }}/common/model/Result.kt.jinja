@@ -1,0 +1,96 @@
+package {{ base_package }}.common.model
+
+import org.springframework.dao.DataAccessException
+
+@Suppress("TooManyFunctions")
+sealed class Result<out T> {
+    data class Success<T>(val value: T) : Result<T>()
+    data class Failure(val error: DomainError) : Result<Nothing>()
+
+    val isSuccess: Boolean get() = this is Success
+    val isFailure: Boolean get() = this is Failure
+
+    inline fun <R> map(transform: (T) -> R): Result<R> =
+        when (this) {
+            is Success -> Success(transform(value))
+            is Failure -> this
+        }
+
+    inline fun mapError(transform: (DomainError) -> DomainError): Result<T> =
+        when (this) {
+            is Success -> this
+            is Failure -> Failure(transform(error))
+        }
+
+    inline fun <R> flatMap(transform: (T) -> Result<R>): Result<R> =
+        when (this) {
+            is Success -> transform(value)
+            is Failure -> this
+        }
+
+    inline fun <R> fold(onSuccess: (T) -> R, onFailure: (DomainError) -> R): R =
+        when (this) {
+            is Success -> onSuccess(value)
+            is Failure -> onFailure(error)
+        }
+
+    inline fun onSuccess(action: (T) -> Unit): Result<T> {
+        if (this is Success) action(value)
+        return this
+    }
+
+    inline fun onFailure(action: (DomainError) -> Unit): Result<T> {
+        if (this is Failure) action(error)
+        return this
+    }
+
+    fun getOrThrow(): T =
+        when (this) {
+            is Success -> value
+            is Failure -> throw error.toException()
+        }
+
+    fun getOrElse(default: @UnsafeVariance T): T =
+        when (this) {
+            is Success -> value
+            is Failure -> default
+        }
+
+    inline fun getOrElse(default: (DomainError) -> @UnsafeVariance T): T =
+        when (this) {
+            is Success -> value
+            is Failure -> default(error)
+        }
+
+    fun getOrNull(): T? =
+        when (this) {
+            is Success -> value
+            is Failure -> null
+        }
+
+    inline fun recover(transform: (DomainError) -> @UnsafeVariance T): Result<T> =
+        when (this) {
+            is Success -> this
+            is Failure -> Success(transform(error))
+        }
+
+    inline fun recoverWith(transform: (DomainError) -> Result<@UnsafeVariance T>): Result<T> =
+        when (this) {
+            is Success -> this
+            is Failure -> transform(error)
+        }
+
+    companion object {
+        fun <T> success(value: T): Result<T> = Success(value)
+        fun <T> failure(error: DomainError): Result<T> = Failure(error)
+
+        inline fun <T> catching(block: () -> T): Result<T> =
+            try {
+                Success(block())
+            } catch (e: DataAccessException) {
+                Failure(DomainError.DatabaseError(e.message ?: "Unknown database error", e))
+            } catch (e: Exception) {
+                Failure(DomainError.UnexpectedError(e.message ?: "Unknown error", e))
+            }
+    }
+}

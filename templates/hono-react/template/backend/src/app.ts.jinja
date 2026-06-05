@@ -1,0 +1,26 @@
+import { OpenAPIHono } from '@hono/zod-openapi'
+import { errorHandler } from '@/middleware/error-handler'
+import { requestLogger } from '@/middleware/logger'
+import { createRouter } from '@/routes'
+
+export const createApp = () => {
+  const app = new OpenAPIHono()
+
+  // Global middleware
+  app.use('*', requestLogger)
+  app.onError(errorHandler)
+
+  // Routes
+  app.route('/', createRouter())
+
+  // OpenAPI spec
+  app.doc('/openapi.json', {
+    openapi: '3.1.0',
+    info: {
+      title: {{ project_name | tojson }},
+      version: '0.1.0',
+    },
+  })
+
+  return app
+}

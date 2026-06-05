@@ -1,0 +1,41 @@
+# {{ project_name }}
+
+{{ description }}
+
+A full-stack TypeScript monorepo: **Hono** backend + **React + TypeScript + Vite** frontend.
+
+## Quickstart
+
+```bash
+mise install        # install pinned tools (node, pnpm)
+mise run install    # install backend + frontend dependencies
+{% if db == "postgres" %}docker compose up -d # start local PostgreSQL
+{% endif %}mise run dev        # start backend + frontend in dev mode
+```
+
+## Layout
+
+| Path | What |
+|---|---|
+| `backend/` | Hono API service (TypeScript, Zod-OpenAPI{% if db == "postgres" %}, Drizzle + PostgreSQL{% endif %}) |
+| `frontend/` | React + TypeScript + Vite SPA |
+| `specs/` | Spec-driven workflow artifacts (see `specs/README.md`) |
+| `mise.toml` | Root tool pins + aggregate tasks |
+| `.forge/manifest.json` | WellForge generation manifest (upgrade contract) |
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `mise run install` | Install all dependencies |
+| `mise run dev` | Run backend + frontend |
+| `mise run build` | Build all services |
+| `mise run test` | Test all services |
+| `mise run lint` | Lint all services |
+
+Run a single service's task with the service prefix, e.g. `mise run backend:test`.
+
+## Documentation
+
+See [CLAUDE.md](./CLAUDE.md) for the full stack reference, conventions, and the
+spec-driven development workflow.

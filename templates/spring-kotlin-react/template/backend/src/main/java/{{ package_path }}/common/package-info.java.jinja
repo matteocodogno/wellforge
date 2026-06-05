@@ -1,0 +1,7 @@
+// Spring Modulith's @ApplicationModule is a Java package annotation.
+// Kotlin has no package-level annotation support, so this MUST be a .java file
+// even in a pure Kotlin project. This is not a mistake.
+@ApplicationModule(type = ApplicationModule.Type.OPEN)
+package {{ base_package }}.common;
+
+import org.springframework.modulith.ApplicationModule;

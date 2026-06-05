@@ -1,0 +1,20 @@
+package {{ base_package }}
+
+import org.junit.jupiter.api.Test
+import org.springframework.modulith.core.ApplicationModules
+import org.springframework.modulith.docs.Documenter
+
+class ModularityTest {
+
+    private val modules = ApplicationModules.of({{ base_package.rsplit('.', 1)[-1] | capitalize }}Application::class.java)
+
+    @Test
+    fun `modules should not have illegal dependencies`() {
+        modules.verify()
+    }
+
+    @Test
+    fun `should write module documentation`() {
+        Documenter(modules).writeDocumentation()
+    }
+}

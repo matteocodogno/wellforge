@@ -1,0 +1,20 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend quality
+    uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
+    with:
+      working-directory: backend
+
+  frontend:
+    name: Frontend quality
+    uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
+    with:
+      working-directory: frontend

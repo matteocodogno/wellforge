@@ -1,0 +1,33 @@
+# mise.toml — project root
+# This stack has no JVM: only node + pnpm are pinned here.
+
+[tools]
+node = "22"
+pnpm = "10"
+
+[env]
+# Project-level non-sensitive env vars only — secrets go in .mise.local.toml
+# _.file = ".env"   ← uncomment to load .env automatically
+
+[settings]
+experimental = true    # required for monorepo task features
+
+[tasks.install]
+description = "Install all dependencies (backend + frontend)"
+depends     = ["backend:install", "frontend:install"]
+
+[tasks.build]
+description = "Build all services"
+depends     = ["backend:build", "frontend:build"]
+
+[tasks.test]
+description = "Test all services"
+depends     = ["backend:test", "frontend:test"]
+
+[tasks.lint]
+description = "Lint all services"
+depends     = ["backend:lint", "frontend:lint"]
+
+[tasks.dev]
+description = "Start all services in development mode"
+depends     = ["backend:dev", "frontend:dev"]

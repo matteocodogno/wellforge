@@ -1,0 +1,101 @@
+# {{ project_name }} — Claude Code context
+
+{{ description }}
+
+welld full-stack monorepo: **Spring Boot 4 Kotlin** backend + **React TypeScript Vite** frontend.
+
+## Stack & pinned versions
+
+| Layer | Tech | Version |
+|---|---|---|
+| Backend framework | Spring Boot | 4.0.0 |
+| Backend language | Kotlin | 2.1.20 |
+| JVM | Java (temurin) | 21 |
+{% if db == 'postgres' -%}
+| Data access | jOOQ | 3.19.18 |
+| Migrations | Liquibase | 4.29.2 |
+{% endif -%}
+| Modularity | Spring Modulith BOM | 2.0.0 |
+| Test (integration) | Testcontainers BOM | 1.20.4 |
+| Logging | kotlin-logging-jvm | 7.0.3 |
+| Test | MockK / Kotest | 1.13.14 / 5.9.1 |
+| Frontend | React + TypeScript + Vite | 18 / 5 / 5 |
+| UI | Mantine + Tailwind v3 | — |
+| Routing / data | TanStack Router / Query | — |
+| FP / effects | Effect TS | — |
+| Tooling | mise (Node 22, pnpm 10, Maven 3.9.9) | — |
+
+> **SB4 note:** `spring-boot-starter-web` was renamed to `spring-boot-starter-webmvc`.
+> jOOQ is pinned explicitly because its BOM property name changed in Spring Boot 4.
+
+## mise commands
+
+| Command | Action |
+|---|---|
+| `mise run install` | Install backend + frontend deps |
+| `mise run build` | Build both services |
+| `mise run test` | Test both services |
+| `mise run lint` | Lint both services |
+| `mise run dev` | Start both services |
+| `mise run backend:build` | Compile backend |
+| `mise run backend:test` | Backend tests |
+| `mise run backend:run` | Start Spring Boot{% if db == 'postgres' %} (Docker Compose DB starts automatically){% endif %} |
+{% if db == 'postgres' -%}
+| `mise run backend:generate` | Regenerate jOOQ sources from Liquibase changelogs |
+{% endif -%}
+| `mise run backend:lint` | ktlint check |
+| `mise run frontend:dev` | Vite dev server |
+| `mise run frontend:build` | Production build |
+| `mise run frontend:lint` | ESLint |
+| `mise run frontend:test` | Vitest |
+
+## Monorepo layout
+
+```
+{{ project_slug }}/
+├── backend/        Spring Boot 4 Kotlin service
+├── frontend/       React + TypeScript + Vite app
+├── specs/          spec-driven feature work
+├── mise.toml       pinned tools + aggregate tasks
+{% if db == 'postgres' %}├── docker-compose.yml   local PostgreSQL
+{% endif %}└── CLAUDE.md
+```
+
+## Backend conventions
+
+- **Spring Modulith** — code is organised into application modules. Module boundaries are declared
+  in `package-info.java` files via `@ApplicationModule` (Kotlin has no package-level annotations, so
+  these are `.java` even in a pure-Kotlin project — this is intentional, not a mistake).
+  `ModularityTest` verifies module dependencies; keep it green.
+- **Base package:** `{{ base_package }}`. Shared infrastructure lives under
+  `{{ base_package }}.common` (model / web / config). Add feature modules as sibling packages.
+- **Error handling** — domain code returns `Result<T>` (`Success`/`Failure(DomainError)`); never
+  throw across module boundaries. `GlobalExceptionHandler` maps exceptions to HTTP responses.
+{% if db == 'postgres' -%}
+- **jOOQ — NEVER edit generated sources.** Records are generated into
+  `target/generated-sources/jooq/` (package `{{ base_package }}.dal.jooq`) from the Liquibase
+  changelogs. Change the schema by adding a changelog, then run `mise run backend:generate`.
+- **Liquibase changelogs** — master file at `src/main/resources/db/changelog/db.changelog-master.yaml`
+  with `includeAll` over `changes/`. The dual-DBMS pattern keeps a Postgres migration (runtime) and an
+  H2 mirror (jOOQ codegen) per change. Liquibase is the source of truth for the schema.
+{% endif -%}
+- **Logging** — `kotlin-logging` (`private val logger = KotlinLogging.logger {}`).
+
+## Frontend conventions
+
+- **Types not interfaces**, **arrow functions not declarations**, **one component per file**,
+  **one hook per file**. Logic lives in hooks, never in component bodies.
+- **Feature-first** — each feature is a vertical slice under `src/features/<name>/`
+  (`components/`, `hooks/`, `types.ts`, `<Name>Page.tsx`). Code shared by ≥2 features moves up to
+  `src/components/`, `src/hooks/`, `src/contexts/`, `src/utils/`.
+- **Mantine** for UI components; **Tailwind v3** for layout/spacing only.
+- **TanStack Router** for routing (lazy-load every page), **TanStack Query** for server state,
+  **React Hook Form + Effect Schema** for forms, **Effect TS** for async/validation/error handling.
+- **Env vars** are `VITE_`-prefixed, typed in `src/vite-env.d.ts`, accessed only via `src/config.ts`.
+- The `@/` import alias maps to `src/`. ESLint runs with `--max-warnings 0`.
+
+## Feature workflow
+
+Feature work follows the **spec-driven workflow**: author a spec under `specs/` and drive it with the
+welld-dev plugin commands `/welld-dev:spec` → `/welld-dev:plan` → `/welld-dev:tasks` →
+`/welld-dev:orchestrate`. See `specs/README.md`.

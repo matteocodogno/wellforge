@@ -1,0 +1,65 @@
+import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
+{% if db == "postgres" %}import { Effect } from 'effect'
+import { db } from '@/config/database'
+
+const healthSchema = z.object({
+  status: z.enum(['healthy', 'unhealthy']),
+  timestamp: z.string().datetime(),
+  services: z.object({
+    database: z.enum(['up', 'down']),
+  }),
+})
+{% else %}
+const healthSchema = z.object({
+  status: z.literal('healthy'),
+  timestamp: z.string().datetime(),
+})
+{% endif %}
+const healthRoute = createRoute({
+  method: 'get',
+  path: '/',
+  responses: {
+    200: {
+      content: { 'application/json': { schema: healthSchema } },
+      description: 'Service is healthy',
+    },
+{% if db == "postgres" %}    503: {
+      content: { 'application/json': { schema: healthSchema } },
+      description: 'Service is unhealthy',
+    },
+{% endif %}  },
+  tags: ['Health'],
+  summary: 'Health check',
+})
+
+export const healthRouter = new OpenAPIHono()
+
+healthRouter.openapi(healthRoute, async c => {
+{% if db == "postgres" %}  const dbStatus = await Effect.runPromise(
+    Effect.tryPromise({
+      try: () => db.execute('SELECT 1'),
+      catch: () => new Error('db down'),
+    }).pipe(
+      Effect.map(() => 'up' as const),
+      Effect.catchAll(() => Effect.succeed('down' as const))
+    )
+  )
+
+  const isHealthy = dbStatus === 'up'
+
+  return c.json(
+    {
+      status: isHealthy ? ('healthy' as const) : ('unhealthy' as const),
+      timestamp: new Date().toISOString(),
+      services: { database: dbStatus },
+    },
+    isHealthy ? 200 : 503
+  )
+{% else %}  return c.json(
+    {
+      status: 'healthy' as const,
+      timestamp: new Date().toISOString(),
+    },
+    200
+  )
+{% endif %}})

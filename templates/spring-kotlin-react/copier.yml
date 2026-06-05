@@ -1,0 +1,69 @@
+_subdirectory: template
+_min_copier_version: "9.0.0"
+
+# ─── Common questions (every WellForge template — see templates/_shared/CONTRACT.md) ───
+project_name:
+  type: str
+  help: Human-readable project name, e.g. "Order Service"
+  default: "My Service"
+
+project_slug:
+  type: str
+  help: Kebab-case slug — directory + artifact name
+  default: "{{ project_name | lower | replace(' ', '-') | replace('_', '-') }}"
+
+description:
+  type: str
+  help: One-line description of the project
+  default: "A welld full-stack service."
+
+ci:
+  type: str
+  help: CI provider to wire up
+  choices:
+    - github
+    - none
+  default: github
+
+gates_repo:
+  type: str
+  help: owner/repo hosting the reusable gate workflows
+  default: welld/wellforge
+
+gates_ref:
+  type: str
+  help: Tag pinning the gate workflows in generated CI
+  default: gates-v0
+
+generated:
+  type: str
+  help: Generation date (filled by /welld-dev:new via --data generated=$(date +%F))
+  default: "unknown"
+  when: false
+
+template_version:
+  type: str
+  default: "0.1.0"
+  when: false
+
+# ─── Stack-specific questions ───
+base_package:
+  type: str
+  help: Root Kotlin/Java package for the backend
+  default: "ch.welld.{{ project_slug | replace('-', '') }}"
+
+# Derived: the package as a filesystem path. Used in templated directory names so the
+# nested Java/Kotlin package tree is created at render time (the source dir name has no
+# literal "/"). Hidden — not asked.
+package_path:
+  type: str
+  default: "{{ base_package.replace('.', '/') }}"
+  when: false
+
+db:
+  type: str
+  help: Database (postgres wires Liquibase + jOOQ + docker-compose; none omits all DB code)
+  choices:
+    - postgres
+    - none
+  default: postgres

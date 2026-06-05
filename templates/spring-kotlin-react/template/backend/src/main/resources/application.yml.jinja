@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: {{ project_slug }}
+{%- if db == 'postgres' %}
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+    enabled: true
+  jooq:
+    sql-dialect: POSTGRES
+{%- endif %}
+
+logging:
+  level:
+    {{ base_package }}: DEBUG
+{%- if db == 'postgres' %}
+    org.jooq.tools.LoggerListener: DEBUG
+{%- endif %}

@@ -96,24 +96,28 @@ sample project with exactly 2 human approval pauses.
 
 Goal: product description in → running repo with connections out, in <30 min.
 
-- ☐ `templates/spring-kotlin-react/` — Copier template extracted from
-  `skills/springboot-scaffold/scripts/scaffold.sh` + the react-ts-vite setup reference.
-  Answers file drives: project name, modules, DB, auth mode, CI provider.
-- ☐ `templates/hono-react/` — second preset (validates the template abstraction;
-  two presets prevent overfitting to one stack).
-- ☐ Every template emits `.forge/manifest.json` `{ template, version, answers }` and
-  `_copier_answers.yml` — the upgrade contract for Phase 6.
-- ☐ Every template emits a project-local `CLAUDE.md` + `.claude/settings.json`
-  pre-wired for the plugin (the scaffold is AI-ready on first open).
-- ☐ `commands/new.md` — `/forge:new`: interview (product type, team, constraints) →
-  stack recommendation with rationale → run `copier copy` → verify build passes.
-- ☐ Connection layer — `skills/connections/SKILL.md` + per-tool references:
-  standardized MCP/CLI setup checklists (GitHub repo + branch protection, CI secrets,
-  registry, Sentry/observability, DB). Each checklist ends with a **verification
-  command** so "connected" is objective, not assumed.
+- ☑ `templates/_shared/CONTRACT.md` — binding contract: common copier questions
+  (incl. hidden `generated`/`template_version`), required generated files, versioning.
+- ☑ `templates/spring-kotlin-react/` v0.1.0 — extracted from
+  `skills/springboot-scaffold/scripts/scaffold.sh` + react-ts-vite setup + mise skill.
+  Questions: base_package, db (postgres/none), ci. Nested Java package dirs via hidden
+  derived `package_path` answer (literal `/` in a templated dirname doesn't work).
+- ☑ `templates/hono-react/` v0.1.0 — Hono + Drizzle (postgres/none) + react frontend.
+- ☑ Both emit `.forge/manifest.json` `{ template, version, generated, answers }` and
+  `.copier-answers.yml` — the upgrade contract for Phase 6.
+- ☑ Both emit project-local `CLAUDE.md` + `.claude/settings.json` (pre-allowed mise/
+  pnpm/mvnw commands) + `specs/README.md` — AI-ready and spec-driven on first open.
+- ☑ `commands/new.md` — `/welld-dev:new`: interview → stack recommendation with
+  rationale (or honest "fits neither") → `uvx copier copy` → pristine scaffold commit →
+  `mise run install/build/test` as acceptance bar → connections walkthrough.
+- ☑ Connection layer — `skills/connections/SKILL.md` + references (github, mcp-servers,
+  environments): idempotent checklists, each opening and closing with a verification
+  command; incompletable steps become PENDING, never silently skipped.
 
-Acceptance: `/forge:new` on a clean machine produces a building, CI-green, AI-ready
-repo for both presets; all connections verified by their check commands.
+Acceptance: generation verified live for both presets (defaults + non-default answers,
+db=none conditionals, valid pom/package.json/manifest, no unrendered Jinja). Still
+outstanding: full `mise run build/test` on a generated project (needs dependency
+downloads) and CI-green (needs Phase 5 gate workflows) — both land in the Phase 7 pilot.
 
 ## Phase 5 — Quality gates (Pillar 5) (2–3 days)
 

@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+
+# mise local overrides — never commit
+.mise.local.toml
+.mise.*.local.toml
+
+# Claude / WellForge local settings
+.claude/settings.local.json
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log

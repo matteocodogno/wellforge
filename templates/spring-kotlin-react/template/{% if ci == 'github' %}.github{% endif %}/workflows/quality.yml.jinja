@@ -1,0 +1,22 @@
+name: quality
+
+{% raw %}on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+{% endraw %}  backend:
+    name: backend (JVM)
+    uses: {{ gates_repo }}/.github/workflows/quality-jvm.yml@{{ gates_ref }}
+    with:
+      working-directory: backend
+
+  frontend:
+    name: frontend (Node)
+    uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
+    with:
+      working-directory: frontend

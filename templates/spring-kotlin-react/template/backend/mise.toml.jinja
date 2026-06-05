@@ -1,0 +1,47 @@
+# backend/mise.toml
+# Tools (java, maven, node, pnpm) are inherited from the root mise.toml — do not redeclare them.
+# This file adds service-specific tasks only.
+
+[tasks.install]
+description = "Resolve Maven dependencies"
+run         = "./mvnw dependency:resolve -q"
+sources     = ["pom.xml"]
+
+[tasks.build]
+description = "Compile the backend"
+depends     = ["install"]
+run         = "./mvnw clean compile -q --no-transfer-progress"
+sources     = ["pom.xml", "src/**/*.kt"]
+outputs     = ["target/classes/**/*"]
+
+[tasks.test]
+description = "Run backend tests"
+depends     = ["build"]
+run         = "./mvnw test -q --no-transfer-progress"
+sources     = ["src/**/*.kt"]
+
+[tasks.run]
+description = "Start the Spring Boot service{% if db == 'postgres' %} (Docker Compose starts automatically){% endif %}"
+run         = "./mvnw spring-boot:run"
+
+[tasks.dev]
+description = "Alias for run (used by the root dev aggregate)"
+run         = "./mvnw spring-boot:run"
+
+[tasks.lint]
+description = "ktlint check"
+run         = "./mvnw ktlintCheck -q"
+sources     = ["src/**/*.kt"]
+
+[tasks."lint:fix"]
+description = "ktlint format"
+run         = "./mvnw ktlintFormat -q"
+sources     = ["src/**/*.kt"]
+{%- if db == 'postgres' %}
+
+[tasks.generate]
+description = "Generate jOOQ sources from Liquibase changelogs"
+run         = "./mvnw generate-sources -q --no-transfer-progress"
+sources     = ["src/main/resources/db/changelog/**/*.sql"]
+outputs     = ["target/generated-sources/jooq/**/*"]
+{%- endif %}

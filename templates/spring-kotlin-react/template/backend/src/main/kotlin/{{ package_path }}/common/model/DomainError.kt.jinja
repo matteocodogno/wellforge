@@ -1,0 +1,45 @@
+package {{ base_package }}.common.model
+
+sealed class DomainError {
+    abstract val message: String
+    abstract val cause: Throwable?
+
+    data class DatabaseError(
+        override val message: String,
+        override val cause: Throwable? = null,
+    ) : DomainError()
+
+    data class ValidationError(
+        override val message: String,
+        override val cause: Throwable? = null,
+    ) : DomainError()
+
+    data class NotFoundError(
+        override val message: String,
+        override val cause: Throwable? = null,
+    ) : DomainError()
+
+    data class UnexpectedError(
+        override val message: String,
+        override val cause: Throwable? = null,
+    ) : DomainError()
+
+    data class StateError(
+        override val message: String,
+        override val cause: Throwable? = null,
+    ) : DomainError()
+
+    fun toException(): RuntimeException =
+        when (this) {
+            is DatabaseError   -> DatabaseException(message, cause)
+            is ValidationError -> ValidationException(message, cause)
+            is NotFoundError   -> NotFoundException(message, cause)
+            is UnexpectedError -> UnexpectedException(message, cause)
+            is StateError      -> IllegalStateException(message, cause)
+        }
+}
+
+class DatabaseException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+class ValidationException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+class NotFoundException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+class UnexpectedException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

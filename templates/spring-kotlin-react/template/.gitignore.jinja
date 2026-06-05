@@ -1,0 +1,33 @@
+# ─── JVM / Maven ───
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# ─── Node / frontend ───
+node_modules/
+dist/
+*.tsbuildinfo
+
+# ─── Env files (frontend) — committed: .env only ───
+.env.local
+.env.development
+.env.production
+.env.*.local
+
+# ─── IDE ───
+.idea/
+*.iml
+.vscode/
+
+# ─── OS / logs ───
+.DS_Store
+*.log
+
+# ─── mise local overrides — never commit ───
+.mise.local.toml
+.mise.*.local.toml
+
+# ─── Claude local settings — never commit ───
+.claude/settings.local.json

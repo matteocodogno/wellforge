@@ -5,9 +5,12 @@ git tags in this repo (`templates/<name>/vX.Y.Z`).
 
 | Preset | Stack | Status |
 |---|---|---|
-| `spring-kotlin-react/` | Spring Boot + Kotlin + jOOQ + Liquibase / React + TS + Vite | planned (Phase 4) |
-| `hono-react/` | Hono + TS / React + TS + Vite | planned (Phase 4) |
-| `_shared/` | fragments included by all presets (`.forge/` manifest, CLAUDE.md, CI wiring) | planned (Phase 4) |
+| `spring-kotlin-react/` | Spring Boot 4 + Kotlin + jOOQ + Liquibase / React + TS + Vite | v0.1.0 |
+| `hono-react/` | Hono + TS + Drizzle / React + TS + Vite | v0.1.0 |
+| `_shared/CONTRACT.md` | the binding contract every template must satisfy (questions, required files, versioning) | active |
+
+Generate locally: `uvx copier copy --trust templates/<preset> <dest> --data generated=$(date +%F)`
+— or use `/welld-dev:new`, which interviews, recommends, generates, and verifies.
 
 ## Contract
 

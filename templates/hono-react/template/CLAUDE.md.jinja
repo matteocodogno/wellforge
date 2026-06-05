@@ -1,0 +1,118 @@
+# {{ project_name }} — Project Context
+
+{{ description }}
+
+Full-stack TypeScript monorepo: a **Hono** backend and a **React + TypeScript + Vite**
+frontend, managed with **mise** + **pnpm**.
+
+## Stack & pinned versions
+
+| Layer | Tech | Version |
+|---|---|---|
+| Runtime | Node | 22 |
+| Package manager | pnpm | 10 |
+| Backend framework | Hono | ^4.6.15 |
+| API schema/docs | @hono/zod-openapi | ^0.18.4 |
+| Validation | zod | ^3.24.1 |
+| Error handling | effect | ^3.12.5 |
+{% if db == "postgres" %}| ORM | drizzle-orm | ^0.37.0 |
+| DB driver | postgres | ^3.4.5 |
+{% endif %}| Backend lint/format | @biomejs/biome | ^1.9.4 |
+| Backend tests | vitest | ^2.1.8 |
+| Frontend framework | React | ^19.0.0 |
+| Bundler | Vite | ^6.0.0 |
+| Frontend lint | eslint (typescript-eslint) | ^9.x |
+| Frontend format | prettier | ^3.x |
+| TypeScript | typescript | ^5.7.2 |
+
+## mise commands
+
+| Command | What it does |
+|---|---|
+| `mise install` | Install pinned tools (node, pnpm) |
+| `mise run install` | Install backend + frontend dependencies |
+| `mise run dev` | Start backend + frontend in dev mode |
+| `mise run build` | Build all services |
+| `mise run test` | Test all services |
+| `mise run lint` | Lint all services |
+| `mise run backend:<task>` | Run a backend-only task (install/dev/build/test/lint/typecheck) |
+| `mise run frontend:<task>` | Run a frontend-only task (install/dev/build/test/lint/typecheck) |
+
+## Monorepo layout
+
+```
+{{ project_slug }}/
+├── mise.toml              # root tool pins + aggregate tasks
+├── backend/               # Hono API service
+│   ├── src/
+│   │   ├── index.ts       # entry point (serve)
+│   │   ├── app.ts         # Hono app factory + middleware wiring
+│   │   ├── config/        # env validation, logger{% if db == "postgres" %}, database{% endif %}
+│   │   ├── routes/        # one OpenAPIHono router per resource (health example)
+│   │   ├── middleware/    # error-handler, request logger
+│   │   ├── lib/           # error types
+{% if db == "postgres" %}│   │   ├── db/            # drizzle schema, migrations, repositories
+{% endif %}│   │   └── test/          # vitest setup + example test
+│   └── mise.toml          # backend tasks (pnpm scripts)
+└── frontend/              # React + TS + Vite SPA
+    ├── src/
+    │   ├── main.tsx        # entry point
+    │   ├── App.tsx         # root component
+    │   ├── config.ts       # typed env access (import.meta.env)
+    │   ├── components/      # shared UI
+    │   ├── hooks/          # shared hooks
+    │   ├── features/       # feature modules (vertical slices)
+    │   └── lib/            # query client / router config
+    └── mise.toml          # frontend tasks (pnpm scripts)
+```
+
+## Backend conventions
+
+- **App factory.** `createApp()` in `src/app.ts` builds an `OpenAPIHono` instance,
+  wires global middleware (request logger) and `app.onError(errorHandler)`, mounts
+  routers, and exposes the OpenAPI doc at `/openapi.json`.
+- **Routing.** One `OpenAPIHono` router per resource under `src/routes/`. Always use
+  `createRoute` (never raw `.get()/.post()`) so every endpoint is type-safe and
+  contributes to the OpenAPI spec. See `src/routes/health.ts` for the canonical shape.
+- **Validation.** Define request/response schemas with **zod**, co-located with the
+  route. Access validated input via `c.req.valid('param' | 'query' | 'json')`.
+- **Error shape.** `src/middleware/error-handler.ts` is the global handler. Zod
+  validation failures return `400 { error: "Validation failed", issues }`; everything
+  else returns `500 { error: "Internal server error", message? }` (message only in
+  development). Domain errors live in `src/lib/errors.ts`.
+- **Effect.** Async/business logic uses **Effect** for typed error handling; resolve at
+  the route edge with `.pipe(Effect.runPromise)`.
+{% if db == "postgres" %}- **Database.** Drizzle ORM over `postgres-js`. Connection in `src/config/database.ts`;
+  schema in `src/db/schema/` (types inferred via `$inferSelect`/`$inferInsert`); data
+  access encapsulated in repository factories returning `Effect` values. Migrations are
+  generated (`pnpm db:generate`) into `src/db/migrations/` and applied with
+  `pnpm db:migrate`.
+{% else %}- **Database.** None configured. Add Drizzle ORM + PostgreSQL (see the hono-ts-backend
+  skill) under `src/db/` and `src/config/database.ts` when persistence is needed.
+{% endif %}- **Lint/format.** Biome (`pnpm lint` / `pnpm lint:fix`). **Tests.** Vitest, globals
+  enabled, `node` environment; see `src/test/`.
+
+## Frontend conventions
+
+- **Feature-sliced architecture.** Code lives in `src/features/<name>/` vertical slices.
+  Promote a component/hook/context/type to `src/` only when it is used by **2+** features.
+- **Imports.** Always use the `@/` alias (configured in `vite.config.ts` + `tsconfig`)
+  instead of deep relative paths.
+- **Env vars.** Browser-exposed vars must be prefixed `VITE_`, typed in
+  `src/vite-env.d.ts`, and read **only** through `src/config.ts` — never scatter
+  `import.meta.env` across the codebase, never use `process.env`.
+- **Strictness.** `tsconfig` is strict (`noUncheckedIndexedAccess`,
+  `exactOptionalPropertyTypes`). ESLint uses `strictTypeChecked`; CI runs with
+  `--max-warnings 0`. Prettier (no semicolons, single quotes) handles formatting.
+
+## Spec-driven workflow
+
+Feature work follows the WellForge spec-driven workflow. Artifacts live in `specs/`.
+Drive it with the welld-dev plugin commands:
+
+- `/welld-dev:spec` — capture the feature specification
+- `/welld-dev:plan` — turn the spec into a technical plan
+- `/welld-dev:tasks` — break the plan into actionable tasks
+- `/welld-dev:orchestrate` — execute the tasks
+
+See `specs/README.md` for the short version.

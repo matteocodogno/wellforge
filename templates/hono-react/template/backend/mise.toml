@@ -1,0 +1,42 @@
+# backend/mise.toml
+# Tools are inherited from root — do not redeclare them here
+
+[tasks.install]
+description = "Install backend dependencies"
+run         = "pnpm install"
+sources     = ["package.json", "pnpm-lock.yaml"]
+outputs     = ["node_modules/.modules.yaml"]
+
+[tasks.dev]
+description = "Start the Hono dev server (watch mode)"
+depends     = ["install"]
+run         = "pnpm dev"
+
+[tasks.build]
+description = "Compile the backend to dist/"
+depends     = ["install"]
+run         = "pnpm build"
+sources     = ["src/**/*.ts", "tsconfig.json"]
+outputs     = ["dist/**/*"]
+
+[tasks.test]
+description = "Run Vitest"
+depends     = ["install"]
+run         = "pnpm test --run"
+sources     = ["src/**/*.ts"]
+
+[tasks.lint]
+description = "Biome check"
+depends     = ["install"]
+run         = "pnpm lint"
+sources     = ["src/**/*.ts", "biome.json"]
+
+[tasks."lint:fix"]
+description = "Biome check --write"
+run         = "pnpm lint:fix"
+
+[tasks.typecheck]
+description = "Type-check without emitting"
+depends     = ["install"]
+run         = "pnpm typecheck"
+sources     = ["src/**/*.ts", "tsconfig.json"]

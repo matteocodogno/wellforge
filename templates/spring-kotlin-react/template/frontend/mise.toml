@@ -1,0 +1,42 @@
+# frontend/mise.toml
+# Tools are inherited from the root mise.toml — do not redeclare them here.
+
+[tasks.install]
+description = "Install frontend dependencies"
+run         = "pnpm install"
+sources     = ["package.json", "pnpm-lock.yaml"]
+outputs     = ["node_modules/.modules.yaml"]
+
+[tasks.dev]
+description = "Start Vite dev server"
+depends     = ["install"]
+run         = "pnpm dev"
+
+[tasks.build]
+description = "Production build"
+depends     = ["install", "lint"]
+run         = "pnpm build"
+sources     = ["src/**/*.{ts,tsx}", "index.html", "vite.config.ts"]
+outputs     = ["dist/**/*"]
+
+[tasks.lint]
+description = "ESLint check"
+run         = "pnpm exec eslint . --max-warnings 0"
+sources     = ["src/**/*.{ts,tsx}"]
+
+[tasks."lint:fix"]
+description = "ESLint fix"
+run         = "pnpm exec eslint . --fix"
+
+[tasks.format]
+description = "Prettier format"
+run         = "pnpm exec prettier --write src"
+
+[tasks."format:check"]
+description = "Prettier check"
+run         = "pnpm exec prettier --check src"
+
+[tasks.test]
+description = "Run Vitest unit tests"
+depends     = ["install"]
+run         = "pnpm test --run"

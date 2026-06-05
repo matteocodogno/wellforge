@@ -1,0 +1,49 @@
+{
+  "name": "{{ project_slug }}-frontend",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": {{ description | tojson }},
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@mantine/core": "^7.15.1",
+    "@mantine/hooks": "^7.15.1",
+    "@tanstack/react-query": "^5.62.7",
+    "@tanstack/react-router": "^1.87.0",
+    "effect": "^3.11.7",
+    "@effect/schema": "^0.75.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-error-boundary": "^4.1.2",
+    "react-hook-form": "^7.54.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "postcss": "^8.4.49",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.9",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

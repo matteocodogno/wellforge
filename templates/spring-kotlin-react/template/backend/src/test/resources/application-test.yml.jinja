@@ -1,0 +1,8 @@
+spring:
+{%- if db == 'postgres' %}
+  liquibase:
+    enabled: true
+{%- endif %}
+  docker:
+    compose:
+      enabled: false

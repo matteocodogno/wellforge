@@ -56,6 +56,7 @@ Inside Claude Code:
 | `commands/plan.md` | `/welld-dev:plan` — approved spec → technical plan (step 2 of 3) |
 | `commands/tasks.md` | `/welld-dev:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
 | `commands/orchestrate.md` | `/welld-dev:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
+| `commands/new.md` | `/welld-dev:new` — interview → stack recommendation → Copier scaffold → build verify → connections |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
 | `agents/architect.md` | Architect — plan.md: architecture, contracts, AC→test mapping |
 | `agents/designer.md` | Designer — design.md: flows, screens, component reuse, a11y |
@@ -73,6 +74,7 @@ Inside Claude Code:
 | `hooks/scripts/stop-verify.sh` | Checks spec drift + tsc before Claude stops |
 | `hooks/scripts/pre-compact-backup.sh` | Snapshots session state before compaction |
 | `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
+| `skills/connections/` | Standardized tool-connection checklists (GitHub, MCP, environments) — each ends with a verification command |
 | `skills/react-ts-vite/` | React + TypeScript + Vite + Mantine + TanStack |
 | `skills/kotlin-springboot-welld/` | Spring Boot + Kotlin + jOOQ + Liquibase + Modulith |
 | `skills/springboot-scaffold/` | Scaffolds a new welld-style service |
