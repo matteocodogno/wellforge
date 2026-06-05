@@ -8,7 +8,7 @@ fleet that stays upgradeable as standards evolve.
 
 ```bash
 brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge
-brew install --HEAD matteocodogno/wellforge/wellforge
+brew install matteocodogno/wellforge/wellforge
 wellforge setup      # toolchain + repo + plugin, verified
 ```
 

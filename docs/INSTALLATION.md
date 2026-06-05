@@ -6,7 +6,7 @@ One-time setup per developer machine.
 
 ```bash
 brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge
-brew install --HEAD matteocodogno/wellforge/wellforge
+brew install matteocodogno/wellforge/wellforge
 wellforge setup
 ```
 
@@ -94,14 +94,13 @@ There are **two update channels** — they cover different things:
 | The `wellforge` CLI itself (brew-installed binary) | see below | |
 
 ```bash
-# CLI binary (after changes to scripts/wellforge or the formula):
+# CLI binary (the formula is versioned — new releases appear via brew update):
 brew update
-brew upgrade --fetch-HEAD matteocodogno/wellforge/wellforge
+brew upgrade wellforge
 ```
 
-`--fetch-HEAD` is required: a HEAD-only formula has no version to compare, so a plain
-`brew upgrade` reports "already up to date" without checking the repo. Blunt
-alternative that always works: `brew reinstall matteocodogno/wellforge/wellforge`.
+> Installed `--HEAD` before the formula became versioned? Switch once with:
+> `brew uninstall wellforge && brew install matteocodogno/wellforge/wellforge`
 
 Plugin changes apply on the next Claude Code session (same marketplace path). Template
 and gate releases are consumed by projects explicitly — `/welld-dev:upgrade` for

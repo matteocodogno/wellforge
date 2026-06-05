@@ -348,7 +348,7 @@ cmd_update() {
   fi
   say "${DIM}plugin changes apply on the next Claude Code session (or /reload-plugins).${RST}"
   say "${DIM}note: this does not update the wellforge CLI itself — for that:${RST}"
-  say "${DIM}  brew update && brew upgrade --fetch-HEAD matteocodogno/wellforge/wellforge${RST}"
+  say "${DIM}  brew update && brew upgrade wellforge${RST}"
 }
 
 case "${1:-help}" in
