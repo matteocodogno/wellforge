@@ -86,9 +86,22 @@ Inside a Claude Code session:
 
 ## Updating
 
+There are **two update channels** — they cover different things:
+
+| What | Updates | Command |
+|---|---|---|
+| The checkout (`~/.ai/wellforge`: plugin, templates, gates) | `wellforge update` | or: `cd ~/.ai/wellforge && git pull` |
+| The `wellforge` CLI itself (brew-installed binary) | see below | |
+
 ```bash
-wellforge update        # or: cd ~/.ai/wellforge && git pull
+# CLI binary (after changes to scripts/wellforge or the formula):
+brew update
+brew upgrade --fetch-HEAD matteocodogno/wellforge/wellforge
 ```
+
+`--fetch-HEAD` is required: a HEAD-only formula has no version to compare, so a plain
+`brew upgrade` reports "already up to date" without checking the repo. Blunt
+alternative that always works: `brew reinstall matteocodogno/wellforge/wellforge`.
 
 Plugin changes apply on the next Claude Code session (same marketplace path). Template
 and gate releases are consumed by projects explicitly — `/welld-dev:upgrade` for
