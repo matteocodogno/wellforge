@@ -13,8 +13,7 @@ Generate from the **repo root** (one copier.yml serves all presets — required 
 `copier update` to work):
 
 ```bash
-uvx copier copy --trust <wellforge repo/URL> <dest> \
-  --data preset=<preset> --data generated=$(date +%F)
+uvx copier copy --trust <wellforge repo/URL> <dest> --data preset=<preset>
 ```
 
 — or use `/welld-dev:new`, which interviews, recommends, generates, and verifies.

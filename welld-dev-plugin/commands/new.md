@@ -40,8 +40,7 @@ and stop — don't force a preset. User confirms or overrides; their choice wins
 3. Run, from the target parent directory:
    ```bash
    uvx copier copy --trust <wellforge repo/URL> <project_slug> \
-     --data preset=<preset> --data generated=$(date +%F) \
-     --data project_name=... [--data ...]
+     --data preset=<preset> --data project_name=... [--data ...]
    ```
    (requires `uv`; if missing: `brew install uv` or `mise use -g uv`.)
    Prefer the git URL over a local path once wellforge is hosted — it makes

@@ -15,8 +15,7 @@ have their own copier.yml; preset-specific questions live in the root file guard
 
 Generate:
 ```bash
-uvx copier copy --trust <wellforge repo/URL> <dest> \
-  --data preset=<preset> --data generated=$(date +%F)
+uvx copier copy --trust <wellforge repo/URL> <dest> --data preset=<preset>
 ```
 
 - `_min_copier_version: "9.0.0"`.
@@ -30,7 +29,10 @@ uvx copier copy --trust <wellforge repo/URL> <dest> \
 | `ci` | choice | `github` (default) / `none` |
 | `gates_repo` | str | default `welld/wellforge` — owner/repo hosting the reusable gate workflows |
 | `gates_ref` | str | default `gates-v0` — tag pinned in generated CI |
-| `generated` | str | hidden (`when: false`), default `"unknown"` — generation date; `/welld-dev:new` passes `--data generated=$(date +%F)` (copier's Jinja has no now()) |
+
+No "generated date" question/field: hidden (`when: false`) answers are not persisted to
+`.copier-answers.yml`, so copy-time injected values diverge from the re-rendered base on
+`copier update` and cause spurious conflicts. Generation date lives in git history.
 
 Stack-specific questions (base_package, db, auth, …) are free per template but must have
 sensible defaults so `copier copy --defaults` always produces a valid project.
@@ -39,7 +41,7 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 
 | File | Requirement |
 |---|---|
-| `.forge/manifest.json` | `{ "template": "<name>", "version": "<template version>", "generated": "<date>", "answers": { …all answers… } }` — the upgrade contract |
+| `.forge/manifest.json` | `{ "template": "<name>", "version": "<template version>", "answers": { …all answers… } }` — the upgrade contract |
 | `.copier-answers.yml` | standard copier answers file (`{{ _copier_answers\|to_nice_yaml }}`) — enables `copier update` |
 | `CLAUDE.md` | project context: stack + versions, dev commands (mise tasks), architecture pointers, spec-driven workflow note (`specs/` + plugin commands) |
 | `.claude/settings.json` | pre-wired permissions for the stack's routine commands (mise/pnpm/mvnw test-build-lint) |

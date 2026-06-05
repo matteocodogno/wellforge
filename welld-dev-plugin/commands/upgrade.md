@@ -27,10 +27,7 @@ Target version: $ARGUMENTS
 ## Run the update
 
 ```bash
-uvx copier update --trust --skip-answered \
-  --conflict inline \
-  --data generated=$(date +%F) \
-  [--vcs-ref <target>]
+uvx copier update --trust --skip-answered --conflict inline [--vcs-ref <target>]
 ```
 
 - Never change recorded answers during an upgrade (that's re-configuration, a separate

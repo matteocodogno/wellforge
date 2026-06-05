@@ -5,7 +5,7 @@
 # by repo-wide vX.Y.Z tags. Generate:
 #
 #   uvx copier copy --trust <wellforge repo/URL> <dest> \
-#     --data preset=spring-kotlin-react --data generated=$(date +%F)
+#     --data preset=spring-kotlin-react
 #
 # Upgrade an existing project (from inside it):  uvx copier update --trust
 # See templates/_shared/CONTRACT.md for the full contract.
@@ -65,12 +65,10 @@ gates_ref:
   help: Tag pinning the gate workflows in generated CI
   default: gates-v0
 
-generated:
-  type: str
-  help: Generation date (filled by /welld-dev:new via --data generated=$(date +%F))
-  default: "unknown"
-  when: false
-
+# NOTE: no "generated date" question/field. Hidden (when: false) answers are NOT
+# persisted to .copier-answers.yml, so any value injected at copy time (like a date)
+# diverges from the re-rendered base on `copier update` and causes spurious manifest
+# conflicts (found by the Phase 6 E2E test). Generation date lives in git history.
 template_version:
   type: str
   default: "0.1.0"
