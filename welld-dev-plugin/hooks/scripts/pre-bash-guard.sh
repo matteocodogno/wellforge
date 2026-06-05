@@ -10,7 +10,8 @@ fi
 if echo "$COMMAND" | grep -qiE 'DROP\s+DATABASE|DROP\s+TABLE\s+\w+\s*;|TRUNCATE\s+TABLE'; then
   echo "BLOCKED: destructive SQL requires manual execution" >&2; exit 2
 fi
-if echo "$COMMAND" | grep -qE 'curl.+\|\s*(bash|sh)|wget.+\|\s*(bash|sh)'; then
+# Word-boundary after sh/bash/zsh — without it "| shasum" matched "| sh"
+if echo "$COMMAND" | grep -qE '(curl|wget)[^|]+\|\s*(ba|z)?sh([[:space:]]|$|;)'; then
   echo "BLOCKED: piping remote scripts into shell not allowed" >&2; exit 2
 fi
 # Literal (-F) matching — these are filenames, not regexes (an unescaped ".env"
