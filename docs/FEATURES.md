@@ -44,6 +44,9 @@ Key properties:
   e.g. `001-user-auth T3,T5`, `user-auth next`, or just `all` (feature inferred from the
   in-progress spec). Dep-free tasks dispatch to FE/BE/devops agents in parallel, then a
   scoped QE verdict — the implementation slice of the orchestrator, callable directly.
+- `/welld-dev:status` recaps every feature's position in the flow (spec/plan/tasks/
+  implement/done) with task progress and the exact next command to run — read-only,
+  derived from a deterministic state table so the "next step" never drifts.
 
 Why in-house instead of BMAD/Kiro/cc-sdd: we keep the proven spec→plan→tasks *shape*
 but own the prompts, so they encode welld conventions and don't churn under us.

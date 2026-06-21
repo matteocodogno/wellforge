@@ -83,6 +83,7 @@ Rules worth knowing on day one:
 | daily dev | `mise run dev` · `mise run test` · `mise run lint` |
 | new feature | `/welld-dev:spec` → `:plan` → `:tasks` → `:implement` (or `:orchestrate` for all of it) |
 | implement a feature's tasks | `/welld-dev:implement <feature> T3,T5` · `<feature> next` · `all` |
+| where am I / what's next | `/welld-dev:status` (all features + next command each) |
 | bugfix | `/welld-dev:orchestrate <bug>` → QE writes the failing repro test first |
 | CI red on the quality gate | the gate report names the exact threshold; thresholds are central — fix the code, don't look for a config to weaken (there isn't one in your repo) |
 | template released a new version | `/welld-dev:upgrade` — diff explained, conflicts resolved with you, gates re-run, one revertable commit |

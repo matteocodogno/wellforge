@@ -49,6 +49,7 @@ Inside Claude Code:
 | `commands/plan.md` | `/welld-dev:plan` — approved spec → technical plan (step 2 of 3) |
 | `commands/tasks.md` | `/welld-dev:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
 | `commands/implement.md` | `/welld-dev:implement` — implement chosen tasks (IDs/range/next/all), parallel by DAG, QE-verified |
+| `commands/status.md` | `/welld-dev:status` — recap every feature's phase + the next command to run (read-only) |
 | `commands/orchestrate.md` | `/welld-dev:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
 | `commands/new.md` | `/welld-dev:new` — interview → stack recommendation → Copier scaffold → build verify → connections |
 | `commands/upgrade.md` | `/welld-dev:upgrade` — copier update to a newer template version + AI conflict resolution + gates |
