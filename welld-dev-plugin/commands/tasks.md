@@ -39,5 +39,6 @@ Target spec: $ARGUMENTS
 ## Hard rules
 
 - No task without an objective "done when". "Implement X" with no check is not a task.
-- Don't start implementing — that's for the dev agents / the user. Offer the first
-  actionable tasks as the natural next step.
+- Don't start implementing — that's for `/welld-dev:implement`. Offer it as the natural
+  next step: `/welld-dev:implement next` (first ready task), `T3,T5` (a subset), or
+  `all` — or `/welld-dev:orchestrate` to also run QE end-to-end.

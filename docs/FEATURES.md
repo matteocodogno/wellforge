@@ -20,7 +20,7 @@ One standardized path from idea to reviewed task list. Three artifacts per featu
 `specs/NNN-slug/`, three commands, two human approval gates:
 
 ```
-idea ─/welld-dev:spec→ spec.md ─[user approves]─/welld-dev:plan→ plan.md ─[user approves]─/welld-dev:tasks→ tasks.md → implementation
+idea ─/welld-dev:spec→ spec.md ─[approve]─/welld-dev:plan→ plan.md ─[approve]─/welld-dev:tasks→ tasks.md ─/welld-dev:implement→ code
 ```
 
 | Artifact | Content | Author |
@@ -40,6 +40,9 @@ Key properties:
 - **Drift rule**, mechanically enforced by a Stop hook: if `spec.md`/`plan.md` change
   without re-syncing `tasks.md`, the session cannot finish cleanly.
 - Re-running `/welld-dev:tasks` preserves completed tasks (re-sync mode).
+- `/welld-dev:implement <T3 | T3,T5 | T2-T4 | next | all>` implements a chosen subset:
+  dependency-checked, dep-free tasks dispatched to FE/BE/devops agents in parallel, then
+  a scoped QE verdict — the implementation slice of the orchestrator, callable directly.
 
 Why in-house instead of BMAD/Kiro/cc-sdd: we keep the proven spec→plan→tasks *shape*
 but own the prompts, so they encode welld conventions and don't churn under us.

@@ -52,7 +52,10 @@ Two ways to work. Either drive the steps yourself:
 /welld-dev:plan
 # review architecture + AC→test mapping → approve
 /welld-dev:tasks
-# implement task by task (agents or yourself)
+# review task list, then implement a subset (or all) — dependency-aware, QE-verified:
+/welld-dev:implement next      # first ready task
+/welld-dev:implement T3,T5     # a chosen subset
+/welld-dev:implement all       # everything ready
 ```
 
 …or let the orchestrator run the whole pipeline (you still approve spec and plan —
@@ -77,7 +80,8 @@ Rules worth knowing on day one:
 | Need | Do |
 |---|---|
 | daily dev | `mise run dev` · `mise run test` · `mise run lint` |
-| new feature | `/welld-dev:spec` (or `:orchestrate`) |
+| new feature | `/welld-dev:spec` → `:plan` → `:tasks` → `:implement` (or `:orchestrate` for all of it) |
+| implement specific tasks | `/welld-dev:implement T3,T5` · `next` · `all` |
 | bugfix | `/welld-dev:orchestrate <bug>` → QE writes the failing repro test first |
 | CI red on the quality gate | the gate report names the exact threshold; thresholds are central — fix the code, don't look for a config to weaken (there isn't one in your repo) |
 | template released a new version | `/welld-dev:upgrade` — diff explained, conflicts resolved with you, gates re-run, one revertable commit |
