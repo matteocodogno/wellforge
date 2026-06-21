@@ -52,10 +52,11 @@ Two ways to work. Either drive the steps yourself:
 /welld-dev:plan
 # review architecture + AC→test mapping → approve
 /welld-dev:tasks
-# review task list, then implement a subset (or all) — dependency-aware, QE-verified:
-/welld-dev:implement next      # first ready task
-/welld-dev:implement T3,T5     # a chosen subset
-/welld-dev:implement all       # everything ready
+# review task list, then implement tasks of the feature — dependency-aware, QE-verified.
+# arg is [feature] [tasks]; the feature folder (specs/NNN-slug) leads, tasks follow:
+/welld-dev:implement 001-user-auth next     # first ready task of that feature
+/welld-dev:implement 001-user-auth T3,T5    # a chosen subset
+/welld-dev:implement all                    # all ready tasks (feature inferred if only one in-progress)
 ```
 
 …or let the orchestrator run the whole pipeline (you still approve spec and plan —
@@ -81,7 +82,7 @@ Rules worth knowing on day one:
 |---|---|
 | daily dev | `mise run dev` · `mise run test` · `mise run lint` |
 | new feature | `/welld-dev:spec` → `:plan` → `:tasks` → `:implement` (or `:orchestrate` for all of it) |
-| implement specific tasks | `/welld-dev:implement T3,T5` · `next` · `all` |
+| implement a feature's tasks | `/welld-dev:implement <feature> T3,T5` · `<feature> next` · `all` |
 | bugfix | `/welld-dev:orchestrate <bug>` → QE writes the failing repro test first |
 | CI red on the quality gate | the gate report names the exact threshold; thresholds are central — fix the code, don't look for a config to weaken (there isn't one in your repo) |
 | template released a new version | `/welld-dev:upgrade` — diff explained, conflicts resolved with you, gates re-run, one revertable commit |

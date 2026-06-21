@@ -40,9 +40,10 @@ Key properties:
 - **Drift rule**, mechanically enforced by a Stop hook: if `spec.md`/`plan.md` change
   without re-syncing `tasks.md`, the session cannot finish cleanly.
 - Re-running `/welld-dev:tasks` preserves completed tasks (re-sync mode).
-- `/welld-dev:implement <T3 | T3,T5 | T2-T4 | next | all>` implements a chosen subset:
-  dependency-checked, dep-free tasks dispatched to FE/BE/devops agents in parallel, then
-  a scoped QE verdict — the implementation slice of the orchestrator, callable directly.
+- `/welld-dev:implement [feature] [tasks]` implements tasks of a feature folder —
+  e.g. `001-user-auth T3,T5`, `user-auth next`, or just `all` (feature inferred from the
+  in-progress spec). Dep-free tasks dispatch to FE/BE/devops agents in parallel, then a
+  scoped QE verdict — the implementation slice of the orchestrator, callable directly.
 
 Why in-house instead of BMAD/Kiro/cc-sdd: we keep the proven spec→plan→tasks *shape*
 but own the prompts, so they encode welld conventions and don't churn under us.

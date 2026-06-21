@@ -1,28 +1,35 @@
 ---
-description: Implement one or more tasks from an approved tasks.md (dependency-aware, parallel, QE-verified)
-argument-hint: <task IDs / range / "next" / "all"> [for NNN-slug] — e.g. "T3", "T3,T5", "T2-T4", "next", "all"
+description: Implement tasks of a feature from its approved tasks.md (dependency-aware, parallel, QE-verified)
+argument-hint: [feature] [tasks] — e.g. "001-user-auth", "user-auth T3,T5", "T2-T4", "next", "all"
 ---
 
 Implement tasks from a feature's `tasks.md`, following the **spec-driven** skill
 conventions (load it now). This is the implementation slice of the orchestrator, callable
-directly — for when spec/plan/tasks already exist and you just want code written for
-specific tasks.
+directly — for when spec/plan/tasks already exist and you just want code written.
 
-Selection: $ARGUMENTS
+Arguments: $ARGUMENTS
 
-## Step 1 — Resolve the spec and the selection
+## Step 1 — Resolve the feature, then the selection
 
-1. **Spec dir.** If `$ARGUMENTS` names `NNN-slug` (or "for NNN-slug"), use it. Otherwise
-   pick the spec with `status: in-progress`; if none, the most recently `approved` one
-   with a `tasks.md`. Ambiguous → ask. Read spec.md, plan.md, and tasks.md fully.
-2. **Gate check.** `tasks.md` must exist and its plan be `approved`. Otherwise STOP and
-   point at `/welld-dev:tasks` (or `/welld-dev:plan`).
-3. **Resolve the selection** to a concrete task set:
+The argument is `[feature] [tasks]` — both optional, feature first.
+
+1. **Feature.** Each feature is a folder `specs/NNN-slug/`. Resolve it from the leading
+   token if present — match by number (`001`), slug (`user-auth`), or full name
+   (`001-user-auth`) against existing `specs/` dirs.
+   - No feature token: infer it — the spec with `status: in-progress`; if none, the most
+     recently `approved` spec that has a `tasks.md`. If still ambiguous (several
+     in-progress), list them and ask which feature.
+   - State which feature you resolved before doing anything. Read its spec.md, plan.md,
+     and tasks.md fully.
+2. **Gate check.** That feature's `tasks.md` must exist and its plan be `approved`.
+   Otherwise STOP and point at `/welld-dev:tasks` (or `/welld-dev:plan`) for this feature.
+3. **Selection** — the remaining tokens (everything after the feature) choose tasks
+   WITHIN that feature:
    - explicit IDs / comma list / `Tn-Tm` range → those tasks
    - `next` → the first unchecked task whose `deps:` are all checked
-   - `all` / empty → every unchecked task
-   - drop already-checked tasks from the set (report them as skipped), and if the
-     argument matched nothing, stop and show the task table.
+   - `all` / omitted → every unchecked task
+   - drop already-checked tasks (report them as skipped); if the selection matched
+     nothing, stop and show the feature's task table.
 
 ## Step 2 — Order and dependency check
 
