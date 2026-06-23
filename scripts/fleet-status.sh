@@ -39,7 +39,7 @@ while IFS= read -r repo; do
   VERSION=$(jq -r '.version // "?"' <<<"$MANIFEST")
   if [ "$LATEST" = "none" ]; then STATUS="-"
   elif [ "v$VERSION" = "$LATEST" ] || [ "$VERSION" = "$LATEST" ]; then STATUS="✓ current"
-  else STATUS="⬆ outdated → run /welld-dev:upgrade"
+  else STATUS="⬆ outdated → run /wellforge:upgrade"
   fi
   printf "%-45s %-22s %-10s %s\n" "$repo" "$TEMPLATE" "$VERSION" "$STATUS"
 done <<<"$REPOS"

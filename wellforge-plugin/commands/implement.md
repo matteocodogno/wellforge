@@ -22,7 +22,7 @@ The argument is `[feature] [tasks]` — both optional, feature first.
    - State which feature you resolved before doing anything. Read its spec.md, plan.md,
      and tasks.md fully.
 2. **Gate check.** That feature's `tasks.md` must exist and its plan be `approved`.
-   Otherwise STOP and point at `/welld-dev:tasks` (or `/welld-dev:plan`) for this feature.
+   Otherwise STOP and point at `/wellforge:tasks` (or `/wellforge:plan`) for this feature.
 3. **Selection** — the remaining tokens (everything after the feature) choose tasks
    WITHIN that feature:
    - explicit IDs / comma list / `Tn-Tm` range → those tasks
@@ -52,7 +52,7 @@ The argument is `[feature] [tasks]` — both optional, feature first.
   (files touched, test/lint output — actual numbers).
 - **Drift / blocker** from any agent pauses that track: surface the proposed amendment,
   route it to the owning agent (PO for spec, architect for plan), re-sync via
-  `/welld-dev:tasks`, then resume. Never let an agent silently work around a wrong spec.
+  `/wellforge:tasks`, then resume. Never let an agent silently work around a wrong spec.
 
 ## Step 4 — Verify
 
@@ -72,8 +72,8 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 ## Hard rules
 
 - Implement ONLY the selected tasks. Discovering adjacent work is a new task (add it via
-  `/welld-dev:tasks` re-sync), not scope to absorb here.
+  `/wellforge:tasks` re-sync), not scope to absorb here.
 - Never modify spec.md/plan.md or task definitions — only checkboxes. Drift is reported.
 - Bounded loops only: QE fix loop max 2 rounds, then escalate. No silent retrying.
 - For a brand-new feature with no spec yet, this is the wrong command — use
-  `/welld-dev:spec` (or `/welld-dev:orchestrate` for the whole pipeline).
+  `/wellforge:spec` (or `/wellforge:orchestrate` for the whole pipeline).

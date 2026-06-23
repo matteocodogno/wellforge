@@ -38,7 +38,7 @@ Feature request: $ARGUMENTS
 ## Hard rules
 
 - You write the WHAT and WHY only. No architecture, no technology choices, no file paths —
-  that is `/welld-dev:plan`'s job. If the user volunteers technical decisions, capture them
+  that is `/wellforge:plan`'s job. If the user volunteers technical decisions, capture them
   under a `## Constraints` section verbatim, don't elaborate on them.
 - Never set `approved` yourself; never skip the interview for "obvious" features.
-- Suggest `/welld-dev:plan` as the next step after approval.
+- Suggest `/wellforge:plan` as the next step after approval.

@@ -25,18 +25,18 @@ Evaluate top-down; first matching row wins. `NNN-slug` below is the feature's fo
 | Condition | Phase | Next step |
 |---|---|---|
 | no `spec.md` | (not a feature) | skip |
-| spec `draft` | **spec** | review & approve the spec — refine with `/welld-dev:spec NNN-slug` |
-| spec `approved`, no `plan.md` | **plan** | `/welld-dev:plan NNN-slug` |
+| spec `draft` | **spec** | review & approve the spec — refine with `/wellforge:spec NNN-slug` |
+| spec `approved`, no `plan.md` | **plan** | `/wellforge:plan NNN-slug` |
 | `plan.md` `draft` | **plan** | review & approve the plan |
-| plan `approved`, no `tasks.md` | **tasks** | `/welld-dev:tasks NNN-slug` |
-| `tasks.md`, 0 checked | **implement** | `/welld-dev:implement NNN-slug next` |
-| `tasks.md`, some unchecked | **implement** | `/welld-dev:implement NNN-slug next` |
-| all tasks checked, spec ≠ `done` | **verify** | `/welld-dev:implement NNN-slug all` (runs QE) → then set spec `done` |
+| plan `approved`, no `tasks.md` | **tasks** | `/wellforge:tasks NNN-slug` |
+| `tasks.md`, 0 checked | **implement** | `/wellforge:implement NNN-slug next` |
+| `tasks.md`, some unchecked | **implement** | `/wellforge:implement NNN-slug next` |
+| all tasks checked, spec ≠ `done` | **verify** | `/wellforge:implement NNN-slug all` (runs QE) → then set spec `done` |
 | spec `done` | **done** | — complete |
 
 If spec is `draft` with open questions, append "(N open questions block approval)".
 If `tasks.md` is older than `spec.md`/`plan.md` (drift), flag "⚠ tasks may be stale —
-re-run `/welld-dev:tasks NNN-slug`" regardless of the row.
+re-run `/wellforge:tasks NNN-slug`" regardless of the row.
 
 ## Output
 
@@ -46,9 +46,9 @@ All-features (default) — one line per feature, ordered by NNN:
 WellForge · feature status
 
 NNN-slug      phase       progress          → next
-001-user-auth implement   tasks 3/8         → /welld-dev:implement 001-user-auth next
+001-user-auth implement   tasks 3/8         → /wellforge:implement 001-user-auth next
 002-csv-export plan        plan draft        → review & approve the plan
-003-audit-log  spec        draft (2 open q)  → /welld-dev:spec 003-audit-log
+003-audit-log  spec        draft (2 open q)  → /wellforge:spec 003-audit-log
 004-billing    done        ✓                 → —
 ```
 

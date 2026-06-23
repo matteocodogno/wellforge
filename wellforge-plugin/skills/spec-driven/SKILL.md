@@ -5,8 +5,8 @@ description: >
   status lifecycle, and drift rule. Use whenever working in a project that has a specs/
   directory, when the user mentions a spec, feature specification, or task list, when
   implementing any task that references a specs/NNN-slug/ path, or when asked about the
-  status of a feature. Also the authoritative reference for the /welld-dev:spec,
-  /welld-dev:plan, and /welld-dev:tasks commands — they MUST follow this format exactly.
+  status of a feature. Also the authoritative reference for the /wellforge:spec,
+  /wellforge:plan, and /wellforge:tasks commands — they MUST follow this format exactly.
 ---
 
 # Spec-driven development — welld conventions
@@ -16,7 +16,7 @@ commands, two human approval gates. The spec directory is the **contract** betwe
 the Product Owner writes spec.md, the Architect writes plan.md, developers consume tasks.md.
 
 ```
-idea ──/welld-dev:spec──► spec.md ──[user approves]──/welld-dev:plan──► plan.md ──[user approves]──/welld-dev:tasks──► tasks.md ──► implementation
+idea ──/wellforge:spec──► spec.md ──[user approves]──/wellforge:plan──► plan.md ──[user approves]──/wellforge:tasks──► tasks.md ──► implementation
 ```
 
 ## Directory layout
@@ -131,8 +131,8 @@ Rules: every task references at least one AC; every AC is covered by at least on
 
 ## Workflow gates
 
-- `/welld-dev:plan` MUST refuse to run if spec.md status is not `approved`.
-- `/welld-dev:tasks` MUST refuse to run if plan.md status is not `approved`.
+- `/wellforge:plan` MUST refuse to run if spec.md status is not `approved`.
+- `/wellforge:tasks` MUST refuse to run if plan.md status is not `approved`.
 - Never skip a stage "because it's small" — for trivial changes the spec is 10 lines, not absent.
 
 ## Drift rule
@@ -140,7 +140,7 @@ Rules: every task references at least one AC; every AC is covered by at least on
 The spec is the source of truth. If implementation reveals the spec/plan is wrong:
 
 1. Stop, update spec.md / plan.md first (status stays `in-progress`, note the change).
-2. Re-run `/welld-dev:tasks` to re-sync tasks.md.
+2. Re-run `/wellforge:tasks` to re-sync tasks.md.
 3. Then continue coding.
 
 Enforced mechanically: the Stop hook (`stop-verify.sh`) blocks finishing a session where

@@ -16,7 +16,7 @@ Target spec: $ARGUMENTS
    `tasks.md` (re-sync case). If ambiguous, ask. Read both spec.md and plan.md fully.
 
 2. **Gate check.** If plan.md status is not `approved`, STOP and point to
-   `/welld-dev:plan`.
+   `/wellforge:plan`.
 
 3. **Derive tasks** into `specs/NNN-slug/tasks.md`:
    - Right-sized: each task is one reviewable unit (roughly one commit / ≤ half a day);
@@ -39,6 +39,6 @@ Target spec: $ARGUMENTS
 ## Hard rules
 
 - No task without an objective "done when". "Implement X" with no check is not a task.
-- Don't start implementing — that's for `/welld-dev:implement`. Offer it as the natural
-  next step: `/welld-dev:implement next` (first ready task), `T3,T5` (a subset), or
-  `all` — or `/welld-dev:orchestrate` to also run QE end-to-end.
+- Don't start implementing — that's for `/wellforge:implement`. Offer it as the natural
+  next step: `/wellforge:implement next` (first ready task), `T3,T5` (a subset), or
+  `all` — or `/wellforge:orchestrate` to also run QE end-to-end.

@@ -3,7 +3,7 @@
 // JSON does not allow comments — remove all // lines before saving.
 //
 // What each key does:
-//   enabledPlugins        — activates marketplace plugins; welld-dev is installed via `claude plugin install`
+//   enabledPlugins        — activates marketplace plugins; wellforge is installed via `claude plugin install`
 //                           so it doesn't appear here. Only marketplace plugins use this syntax.
 //   skipDangerousModePermissionPrompt — suppresses the "are you sure?" prompt when running in
 //                           dangerous mode (--dangerously-skip-permissions). Set to true only on
@@ -15,7 +15,7 @@
     // Official marketplace plugins — install once, active globally
     "pyright-lsp@claude-plugins-official": true,
     "telegram@claude-plugins-official": true
-    // welld-dev is installed as a local plugin via `claude plugin install ./welld-dev-plugin`
+    // wellforge is installed as a local plugin via `claude plugin install ./wellforge-plugin`
     // It does not use the enabledPlugins syntax
   },
 

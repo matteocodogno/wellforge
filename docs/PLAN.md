@@ -21,18 +21,18 @@ Goal: lock the decisions everything else depends on.
   `copier update` (re-apply evolved template to an existing project) + migration tasks.
   Requires `uv`/`pipx` on dev machines (acceptable; we already require mise).
 - ☑ Restructure repo to target layout (`docs/`, `templates/`, `gates/` alongside
-  `welld-dev-plugin/`); git-init history checkpoint.
+  `wellforge-plugin/`); git-init history checkpoint.
 
 ## Phase 1 — Spec-driven framework (Pillar 1) (1–2 days)
 
 Goal: one standardized path from idea to reviewed task list, stored in the repo.
 
-- ☑ `commands/spec.md` — `/welld-dev:spec <feature>`: interview → write
+- ☑ `commands/spec.md` — `/wellforge:spec <feature>`: interview → write
   `specs/NNN-slug/spec.md` (problem, user stories w/ acceptance criteria, non-goals,
   open questions). User-only approval gate.
-- ☑ `commands/plan.md` — `/welld-dev:plan`: read approved spec → `plan.md` (architecture,
+- ☑ `commands/plan.md` — `/wellforge:plan`: read approved spec → `plan.md` (architecture,
   data model, API contracts, test strategy w/ AC↔test mapping). Refuses non-approved specs.
-- ☑ `commands/tasks.md` — `/welld-dev:tasks`: derive ordered, dependency-aware task list
+- ☑ `commands/tasks.md` — `/wellforge:tasks`: derive ordered, dependency-aware task list
   (`tasks.md`) with per-task "done when" checks; bidirectional AC↔task coverage check;
   re-sync mode preserves completed tasks.
 - ☑ `skills/spec-driven/SKILL.md` — conventions: directory layout (`specs/NNN-slug/`),
@@ -74,7 +74,7 @@ overstepping its role.
 
 Goal: one entry point that routes work through the team instead of ad-hoc prompting.
 
-- ☑ `commands/orchestrate.md` — `/welld-dev:orchestrate <goal>`: classifies the request
+- ☑ `commands/orchestrate.md` — `/wellforge:orchestrate <goal>`: classifies the request
   (feature / bugfix / refactor / infra), then drives the matching pipeline:
   - feature → PO (spec) → gate → Architect (plan) → gate → [Designer if UI] → tasks →
     FE/BE devs in parallel per task → QE verdict (max 2 fix rounds, then escalate) → done.
@@ -107,7 +107,7 @@ Goal: product description in → running repo with connections out, in <30 min.
   `.copier-answers.yml` — the upgrade contract for Phase 6.
 - ☑ Both emit project-local `CLAUDE.md` + `.claude/settings.json` (pre-allowed mise/
   pnpm/mvnw commands) + `specs/README.md` — AI-ready and spec-driven on first open.
-- ☑ `commands/new.md` — `/welld-dev:new`: interview → stack recommendation with
+- ☑ `commands/new.md` — `/wellforge:new`: interview → stack recommendation with
   rationale (or honest "fits neither") → `uvx copier copy` → pristine scaffold commit →
   `mise run install/build/test` as acceptance bar → connections walkthrough.
 - ☑ Connection layer — `skills/connections/SKILL.md` + references (github, mcp-servers,
@@ -161,7 +161,7 @@ Goal: presets evolve, fleets follow.
   in lockstep; `gates-v*` is a separate tag series.
 - ☑ Semver discipline documented in CONTRACT.md: patch = cosmetic, minor = additive,
   major = needs migration. First release tagged `v0.1.0`.
-- ☑ `commands/upgrade.md` — `/welld-dev:upgrade`: manifest+answers pre-flight, clean
+- ☑ `commands/upgrade.md` — `/wellforge:upgrade`: manifest+answers pre-flight, clean
   tree required, plan-of-record with changelog before running, `copier update
   --skip-answered --conflict inline`, AI conflict resolution (keep project behavior /
   adopt template structure; ambiguous → ask), gates verify, single revertable commit.
@@ -194,7 +194,7 @@ on upgrade is wired into upgrade.md and lands with the Phase 7 pilot.
 Goal: existing projects get the workflow + calibrated gates without pretending to be
 scaffolds.
 
-- ☑ `commands/adopt.md` — `/welld-dev:adopt`: survey (read-only) → scope interview →
+- ☑ `commands/adopt.md` — `/wellforge:adopt`: survey (read-only) → scope interview →
   AI-readiness (AGENTS.md from OBSERVED conventions, existing CLAUDE.md content
   migrated; settings merge; `.forge/adoption.json` marker — distinct from manifest,
   upgrade stays unavailable) → gates with MEASURED baseline (interface check first;

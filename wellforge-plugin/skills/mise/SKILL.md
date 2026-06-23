@@ -252,7 +252,7 @@ Secrets always go in `.mise.local.toml` or a gitignored `.env.local`.
 
 ## Updating the session-start hook
 
-The `session-start.sh` hook in the welld-dev plugin injects context at session start.
+The `session-start.sh` hook in the wellforge plugin injects context at session start.
 When mise is set up in a project, it should also verify tool versions:
 
 ```bash

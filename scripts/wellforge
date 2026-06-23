@@ -158,8 +158,8 @@ check_plugin() {
   if claude plugin marketplace list 2>/dev/null | grep -q "welld"; then ok "marketplace" "welld registered"; else
     bad "marketplace" "run: claude plugin marketplace add $WELLFORGE_HOME"; FAILURES=$((FAILURES+1))
   fi
-  if claude plugin list 2>/dev/null | grep -q "welld-dev"; then ok "plugin" "welld-dev installed"; else
-    bad "plugin" "run: claude plugin install welld-dev@welld --scope user"; FAILURES=$((FAILURES+1))
+  if claude plugin list 2>/dev/null | grep -q "wellforge"; then ok "plugin" "wellforge installed"; else
+    bad "plugin" "run: claude plugin install wellforge@welld --scope user"; FAILURES=$((FAILURES+1))
   fi
 }
 
@@ -330,8 +330,8 @@ cmd_setup() {
   if command -v claude >/dev/null; then
     claude plugin marketplace list 2>/dev/null | grep -q "welld" \
       || claude plugin marketplace add "$WELLFORGE_HOME"
-    claude plugin list 2>/dev/null | grep -q "welld-dev" \
-      || claude plugin install welld-dev@welld --scope user
+    claude plugin list 2>/dev/null | grep -q "wellforge" \
+      || claude plugin install wellforge@welld --scope user
   fi
 
   # 5. optional: Telegram notifications (interactive sessions only)
@@ -348,9 +348,9 @@ cmd_setup() {
   say ""
   cmd_doctor && say "
 ${GRN}done.${RST} Open a Claude Code session and verify:
-  /plugin   → welld-dev installed
+  /plugin   → wellforge installed
   /mcp      → sequential-thinking, playwright, github
-Next: docs/QUICKSTART.md — /welld-dev:new for your first project."
+Next: docs/QUICKSTART.md — /wellforge:new for your first project."
 }
 
 cmd_update() {

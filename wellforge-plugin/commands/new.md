@@ -44,7 +44,7 @@ and stop — don't force a preset. User confirms or overrides; their choice wins
    ```
    (requires `uv`; if missing: `brew install uv` or `mise use -g uv`.)
    Prefer the git URL over a local path once wellforge is hosted — it makes
-   `/welld-dev:upgrade` work for every team member, not just this machine.
+   `/wellforge:upgrade` work for every team member, not just this machine.
 4. Initialize: `git init -b main && git add -A && git commit -m "chore: scaffold from <template> v<version>"`.
    The scaffold commit must be pristine — no manual edits before it.
 
@@ -66,7 +66,7 @@ ones in the project README under "Pending setup".
 
 Summarize: project path, template+version (from `.forge/manifest.json`), build/test
 results, connections established vs skipped. Tell the user the project is spec-driven:
-the natural next step is `/welld-dev:spec <first feature>` (or `/welld-dev:orchestrate`).
+the natural next step is `/wellforge:spec <first feature>` (or `/wellforge:orchestrate`).
 
 ## Hard rules
 

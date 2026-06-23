@@ -8,7 +8,7 @@ It is built as three layers, because no single mechanism covers everything:
 
 | Layer | Vehicle | Covers |
 |---|---|---|
-| `welld-dev-plugin/` | Claude Code plugin (commands, agents, skills, hooks, MCP) | spec workflow, agent team, orchestration, local enforcement |
+| `wellforge-plugin/` | Claude Code plugin (commands, agents, skills, hooks, MCP) | spec workflow, agent team, orchestration, local enforcement |
 | `copier.yml` + `templates/` | [Copier](https://copier.readthedocs.io) monorepo template, semver-tagged | scaffolding, project lifecycle/upgrades |
 | `.github/workflows/` + `gates/` | Reusable GitHub Actions + central configs | quality gates (CI enforcement) |
 
@@ -20,7 +20,7 @@ One standardized path from idea to reviewed task list. Three artifacts per featu
 `specs/NNN-slug/`, three commands, two human approval gates:
 
 ```
-idea ─/welld-dev:spec→ spec.md ─[approve]─/welld-dev:plan→ plan.md ─[approve]─/welld-dev:tasks→ tasks.md ─/welld-dev:implement→ code
+idea ─/wellforge:spec→ spec.md ─[approve]─/wellforge:plan→ plan.md ─[approve]─/wellforge:tasks→ tasks.md ─/wellforge:implement→ code
 ```
 
 | Artifact | Content | Author |
@@ -33,18 +33,18 @@ idea ─/welld-dev:spec→ spec.md ─[approve]─/welld-dev:plan→ plan.md ─
 Key properties:
 - **Status lifecycle** `draft → approved → in-progress → done`; only the human user
   approves — no command or agent can self-approve.
-- **Gates are structural**: `/welld-dev:plan` refuses a non-approved spec; `/welld-dev:tasks`
+- **Gates are structural**: `/wellforge:plan` refuses a non-approved spec; `/wellforge:tasks`
   refuses a non-approved plan.
 - **Bidirectional coverage**: every AC covered by ≥1 task, every task serves ≥1 AC
   (taskless work = scope creep, flagged).
 - **Drift rule**, mechanically enforced by a Stop hook: if `spec.md`/`plan.md` change
   without re-syncing `tasks.md`, the session cannot finish cleanly.
-- Re-running `/welld-dev:tasks` preserves completed tasks (re-sync mode).
-- `/welld-dev:implement [feature] [tasks]` implements tasks of a feature folder —
+- Re-running `/wellforge:tasks` preserves completed tasks (re-sync mode).
+- `/wellforge:implement [feature] [tasks]` implements tasks of a feature folder —
   e.g. `001-user-auth T3,T5`, `user-auth next`, or just `all` (feature inferred from the
   in-progress spec). Dep-free tasks dispatch to FE/BE/devops agents in parallel, then a
   scoped QE verdict — the implementation slice of the orchestrator, callable directly.
-- `/welld-dev:status` recaps every feature's position in the flow (spec/plan/tasks/
+- `/wellforge:status` recaps every feature's position in the flow (spec/plan/tasks/
   implement/done) with task progress and the exact next command to run — read-only,
   derived from a deterministic state table so the "next step" never drifts.
 
@@ -74,7 +74,7 @@ calling session.
 
 ## 3. AI orchestrator
 
-`/welld-dev:orchestrate <goal>` classifies the request and drives the team:
+`/wellforge:orchestrate <goal>` classifies the request and drives the team:
 
 - **feature** — PO → *gate 1* → Architect → *gate 2* (+ adr-writer) → Designer (UI only)
   → tasks → dev agents in parallel where the task DAG allows → QE verdict → done
@@ -94,7 +94,7 @@ Mechanics that make it reliable:
 
 ## 4. Scaffolder + connection layer
 
-`/welld-dev:new` goes from product description to a working repo:
+`/wellforge:new` goes from product description to a working repo:
 
 1. **Interview** — product type, scale/lifetime, domain complexity, team constraints.
 2. **Stack recommendation** with rationale (and an honest "fits neither → stop"):
@@ -118,11 +118,11 @@ Mechanics that make it reliable:
 Hard rule: max 2 presets until the pilot proves the model — template sprawl is how
 internal platforms die.
 
-**Brownfield:** existing projects onboard with `/welld-dev:adopt` — AI-readiness files
+**Brownfield:** existing projects onboard with `/wellforge:adopt` — AI-readiness files
 generated from *observed* conventions, the spec workflow, and optionally the central
 gates with a **measured coverage baseline** (ratchet: raise-only, gap-to-target
 reported in CI) instead of the born-clean 80% bar. Adoption adds files, never rewrites
-code; `/welld-dev:upgrade` remains scaffold-only (no template ancestry to re-apply).
+code; `/wellforge:upgrade` remains scaffold-only (no template ancestry to re-apply).
 
 ## 5. Quality gates
 
@@ -149,7 +149,7 @@ reusable workflows' `env` blocks and change **only via PR** to this repo:
 Generated projects are not snapshots — they follow the template:
 
 - `.forge/manifest.json` + `.copier-answers.yml` record template, version, and answers.
-- **`/welld-dev:upgrade`**: pre-flight (clean tree, plan-of-record with template
+- **`/wellforge:upgrade`**: pre-flight (clean tree, plan-of-record with template
   changelog) → `copier update --skip-answered --conflict inline` → AI conflict
   resolution (default stance: *keep project behavior, adopt template structure*;
   genuinely ambiguous → ask) → gates verify → one revertable commit.

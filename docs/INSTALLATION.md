@@ -12,7 +12,7 @@ wellforge setup
 
 `wellforge setup` asks for the install location (default `~/.ai/wellforge`, Enter
 accepts, your choice is remembered), checks/installs the whole toolchain, clones the
-repo, registers the plugin marketplace, and installs the welld-dev plugin — then prints
+repo, registers the plugin marketplace, and installs the wellforge plugin — then prints
 a verification table. Day-2: `wellforge doctor` (health check), `wellforge update`
 (repo + tools).
 
@@ -46,7 +46,7 @@ git clone https://github.com/matteocodogno/wellforge.git ~/.ai/wellforge
 (Location is your choice; `~/.ai/wellforge` is the default `wellforge setup` offers.
 Private repo: `gh auth setup-git` first, or use the SSH URL.)
 
-## 3. Install the welld-dev plugin
+## 3. Install the wellforge plugin
 
 The wellforge repo root is itself a plugin marketplace (`.claude-plugin/marketplace.json`,
 plugin source declared relative — no paths to edit):
@@ -56,10 +56,10 @@ plugin source declared relative — no paths to edit):
 claude plugin marketplace add ~/.ai/wellforge
 
 # 2. Install
-claude plugin install welld-dev@welld --scope user
+claude plugin install wellforge@welld --scope user
 ```
 
-One-shot alternative (testing only): `claude --plugin-dir ~/.ai/wellforge/welld-dev-plugin`
+One-shot alternative (testing only): `claude --plugin-dir ~/.ai/wellforge/wellforge-plugin`
 
 ## 4. Verify
 
@@ -67,10 +67,10 @@ Inside a Claude Code session:
 
 | Check | Expect |
 |---|---|
-| `/plugin` | `welld-dev` listed under Installed (v1.6+) |
+| `/plugin` | `wellforge` listed under Installed (v2.0+) |
 | `/mcp` | `sequential-thinking`, `playwright`, `github` connected (github triggers OAuth on first use) |
 | `/hooks` | 6 hooks listed |
-| type `/welld-dev:` | completions: `spec`, `plan`, `tasks`, `orchestrate`, `new`, `upgrade` |
+| type `/wellforge:` | completions: `spec`, `plan`, `tasks`, `orchestrate`, `new`, `upgrade` |
 
 ## 5. Optional
 
@@ -80,7 +80,7 @@ Inside a Claude Code session:
   wellforge telegram
   ```
 - **Settings to merge** into `~/.claude/settings.json` — see
-  `welld-dev-plugin/settings-snippet.jsonc` (companion plugins, attribution).
+  `wellforge-plugin/settings-snippet.jsonc` (companion plugins, attribution).
 - **Domain glossary** — create `.claude/context/glossary.md` in any project; the
   session-start hook injects it automatically.
 
@@ -110,13 +110,27 @@ brew upgrade wellforge
 > otherwise, shadows every upgrade, and `brew upgrade` reports "already installed".)
 
 Plugin changes apply on the next Claude Code session (same marketplace path). Template
-and gate releases are consumed by projects explicitly — `/welld-dev:upgrade` for
+and gate releases are consumed by projects explicitly — `/wellforge:upgrade` for
 templates, a `gates-v*` ref bump in CI for gates — never implicitly.
+
+## Migrating from the old `welld-dev` plugin name
+
+The plugin was renamed `welld-dev` → `wellforge` (so commands are now `/wellforge:*`).
+Installed the old one? Swap once:
+
+```bash
+claude plugin marketplace update welld
+claude plugin uninstall welld-dev --scope user
+claude plugin install wellforge@welld --scope user
+```
+
+Then `/reload-plugins` (or a new session). Commands move from `/welld-dev:…` to
+`/wellforge:…`; everything else is identical.
 
 ## Uninstall
 
 ```bash
-claude plugin uninstall welld-dev --scope user
+claude plugin uninstall wellforge --scope user
 claude plugin marketplace remove welld
 ```
 

@@ -1,7 +1,7 @@
 # Template contract
 
-Every WellForge Copier template MUST satisfy this contract. `/welld-dev:new` and
-`/welld-dev:upgrade` depend on it; CI gate wiring and the Phase 6 lifecycle break if a
+Every WellForge Copier template MUST satisfy this contract. `/wellforge:new` and
+`/wellforge:upgrade` depend on it; CI gate wiring and the Phase 6 lifecycle break if a
 template drifts from it.
 
 ## Copier configuration (root `copier.yml` — monorepo pattern)
@@ -19,7 +19,7 @@ uvx copier copy --trust <wellforge repo/URL> <dest> --data preset=<preset>
 ```
 
 - `_min_copier_version: "9.0.0"`.
-- Common questions (every preset, same names — `/welld-dev:new` fills them):
+- Common questions (every preset, same names — `/wellforge:new` fills them):
 
 | Question | Type | Notes |
 |---|---|---|
@@ -63,14 +63,14 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
   release commit); the manifest's `version` field reads it.
 - Mechanical migration steps go in root `copier.yml` `_migrations` (run by
   `copier update` at version boundaries); judgment calls belong to
-  `/welld-dev:upgrade`'s conflict resolution.
+  `/wellforge:upgrade`'s conflict resolution.
 
 ## Rules
 
 - `--defaults` must always generate a working project (CI for templates relies on it).
 - Only files needing substitution get the `.jinja` suffix.
 - No `_tasks` that require network access; git init and dependency install are
-  `/welld-dev:new`'s job, not the template's.
+  `/wellforge:new`'s job, not the template's.
 - Conditional files use copier's `{% if %}` filename syntax or empty-content guards —
   a `ci: none` answer must not leave an empty `.github/` directory.
 - Pinned versions (Spring Boot, Kotlin, Node, library versions) come from the stack

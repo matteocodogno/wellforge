@@ -19,7 +19,7 @@ uvx copier copy --trust gh:matteocodogno/wellforge my-service \
 (Always the repo root — one `copier.yml` serves all presets; see
 `templates/_shared/CONTRACT.md`.)
 
-Or via the plugin: `/welld-dev:new` fills the common questions automatically.
+Or via the plugin: `/wellforge:new` fills the common questions automatically.
 
 ## Questions
 
@@ -60,6 +60,6 @@ Versions are mirrored from the source skills (the skills are the source of truth
 ## Known limitations
 
 - No Maven wrapper (`mvnw`) is shipped — generating it needs Maven on PATH (network). The frontend
-  has no `pnpm-lock.yaml`. Both are produced by `/welld-dev:new` (or `mise install`) post-generation.
+  has no `pnpm-lock.yaml`. Both are produced by `/wellforge:new` (or `mise install`) post-generation.
 - The reusable gate workflows (`quality-jvm.yml`, `quality-node.yml`) do not exist yet (Phase 5).
   Generated CI wires the calls anyway.

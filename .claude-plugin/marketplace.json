@@ -8,8 +8,8 @@
   },
   "plugins": [
     {
-      "name": "welld-dev",
-      "source": "./welld-dev-plugin",
+      "name": "wellforge",
+      "source": "./wellforge-plugin",
       "description": "Full-stack welld development: spec-driven workflow, 7-role agent team, orchestrator, scaffolder, lifecycle upgrades, quality-gate enforcement."
     }
   ]

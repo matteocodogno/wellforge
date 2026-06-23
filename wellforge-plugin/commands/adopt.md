@@ -11,7 +11,7 @@ connections. Adoption **adds** — it never rewrites existing code or convention
 
 1. Preconditions: a git repo with a reasonably clean tree (uncommitted adoption files
    must be reviewable as one diff). Refuse to run in a project that already has
-   `.forge/` (scaffolded or already adopted — point to `/welld-dev:upgrade` or report).
+   `.forge/` (scaffolded or already adopted — point to `/wellforge:upgrade` or report).
 2. Detect the stack: build files (package.json/pnpm-lock/pom.xml/build.gradle),
    languages, test runners, lint setup, CI provider, monorepo layout. Read the README
    and any existing AI-context files (CLAUDE.md, AGENTS.md, .cursorrules, …).
@@ -31,7 +31,7 @@ AskUserQuestion (batch): which layers to adopt —
 1. `AGENTS.md` (canonical context file, cross-tool standard): generate from the survey —
    actual stack + versions, dev commands (the project's real ones, not welld defaults),
    layout, conventions you OBSERVED (naming, error handling, test style), and the
-   spec-driven workflow note (`specs/` + `/welld-dev:*` commands).
+   spec-driven workflow note (`specs/` + `/wellforge:*` commands).
    - Existing `CLAUDE.md` with content? Migrate its content into AGENTS.md (preserving
      every rule), then replace CLAUDE.md with the one-line `@AGENTS.md` import.
    - Existing `AGENTS.md`? Extend, never overwrite — append missing sections only.
@@ -39,7 +39,7 @@ AskUserQuestion (batch): which layers to adopt —
 3. `.claude/settings.json` — pre-allow the project's routine commands (its actual
    build/test/lint invocations). Merge into an existing file, never clobber.
 4. `.forge/adoption.json` — `{ "adopted": "<date>", "plugin": "<version>", "layers": [...] }`.
-   Records that this is an ADOPTED project: `/welld-dev:upgrade` stays unavailable
+   Records that this is an ADOPTED project: `/wellforge:upgrade` stays unavailable
    (no template ancestry) and fleet tooling can distinguish adopted from scaffolded.
 
 ## Stage 3 — Quality gates (if chosen)
@@ -74,14 +74,14 @@ verification command; PENDING for anything needing rights you don't have).
    must be a single revertable diff.
 2. Summary table: layer / added files / status (incl. measured baseline vs central
    target, and any stage stopped with reasons — npm migration, Gradle, …).
-3. Suggest the natural next step: `/welld-dev:spec <first feature>` — or
-   `/welld-dev:orchestrate` for a pending bugfix, which doubles as a workflow demo.
+3. Suggest the natural next step: `/wellforge:spec <first feature>` — or
+   `/wellforge:orchestrate` for a pending bugfix, which doubles as a workflow demo.
 
 ## Hard rules
 
 - Adoption ADDS files; it never modifies existing source, build config, or CI beyond
   the new `quality.yml`. Aligning the project to welld conventions is refactor work —
-  offer `/welld-dev:orchestrate` for it, separately, after adoption.
+  offer `/wellforge:orchestrate` for it, separately, after adoption.
 - Never invent conventions for AGENTS.md — document what IS, not what should be.
 - Baselines come from measurement, never estimation; round down; prove green locally.
 - No `.forge/manifest.json` for adopted projects — that file means "born from the

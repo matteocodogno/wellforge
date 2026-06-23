@@ -3,7 +3,7 @@ name: connections
 description: >
   Standardized checklists for connecting a welld project to its ecosystem tools — GitHub
   (repo, branch protection, secrets), CI, MCP servers, environments and databases. Use
-  during /welld-dev:new stage 5, when the user asks to "connect", "set up", or "wire up"
+  during /wellforge:new stage 5, when the user asks to "connect", "set up", or "wire up"
   a tool/integration for a project, or when the devops agent needs the standard procedure.
   Every checklist ends with a verification command: a connection is established only when
   that command's output says so.

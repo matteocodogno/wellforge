@@ -1,4 +1,4 @@
-# welld-dev Claude Code Plugin
+# wellforge Claude Code Plugin
 
 Full-stack development plugin for welld Spring Boot Kotlin + React TypeScript monorepos.
 
@@ -11,7 +11,7 @@ There are two ways to use a local plugin. Pick one:
 Pass the plugin directory every time you launch:
 
 ```bash
-claude --plugin-dir <wellforge-checkout>/welld-dev-plugin
+claude --plugin-dir <wellforge-checkout>/wellforge-plugin
 ```
 
 ### Option B — permanent via local marketplace (recommended)
@@ -24,16 +24,16 @@ with a relative plugin source — nothing to edit). Set up once, works across al
 claude plugin marketplace add <wellforge-checkout>
 
 # 2. Install
-claude plugin install welld-dev@welld --scope user
+claude plugin install wellforge@welld --scope user
 ```
 
-(or interactively: `/plugin` → welld-dev → install → scope: user)
+(or interactively: `/plugin` → wellforge → install → scope: user)
 
 ### Verify
 
 Inside Claude Code:
 ```
-/plugin   → welld-dev listed under Installed
+/plugin   → wellforge listed under Installed
 /mcp      → sequential-thinking, playwright, github connected
 /hooks    → 6 hooks listed
 ```
@@ -45,15 +45,15 @@ Inside Claude Code:
 | Path | What |
 |---|---|
 | `.mcp.json` | sequential-thinking, playwright, github MCP servers |
-| `commands/spec.md` | `/welld-dev:spec` — interview → feature spec (step 1 of 3) |
-| `commands/plan.md` | `/welld-dev:plan` — approved spec → technical plan (step 2 of 3) |
-| `commands/tasks.md` | `/welld-dev:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
-| `commands/implement.md` | `/welld-dev:implement` — implement chosen tasks (IDs/range/next/all), parallel by DAG, QE-verified |
-| `commands/status.md` | `/welld-dev:status` — recap every feature's phase + the next command to run (read-only) |
-| `commands/orchestrate.md` | `/welld-dev:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
-| `commands/new.md` | `/welld-dev:new` — interview → stack recommendation → Copier scaffold → build verify → connections |
-| `commands/upgrade.md` | `/welld-dev:upgrade` — copier update to a newer template version + AI conflict resolution + gates |
-| `commands/adopt.md` | `/welld-dev:adopt` — brownfield onboarding: AI-readiness, spec workflow, gates with measured baseline |
+| `commands/spec.md` | `/wellforge:spec` — interview → feature spec (step 1 of 3) |
+| `commands/plan.md` | `/wellforge:plan` — approved spec → technical plan (step 2 of 3) |
+| `commands/tasks.md` | `/wellforge:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
+| `commands/implement.md` | `/wellforge:implement` — implement chosen tasks (IDs/range/next/all), parallel by DAG, QE-verified |
+| `commands/status.md` | `/wellforge:status` — recap every feature's phase + the next command to run (read-only) |
+| `commands/orchestrate.md` | `/wellforge:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
+| `commands/new.md` | `/wellforge:new` — interview → stack recommendation → Copier scaffold → build verify → connections |
+| `commands/upgrade.md` | `/wellforge:upgrade` — copier update to a newer template version + AI conflict resolution + gates |
+| `commands/adopt.md` | `/wellforge:adopt` — brownfield onboarding: AI-readiness, spec workflow, gates with measured baseline |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
 | `agents/architect.md` | Architect — plan.md: architecture, contracts, AC→test mapping |
 | `agents/designer.md` | Designer — design.md: flows, screens, component reuse, a11y |

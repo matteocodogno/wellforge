@@ -16,8 +16,8 @@ Generate from the **repo root** (one copier.yml serves all presets — required 
 uvx copier copy --trust <wellforge repo/URL> <dest> --data preset=<preset>
 ```
 
-— or use `/welld-dev:new`, which interviews, recommends, generates, and verifies.
-Upgrades: `/welld-dev:upgrade` in a generated project (releases = repo-wide `vX.Y.Z` tags).
+— or use `/wellforge:new`, which interviews, recommends, generates, and verifies.
+Upgrades: `/wellforge:upgrade` in a generated project (releases = repo-wide `vX.Y.Z` tags).
 
 ## Contract
 
@@ -25,7 +25,7 @@ Every template MUST emit:
 
 - `.forge/manifest.json` — `{ template, version, answers }`, the upgrade contract
 - `.copier-answers.yml` — Copier's own update record
-- a project-local `CLAUDE.md` + `.claude/settings.json` pre-wired for the welld-dev plugin
+- a project-local `CLAUDE.md` + `.claude/settings.json` pre-wired for the wellforge plugin
 - CI workflows that **call** `gates/workflows/` (pinned tag), never copy them
 
 Hard rule: max 2 presets until Phase 7 (pilot) proves the model.

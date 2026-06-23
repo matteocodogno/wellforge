@@ -36,7 +36,7 @@ fail their own gate); the skip is printed as a CI notice, never silent.
 Legacy codebases can't start at 80% — and a permanently red gate teaches people to
 ignore gates. Both workflows accept an optional `coverage-lines-baseline` (node also
 `coverage-branches-baseline`): a **measured** per-project minimum set by
-`/welld-dev:adopt` at adoption time.
+`/wellforge:adopt` at adoption time.
 
 - `0` (default) = central thresholds apply — scaffolded projects never set these.
 - Non-zero = that project's enforced minimum, with a CI notice showing the gap to the

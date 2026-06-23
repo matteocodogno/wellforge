@@ -24,7 +24,7 @@ ask the user anything and must never self-approve.
   agents honest.
 - An agent reporting drift (spec/plan wrong) PAUSES the pipeline: surface the proposed
   amendment to the user, apply it via the owning agent (PO for spec, architect for plan),
-  re-sync tasks (`/welld-dev:tasks` re-sync mode), then resume.
+  re-sync tasks (`/wellforge:tasks` re-sync mode), then resume.
 - Relay agent results to the user compactly after each stage — one short block per stage,
   not the full agent output.
 
@@ -48,7 +48,7 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 6. **Designer** (only if the feature has UI) → spawn `designer` with the spec path.
    Artifact: `design.md`. Relay reuse-vs-NEW summary; no human gate — design issues
    surface at QE.
-7. **Tasks** → run the `/welld-dev:tasks` procedure against the approved plan.
+7. **Tasks** → run the `/wellforge:tasks` procedure against the approved plan.
    Artifact: `tasks.md`. Set spec `status: in-progress`.
 8. **Implementation** → dispatch dev agents (`frontend-dev` / `backend-dev` / `devops`
    per task domain):
@@ -101,5 +101,5 @@ drift on the original spec: pause and amend first.
 - Bounded loops everywhere: PO/architect iterate at user request only; QE fix loop max 2
   rounds; then escalate. You never loop silently.
 - If the session ends mid-pipeline, state precisely where it stopped (stage + artifact
-  paths) so `/welld-dev:orchestrate` can resume from the artifacts on disk — re-read
+  paths) so `/wellforge:orchestrate` can resume from the artifacts on disk — re-read
   spec status frontmatter to find the resume point.

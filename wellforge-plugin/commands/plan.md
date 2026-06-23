@@ -14,7 +14,7 @@ Target spec: $ARGUMENTS
    and no `plan.md`; if ambiguous, ask. Read `specs/NNN-slug/spec.md` fully.
 
 2. **Gate check.** If spec status is not `approved`, STOP and tell the user to finish
-   `/welld-dev:spec` first. Do not draft "provisionally".
+   `/wellforge:spec` first. Do not draft "provisionally".
 
 3. **Explore before designing.** Investigate the actual codebase: existing modules this
    feature touches, established patterns (check stack skills and `docs/adr/`), current
@@ -34,7 +34,7 @@ Target spec: $ARGUMENTS
    you chose AND what you rejected). Iterate.
 
 6. **Approval gate.** Ask explicitly whether to mark the plan `approved`. Only on an
-   explicit yes, set `status: approved`. Suggest `/welld-dev:tasks` as the next step.
+   explicit yes, set `status: approved`. Suggest `/wellforge:tasks` as the next step.
 
 ## Hard rules
 

@@ -30,14 +30,14 @@ the AI session (versioned templates, CI workflows). WellForge is therefore three
 
 | Layer | Vehicle | Covers |
 |---|---|---|
-| `welld-dev-plugin/` | Claude Code plugin: skills, agents, commands, hooks, MCP | Pillars 1, 2, 3 + local gate enforcement |
+| `wellforge-plugin/` | Claude Code plugin: skills, agents, commands, hooks, MCP | Pillars 1, 2, 3 + local gate enforcement |
 | `copier.yml` + `templates/` | [Copier](https://copier.readthedocs.io) monorepo template (chosen for first-class `copier update` re-templating) | Pillars 4, 6 |
 | `.github/workflows/` + `gates/` | Reusable GitHub Actions workflows + central thresholds/SAST configs, referenced (not copied) by scaffolds | Pillar 5 |
 
-`/welld-dev:new` is the front door: interview → stack recommendation → `copier copy` →
-build verification → connection checklists → first spec. `/welld-dev:upgrade` re-runs
+`/wellforge:new` is the front door: interview → stack recommendation → `copier copy` →
+build verification → connection checklists → first spec. `/wellforge:upgrade` re-runs
 `copier update` against the recorded template version with AI conflict resolution.
-`/welld-dev:orchestrate` drives the full agent pipeline on a goal.
+`/wellforge:orchestrate` drives the full agent pipeline on a goal.
 
 ## Repository layout
 
@@ -49,9 +49,9 @@ wellforge/
 │                             # _subdirectory (required for copier update; repo-wide vX.Y.Z tags)
 ├── .github/workflows/        # reusable gates: quality-node.yml, quality-jvm.yml
 │                             # (must live here — GitHub only resolves workflow_call from this path)
-├── welld-dev-plugin/         # Claude Code plugin, v1.6.x (local marketplace install)
+├── wellforge-plugin/         # Claude Code plugin, v1.6.x (local marketplace install)
 │   ├── .claude-plugin/plugin.json
-│   ├── commands/             # spec, plan, tasks, orchestrate, new, upgrade (→ /welld-dev:*)
+│   ├── commands/             # spec, plan, tasks, orchestrate, new, upgrade (→ /wellforge:*)
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, connections + stack skills (react-ts-vite,

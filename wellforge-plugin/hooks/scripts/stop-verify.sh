@@ -12,7 +12,7 @@ if [ -n "$SPECS_CHANGED" ] && [ -z "$TASKS_CHANGED" ]; then
   for f in $SPECS_CHANGED; do
     SPEC_DIR=$(dirname "$f")
     if [ -f "$PROJECT_DIR/$SPEC_DIR/tasks.md" ]; then
-      echo "$f changed but $SPEC_DIR/tasks.md not re-synced. Run /welld-dev:tasks to sync (drift rule)." >&2
+      echo "$f changed but $SPEC_DIR/tasks.md not re-synced. Run /wellforge:tasks to sync (drift rule)." >&2
       exit 2
     fi
   done

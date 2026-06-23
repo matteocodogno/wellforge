@@ -15,7 +15,7 @@ _min_copier_version: "9.0.0"
 
 # ── Migrations (Phase 6 lifecycle) ──
 # Per-version migration tasks run by `copier update` when crossing a version boundary.
-# Mechanical steps only (file moves, renames); judgment calls are /welld-dev:upgrade's
+# Mechanical steps only (file moves, renames); judgment calls are /wellforge:upgrade's
 # job. Example:
 #   _migrations:
 #     - version: v0.2.0

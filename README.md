@@ -22,15 +22,15 @@ wellforge setup      # toolchain + repo + plugin, verified
 ## At a glance
 
 ```
-/welld-dev:new          idea → interview → stack pick → scaffold → verified build → connections
-/welld-dev:spec|plan|tasks   standardized spec-driven feature workflow (2 human gates)
-/welld-dev:orchestrate  full agent team on a goal (PO → Architect → Devs ∥ → QE verdict)
-/welld-dev:upgrade      re-template a project to a newer release, AI-resolved conflicts
+/wellforge:new          idea → interview → stack pick → scaffold → verified build → connections
+/wellforge:spec|plan|tasks   standardized spec-driven feature workflow (2 human gates)
+/wellforge:orchestrate  full agent team on a goal (PO → Architect → Devs ∥ → QE verdict)
+/wellforge:upgrade      re-template a project to a newer release, AI-resolved conflicts
 ```
 
 | Piece | Where |
 |---|---|
-| Claude Code plugin (commands, 9 agents, skills, hooks, MCP) | [`welld-dev-plugin/`](welld-dev-plugin/) |
+| Claude Code plugin (commands, 9 agents, skills, hooks, MCP) | [`wellforge-plugin/`](wellforge-plugin/) |
 | Project templates — Copier monorepo, root [`copier.yml`](copier.yml) | [`templates/`](templates/) ([contract](templates/_shared/CONTRACT.md)) |
 | Quality gates — reusable workflows + central thresholds | [`.github/workflows/`](.github/workflows/) + [`gates/`](gates/) |
 | Fleet status script | [`scripts/fleet-status.sh`](scripts/fleet-status.sh) |

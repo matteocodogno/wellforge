@@ -1,6 +1,6 @@
 # MCP servers — standard welld set
 
-Scaffolded projects ship a `.mcp.json`; the welld-dev plugin also provides servers
+Scaffolded projects ship a `.mcp.json`; the wellforge plugin also provides servers
 plugin-wide. **Verify before creating** — duplicate server names shadow each other.
 
 ## Standard set
@@ -11,7 +11,7 @@ plugin-wide. **Verify before creating** — duplicate server names shadow each o
 | `playwright` | designer/QE browser automation | stdio (npx) |
 | `github` | PRs, issues, CI runs from the session | HTTP + OAuth |
 
-Provided by the welld-dev plugin's `.mcp.json` — projects do NOT need to re-declare
+Provided by the wellforge plugin's `.mcp.json` — projects do NOT need to re-declare
 them. A project-local `.mcp.json` is only for project-specific servers (e.g. a
 database MCP pointed at the project's local DB, an internal API's MCP).
 
