@@ -132,11 +132,24 @@ check_copier() {
 }
 
 check_repo() {
-  if [ -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
-    ok "wellforge repo" "$WELLFORGE_HOME ($(git -C "$WELLFORGE_HOME" describe --tags --always 2>/dev/null || echo '?'))"
-  else
+  if [ ! -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
     bad "wellforge repo" "not at $WELLFORGE_HOME — run: wellforge setup (with WELLFORGE_REPO=<url>)"
-    FAILURES=$((FAILURES+1))
+    FAILURES=$((FAILURES+1)); return
+  fi
+  local desc; desc="$(git -C "$WELLFORGE_HOME" describe --tags --always 2>/dev/null || echo '?')"
+  ok "wellforge repo" "$WELLFORGE_HOME ($desc)"
+
+  # Checkout freshness vs origin — this is the channel where plugin features land
+  # (commands/agents/skills), distinct from the brew CLI. A quiet fetch keeps the
+  # recurring "am I up to date?" question honest. Skipped if no upstream / offline.
+  local up behind
+  up="$(git -C "$WELLFORGE_HOME" rev-parse --abbrev-ref '@{u}' 2>/dev/null)" || { warn "checkout" "no upstream tracked — can't check for plugin updates"; return; }
+  git -C "$WELLFORGE_HOME" fetch --quiet 2>/dev/null || { warn "checkout" "couldn't reach $up (offline?) — skipped update check"; return; }
+  behind="$(git -C "$WELLFORGE_HOME" rev-list --count 'HEAD..@{u}' 2>/dev/null || echo 0)"
+  if [ "$behind" = "0" ]; then
+    ok "checkout" "current with $up"
+  else
+    warn "checkout" "$behind commit(s) behind $up — plugin features may be stale; run: wellforge update (then /reload-plugins)"
   fi
 }
 
@@ -373,7 +386,12 @@ cmd_version() {
   esac
   say "wellforge $ver"
   if [ -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
-    say "checkout:  $WELLFORGE_HOME ($(git -C "$WELLFORGE_HOME" describe --tags --always 2>/dev/null || echo '?'))"
+    local desc fresh=""
+    desc="$(git -C "$WELLFORGE_HOME" describe --tags --always 2>/dev/null || echo '?')"
+    # offline-safe freshness against the already-fetched ref (no network here)
+    local behind; behind="$(git -C "$WELLFORGE_HOME" rev-list --count 'HEAD..@{u}' 2>/dev/null || echo 0)"
+    [ "$behind" != "0" ] && fresh=" — ${behind} behind upstream, run: wellforge update"
+    say "checkout:  $WELLFORGE_HOME ($desc)$fresh"
   else
     say "checkout:  none at $WELLFORGE_HOME — run: wellforge setup"
   fi

@@ -90,8 +90,13 @@ There are **two update channels** — they cover different things:
 
 | What | Updates | Command |
 |---|---|---|
-| The checkout (`~/.ai/wellforge`: plugin, templates, gates) | `wellforge update` | or: `cd ~/.ai/wellforge && git pull` |
-| The `wellforge` CLI itself (brew-installed binary) | see below | |
+| The checkout (`~/.ai/wellforge`: plugin, templates, gates) — where commands/agents/skills land | `wellforge update` | or: `cd ~/.ai/wellforge && git pull` |
+| The `wellforge` CLI itself (brew-installed binary) — small, stable launcher | see below | |
+
+`wellforge doctor` fetches and tells you if the **checkout** is behind (`! checkout N
+behind…`) — that's the channel most updates arrive on. `brew upgrade` only moves the CLI
+launcher, which changes rarely; "already installed" there usually means the launcher is
+current, not that your plugin is.
 
 ```bash
 # CLI binary (the formula is versioned — new releases appear via brew update):
