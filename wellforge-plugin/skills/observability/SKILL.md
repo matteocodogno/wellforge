@@ -1,7 +1,7 @@
 ---
 name: observability
 description: >
-  welld run-trace / observability conventions — the .forge/runs/ trace format that records
+  WellForge run-trace / observability conventions — the .forge/runs/ trace format that records
   which agents ran for which feature, their outcomes, drift events, verdicts, and (best
   effort) token cost. Use whenever a workflow command (orchestrate, implement, eval) runs
   agents and must record a run, when reading agent run history, when the evaluator needs

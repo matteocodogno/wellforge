@@ -1,6 +1,6 @@
 # Maven Setup Reference
 
-Complete POM skeleton for a welld Spring Boot Kotlin service.
+Complete POM skeleton for a WellForge Spring Boot Kotlin service.
 
 ---
 
@@ -272,7 +272,7 @@ It runs in the `generate-sources` phase, before compilation.
             </generate>
             <target>
                 <!-- Adjust packageName to match your service -->
-                <packageName>ch.welld.soa.YOURSERVICE.dal.jooq</packageName>
+                <packageName>com.example.yourservice.dal.jooq</packageName>
                 <directory>target/generated-sources/jooq</directory>
             </target>
             <strategy>

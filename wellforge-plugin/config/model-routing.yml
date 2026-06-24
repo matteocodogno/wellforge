@@ -32,7 +32,7 @@ agents:
   devops:           { tier: mid, why: "CI/infra wiring, largely deterministic" }
   quality-engineer: { tier: mid, why: "runs gates + writes tests (test-gen is paper's cheaper tier); judgment backstopped by the eval" }
   adr-writer:       { tier: mid, why: "documents a decision already made" }
-  owasp-reviewer:   { tier: mid, why: "OWASP checklist review; OVERRIDE to frontier for regulated/high-risk projects (PII, Canton Ticino)" }
+  owasp-reviewer:   { tier: mid, why: "OWASP checklist review; OVERRIDE to frontier for regulated/high-risk projects (PII, public sector, financial)" }
 
   # cheap — none by default. WellForge's agents are all substantive enough that haiku would
   # cause rework loops (false economy). The tier exists for future mechanical surfaces

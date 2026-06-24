@@ -1,6 +1,6 @@
 # WellForge
 
-welld's internal platform for **reproducible, standard, fast AI-assisted project setup**:
+An open platform for **reproducible, standard, fast AI-assisted project setup**:
 product idea → building, CI-gated, spec-driven, AI-ready repository in minutes — with a
 fleet that stays upgradeable as standards evolve.
 
@@ -39,5 +39,5 @@ wellforge setup      # toolchain + repo + plugin, verified
 `gates-v0`). Outstanding before `v1.0.0`: the Phase 7 pilot on a real project — see
 [PLAN.md](docs/PLAN.md).
 
-Internal welld tooling. Contributions: PRs only for `templates/` and gate thresholds
+Internal WellForge tooling. Contributions: PRs only for `templates/` and gate thresholds
 (that review is the single discretion point of the quality system).

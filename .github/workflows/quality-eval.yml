@@ -48,15 +48,15 @@ jobs:
         with:
           repository: ${{ inputs.gates-repo }}
           ref: ${{ inputs.gates-ref }}
-          path: .welld-gates
+          path: .wellforge-gates
 
       - name: LM-judge eval
         env:
           ANTHROPIC_API_KEY: ${{ secrets.anthropic-api-key }}
         run: |
           uv run --with pyyaml --with anthropic \
-            "$GITHUB_WORKSPACE/.welld-gates/gates/scripts/run-eval.py" \
-            --rubric "$GITHUB_WORKSPACE/.welld-gates/gates/configs/eval-rubric.yml" \
+            "$GITHUB_WORKSPACE/.wellforge-gates/gates/scripts/run-eval.py" \
+            --rubric "$GITHUB_WORKSPACE/.wellforge-gates/gates/configs/eval-rubric.yml" \
             --spec-dir "${{ inputs.spec-dir }}" \
             --base "origin/${{ github.event.repository.default_branch }}" \
             --model "${{ inputs.model }}"

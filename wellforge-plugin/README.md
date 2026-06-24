@@ -1,6 +1,6 @@
-# wellforge Claude Code Plugin
+# WellForge Claude Code Plugin
 
-Full-stack development plugin for welld Spring Boot Kotlin + React TypeScript monorepos.
+Full-stack development plugin for Spring Boot Kotlin + React TypeScript monorepos.
 
 ## Install
 
@@ -24,7 +24,7 @@ with a relative plugin source — nothing to edit). Set up once, works across al
 claude plugin marketplace add <wellforge-checkout>
 
 # 2. Install
-claude plugin install wellforge@welld --scope user
+claude plugin install wellforge@wellforge --scope user
 ```
 
 (or interactively: `/plugin` → wellforge → install → scope: user)
@@ -35,7 +35,7 @@ Inside Claude Code:
 ```
 /plugin   → wellforge listed under Installed
 /mcp      → sequential-thinking, playwright, github connected
-/hooks    → 6 hooks listed
+/hooks    → 7 hooks listed
 ```
 
 ---
@@ -81,8 +81,8 @@ Inside Claude Code:
 | `skills/observability/` | Run-trace (`.forge/runs/`) format conventions — producers and consumers |
 | `skills/connections/` | Standardized tool-connection checklists (GitHub, MCP, environments) — each ends with a verification command |
 | `skills/react-ts-vite/` | React + TypeScript + Vite + Mantine + TanStack |
-| `skills/kotlin-springboot-welld/` | Spring Boot + Kotlin + jOOQ + Liquibase + Modulith |
-| `skills/springboot-scaffold/` | Scaffolds a new welld-style service |
+| `skills/kotlin-springboot/` | Spring Boot + Kotlin + jOOQ + Liquibase + Modulith |
+| `skills/springboot-scaffold/` | Scaffolds a new full-stack service |
 
 ## MCP servers
 
@@ -127,6 +127,6 @@ See `settings-snippet.jsonc` — copy into `~/.claude/settings.json`:
 Create `.claude/context/glossary.md` in your project — injected into every session:
 ```markdown
 # Domain glossary
-- **bolla**: work order issued to external contractors
-- **ditta esterna**: external maintenance company
+- **<term>**: <one-line definition the AI should know for this project>
+- **<acronym>**: <what it expands to and means in your domain>
 ```

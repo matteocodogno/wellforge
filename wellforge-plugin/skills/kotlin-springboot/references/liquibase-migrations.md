@@ -159,7 +159,7 @@ Example — test fixture skipped in codegen:
 --liquibase formatted sql
 --changeset yourname:T001-seed-test-users dbms:postgresql context:test
 
-INSERT INTO users (email, full_name) VALUES ('test@welld.ch', 'Test User');
+INSERT INTO users (email, full_name) VALUES ('test@example.com', 'Test User');
 ```
 
 The jooq-codegen-maven plugin is configured with:

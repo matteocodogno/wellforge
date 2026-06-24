@@ -49,7 +49,7 @@ If `docs/adr/` doesn't exist, create it.
 **Date:** YYYY-MM-DD  
 **Status:** Accepted  
 **Deciders:** [team / Matteo / client name]  
-**Project:** [project name — e.g. FMS Canton Ticino, Alexandria, Mumù]
+**Project:** [project name]
 
 ---
 
@@ -91,10 +91,10 @@ Include relevant NFRs, regulatory constraints, or technical debt context.]
 
 ## Compliance notes
 
-*(Only include if relevant to Swiss/Italian regulatory context)*
+*(Only include if the project has regulatory / compliance constraints)*
 
-- GDPR/nLPD impact: [none / low / medium — brief explanation]
-- Data residency: [CH/EU compliant / needs review]
+- GDPR / data-protection impact: [none / low / medium — brief explanation]
+- Data residency: [compliant with required jurisdiction / needs review]
 - Audit trail: [required / not required]
 
 ---

@@ -155,11 +155,11 @@ check_repo() {
 
 check_plugin() {
   command -v claude >/dev/null || return 0
-  if claude plugin marketplace list 2>/dev/null | grep -q "welld"; then ok "marketplace" "welld registered"; else
+  if claude plugin marketplace list 2>/dev/null | grep -q "wellforge"; then ok "marketplace" "WellForge registered"; else
     bad "marketplace" "run: claude plugin marketplace add $WELLFORGE_HOME"; FAILURES=$((FAILURES+1))
   fi
   if claude plugin list 2>/dev/null | grep -q "wellforge"; then ok "plugin" "wellforge installed"; else
-    bad "plugin" "run: claude plugin install wellforge@welld --scope user"; FAILURES=$((FAILURES+1))
+    bad "plugin" "run: claude plugin install wellforge@wellforge --scope user"; FAILURES=$((FAILURES+1))
   fi
 }
 
@@ -328,10 +328,10 @@ cmd_setup() {
 
   # 4. marketplace + plugin (idempotent)
   if command -v claude >/dev/null; then
-    claude plugin marketplace list 2>/dev/null | grep -q "welld" \
+    claude plugin marketplace list 2>/dev/null | grep -q "wellforge" \
       || claude plugin marketplace add "$WELLFORGE_HOME"
     claude plugin list 2>/dev/null | grep -q "wellforge" \
-      || claude plugin install wellforge@welld --scope user
+      || claude plugin install wellforge@wellforge --scope user
   fi
 
   # 5. optional: Telegram notifications (interactive sessions only)

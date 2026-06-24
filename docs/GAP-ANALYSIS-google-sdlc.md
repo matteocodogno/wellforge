@@ -128,7 +128,7 @@ The paper's section on building agents *as products* (ADK, Agent Runtime, evalse
 persistent memory) describes a **different product category** than WellForge. WellForge
 scaffolds **web applications** (Spring Kotlin / Hono), not **AI agents as deliverables**.
 
-**Deliberate scope boundary — not a gap today**, but worth a decision: if welld ever ships
+**Deliberate scope boundary — not a gap today**, but worth a decision: if WellForge ever ships
 AI-agent products, WellForge has no preset for that stack (no ADK template, no eval
 scaffolding, no A2A wiring, no agent-runtime deploy). Flag for the roadmap, not the backlog.
 
@@ -200,7 +200,7 @@ Shipped:
   least capture post-deploy issues into the spec/eval loop.
 
 ### P5 — Decide on the production-agent category (roadmap, not backlog)
-- If welld will build AI-agent products, plan an `agent-*` preset (ADK or equivalent) with
+- If WellForge will build AI-agent products, plan an `agent-*` preset (ADK or equivalent) with
   eval scaffolding, A2A, and agent-runtime deploy. If not, document the boundary.
 
 ---

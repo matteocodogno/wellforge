@@ -1,8 +1,8 @@
 ---
-name: kotlin-springboot-welld
+name: kotlin-springboot
 description: >
   Kotlin and Spring Boot development. Trigger this skill for ANY task involving Kotlin, Spring Boot,
-  JVM, Maven, jOOQ, Liquibase, database migrations, REST APIs, or backend services. Covers welld-style
+  JVM, Maven, jOOQ, Liquibase, database migrations, REST APIs, or backend services. Covers WellForge
   best practices including functional error handling with Result/DomainError, Spring Modulith module
   boundaries, repository patterns, and Spring configuration. Use for writing code, reviewing code,
   setting up new services, defining migrations, configuring dependencies, scaffolding modules, or
@@ -10,9 +10,9 @@ description: >
   a migration", "set up a new module", "add an endpoint", or "fix a Spring Boot issue".
 ---
 
-# Spring Boot with Kotlin — welld Best Practices
+# Spring Boot with Kotlin — WellForge Best Practices
 
-Opinionated guide for welld Spring Boot / Kotlin projects.  
+Opinionated guide for WellForge Spring Boot / Kotlin projects.  
 For deep reference on a specific area, read the matching file in `references/`:
 
 | Topic | File |
@@ -67,7 +67,7 @@ For deep reference on a specific area, read the matching file in `references/`:
 Each module is split into three sub-packages by layer:
 
 ```
-src/main/kotlin/ch/welld/<service>/
+src/main/kotlin/com/example/<service>/
 ├── Application.kt                  ← @SpringBootApplication
 ├── common/                         ← @ApplicationModule(open = true) via package-info.java
 │   ├── model/Result.kt

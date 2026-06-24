@@ -45,7 +45,7 @@ project_slug:
 description:
   type: str
   help: One-line description of the project
-  default: "A welld full-stack service."
+  default: "A WellForge full-stack service."
 
 ci:
   type: str
@@ -63,7 +63,7 @@ gates_repo:
 gates_ref:
   type: str
   help: Tag pinning the gate workflows in generated CI
-  default: gates-v0
+  default: gates-v3
 
 # NOTE: no "generated date" question/field. Hidden (when: false) answers are NOT
 # persisted to .copier-answers.yml, so any value injected at copy time (like a date)
@@ -78,7 +78,7 @@ template_version:
 base_package:
   type: str
   help: Root Kotlin/Java package for the backend
-  default: "ch.welld.{{ project_slug | replace('-', '') }}"
+  default: "com.example.{{ project_slug | replace('-', '') }}"
   when: "{{ preset == 'spring-kotlin-react' }}"
 
 # Derived: package as filesystem path, used in templated directory names (a source dir

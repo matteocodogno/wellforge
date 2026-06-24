@@ -10,11 +10,11 @@
 # bump url/sha256 here in the same commit that tags vX.Y.Z (sha256: curl -sL
 # <url> | shasum -a 256).
 class Wellforge < Formula
-  desc "welld internal platform: reproducible, AI-assisted project setup"
+  desc "WellForge internal platform: reproducible, AI-assisted project setup"
   homepage "https://github.com/matteocodogno/wellforge"
   url "https://github.com/matteocodogno/wellforge/archive/refs/tags/v0.2.4.tar.gz"
   sha256 "492eec06c39f33a69ddf0f06f5189c0032dc7a94a04b2aa3b0c7a891caa1d791"
-  license "UNLICENSED" # internal welld tooling
+  license "UNLICENSED" # internal WellForge tooling
   head "https://github.com/matteocodogno/wellforge.git", branch: "main"
 
   depends_on "gh"

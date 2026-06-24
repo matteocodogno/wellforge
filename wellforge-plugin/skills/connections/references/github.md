@@ -8,7 +8,7 @@ All via `gh` CLI. Pre-check: `gh auth status` (needs repo + admin scopes for pro
 # Verify first (idempotency)
 gh repo view <org>/<slug> --json name,defaultBranchRef 2>/dev/null
 
-# Create (private by default for welld projects) + push
+# Create (private by default for WellForge projects) + push
 gh repo create <org>/<slug> --private --source . --remote origin --push
 ```
 
@@ -17,7 +17,7 @@ gh repo create <org>/<slug> --private --source . --remote origin --push
 
 ## 2. Branch protection (main)
 
-Standard welld policy: PRs only, 1 approval, gates must pass, no force push.
+Standard WellForge policy: PRs only, 1 approval, gates must pass, no force push.
 
 ```bash
 gh api -X PUT "repos/<org>/<slug>/branches/main/protection" \

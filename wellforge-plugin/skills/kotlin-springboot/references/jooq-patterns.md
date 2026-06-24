@@ -235,8 +235,8 @@ jOOQ records are generated to `target/generated-sources/jooq/`.
 Import table references from the generated package:
 
 ```kotlin
-import ch.welld.soa.YOURSERVICE.dal.jooq.Tables.USERS
-import ch.welld.soa.YOURSERVICE.dal.jooq.tables.records.UserRecord
+import com.example.yourservice.dal.jooq.Tables.USERS
+import com.example.yourservice.dal.jooq.tables.records.UserRecord
 ```
 
 Always run `mvn generate-sources` after adding or changing Liquibase migrations  

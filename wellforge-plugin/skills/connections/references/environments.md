@@ -1,6 +1,6 @@
 # Environments — env vars, secrets hygiene, local DB
 
-## Env var layering (welld standard, via mise)
+## Env var layering (WellForge standard, via mise)
 
 | Layer | File | Committed | Contents |
 |---|---|---|---|

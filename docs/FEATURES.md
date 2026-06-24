@@ -1,6 +1,6 @@
 # WellForge — Features
 
-WellForge is welld's internal platform for **reproducible, standard, fast AI-assisted
+WellForge is an open platform for **reproducible, standard, fast AI-assisted
 project setup**: from product idea to a building, CI-gated, spec-driven, AI-ready
 repository in minutes — and a fleet that stays upgradeable as standards evolve.
 
@@ -49,7 +49,7 @@ Key properties:
   derived from a deterministic state table so the "next step" never drifts.
 
 Why in-house instead of BMAD/Kiro/cc-sdd: we keep the proven spec→plan→tasks *shape*
-but own the prompts, so they encode welld conventions and don't churn under us.
+but own the prompts, so they encode WellForge conventions and don't churn under us.
 
 ## 2. Multi-agent team
 
@@ -116,7 +116,7 @@ Mechanics that make it reliable:
    steps become explicit PENDING items, never silent skips.
 
 Hard rule: max 2 presets until the pilot proves the model — template sprawl is how
-internal platforms die.
+platforms like this die.
 
 **Brownfield:** existing projects onboard with `/wellforge:adopt` — AI-readiness files
 generated from *observed* conventions, the spec workflow, and optionally the central
@@ -135,7 +135,7 @@ reusable workflows' `env` blocks and change **only via PR** to this repo:
 | Types | `pnpm run typecheck` | Kotlin compiler |
 | Coverage | Vitest lines ≥ 80% / branches ≥ 70% (CLI-enforced — project config can't weaken it) | JaCoCo lines ≥ 80% (branches reported) |
 | Dependency audit | `pnpm audit --audit-level high` + lockfile required | osv-scanner |
-| SAST | semgrep: welld rules + p/typescript | semgrep: welld rules + p/kotlin |
+| SAST | semgrep: WellForge rules + p/typescript | semgrep: WellForge rules + p/kotlin |
 
 - Projects call the workflows pinned to a `gates-v*` tag — a threshold bump propagates
   by a one-line ref bump, no re-scaffold.

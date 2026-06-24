@@ -29,7 +29,7 @@ AskUserQuestion (batch): which layers to adopt —
 ## Stage 2 — AI-readiness + spec workflow
 
 1. `AGENTS.md` (canonical context file, cross-tool standard): generate from the survey —
-   actual stack + versions, dev commands (the project's real ones, not welld defaults),
+   actual stack + versions, dev commands (the project's real ones, not WellForge defaults),
    layout, conventions you OBSERVED (naming, error handling, test style), and the
    spec-driven workflow note (`specs/` + `/wellforge:*` commands).
    - Existing `CLAUDE.md` with content? Migrate its content into AGENTS.md (preserving
@@ -80,7 +80,7 @@ verification command; PENDING for anything needing rights you don't have).
 ## Hard rules
 
 - Adoption ADDS files; it never modifies existing source, build config, or CI beyond
-  the new `quality.yml`. Aligning the project to welld conventions is refactor work —
+  the new `quality.yml`. Aligning the project to WellForge conventions is refactor work —
   offer `/wellforge:orchestrate` for it, separately, after adoption.
 - Never invent conventions for AGENTS.md — document what IS, not what should be.
 - Baselines come from measurement, never estimation; round down; prove green locally.

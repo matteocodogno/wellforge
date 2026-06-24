@@ -12,11 +12,11 @@ Goal: lock the decisions everything else depends on.
   A plugin alone cannot version generated projects or enforce gates in CI.
 - ☑ Spec framework: **thin in-house layer** (spec → plan → tasks), spec-kit-style,
   packaged as plugin commands. Rationale vs. alternatives tried:
-  - *BMAD*: powerful but heavyweight; too much ceremony for typical welld project size.
+  - *BMAD*: powerful but heavyweight; too much ceremony for typical WellForge project size.
   - *superpowers*: great skill-authoring patterns — borrow the style, not the framework.
   - *Kiro*: good spec UX but tied to its own IDE/runtime.
   - *cc-sdd / spec-kit*: closest to what we want — adopt the spec→plan→tasks shape,
-    but own the prompts so they encode welld conventions and don't churn under us.
+    but own the prompts so they encode WellForge conventions and don't churn under us.
 - ☑ Templating engine: **Copier** — only mainstream engine with first-class
   `copier update` (re-apply evolved template to an existing project) + migration tasks.
   Requires `uv`/`pipx` on dev machines (acceptable; we already require mise).
@@ -128,12 +128,12 @@ fast local feedback.
   resolves `workflow_call` only from that path; `gates/` holds configs+scripts+policy):
   - `quality-node.yml`: lint (zero warnings), `typecheck`, Vitest coverage ≥ **80%**
     lines / **70%** branches (CLI-enforced), lockfile required + frozen install,
-    `pnpm audit --audit-level high`, semgrep (welld rules + p/typescript).
+    `pnpm audit --audit-level high`, semgrep (WellForge rules + p/typescript).
   - `quality-jvm.yml`: ktlint (full plugin coordinates), JaCoCo lines ≥ **80%** via
     `gates/scripts/check-jacoco.py` (tested pass/fail/floor; <50-line modules skip with
-    notice), osv-scanner v2, semgrep (welld rules + p/kotlin). detekt deferred to
+    notice), osv-scanner v2, semgrep (WellForge rules + p/kotlin). detekt deferred to
     template v0.2 (not in pom).
-- ☑ `gates/configs/semgrep/welld.yml` — central SAST rules (secrets, kotlin println,
+- ☑ `gates/configs/semgrep/wellforge.yml` — central SAST rules (secrets, kotlin println,
   ts debugger). DEVIATION: eslint/ktlint configs stay template-shipped (central refs
   need an npm/maven registry — future work); they propagate via Phase 6 upgrades.
   Coverage thresholds + semgrep + audit ARE central.

@@ -1,7 +1,7 @@
 ---
 name: devops
 description: >
-  DevOps Engineer for the welld spec-driven workflow. Use for CI/CD pipelines, Docker and
+  DevOps Engineer for the WellForge spec-driven workflow. Use for CI/CD pipelines, Docker and
   infrastructure files, environment configuration, release wiring, and connecting projects
   to ecosystem tools (GitHub settings, MCP servers, registries, observability). Trigger
   phrases: "set up CI", "act as devops", "wire up the pipeline", "connect this project to".
@@ -22,7 +22,7 @@ also the executor of the WellForge connection layer: standardized MCP/CLI setup 
 
 ## How you work
 
-- Quality gates are consumed, not defined: pipelines CALL the shared welld gates
+- Quality gates are consumed, not defined: pipelines CALL the shared WellForge gates
   workflows (`gates/workflows/quality-node.yml`, `quality-jvm.yml`) pinned to a release
   tag. You wire them in; you never inline a divergent copy.
 - Every connection you set up ends with a **verification command** and you RUN it —

@@ -3,7 +3,7 @@ INPUT=$(cat)
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 [ "$(echo "$INPUT" | jq -r '.stop_hook_active // false')" = "true" ] && exit 0
 
-# ── spec drift check (welld spec-driven workflow) ────────────────────────────
+# ── spec drift check (WellForge spec-driven workflow) ────────────────────────────
 # spec.md/plan.md changed without re-syncing tasks.md → block (drift rule)
 SPECS_CHANGED=$(git -C "$PROJECT_DIR" diff --name-only 2>/dev/null | grep -E 'specs/[^/]+/(spec|plan)\.md')
 TASKS_CHANGED=$(git -C "$PROJECT_DIR" diff --name-only 2>/dev/null | grep -E 'specs/[^/]+/tasks\.md')

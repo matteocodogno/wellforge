@@ -1,7 +1,7 @@
 ---
 name: connections
 description: >
-  Standardized checklists for connecting a welld project to its ecosystem tools — GitHub
+  Standardized checklists for connecting a WellForge project to its ecosystem tools — GitHub
   (repo, branch protection, secrets), CI, MCP servers, environments and databases. Use
   during /wellforge:new stage 5, when the user asks to "connect", "set up", or "wire up"
   a tool/integration for a project, or when the devops agent needs the standard procedure.
@@ -17,7 +17,7 @@ the output. Never report a connection done without it.
 
 References (read the one you need):
 - `references/github.md` — repo creation, branch protection, CI secrets
-- `references/mcp-servers.md` — the standard MCP set for welld projects
+- `references/mcp-servers.md` — the standard MCP set for WellForge projects
 - `references/environments.md` — env vars, secrets hygiene, local DB
 
 ## Order

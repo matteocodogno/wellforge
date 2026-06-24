@@ -1,4 +1,4 @@
-# MCP servers — standard welld set
+# MCP servers — standard WellForge set
 
 Scaffolded projects ship a `.mcp.json`; the wellforge plugin also provides servers
 plugin-wide. **Verify before creating** — duplicate server names shadow each other.

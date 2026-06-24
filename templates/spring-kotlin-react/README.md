@@ -1,6 +1,6 @@
 # spring-kotlin-react
 
-Copier template for a welld full-stack monorepo:
+Copier template for a WellForge full-stack monorepo:
 
 - **Backend** — Spring Boot 4 + Kotlin, jOOQ + Liquibase, Spring Modulith, Result/DomainError
   error handling, kotlin-logging, Testcontainers. Mirrors the `springboot-scaffold` skill.
@@ -31,7 +31,7 @@ Or via the plugin: `/wellforge:new` fills the common questions automatically.
 | `ci` | choice | `github` | `github` / `none` |
 | `gates_repo` | str | `matteocodogno/wellforge` | owner/repo hosting gate workflows |
 | `gates_ref` | str | `gates-v0` | tag pinned in generated CI |
-| `base_package` | str | `ch.welld.<slug>` | root Kotlin/Java package |
+| `base_package` | str | `com.example.<slug>` | root Kotlin/Java package |
 | `db` | choice | `postgres` | `postgres` / `none` |
 
 ## `db` modes

@@ -54,7 +54,7 @@ jobs:
         with:
           repository: ${{ inputs.gates-repo }}
           ref: ${{ inputs.gates-ref }}
-          path: .welld-gates
+          path: .wellforge-gates
 
       - name: Install toolchain (mise)
         uses: jdx/mise-action@v2
@@ -103,7 +103,7 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
         run: |
           pipx run semgrep=="$SEMGREP_VERSION" scan \
-            --config "$GITHUB_WORKSPACE/.welld-gates/gates/configs/semgrep/welld.yml" \
+            --config "$GITHUB_WORKSPACE/.wellforge-gates/gates/configs/semgrep/wellforge.yml" \
             --config p/typescript \
             --error --severity ERROR \
-            --exclude .welld-gates
+            --exclude .wellforge-gates

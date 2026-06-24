@@ -1,9 +1,9 @@
 ---
-description: Scaffold a new welld project — interview, stack recommendation, generation, connections
+description: Scaffold a new WellForge project — interview, stack recommendation, generation, connections
 argument-hint: <short product description> (optional — interview fills the gaps)
 ---
 
-Scaffold a new welld project end-to-end: analyze what's being built, recommend a stack,
+Scaffold a new WellForge project end-to-end: analyze what's being built, recommend a stack,
 generate from the versioned template, verify it builds, and guide tool connections
 (load the **connections** skill for that last stage).
 

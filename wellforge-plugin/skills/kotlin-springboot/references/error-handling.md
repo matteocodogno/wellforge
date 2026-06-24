@@ -235,6 +235,6 @@ fun `should return user dto on success`() {
     val result = service.getUser(existingUserId)
 
     result.isSuccess shouldBe true
-    result.getOrNull()?.email shouldBe "test@welld.ch"
+    result.getOrNull()?.email shouldBe "test@example.com"
 }
 ```

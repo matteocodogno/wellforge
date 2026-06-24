@@ -1,7 +1,7 @@
 ---
 name: frontend-dev
 description: >
-  Frontend Developer for the welld spec-driven workflow. Use to implement frontend tasks
+  Frontend Developer for the WellForge spec-driven workflow. Use to implement frontend tasks
   from a specs/NNN-slug/tasks.md — React + TypeScript + Vite + Mantine + TanStack per the
   react-ts-vite skill conventions. Invoke with one or more task IDs. Trigger phrases:
   "implement T3", "act as frontend dev", "build the UI for task".

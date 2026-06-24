@@ -3,7 +3,7 @@ description: Orchestrate the full agent team on a goal (spec → plan → tasks 
 argument-hint: <goal — feature request, bug report, refactor, or infra change>
 ---
 
-Drive the welld agent team end-to-end on this goal, following the **spec-driven** skill
+Drive the WellForge agent team end-to-end on this goal, following the **spec-driven** skill
 conventions (load that skill now).
 
 Goal: $ARGUMENTS

@@ -16,7 +16,7 @@ propagates on the next ref bump, no re-scaffold needed.
 | Types | `pnpm run typecheck` | Kotlin compiler (via tests) |
 | Coverage | Vitest: lines ≥ **80%**, branches ≥ **70%** (CLI-enforced) | JaCoCo: lines ≥ **80%** enforced, branches reported (`scripts/check-jacoco.py`) |
 | Dependency audit | `pnpm audit --prod --audit-level high` | `osv-scanner v2.0.0` (fails on any known vuln) |
-| SAST | semgrep 1.96.0: `configs/semgrep/welld.yml` + `p/typescript` | semgrep 1.96.0: `configs/semgrep/welld.yml` + `p/kotlin` |
+| SAST | semgrep 1.96.0: `configs/semgrep/wellforge.yml` + `p/typescript` | semgrep 1.96.0: `configs/semgrep/wellforge.yml` + `p/kotlin` |
 | Reproducibility | `pnpm-lock.yaml` required, `--frozen-lockfile` | mise-pinned toolchain |
 
 Coverage enforcement skips modules under **50 total lines** (fresh scaffolds must not
@@ -28,7 +28,7 @@ fail their own gate); the skip is printed as a CI notice, never silent.
 |---|---|
 | `/.github/workflows/quality-node.yml` | reusable Node/TS gate (`workflow_call`, input: `working-directory`) |
 | `/.github/workflows/quality-jvm.yml` | reusable JVM gate (same interface) |
-| `configs/semgrep/welld.yml` | org-specific SAST rules (secrets, println, debugger) |
+| `configs/semgrep/wellforge.yml` | org-specific SAST rules (secrets, println, debugger) |
 | `scripts/check-jacoco.py` | JaCoCo threshold enforcement (tested: pass/fail/floor) |
 
 ## Eval gate (LM-judge — opt-in)

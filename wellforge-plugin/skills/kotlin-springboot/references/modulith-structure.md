@@ -5,13 +5,13 @@
 ## Package Layout
 
 ```
-src/main/java/ch/welld/<service>/
+src/main/java/com/example/<service>/
 ├── common/
 │   └── package-info.java              ← @ApplicationModule(type = OPEN) — Java, required
 └── <module>/
     └── package-info.java              ← @ApplicationModule — Java, required
 
-src/main/kotlin/ch/welld/<service>/
+src/main/kotlin/com/example/<service>/
 ├── Application.kt
 ├── common/
 │   ├── model/
@@ -67,24 +67,24 @@ depending on what you are annotating:
 `@ApplicationModule` must be a Java `package-info.java`. There is no Kotlin equivalent.
 
 ```
-src/main/java/ch/welld/<service>/common/package-info.java
-src/main/java/ch/welld/<service>/session/package-info.java
-src/main/java/ch/welld/<service>/game/package-info.java
+src/main/java/com/example/<service>/common/package-info.java
+src/main/java/com/example/<service>/session/package-info.java
+src/main/java/com/example/<service>/game/package-info.java
 ... one per module
 ```
 
 ```java
-// src/main/java/ch/welld/<service>/common/package-info.java
+// src/main/java/com/example/<service>/common/package-info.java
 @ApplicationModule(type = ApplicationModule.Type.OPEN)
-package ch.welld.<service>.common;
+package com.example.<service>.common;
 
 import org.springframework.modulith.ApplicationModule;
 ```
 
 ```java
-// src/main/java/ch/welld/<service>/session/package-info.java
+// src/main/java/com/example/<service>/session/package-info.java
 @ApplicationModule
-package ch.welld.<service>.session;
+package com.example.<service>.session;
 
 import org.springframework.modulith.ApplicationModule;
 ```
@@ -97,8 +97,8 @@ with `@NamedInterface`. `@PackageInfo` tells Spring Modulith to treat this class
 logical equivalent of `package-info.java` for the package it lives in.
 
 ```kotlin
-// src/main/kotlin/ch/welld/<service>/session/api/ModuleMetadata.kt
-package ch.welld.<service>.session.api
+// src/main/kotlin/com/example/<service>/session/api/ModuleMetadata.kt
+package com.example.<service>.session.api
 
 import org.springframework.modulith.NamedInterface
 import org.springframework.modulith.PackageInfo
@@ -116,9 +116,9 @@ Once named interfaces are declared, you can restrict which modules and named int
 may depend on:
 
 ```java
-// src/main/java/ch/welld/<service>/game/package-info.java
+// src/main/java/com/example/<service>/game/package-info.java
 @ApplicationModule(allowedDependencies = "session::api")
-package ch.welld.<service>.game;
+package com.example.<service>.game;
 
 import org.springframework.modulith.ApplicationModule;
 ```
@@ -141,10 +141,10 @@ outside of `session.api`.
 ## Full module example — `session`
 
 ```
-src/main/java/ch/welld/<service>/session/
+src/main/java/com/example/<service>/session/
 └── package-info.java                  ← @ApplicationModule (Java)
 
-src/main/kotlin/ch/welld/<service>/session/
+src/main/kotlin/com/example/<service>/session/
 ├── api/
 │   ├── ModuleMetadata.kt              ← @PackageInfo @NamedInterface("api")
 │   ├── SessionApi.kt                  ← interface exposed to other modules
@@ -162,7 +162,7 @@ src/main/kotlin/ch/welld/<service>/session/
 
 ```kotlin
 // session/api/ModuleMetadata.kt
-package ch.welld.<service>.session.api
+package com.example.<service>.session.api
 
 import org.springframework.modulith.NamedInterface
 import org.springframework.modulith.PackageInfo
@@ -305,7 +305,7 @@ Each module owns its tables. No other module may query those tables with `DSLCon
 ## Module Boundary Test
 
 ```kotlin
-// src/test/kotlin/ch/welld/<service>/ModularityTest.kt
+// src/test/kotlin/com/example/<service>/ModularityTest.kt
 class ModularityTest {
 
     private val modules = ApplicationModules.of(<ServiceName>Application::class.java)

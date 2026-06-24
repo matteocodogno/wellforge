@@ -55,10 +55,10 @@ def main():
 
     failed = False
     if line_pct < args.min_line:
-        print(f"::error::line coverage {line_pct:.1f}% is below the welld gate ({args.min_line}%)")
+        print(f"::error::line coverage {line_pct:.1f}% is below the WellForge gate ({args.min_line}%)")
         failed = True
     if args.min_branch and branch_pct is not None and branch_pct < args.min_branch:
-        print(f"::error::branch coverage {branch_pct:.1f}% is below the welld gate ({args.min_branch}%)")
+        print(f"::error::branch coverage {branch_pct:.1f}% is below the WellForge gate ({args.min_branch}%)")
         failed = True
     return 1 if failed else 0
 

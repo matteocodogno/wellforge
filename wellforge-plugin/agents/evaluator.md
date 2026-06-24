@@ -1,7 +1,7 @@
 ---
 name: evaluator
 description: >
-  LM-judge for the welld spec-driven workflow. Scores a feature's implementation against
+  LM-judge for the WellForge spec-driven workflow. Scores a feature's implementation against
   the central evaluation rubric (gates/configs/eval-rubric.yml) — the non-deterministic
   verification half that tests and CI gates cannot cover: spec fidelity, test quality,
   code conventions, trajectory. Produces a scored, evidence-cited eval-report.md verdict.

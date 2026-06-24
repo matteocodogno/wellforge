@@ -1,6 +1,6 @@
 # WellForge
 
-Internal platform for **reproducible, standard, fast AI-assisted project setup** at welld.
+An open platform for **reproducible, standard, fast AI-assisted project setup** for any team.
 Every new project currently costs hours of repetitive AI-infrastructure setup; WellForge turns
 that into minutes, with a setup that stays upgradeable over time.
 
@@ -55,7 +55,7 @@ wellforge/
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, connections + stack skills (react-ts-vite,
-│   │                         # kotlin-springboot-welld, hono-ts-backend, mise, springboot-scaffold)
+│   │                         # kotlin-springboot, hono-ts-backend, mise, springboot-scaffold)
 │   ├── hooks/                # 7 lifecycle hooks (incl. SubagentStop run-trace telemetry)
 │   └── .mcp.json             # sequential-thinking, playwright, github
 ├── templates/
@@ -89,4 +89,4 @@ wellforge/
   release commit.
 - Quality thresholds live in the gate workflows' `env` blocks — changed only via PR to
   `gates/`/`.github/workflows/`; templates call them pinned to `gates-v*`.
-- All text/docs in English; this is internal welld tooling.
+- All text/docs in English; this is internal WellForge tooling.

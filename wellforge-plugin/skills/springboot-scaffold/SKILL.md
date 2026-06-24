@@ -1,7 +1,7 @@
 ---
 name: springboot-scaffold
 description: >
-  Scaffold a new welld Spring Boot Kotlin service from scratch. Use this skill whenever the user
+  Scaffold a new WellForge Spring Boot Kotlin service from scratch. Use this skill whenever the user
   wants to create a new service, bootstrap a project, generate a Spring Boot skeleton, or start
   a new microservice. Trigger even for phrases like "new service", "create project", "bootstrap",
   "generate skeleton", "start a new module", or "new spring boot app". Asks only for artifactId
@@ -11,7 +11,7 @@ description: >
 
 # Spring Boot Scaffold Skill
 
-Generates a complete welld-style Spring Boot Kotlin project.  
+Generates a complete WellForge Spring Boot Kotlin project.  
 Only two inputs needed: `artifactId` and `serviceName`.
 
 ---
@@ -50,9 +50,9 @@ Ask the user exactly these two things (nothing more):
 
 1. **`artifactId`** — the Maven artifact ID (e.g. `order-service`, `user-api`). Also used as the directory name.
 2. **`serviceName`** — the Kotlin package leaf and Spring app class name (e.g. `order`, `user`). Should be a single lowercase word. Derives:
-   - base package: `ch.welld.soa.<serviceName>`
+   - base package: `com.example.<serviceName>`
    - app class: `<ServiceName>Application`
-   - jOOQ target package: `ch.welld.soa.<serviceName>.dal.jooq`
+   - jOOQ target package: `com.example.<serviceName>.dal.jooq`
 
 ---
 
@@ -64,8 +64,8 @@ From the two inputs, compute:
 artifactId      → e.g. "order-service"
 serviceName     → e.g. "order"
 ServiceName     → serviceName.replaceFirstChar { it.uppercase() }   → "Order"
-basePackage     → "ch.welld.soa.$serviceName"                        → "ch.welld.soa.order"
-packagePath     → basePackage.replace('.', '/')                      → "ch/welld/soa/order"
+basePackage     → "com.example.$serviceName"                        → "com.example.order"
+packagePath     → basePackage.replace('.', '/')                      → "com/example/order"
 jooqPackage     → "$basePackage.dal.jooq"
 ```
 

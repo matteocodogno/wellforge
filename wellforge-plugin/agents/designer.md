@@ -1,7 +1,7 @@
 ---
 name: designer
 description: >
-  UX/UI Designer for the welld spec-driven workflow. Use for features with a user
+  UX/UI Designer for the WellForge spec-driven workflow. Use for features with a user
   interface: UX flows, screen/state inventory, component reuse mapping (Mantine), and
   accessibility requirements. Runs between spec approval and task derivation. Can drive
   the running app with Playwright to audit current UI. Trigger phrases: "design the UX

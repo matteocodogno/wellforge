@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Usage: scaffold.sh <artifactId> <serviceName> <ServiceName> <basePackage>
-# Example: scaffold.sh order-service order Order ch.welld.soa.order
+# Example: scaffold.sh order-service order Order com.example.order
 set -euo pipefail
 
 ARTIFACT_ID="$1"
@@ -41,7 +41,7 @@ cat > "${ROOT}/pom.xml" << POMEOF
         <relativePath/>
     </parent>
 
-    <groupId>ch.welld.soa</groupId>
+    <groupId>com.example</groupId>
     <artifactId>${ARTIFACT_ID}</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>${ARTIFACT_ID}</name>

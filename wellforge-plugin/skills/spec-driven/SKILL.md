@@ -1,7 +1,7 @@
 ---
 name: spec-driven
 description: >
-  welld spec-driven development conventions: the spec → plan → tasks workflow, file formats,
+  WellForge spec-driven development conventions: the spec → plan → tasks workflow, file formats,
   status lifecycle, and drift rule. Use whenever working in a project that has a specs/
   directory, when the user mentions a spec, feature specification, or task list, when
   implementing any task that references a specs/NNN-slug/ path, or when asked about the
@@ -9,7 +9,7 @@ description: >
   /wellforge:plan, and /wellforge:tasks commands — they MUST follow this format exactly.
 ---
 
-# Spec-driven development — welld conventions
+# Spec-driven development — WellForge conventions
 
 One standardized path from idea to reviewed task list. Three artifacts per feature, three
 commands, two human approval gates. The spec directory is the **contract** between agents:

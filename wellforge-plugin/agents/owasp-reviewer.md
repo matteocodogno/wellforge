@@ -5,7 +5,7 @@ description: >
   Invoke when a feature is ready for review, a PR is being prepared, or when working
   on endpoints that handle sensitive data (authentication, file upload, external APIs,
   PII, financial transactions). Particularly important for projects with regulated data
-  (Canton Ticino / Swiss public sector). Use proactively on Spring Boot controllers,
+  (public sector, regulated industries). Use proactively on Spring Boot controllers,
   Kotlin service layers, and React components that handle auth or user input.
 tools:
   - Read
@@ -88,15 +88,15 @@ Review the provided code or diff against every applicable OWASP Top 10 category.
 - [ ] Any HTTP client call that uses a user-supplied URL validates against an allowlist
 - [ ] Internal metadata endpoints (169.254.x.x, 10.x.x.x) blocked
 
-## Swiss/Italian regulatory considerations
+## Regulatory considerations (data protection)
 
 > Model routing: this agent runs the `mid` tier (sonnet) by default. For regulated /
-> high-risk projects (PII, financial, Canton Ticino public sector), escalate the review to
+> high-risk projects (PII, financial, public sector), escalate the review to
 > the `frontier` tier — missing a vuln there is costly. See `config/model-routing.yml`.
 
-For projects handling Canton Ticino or Italian public sector data:
-- [ ] Personal data (GDPR/nLPD): is data minimization applied? No unnecessary PII in logs or responses
-- [ ] Data residency: verify external API calls don't send PII outside CH/EU
+For projects handling regulated or public-sector data:
+- [ ] Personal data (GDPR or local data-protection law): is data minimization applied? No unnecessary PII in logs or responses
+- [ ] Data residency: verify external API calls don't send PII outside the allowed jurisdiction
 - [ ] Audit logs: retention period and tamper-evidence for regulated data operations
 
 ## Output format

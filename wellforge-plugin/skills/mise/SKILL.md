@@ -1,23 +1,23 @@
 ---
 name: mise
 description: >
-  mise (dev tools version manager) expert for welld monorepos. Use this skill whenever the user
+  mise (dev tools version manager) expert for full-stack monorepos. Use this skill whenever the user
   asks to set up mise, add tools to mise, create or edit a mise.toml, define mise tasks, manage
   Java/Node/pnpm/Maven versions, or replace npm scripts / Makefile with mise tasks. Also trigger
   for phrases like "pin the node version", "add a task for", "run with mise", "how do I manage
   tool versions", "set up dev environment", or any question about .mise.toml configuration.
-  Always use this skill proactively when scaffolding new projects or services — every welld project
+  Always use this skill proactively when scaffolding new projects or services — every WellForge project
   should have a mise.toml.
 ---
 
 # mise — Dev Tools Version Manager
 
-Authoritative reference for configuring mise in welld Spring Boot Kotlin + React TypeScript
+Authoritative reference for configuring mise in Spring Boot Kotlin + React TypeScript
 monorepos. See `references/` for deep dives on specific areas.
 
 ---
 
-## Pinned tool versions for welld projects
+## Pinned tool versions for WellForge projects
 
 These versions are verified to work together. Use them verbatim unless the user specifies otherwise.
 
