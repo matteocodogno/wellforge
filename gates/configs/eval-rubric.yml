@@ -69,6 +69,7 @@ dimensions:
       2: No trajectory evidence available (no run trace) — scored neutral, not penalized.
       1: Evidence of skipped verification or out-of-order/unauthorized work.
     note: >
-      Full trajectory evaluation depends on run-trace observability (roadmap P2). Until
-      then, score from git history + the QE verdict; default to 2 (neutral) when blind,
-      and only drop to 1 on positive evidence of a skipped/!wrong step.
+      Trajectory evidence comes from .forge/runs/*.json run traces (observability) plus
+      git history. Score 4–5 when traces show the right agents ran in order and QE ran;
+      drop to 1 on evidence of a skipped/wrong step; default to 2 (neutral) ONLY when no
+      run trace exists for the feature.

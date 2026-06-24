@@ -56,7 +56,7 @@ wellforge/
 │   │                         # devops, quality-engineer + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, connections + stack skills (react-ts-vite,
 │   │                         # kotlin-springboot-welld, hono-ts-backend, mise, springboot-scaffold)
-│   ├── hooks/                # 6 lifecycle hooks
+│   ├── hooks/                # 7 lifecycle hooks (incl. SubagentStop run-trace telemetry)
 │   └── .mcp.json             # sequential-thinking, playwright, github
 ├── templates/
 │   ├── _shared/CONTRACT.md   # binding contract: questions, required files, versioning

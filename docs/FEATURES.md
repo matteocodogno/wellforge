@@ -155,6 +155,14 @@ fails regardless of the total (floor rule). Also available as an opt-in CI gate
 (`quality-eval.yml@gates-v2`, needs `ANTHROPIC_API_KEY`). The rubric is central and
 PR-governed like every threshold; per-feature `eval.md` may raise floors, never lower.
 
+**Observability (run traces).** Every multi-agent run (`implement`/`orchestrate`/`eval`)
+writes an auditable trace to `.forge/runs/<run_id>.json` — which agents ran, for which
+tasks, their outcomes, drift events, and verdicts. A `SubagentStop` hook adds best-effort
+token telemetry; `run-report.py` joins them and estimates cost from a central price table.
+`/wellforge:status` surfaces recent runs + cost; the `evaluator` reads traces for real
+**trajectory** evidence (closing the eval harness's blind spot). The audit trail (who/what/
+verdict/drift) is exact; the cost layer is an estimate, honestly labelled.
+
 ## 6. Project lifecycle
 
 Generated projects are not snapshots — they follow the template:

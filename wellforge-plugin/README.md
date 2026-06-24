@@ -65,14 +65,18 @@ Inside Claude Code:
 | `agents/evaluator.md` | Evaluator — LM-judge, rubric-scored verdict (non-deterministic half) |
 | `agents/owasp-reviewer.md` | Specialist: OWASP Top 10 security review |
 | `agents/adr-writer.md` | Specialist: Architecture Decision Record writer |
-| `hooks/hooks.json` | 6 lifecycle hooks |
+| `hooks/hooks.json` | 7 lifecycle hooks |
 | `hooks/scripts/session-start.sh` | Injects git state + domain glossary at session start |
 | `hooks/scripts/pre-bash-guard.sh` | Blocks rm -rf /, SQL nukes, pipe-to-shell, .env writes |
 | `hooks/scripts/post-lint.sh` | ts/tsx → Prettier+ESLint · kt/kts → ktlintFormat |
 | `hooks/scripts/notify.sh` | macOS notification + Telegram DM |
 | `hooks/scripts/stop-verify.sh` | Checks spec drift + tsc before Claude stops |
 | `hooks/scripts/pre-compact-backup.sh` | Snapshots session state before compaction |
+| `hooks/scripts/trace-subagent.sh` | SubagentStop → best-effort token events to `.forge/runs/.events.jsonl` (observability) |
+| `scripts/run-report.py` | Summarizes `.forge/runs/` — agents, verdicts, drift, estimated cost |
+| `config/model-pricing.yml` | Per-model price table for run-report cost estimates |
 | `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
+| `skills/observability/` | Run-trace (`.forge/runs/`) format conventions — producers and consumers |
 | `skills/connections/` | Standardized tool-connection checklists (GitHub, MCP, environments) — each ends with a verification command |
 | `skills/react-ts-vite/` | React + TypeScript + Vite + Mantine + TanStack |
 | `skills/kotlin-springboot-welld/` | Spring Boot + Kotlin + jOOQ + Liquibase + Modulith |

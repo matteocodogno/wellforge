@@ -45,6 +45,12 @@ every dimension ≥ floor).
 - Bounded: the evaluator is a judge, not a loop. One scored verdict per run; you don't
   silently re-evaluate until it passes.
 
+## Step 5 — Record the run (observability)
+
+Write `.forge/runs/<run_id>.json` per the **observability** skill: the `evaluator` agent,
+its outcome + `score`, and `verdicts.eval`. Short trace, same audit trail as implement/
+orchestrate.
+
 ## Hard rules
 
 - Read-only on code/specs — this command only produces `eval-report.md` (via the

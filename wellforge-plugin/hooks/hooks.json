@@ -15,6 +15,9 @@
     "Stop": [
       { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/stop-verify.sh" }] }
     ],
+    "SubagentStop": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/trace-subagent.sh" }] }
+    ],
     "PreCompact": [
       { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-compact-backup.sh" }] }
     ]

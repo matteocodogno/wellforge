@@ -164,12 +164,19 @@ Shipped:
 - ◐ Trajectory dimension is partial pending P2 observability (scores neutral when blind,
   per the rubric note — honest, doesn't fake trajectory evidence).
 
-### P2 — Observability layer
-- Capture per-run **traces** of agent dispatch (which agent, which tasks, outcome) — the
-  orchestrator already has the data on disk; persist it to `.forge/runs/`.
-- **Token/cost & latency metering** per agent run; surface in `/wellforge:status`.
-- **Drift telemetry** beyond the binary stop-verify check: record when/where agents
-  deviated, for audit.
+### P2 — Observability layer ✅ DONE (plugin v2.2.0)
+- ☑ Per-run **traces** to `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`): agents,
+  tasks, outcomes, verdicts — written by implement/orchestrate/eval. Canonical format in
+  the `observability` skill. The audit trail is exact.
+- ☑ **Token/cost** telemetry: a `SubagentStop` hook captures usage (best-effort, when the
+  harness exposes it) → `.forge/runs/.events.jsonl`; `run-report.py` joins by run window
+  and estimates cost via `config/model-pricing.yml`; `/wellforge:status` surfaces it.
+- ☑ **Drift telemetry**: `drift_events[]` in every run trace (agent, artifact, summary,
+  resolved) — audit beyond the binary stop-verify hook.
+- ☑ Unblocks the eval **trajectory** dimension: the evaluator now reads run traces for
+  real evidence instead of scoring neutral-when-blind.
+- Honest seam: token attribution is approximate (sums by time window; depends on harness
+  payloads). The semantic trace is exact; cost is a labelled estimate — not billed cost.
 
 ### P3 — Intelligent model routing
 - Annotate agents with a complexity tier; route deterministic work (test-gen, lint-fix,

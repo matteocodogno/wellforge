@@ -219,8 +219,12 @@ LM-judge), so WellForge verifies *how good*, not just *does it pass*.
   implement, orchestrate all wired).
 - ☑ Opt-in CI: `quality-eval.yml@gates-v2` + `run-eval.py` (tested offline:
   pass/fail-by-total/fail-by-floor).
-- ☐ Remaining (P2/P3 from the gap analysis): observability (run traces, token/cost,
-  drift telemetry) — also unlocks full trajectory eval; intelligent model routing.
+- ☑ P2 observability (plugin v2.2.0): `.forge/runs/` run traces (schema wellforge-run/v1)
+  written by implement/orchestrate/eval; SubagentStop token-event hook + run-report.py
+  cost estimates (central `config/model-pricing.yml`); drift telemetry in traces;
+  `/wellforge:status` observability view; evaluator trajectory now reads real traces.
+- ☐ Remaining: P3 intelligent model routing (the pricing config is the foothold — annotate
+  agents with complexity tiers, route deterministic work to cheaper models).
 
 ## Order & dependencies
 

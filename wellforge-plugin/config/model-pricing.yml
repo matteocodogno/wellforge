@@ -1,0 +1,16 @@
+# Model pricing for run-report.py cost ESTIMATES (USD per 1M tokens).
+# Used only to turn captured token counts into an approximate cost — not billing.
+# Update when prices change (rare). Keys are matched by substring against the model id
+# the SubagentStop hook captured (e.g. "claude-opus-4-8" matches "opus").
+# Also the natural home for P3 (intelligent model routing) — cheap tiers for cheap tasks.
+version: pricing-v1
+currency: USD
+unit_tokens: 1000000
+
+models:
+  opus:    { input: 15.00, output: 75.00 }
+  sonnet:  { input: 3.00,  output: 15.00 }
+  haiku:   { input: 0.80,  output: 4.00 }
+
+# Fallback when the captured model id matches nothing above (assume mid-tier).
+default: { input: 3.00, output: 15.00 }

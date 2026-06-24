@@ -49,9 +49,11 @@ that pass basic tests. You judge — you never edit code, tests, or specs.
 3. Compute the weighted total (each score/5 × weight, summed → 0–100).
 4. Verdict = **PASS** iff weighted total ≥ `pass_score` AND every dimension ≥ its `floor`.
    A single sub-floor dimension is **FAIL**, regardless of total (mirrors QE).
-5. Trajectory: score from git history + the QE verdict. If no run trace exists, score the
-   neutral floor (per the rubric note) — do not invent trajectory evidence, and do not
-   penalize for missing observability (that's roadmap P2, not the feature's fault).
+5. Trajectory: read the feature's run traces in `.forge/runs/*.json` (schema
+   `wellforge-run/v1`, per the **observability** skill) for real evidence — which agents
+   ran in what order, whether QE ran, whether verification was skipped, drift events.
+   Combine with git history. Only when NO run trace exists, fall back to the neutral floor
+   — do not invent trajectory evidence.
 
 ## Your artifact — eval-report.md
 

@@ -70,6 +70,10 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 11. **Close** → when QE passes, the **eval verdict is PASS**, and all tasks are checked:
     set spec `status: done`, summarize (stories delivered, QE + eval verdict tables,
     commits), suggest next steps.
+12. **Record the run** → write the run trace per the **observability** skill:
+    `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`) capturing the full pipeline —
+    every agent + outcome, drift events, QE + eval verdicts, `result`. Write it even when
+    the pipeline escalates or stops early (`result` records that). The audit trail.
 
 ## Pipeline: bugfix
 

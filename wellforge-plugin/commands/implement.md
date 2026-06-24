@@ -71,6 +71,14 @@ The argument is `[feature] [tasks]` — both optional, feature first.
   (`/wellforge:eval <feature>`) — the LM-judge rubric scoring is the gate into `done`,
   not the QE pass alone. Suggest it; don't set `done` directly from here.
 
+## Step 6 — Record the run (observability)
+
+Write a run trace per the **observability** skill (load it): capture `started` at the
+start of this run and, now, write `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`)
+with every dispatched agent + outcome, any drift events (resolved or not), the QE verdict,
+and `result` (completed / escalated / partial). One file per run; leave `tokens`/`cost`
+null (the SubagentStop hook + `run-report.py` fill cost). This is the audit trail.
+
 ## Hard rules
 
 - Implement ONLY the selected tasks. Discovering adjacent work is a new task (add it via

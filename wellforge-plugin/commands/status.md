@@ -65,6 +65,13 @@ any drift warning. Still read-only.
 End with a one-line summary: counts per phase (e.g. "1 done · 1 implementing · 1 planning
 · 1 drafting") so the overall project state is visible at a glance.
 
+## Observability (when `.forge/runs/` exists)
+
+If the project has run traces, append a short **Runs** section. Run
+`${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py` (optionally `--feature <slug>`) and relay
+its summary: recent runs (command, agents, verdicts), estimated cost, and any open drift.
+Label cost as an estimate, not billed. Omit the section entirely if there are no traces.
+
 ## Hard rules
 
 - Read-only. Never edit specs, check boxes, or change status — this only reports.

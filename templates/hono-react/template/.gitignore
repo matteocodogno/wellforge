@@ -24,3 +24,6 @@ coverage/
 .idea/
 .vscode/
 *.log
+
+# WellForge run-trace token events (transient; keep semantic run JSONs committed)
+.forge/runs/.events.jsonl
