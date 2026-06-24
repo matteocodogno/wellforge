@@ -206,6 +206,22 @@ scaffolds.
   for existing scaffolds).
 - ☐ Pilot on a real brownfield repo (pairs with Phase 7).
 
+## Phase 9 — Eval harness / LM-judge (added 2026-06-23)
+
+Goal: close the gap analysis P1 — the non-deterministic verification half (rubric +
+LM-judge), so WellForge verifies *how good*, not just *does it pass*.
+
+- ☑ Central rubric `gates/configs/eval-rubric.yml` (weighted dims, floors, pass ≥ 80;
+  PR-governed; per-feature `eval.md` raise-only overrides).
+- ☑ `evaluator` LM-judge agent (adversarial, evidence-cited; distinct from QE) →
+  `eval-report.md`.
+- ☑ `/wellforge:eval` command; passing eval = gate into `done` (lifecycle, status,
+  implement, orchestrate all wired).
+- ☑ Opt-in CI: `quality-eval.yml@gates-v2` + `run-eval.py` (tested offline:
+  pass/fail-by-total/fail-by-floor).
+- ☐ Remaining (P2/P3 from the gap analysis): observability (run traces, token/cost,
+  drift telemetry) — also unlocks full trajectory eval; intelligent model routing.
+
 ## Order & dependencies
 
 ```

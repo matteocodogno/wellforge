@@ -1,0 +1,62 @@
+# Reusable OPT-IN eval gate — LM-judge scoring of a feature against the central rubric.
+# This is the non-deterministic verification half (spec fidelity, test quality, code
+# conventions, trajectory) that quality-node/jvm.yml (tests, coverage, lint) cannot cover.
+#
+# Opt-in because it costs Anthropic API tokens: wire it on agent-facing or high-stakes
+# changes, not every PR. Consume it pinned:
+#   jobs:
+#     eval:
+#       uses: matteocodogno/wellforge/.github/workflows/quality-eval.yml@gates-v2
+#       with: { spec-dir: specs/001-user-auth }
+#       secrets: { anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }} }
+name: quality-eval
+
+on:
+  workflow_call:
+    inputs:
+      spec-dir:
+        description: Feature spec directory to evaluate (e.g. specs/001-user-auth)
+        required: true
+        type: string
+      model:
+        description: Judge model
+        required: false
+        type: string
+        default: claude-sonnet-4-6
+      gates-repo:
+        required: false
+        type: string
+        default: matteocodogno/wellforge
+      gates-ref:
+        required: false
+        type: string
+        default: gates-v2
+    secrets:
+      anthropic-api-key:
+        required: true
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # need history for the diff the judge reads
+
+      - name: Checkout gate configs
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.gates-repo }}
+          ref: ${{ inputs.gates-ref }}
+          path: .welld-gates
+
+      - name: LM-judge eval
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.anthropic-api-key }}
+        run: |
+          uv run --with pyyaml --with anthropic \
+            "$GITHUB_WORKSPACE/.welld-gates/gates/scripts/run-eval.py" \
+            --rubric "$GITHUB_WORKSPACE/.welld-gates/gates/configs/eval-rubric.yml" \
+            --spec-dir "${{ inputs.spec-dir }}" \
+            --base "origin/${{ github.event.repository.default_branch }}" \
+            --model "${{ inputs.model }}"

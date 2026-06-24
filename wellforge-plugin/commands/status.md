@@ -17,6 +17,7 @@ For every `specs/NNN-slug/` directory (or just the named one):
 - `design.md` present? (informational only — not a gate.)
 - `tasks.md` present? count `- [x]` vs total `- [ ]`/`- [x]` task lines; note the first
   unchecked task whose `deps:` are all checked ("next ready").
+- `eval-report.md` present? its frontmatter `verdict` (PASS / FAIL) and `score`.
 
 ## Phase + next step — deterministic table
 
@@ -31,7 +32,9 @@ Evaluate top-down; first matching row wins. `NNN-slug` below is the feature's fo
 | plan `approved`, no `tasks.md` | **tasks** | `/wellforge:tasks NNN-slug` |
 | `tasks.md`, 0 checked | **implement** | `/wellforge:implement NNN-slug next` |
 | `tasks.md`, some unchecked | **implement** | `/wellforge:implement NNN-slug next` |
-| all tasks checked, spec ≠ `done` | **verify** | `/wellforge:implement NNN-slug all` (runs QE) → then set spec `done` |
+| all tasks checked, no/ stale `eval-report.md` | **eval** | `/wellforge:eval NNN-slug` (LM-judge scored verdict) |
+| `eval-report.md` `verdict: FAIL` | **eval** | fix the failing dimensions, then `/wellforge:eval NNN-slug` |
+| `eval-report.md` `verdict: PASS`, spec ≠ `done` | **verify** | set spec `done` |
 | spec `done` | **done** | — complete |
 
 If spec is `draft` with open questions, append "(N open questions block approval)".

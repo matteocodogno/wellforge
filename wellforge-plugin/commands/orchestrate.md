@@ -63,8 +63,13 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
    the verdict table.
    - If QE recommends a security pass, spawn `owasp-reviewer` and treat findings ≥ medium
      as defects (same fix loop).
-10. **Close** → when QE passes and all tasks are checked: set spec `status: done`,
-    summarize (stories delivered, verdict table, commits), suggest next steps.
+10. **Eval** → spawn `evaluator` with the spec dir (LM-judge against
+    `gates/configs/eval-rubric.yml`). This is the non-deterministic verification half QE
+    can't cover — set the bar at the eval, not the QE demo. FAIL → route the failing
+    dimensions back to the dev agents (same bounded 2-round loop as QE), re-eval.
+11. **Close** → when QE passes, the **eval verdict is PASS**, and all tasks are checked:
+    set spec `status: done`, summarize (stories delivered, QE + eval verdict tables,
+    commits), suggest next steps.
 
 ## Pipeline: bugfix
 

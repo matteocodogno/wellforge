@@ -1,0 +1,74 @@
+# WellForge evaluation rubric — the central, versioned standard for scoring a feature's
+# implementation as an LM-judge eval (the non-deterministic verification half that tests
+# and CI gates can't cover). Single source of truth: the evaluator agent, the
+# /wellforge:eval command, and gates/scripts/run-eval.py all read THIS file.
+#
+# Changing it is like changing a gate threshold: PR to gates/ only (the discretion point).
+# Per-feature overrides live in specs/NNN-slug/eval.md and may only ADD dimensions or
+# RAISE floors, never lower them.
+version: default-v1
+
+# Pass = weighted total >= pass_score AND every dimension >= its floor.
+# (A single dimension under its floor fails the eval, mirroring QE's "single ✗ = FAIL".)
+pass_score: 80          # weighted 0–100
+scale: 5                # each dimension scored 1–5 against its anchors
+
+dimensions:
+  - key: ac_satisfaction
+    title: Acceptance-criteria satisfaction
+    weight: 35
+    floor: 4              # an unmet AC cannot pass — the non-negotiable core
+    anchors:
+      5: Every AC met, each backed by a passing test AND observable behavior.
+      4: Every AC met; evidence for one or two is thin (test OR behavior, not both).
+      3: All ACs nominally met but evidence is weak or partly inferred.
+      2: One AC unmet or only superficially satisfied.
+      1: Multiple ACs unmet.
+
+  - key: spec_fidelity
+    title: Spec fidelity / no drift
+    weight: 20
+    floor: 3
+    anchors:
+      5: Implementation matches spec intent exactly; zero unrequested scope; contracts as planned.
+      4: Matches intent; trivial additions that don't change behavior.
+      3: Minor drift, documented or harmless.
+      2: Unrequested scope or a silently changed contract.
+      1: Implementation diverges materially from the approved spec/plan.
+
+  - key: test_quality
+    title: Test quality
+    weight: 20
+    floor: 3
+    anchors:
+      5: Tests genuinely verify each AC, cover edge/error cases, and would catch regressions.
+      4: Solid AC coverage; a few edge cases missing.
+      3: Tests pass but are shallow — happy-path only, or assert little.
+      2: Tautological/vacuous tests, or coverage gamed to hit the number.
+      1: Tests absent where the plan required them, or don't exercise the feature.
+
+  - key: code_quality
+    title: Code quality & conventions
+    weight: 15
+    floor: 3
+    anchors:
+      5: Idiomatic to the codebase and stack skills; realistic error handling; no hallucinated APIs/deps.
+      4: Clean and conventional; minor nits.
+      3: Works but diverges from established patterns in places.
+      2: Hallucinated API/dependency, or error handling that ignores realistic failures (the "80% problem" 20%).
+      1: Not idiomatic; would create maintenance burden or hides correctness gaps that look right.
+
+  - key: trajectory
+    title: Trajectory
+    weight: 10
+    floor: 2              # lower floor: limited until observability (P2) lands run traces
+    anchors:
+      5: Right agents did the right tasks in dependency order; QE ran; verification not skipped (evidenced by commits/trace).
+      4: Correct trajectory inferable from git history; minor gaps in evidence.
+      3: Trajectory plausible but largely unobservable.
+      2: No trajectory evidence available (no run trace) — scored neutral, not penalized.
+      1: Evidence of skipped verification or out-of-order/unauthorized work.
+    note: >
+      Full trajectory evaluation depends on run-trace observability (roadmap P2). Until
+      then, score from git history + the QE verdict; default to 2 (neutral) when blind,
+      and only drop to 1 on positive evidence of a skipped/!wrong step.

@@ -54,13 +54,15 @@ Inside Claude Code:
 | `commands/new.md` | `/wellforge:new` — interview → stack recommendation → Copier scaffold → build verify → connections |
 | `commands/upgrade.md` | `/wellforge:upgrade` — copier update to a newer template version + AI conflict resolution + gates |
 | `commands/adopt.md` | `/wellforge:adopt` — brownfield onboarding: AI-readiness, spec workflow, gates with measured baseline |
+| `commands/eval.md` | `/wellforge:eval` — LM-judge scores the feature against the central rubric (gate into `done`) |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
 | `agents/architect.md` | Architect — plan.md: architecture, contracts, AC→test mapping |
 | `agents/designer.md` | Designer — design.md: flows, screens, component reuse, a11y |
 | `agents/frontend-dev.md` | FE dev — implements tasks per react-ts-vite conventions |
 | `agents/backend-dev.md` | BE dev — implements tasks per stack skill conventions |
 | `agents/devops.md` | DevOps — CI/CD, infra, tool connections (verified, not assumed) |
-| `agents/quality-engineer.md` | QE — AC verification, gates run, evidence-based verdict |
+| `agents/quality-engineer.md` | QE — AC verification, gates run, evidence-based verdict (deterministic half) |
+| `agents/evaluator.md` | Evaluator — LM-judge, rubric-scored verdict (non-deterministic half) |
 | `agents/owasp-reviewer.md` | Specialist: OWASP Top 10 security review |
 | `agents/adr-writer.md` | Specialist: Architecture Decision Record writer |
 | `hooks/hooks.json` | 6 lifecycle hooks |

@@ -27,7 +27,9 @@ specs/
 │   ├── spec.md      # WHAT & WHY — problem, user stories, acceptance criteria
 │   ├── plan.md      # HOW — architecture, data model, API contracts, test strategy
 │   ├── design.md    # optional, UI features only — flows, screens, component reuse, a11y
-│   └── tasks.md     # ordered, dependency-aware task list
+│   ├── tasks.md     # ordered, dependency-aware task list
+│   ├── eval.md      # optional — per-feature rubric overrides (add dims / raise floors only)
+│   └── eval-report.md  # LM-judge scored verdict (written by /wellforge:eval)
 └── 002-csv-export/
     └── spec.md
 ```
@@ -47,8 +49,11 @@ draft ──► approved ──► in-progress ──► done
 
 - Only the **user** moves a spec from `draft` to `approved` — never set it yourself.
   Record approval as `approved: 2026-06-04` in the frontmatter when the user says so.
-- `in-progress` is set when the first task starts; `done` when every task in tasks.md is
-  checked AND quality gates pass.
+- `in-progress` is set when the first task starts; `done` requires THREE things: every
+  task in tasks.md checked, quality gates pass (QE — deterministic), AND a passing
+  `eval-report.md` (the LM-judge rubric scoring — the non-deterministic half, run by
+  `/wellforge:eval`). QE pass alone is not enough to reach `done`: "set the bar at the
+  eval, not the demo."
 
 ## File formats
 

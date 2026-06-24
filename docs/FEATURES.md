@@ -144,6 +144,17 @@ reusable workflows' `env` blocks and change **only via PR** to this repo:
 - Locally, plugin hooks run the same project tasks (lint/typecheck/compile) for fast
   feedback; the QE agent runs the full gate set and reports numbers.
 
+**Eval gate (LM-judge).** Tests + the gates above cover the *deterministic* half. The
+**eval** covers what only judgment can: spec fidelity, test *quality* (not just pass),
+idiomatic code free of "looks-right" failures, trajectory. `/wellforge:eval <feature>`
+spawns the `evaluator` LM-judge, which scores against the central rubric
+(`gates/configs/eval-rubric.yml`: weighted dimensions, per-dimension floors, pass ≥ 80)
+and writes a verdict to `specs/NNN/eval-report.md`. A **passing eval is the gate into
+`done`** — QE alone isn't enough ("set the bar at the eval, not the demo"). An unmet AC
+fails regardless of the total (floor rule). Also available as an opt-in CI gate
+(`quality-eval.yml@gates-v2`, needs `ANTHROPIC_API_KEY`). The rubric is central and
+PR-governed like every threshold; per-feature `eval.md` may raise floors, never lower.
+
 ## 6. Project lifecycle
 
 Generated projects are not snapshots — they follow the template:

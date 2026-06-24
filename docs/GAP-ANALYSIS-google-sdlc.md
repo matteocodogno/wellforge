@@ -147,18 +147,22 @@ economy. Two concrete misses: no model routing, no cost visibility.
 
 ## Prioritized gaps & recommendations
 
-### P1 — Eval harness (the headline gap)
+### P1 — Eval harness ✅ DONE (plugin v2.1.0, gates-v2)
 The paper's load-bearing claim: tests verify the deterministic; **evals** verify the
-non-deterministic (trajectory, tool choice, quality) via rubrics + LM judges — and you
-need both to count as agentic engineering.
+non-deterministic (trajectory, tool choice, quality) via rubrics + LM judges.
 
-- Add an `evals/` concept: per-feature eval sets with explicit scoring rubrics (task
-  success, AC coverage, trajectory compliance, hallucination, response quality).
-- Extend the **QE agent** from AC-checking to **rubric-scored evaluation**; emit a scored
-  verdict, not just pass/fail.
-- Add an **LM-judge step** to the quality gates (CI) for changes that touch agent-facing
-  surfaces; gate on eval coverage the way we gate on test coverage.
-- Possible new command `/wellforge:eval <feature>` mirroring `:implement`.
+Shipped:
+- ☑ Central rubric `gates/configs/eval-rubric.yml` (weighted dimensions: AC satisfaction,
+  spec fidelity, test quality, code quality, trajectory; per-dimension floors; pass ≥ 80).
+  PR-governed like a threshold; per-feature `eval.md` may add dims / raise floors only.
+- ☑ `evaluator` LM-judge agent (adversarial, evidence-cited) — distinct from QE
+  (deterministic). Writes `specs/NNN/eval-report.md`.
+- ☑ `/wellforge:eval <feature>` command; **a passing eval is now the gate into `done`**
+  (wired through spec-driven lifecycle, status, implement, orchestrate).
+- ☑ Opt-in CI gate: `quality-eval.yml@gates-v2` + `gates/scripts/run-eval.py`
+  (Anthropic API; gating logic tested offline: pass / fail-by-total / fail-by-floor).
+- ◐ Trajectory dimension is partial pending P2 observability (scores neutral when blind,
+  per the rubric note — honest, doesn't fake trajectory evidence).
 
 ### P2 — Observability layer
 - Capture per-run **traces** of agent dispatch (which agent, which tasks, outcome) — the

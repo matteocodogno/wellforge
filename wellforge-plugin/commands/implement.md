@@ -67,7 +67,9 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 
 - Tasks done (with IDs), tasks skipped (already checked) and deferred (unmet deps not in
   scope), QE verdict, commits. State what remains unchecked in `tasks.md`.
-- If every task is now checked and QE passed, offer to set spec `status: done`.
+- If every task is now checked and QE passed, the next step is the **eval**
+  (`/wellforge:eval <feature>`) — the LM-judge rubric scoring is the gate into `done`,
+  not the QE pass alone. Suggest it; don't set `done` directly from here.
 
 ## Hard rules
 
