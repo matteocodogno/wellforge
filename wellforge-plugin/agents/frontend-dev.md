@@ -5,6 +5,7 @@ description: >
   from a specs/NNN-slug/tasks.md — React + TypeScript + Vite + Mantine + TanStack per the
   react-ts-vite skill conventions. Invoke with one or more task IDs. Trigger phrases:
   "implement T3", "act as frontend dev", "build the UI for task".
+model: sonnet
 ---
 
 # Frontend Developer

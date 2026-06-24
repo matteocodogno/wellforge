@@ -11,6 +11,7 @@ tools:
   - Grep
   - Glob
   - Write
+model: sonnet
 ---
 
 # Product Owner

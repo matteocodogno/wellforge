@@ -12,7 +12,7 @@ tools:
   - Glob
   - Grep
   - Bash
-model: claude-opus-4-6
+model: sonnet
 ---
 
 # OWASP Top 10 Security Reviewer
@@ -89,6 +89,10 @@ Review the provided code or diff against every applicable OWASP Top 10 category.
 - [ ] Internal metadata endpoints (169.254.x.x, 10.x.x.x) blocked
 
 ## Swiss/Italian regulatory considerations
+
+> Model routing: this agent runs the `mid` tier (sonnet) by default. For regulated /
+> high-risk projects (PII, financial, Canton Ticino public sector), escalate the review to
+> the `frontier` tier — missing a vuln there is costly. See `config/model-routing.yml`.
 
 For projects handling Canton Ticino or Italian public sector data:
 - [ ] Personal data (GDPR/nLPD): is data minimization applied? No unnecessary PII in logs or responses

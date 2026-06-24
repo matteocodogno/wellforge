@@ -223,8 +223,11 @@ LM-judge), so WellForge verifies *how good*, not just *does it pass*.
   written by implement/orchestrate/eval; SubagentStop token-event hook + run-report.py
   cost estimates (central `config/model-pricing.yml`); drift telemetry in traces;
   `/wellforge:status` observability view; evaluator trajectory now reads real traces.
-- ☐ Remaining: P3 intelligent model routing (the pricing config is the foothold — annotate
-  agents with complexity tiers, route deterministic work to cheaper models).
+- ☑ P3 intelligent model routing (plugin v2.3.0): central `config/model-routing.yml`
+  (frontier/mid/cheap tiers, per-agent assignment + rationale); every agent's frontmatter
+  model set to its tier; `check-routing.py` drift guard; CI/in-session judge tiering
+  documented. All three gap-analysis material gaps (P1 evals, P2 observability, P3 routing)
+  now closed.
 
 ## Order & dependencies
 

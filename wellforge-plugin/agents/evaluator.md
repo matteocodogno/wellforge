@@ -15,6 +15,7 @@ tools:
   - Glob
   - Bash
   - Write
+model: opus
 ---
 
 # Evaluator (LM-judge)

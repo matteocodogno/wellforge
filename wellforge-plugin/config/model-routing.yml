@@ -1,0 +1,44 @@
+# WellForge model-routing policy — which model tier each agent runs on.
+#
+# Why: routing deterministic/structured work to cheaper models and reserving frontier
+# models for high-judgment work drives OpEx down without lowering quality where it counts
+# (the paper's "intelligent model routing"). Without this, agents inherit the session
+# model — usually frontier — so every PO write and lint-fix pays opus prices.
+#
+# This is the SOURCE OF TRUTH for agent models. Each agent's frontmatter `model:` MUST
+# match the tier assigned here; `scripts/check-routing.py` verifies it (drift guard).
+# Changing the policy is a PR to the plugin, like a gate threshold. Tiers are calibrated
+# by the pilot — too cheap a tier causes rework loops that cost more than they save (the
+# OpEx trap), so move agents down a tier only with evidence.
+version: routing-v1
+
+# Tier → model alias. Aliases (not pinned ids) so the policy survives model upgrades;
+# the trace hook captures the resolved id, and model-pricing.yml matches by substring.
+tiers:
+  frontier: opus      # highest judgment — design trade-offs, judging quality
+  mid:      sonnet    # capable default for structured writing + implementation
+  cheap:    haiku     # deterministic, low-judgment surfaces
+
+agents:
+  # frontier — never cheap out: a weak architect or a foolable judge poisons everything
+  architect:        { tier: frontier, why: "architecture & trade-offs — the highest-leverage judgment in the flow" }
+  evaluator:        { tier: frontier, why: "LM-judge — an evaluator that's easily fooled is worse than none" }
+
+  # mid — structured writing & pattern-following implementation; human/QE/eval gates catch slips
+  product-owner:    { tier: mid, why: "structured spec writing; the human approval gate backstops quality" }
+  designer:         { tier: mid, why: "UX flows against an existing component inventory" }
+  frontend-dev:     { tier: mid, why: "implementation against react-ts-vite conventions — the token bulk; sonnet is capable here" }
+  backend-dev:      { tier: mid, why: "implementation against the stack skills — the token bulk" }
+  devops:           { tier: mid, why: "CI/infra wiring, largely deterministic" }
+  quality-engineer: { tier: mid, why: "runs gates + writes tests (test-gen is paper's cheaper tier); judgment backstopped by the eval" }
+  adr-writer:       { tier: mid, why: "documents a decision already made" }
+  owasp-reviewer:   { tier: mid, why: "OWASP checklist review; OVERRIDE to frontier for regulated/high-risk projects (PII, Canton Ticino)" }
+
+  # cheap — none by default. WellForge's agents are all substantive enough that haiku would
+  # cause rework loops (false economy). The tier exists for future mechanical surfaces
+  # (e.g. a changelog/status-summarizer agent), assigned only with evidence it holds quality.
+
+# Escalation: for a genuinely complex feature, run the dev agents at frontier instead of
+# mid. The mechanism is the agent frontmatter (fixed per run), so escalation is a
+# deliberate human/orchestrator choice — flag it in the plan, then run the harder model —
+# not silent per-task auto-routing. Honest about the seam.

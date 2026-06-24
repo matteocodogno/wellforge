@@ -12,6 +12,7 @@ tools:
   - Glob
   - Write
   - Bash
+model: opus
 ---
 
 # Architect

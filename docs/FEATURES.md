@@ -155,6 +155,16 @@ fails regardless of the total (floor rule). Also available as an opt-in CI gate
 (`quality-eval.yml@gates-v2`, needs `ANTHROPIC_API_KEY`). The rubric is central and
 PR-governed like every threshold; per-feature `eval.md` may raise floors, never lower.
 
+**Model routing (economics).** Agents don't all run the frontier model. A central
+PR-governed policy (`config/model-routing.yml`) assigns each agent a tier — **frontier**
+(opus) for the highest judgment (architect, the LM-judge evaluator), **mid** (sonnet) for
+structured writing and implementation (PO, designer, FE/BE dev, devops, QE), reserving the
+**cheap** tier for genuinely mechanical surfaces. This drives OpEx down without lowering
+quality where it counts — the paper's "intelligent model routing." A drift guard
+(`check-routing.py`) keeps each agent's frontmatter in sync with the policy; tiers are
+calibrated by the pilot (too cheap causes rework loops — the OpEx trap). Security reviews
+escalate to frontier for regulated projects.
+
 **Observability (run traces).** Every multi-agent run (`implement`/`orchestrate`/`eval`)
 writes an auditable trace to `.forge/runs/<run_id>.json` — which agents ran, for which
 tasks, their outcomes, drift events, and verdicts. A `SubagentStop` hook adds best-effort

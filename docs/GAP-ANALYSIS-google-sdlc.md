@@ -17,17 +17,19 @@ WellForge sits squarely at the paper's **agentic-engineering** end of the spectr
 almost line-for-line, an instance of its **factory model** and **harness engineering**.
 That alignment is not accidental — both describe the same shift WellForge was built for.
 
-The material gaps are concentrated in three areas the paper treats as first-class but
-WellForge currently lacks:
+The three areas the paper treats as first-class that WellForge originally lacked are now
+**all closed** (plugin v2.1.0–2.3.0):
 
-1. **Evals & trajectory evaluation** (the non-deterministic verification half) — our
-   biggest gap. We have tests + CI gates; we have no eval suites, rubrics, or LM-judges.
-2. **Observability** — no token/cost metering, run traces, or agent-drift telemetry.
-3. **Intelligent model routing** — no deliberate cheap-model-for-cheap-tasks economics.
+1. **Evals & trajectory evaluation** — ✅ P1: central rubric, `evaluator` LM-judge,
+   `/wellforge:eval`, eval-pass gates `done`, opt-in CI judge.
+2. **Observability** — ✅ P2: `.forge/runs/` traces, SubagentStop token telemetry +
+   cost estimates, drift audit; also unblocked the eval trajectory dimension.
+3. **Intelligent model routing** — ✅ P3: central tier policy + drift guard, agents
+   routed frontier/mid by judgment level.
 
-Per the paper's own test ("without both [tests and evals], the practice is always vibe
-coding"), closing gap #1 is what most strengthens WellForge's claim to be agentic
-engineering rather than structured-AI-assisted coding.
+Remaining items are deliberate scope boundaries (production-agent category / A2A — see
+§7) and the continuous-improvement flywheel (§6, partial). The core agentic-engineering
+gaps are addressed; what's left is breadth and the pilot's empirical calibration.
 
 ---
 
@@ -178,11 +180,19 @@ Shipped:
 - Honest seam: token attribution is approximate (sums by time window; depends on harness
   payloads). The semantic trace is exact; cost is a labelled estimate — not billed cost.
 
-### P3 — Intelligent model routing
-- Annotate agents with a complexity tier; route deterministic work (test-gen, lint-fix,
-  CI-monitoring, status) to a cheaper/faster model, frontier models for architect/plan.
-- The agent frontmatter already supports a `model:` field (adr-writer uses it) — make it a
-  deliberate, documented routing policy, not ad-hoc.
+### P3 — Intelligent model routing ✅ DONE (plugin v2.3.0)
+- ☑ Central PR-governed policy `config/model-routing.yml`: tiers (frontier/mid/cheap →
+  model alias) + per-agent tier with rationale. frontier = architect, evaluator;
+  mid = PO/designer/FE/BE-dev/devops/QE/adr/owasp; cheap reserved (honest: no core agent
+  is deterministic enough without rework-loop risk).
+- ☑ Every agent's frontmatter `model:` set to its tier (was ad-hoc: most inherited the
+  session model = silent frontier prices; owasp even pinned a stale id).
+- ☑ Drift guard `check-routing.py` (tested: passes on the 10 agents, catches a flipped
+  model). Aliases (not pinned ids) so the policy survives model upgrades.
+- ☑ CI eval judge defaults to sonnet (cost), in-session evaluator frontier (quality) —
+  a documented routing choice, not an accident. owasp escalates to frontier for regulated.
+- Honest seam: per-task auto-escalation isn't automatic (frontmatter is per-run) — complex
+  features escalate by deliberate human/orchestrator choice, documented in the policy.
 
 ### P4 — Strengthen the quality flywheel
 - A small **benchmark/regression eval suite** that compounds across features.

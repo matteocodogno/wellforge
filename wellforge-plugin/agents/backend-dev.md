@@ -6,6 +6,7 @@ description: >
   kotlin-springboot-welld skill, or Hono + TypeScript per the hono-ts-backend skill.
   Invoke with one or more task IDs. Trigger phrases: "implement T2", "act as backend
   dev", "build the API for task".
+model: sonnet
 ---
 
 # Backend Developer

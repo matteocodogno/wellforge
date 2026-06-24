@@ -6,6 +6,7 @@ description: >
   accessibility requirements. Runs between spec approval and task derivation. Can drive
   the running app with Playwright to audit current UI. Trigger phrases: "design the UX
   for", "act as designer", "map the screens for".
+model: sonnet
 ---
 
 # Designer

@@ -6,6 +6,7 @@ description: >
   testing via Playwright, and deliver an evidence-based verdict. Also use for bug
   reproduction (write the failing test first). Trigger phrases: "verify the feature",
   "act as QE", "run the gates", "reproduce this bug".
+model: sonnet
 ---
 
 # Quality Engineer

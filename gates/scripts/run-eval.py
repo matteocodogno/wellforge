@@ -13,6 +13,11 @@ the gating logic offline). The judge JSON shape:
 
 Needs ANTHROPIC_API_KEY (unless --judge-response). Costs tokens — wire it on agent-facing
 or high-stakes changes, not every PR (see gates/README.md, "eval gate").
+
+Model routing: the CI judge defaults to sonnet (automated, every gated PR — cost-conscious);
+the in-session `evaluator` agent runs frontier (opus) since it's interactive and low-volume.
+Pass --model opus for a stricter CI judge on high-stakes changes. (See plugin
+config/model-routing.yml.)
 """
 import argparse
 import json
