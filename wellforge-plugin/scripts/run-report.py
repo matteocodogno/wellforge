@@ -18,15 +18,27 @@ import os
 import sys
 
 
+# Embedded fallback so cost ALWAYS computes — even without pyyaml or the config file.
+# Keep in sync with config/model-pricing.yml (USD per 1M tokens).
+_FALLBACK_PRICING = {
+    "version": "fallback", "unit_tokens": 1000000,
+    "models": {"opus": {"input": 15.0, "output": 75.0},
+               "sonnet": {"input": 3.0, "output": 15.0},
+               "haiku": {"input": 0.8, "output": 4.0}},
+    "default": {"input": 3.0, "output": 15.0},
+}
+
+
 def load_pricing(path):
-    if not path or not os.path.exists(path):
-        return None
-    try:
-        import yaml
-    except ImportError:
-        return None
-    p = yaml.safe_load(open(path))
-    return p
+    if path and os.path.exists(path):
+        try:
+            import yaml
+            return yaml.safe_load(open(path))
+        except ImportError:
+            print("note: pyyaml unavailable — using built-in pricing fallback for cost estimate")
+        except Exception as e:  # noqa: BLE001
+            print(f"note: pricing config unreadable ({e}) — using built-in fallback")
+    return _FALLBACK_PRICING
 
 
 def price_for(model, pricing):
