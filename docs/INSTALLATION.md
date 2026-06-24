@@ -113,26 +113,11 @@ Plugin changes apply on the next Claude Code session (same marketplace path). Te
 and gate releases are consumed by projects explicitly — `/wellforge:upgrade` for
 templates, a `gates-v*` ref bump in CI for gates — never implicitly.
 
-## Migrating from an earlier internal version
-
-Early internal builds used the plugin name `welld-dev` and the marketplace handle `welld`.
-Both are now `wellforge`. Installed an old one? Re-register the marketplace and reinstall:
-
-```bash
-claude plugin uninstall welld-dev --scope user   # or: wellforge (if on the welld marketplace)
-claude plugin marketplace remove welld
-claude plugin marketplace add <wellforge-checkout>
-claude plugin install wellforge@wellforge --scope user
-```
-
-Then `/reload-plugins` (or a new session). Commands are `/wellforge:*`; everything else is
-identical.
-
 ## Uninstall
 
 ```bash
 claude plugin uninstall wellforge --scope user
-claude plugin marketplace remove WellForge
+claude plugin marketplace remove wellforge
 ```
 
 ---
