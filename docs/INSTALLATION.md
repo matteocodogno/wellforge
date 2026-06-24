@@ -98,6 +98,13 @@ behind…`) — that's the channel most updates arrive on. `brew upgrade` only m
 launcher, which changes rarely; "already installed" there usually means the launcher is
 current, not that your plugin is.
 
+> **The plugin runs from a version-keyed cache, not the checkout.** Pulling the source
+> (`git pull` / `wellforge update`'s first step) and `/reload-plugins` do **not** refresh
+> that cache — only a reinstall does. So `wellforge update` now reinstalls the plugin for
+> you (uninstall + install), and `wellforge doctor` flags a stale cache (`! plugin cache
+> loaded vX but source is vY`). After `wellforge update`, run `/reload-plugins`. Manual
+> refresh: `claude plugin uninstall wellforge && claude plugin install wellforge@wellforge --scope user`.
+
 ```bash
 # CLI binary (the formula is versioned — new releases appear via brew update):
 brew update
