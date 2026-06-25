@@ -20,3 +20,7 @@ jobs:
     uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
     with:
       working-directory: frontend
+
+  commits:
+    name: commit messages (Conventional Commits)
+    uses: {{ gates_repo }}/.github/workflows/commit-lint.yml@{{ gates_ref }}
