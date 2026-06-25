@@ -434,15 +434,18 @@ cmd_update() {
   # 4. the CLI itself — LAST, because upgrading replaces this running binary. Bash keeps
   # the already-open script readable, and nothing of substance runs after this.
   if is_brew_install && command -v brew >/dev/null; then
-    if brew outdated --quiet 2>/dev/null | grep -qx wellforge; then
+    # `brew outdated <pkg>` exits 0 when current, non-zero when an upgrade exists.
+    # (Don't grep `brew outdated --quiet` — it prints the TAP-QUALIFIED name
+    #  matteocodogno/wellforge/wellforge, not bare "wellforge".)
+    if brew outdated wellforge >/dev/null 2>&1; then
+      ok "cli" "current"
+    else
       say "  ${DIM}upgrading the wellforge CLI…${RST}"
       if brew upgrade wellforge >/dev/null 2>&1; then
         ok "cli" "upgraded to $(brew list --versions wellforge 2>/dev/null | awk '{print $2}') — active on next run"
       else
         warn "cli" "upgrade failed — run: brew upgrade wellforge"
       fi
-    else
-      ok "cli" "current"
     fi
   else
     say "${DIM}cli: running from a checkout (updated via the repo pull above) — not brew-managed.${RST}"
