@@ -386,7 +386,8 @@ prune_plugin_cache() {
       *) : ;;                                               # ignore non-version entries
     esac
   done
-  [ "$removed" -gt 0 ] && ok "plugin cache" "pruned $removed stale version(s), kept v$cur"
+  if [ "$removed" -gt 0 ]; then ok "plugin cache" "pruned $removed stale version(s), kept v$cur"; fi
+  return 0   # never non-zero — set -e would abort the caller (bit us when removed=0)
 }
 
 # True if this script is the brew-installed CLI (vs. run from a checkout).
