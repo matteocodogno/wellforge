@@ -1,0 +1,48 @@
+# Reusable Conventional Commits gate. Local commit-msg hooks can be skipped (--no-verify);
+# CI is the enforcement point. Consume it on PRs, pinned:
+#   jobs:
+#     commits:
+#       uses: matteocodogno/wellforge/.github/workflows/commit-lint.yml@gates-v4
+name: commit-lint
+
+on:
+  workflow_call:
+    inputs:
+      gates-repo:
+        required: false
+        type: string
+        default: matteocodogno/wellforge
+      gates-ref:
+        required: false
+        type: string
+        default: gates-v4
+
+jobs:
+  commit-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0           # need the PR commit range
+
+      - name: Checkout gate configs
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.gates-repo }}
+          ref: ${{ inputs.gates-ref }}
+          path: .welld-gates
+
+      - name: Lint commit messages in the PR
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          [ -z "$base" ] && { echo "not a PR — skipping"; exit 0; }
+          fail=0
+          for sha in $(git rev-list "$base..$head"); do
+            msg=$(git log -1 --format=%B "$sha")
+            if ! printf '%s' "$msg" | python3 "$GITHUB_WORKSPACE/.welld-gates/gates/scripts/check-commit-msg.py" -; then
+              echo "::error::$(git log -1 --format='%h %s' "$sha")"
+              fail=1
+            fi
+          done
+          exit $fail

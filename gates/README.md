@@ -53,6 +53,20 @@ LM-judge — "set the bar at the eval, not the demo."
 - In-session, `/wellforge:eval` + the `evaluator` agent use the same rubric, writing
   `specs/NNN-slug/eval-report.md`. CI and in-session share `configs/eval-rubric.yml`.
 
+## Conventional Commits gate
+
+Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org)
+(`type(scope)!: description`). Two layers, same validator (`scripts/check-commit-msg.py`):
+
+| Layer | What |
+|---|---|
+| Local `commit-msg` hook | `gates/hooks/commit-msg` — fast feedback. Install: `ln -sf ../../gates/hooks/commit-msg .git/hooks/commit-msg` (co-exists with a pre-commit gitleaks hook). Skippable with `--no-verify`. |
+| CI gate (`/.github/workflows/commit-lint.yml`) | the enforcement point — lints every commit in a PR, can't be skipped. Consume `@gates-v4`. |
+
+Types: `feat fix docs style refactor perf test build ci chore revert`. Merge/revert/
+fixup/squash commits are exempt. The WellForge dev agents already commit in this format;
+this gate enforces it for everyone (humans included — it would have caught a stray `harden:`).
+
 ## Brownfield ratchet (adopted projects)
 
 Legacy codebases can't start at 80% — and a permanently red gate teaches people to

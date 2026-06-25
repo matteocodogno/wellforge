@@ -1,0 +1,5 @@
+#!/bin/bash
+# Conventional Commits commit-msg hook. Install in a repo with:
+#   ln -sf ../../gates/hooks/commit-msg .git/hooks/commit-msg   (from the repo root)
+# Co-exists with other hooks (e.g. a pre-commit gitleaks hook) — different stage.
+exec python3 "$(git rev-parse --show-toplevel)/gates/scripts/check-commit-msg.py" "$1"
