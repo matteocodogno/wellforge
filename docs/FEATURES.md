@@ -137,6 +137,10 @@ reusable workflows' `env` blocks and change **only via PR** to this repo:
 | Dependency audit | `pnpm audit --audit-level high` + lockfile required | osv-scanner |
 | SAST | semgrep: WellForge rules + p/typescript | semgrep: WellForge rules + p/kotlin |
 
+- **Conventional Commits gate** — generated `quality.yml` also calls `commit-lint.yml`,
+  which validates every PR commit against `type(scope)!: description`. CI is the
+  enforcement point; a local `commit-msg` hook gives fast feedback. Shared validator
+  (`gates/scripts/check-commit-msg.py`); the dev agents already commit in this format.
 - Projects call the workflows pinned to a `gates-v*` tag — a threshold bump propagates
   by a one-line ref bump, no re-scaffold.
 - Fresh scaffolds don't fail their own gate: modules under 50 lines skip coverage
