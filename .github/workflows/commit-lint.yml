@@ -30,7 +30,7 @@ jobs:
         with:
           repository: ${{ inputs.gates-repo }}
           ref: ${{ inputs.gates-ref }}
-          path: .welld-gates
+          path: .wf-gates
 
       - name: Lint commit messages in the PR
         run: |
@@ -40,7 +40,7 @@ jobs:
           fail=0
           for sha in $(git rev-list "$base..$head"); do
             msg=$(git log -1 --format=%B "$sha")
-            if ! printf '%s' "$msg" | python3 "$GITHUB_WORKSPACE/.welld-gates/gates/scripts/check-commit-msg.py" -; then
+            if ! printf '%s' "$msg" | python3 "$GITHUB_WORKSPACE/.wf-gates/gates/scripts/check-commit-msg.py" -; then
               echo "::error::$(git log -1 --format='%h %s' "$sha")"
               fail=1
             fi
