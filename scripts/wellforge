@@ -367,21 +367,37 @@ ${GRN}done.${RST} Open a Claude Code session and verify:
 Next: docs/QUICKSTART.md — /wellforge:new for your first project."
 }
 
+# True if this script is the brew-installed CLI (vs. run from a checkout).
+is_brew_install() {
+  local src
+  src="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+  case "$src" in */Cellar/wellforge/*) return 0 ;; *) return 1 ;; esac
+}
+
 cmd_update() {
   say "WellForge update"
+
+  # Refresh brew metadata up front so the tool + CLI outdated-checks below are accurate.
+  if command -v brew >/dev/null; then
+    say "  ${DIM}refreshing brew metadata…${RST}"; brew update >/dev/null 2>&1 || true
+  fi
+
+  # 1. checkout (templates, gates, plugin source)
   if [ -d "$WELLFORGE_HOME/.git" ]; then
     git -C "$WELLFORGE_HOME" pull --ff-only 2>/dev/null \
       && ok "repo" "$(git -C "$WELLFORGE_HOME" describe --tags --always 2>/dev/null)" \
       || warn "repo" "pull skipped (no upstream / local changes)"
   fi
+
+  # 2. pinned dev tools
   if command -v brew >/dev/null; then
     for t in "${BREW_TOOLS[@]}"; do
       brew outdated --quiet 2>/dev/null | grep -qx "$t" && { brew upgrade "$t" >/dev/null; ok "$t" "upgraded"; } || true
     done
   fi
-  # Refresh the LOADED plugin. Claude Code runs the plugin from a version-keyed cache
-  # that neither `git pull` nor /reload-plugins refreshes — only a reinstall does. Without
-  # this, `wellforge update` updates the source but the running plugin stays stale.
+
+  # 3. the LOADED plugin — Claude Code runs it from a version-keyed cache that neither
+  # `git pull` nor /reload-plugins refreshes; only a reinstall does.
   if command -v claude >/dev/null && claude plugin list 2>/dev/null | grep -q "wellforge"; then
     claude plugin uninstall wellforge --scope user >/dev/null 2>&1
     if claude plugin install wellforge@wellforge --scope user >/dev/null 2>&1; then
@@ -391,8 +407,23 @@ cmd_update() {
     fi
   fi
   say "${DIM}plugin reloaded? run /reload-plugins (or start a new Claude Code session).${RST}"
-  say "${DIM}note: this does not update the wellforge CLI itself — for that:${RST}"
-  say "${DIM}  brew update && brew upgrade wellforge${RST}"
+
+  # 4. the CLI itself — LAST, because upgrading replaces this running binary. Bash keeps
+  # the already-open script readable, and nothing of substance runs after this.
+  if is_brew_install && command -v brew >/dev/null; then
+    if brew outdated --quiet 2>/dev/null | grep -qx wellforge; then
+      say "  ${DIM}upgrading the wellforge CLI…${RST}"
+      if brew upgrade wellforge >/dev/null 2>&1; then
+        ok "cli" "upgraded to $(brew list --versions wellforge 2>/dev/null | awk '{print $2}') — active on next run"
+      else
+        warn "cli" "upgrade failed — run: brew upgrade wellforge"
+      fi
+    else
+      ok "cli" "current"
+    fi
+  else
+    say "${DIM}cli: running from a checkout (updated via the repo pull above) — not brew-managed.${RST}"
+  fi
 }
 
 cmd_version() {
