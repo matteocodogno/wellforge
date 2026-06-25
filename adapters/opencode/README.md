@@ -20,6 +20,7 @@ Writes into `<project-dir>`:
 | `.opencode/commands/*.md` | `wellforge-plugin/commands/` | `description` + body; `$ARGUMENTS` works identically; `/wellforge:x` → `/x` (OpenCode commands are unnamespaced) |
 | `.opencode/skills/` | `wellforge-plugin/skills/` | SKILL.md is cross-tool — copied, refs translated |
 | `opencode.json` (`mcp`) | `wellforge-plugin/.mcp.json` | translated to OpenCode's `mcp` schema (local/remote) |
+| `.opencode/plugins/wellforge.js` | `adapters/opencode/plugin/` | enforcement plugin (static) — bash guard, post-lint, spec-drift |
 
 ## Provider / model routing
 
@@ -30,17 +31,24 @@ Claude Code; only the concrete model differs.
 
 ## Support tier (honest)
 
-This reaches the **workflow + agents + skills + MCP** — the bulk of WellForge. Two gaps
-vs. Claude Code, by design for now:
+This reaches the **workflow + agents + skills + MCP + enforcement** — the bulk of WellForge.
+The enforcement plugin (`.opencode/plugins/wellforge.js`) ports the high-value hooks:
 
-- **Hooks** (pre-bash guard, spec-drift, post-lint, observability traces) are **not**
-  generated — OpenCode hooks are TypeScript plugins (a follow-up). Until then, enforcement
-  on OpenCode leans on the **CI quality gates** (universal) rather than local hooks.
-- **Orchestration** uses OpenCode subagents (`@agent` / task); parallel dispatch fidelity
+| Claude Code hook | OpenCode event | Ported |
+|---|---|---|
+| pre-bash-guard | `tool.execute.before` (throw = deny) | ✓ (guard regexes parity-tested 13/13) |
+| post-lint | `file.edited` | ✓ prettier/eslint/ktlint, best-effort |
+| stop-verify (spec-drift) | `session.idle` | ✓ warns (can't block on idle) |
+| trace-subagent (token observability) | — | ✗ no OpenCode subagent-usage event |
+| session-start / pre-compact | `session.created` / `experimental.session.compacting` | not yet (lower value) |
+
+Remaining gaps vs. Claude Code, honestly:
+- **Token-trace observability** has no OpenCode equivalent event — covered by **CI gates**.
+- **Orchestration** uses OpenCode subagents (`@agent` / task); parallel-dispatch fidelity
   depends on OpenCode's runtime.
 
 ## Status
 
-Generator validated: 10 agents · 10 commands · skills · 3 MCP servers, all frontmatter
-valid, provider swap working. Next: hooks-as-TS-plugin, and `wellforge setup/migrate`
-wiring (tool + provider choice) to lay this down automatically.
+Validated: 10 agents · 10 commands · skills · 3 MCP servers · enforcement plugin (valid
+ESM, guard parity 13/13), provider swap working. Next: `wellforge setup/migrate` wiring
+(tool + provider choice) to lay this down automatically.

@@ -131,6 +131,17 @@ def gen_mcp(plugin, out):
     return len(mcp)
 
 
+def gen_plugin(out):
+    # Copy the static enforcement plugin (bash guard, post-lint, spec-drift) into place.
+    src = os.path.join(os.path.dirname(__file__), "plugin", "wellforge.js")
+    if not os.path.exists(src):
+        return 0
+    d = os.path.join(out, ".opencode", "plugins")
+    os.makedirs(d, exist_ok=True)
+    shutil.copy(src, os.path.join(d, "wellforge.js"))
+    return 1
+
+
 def main():
     ap = argparse.ArgumentParser()
     here = os.path.dirname(__file__)
@@ -152,10 +163,12 @@ def main():
     c = gen_commands(args.plugin, args.out)
     s = gen_skills(args.plugin, args.out)
     m = gen_mcp(args.plugin, args.out)
+    p = gen_plugin(args.out)
     print(f"✓ OpenCode adapter ({args.provider}) → {args.out}/.opencode/")
-    print(f"  {a} agents · {c} commands · {s} skill files · {m} MCP servers")
-    print("  note: hooks (guard/drift/observability) not ported — OpenCode hooks are a TS")
-    print("        plugin (follow-up); enforcement on OpenCode leans on the CI gates.")
+    print(f"  {a} agents · {c} commands · {s} skill files · {m} MCP servers · {p} enforcement plugin")
+    print("  enforcement plugin ports: bash guard, post-lint, spec-drift (session.idle).")
+    print("  NOT ported: token-trace observability (no OpenCode subagent-usage event) —")
+    print("  that gap is covered by the CI quality gates.")
     return 0
 
 
