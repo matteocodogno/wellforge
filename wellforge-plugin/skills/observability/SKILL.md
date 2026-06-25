@@ -86,9 +86,18 @@ overwrite a prior run.
   the right agents run in order, did QE run, was verification skipped) instead of scoring
   trajectory neutral-when-blind.
 
-## Honest limits
+## Honest limits — tokens/cost are NOT real cost
 
-Token attribution is approximate: the hook captures usage **only when the harness exposes
-it**, and the report sums by time window (loose under concurrent runs). The semantic trace
-(who/what/verdict/drift) is exact; the cost layer is an estimate. Don't present estimated
-cost as billed cost.
+The semantic trace (who ran, verdicts, drift) is **exact**. The token/cost layer is
+**structurally a large under-count** and must never be presented as real cost:
+
+- The `SubagentStop` hook captures only a fraction of subagent usage, and only when the
+  harness exposes it (observed ~10–20× under real `/usage` in pilot).
+- It **cannot see the main orchestrating loop** — most of the consumption — because only
+  subagents trigger the hook.
+- It **ignores cache read/write tokens**, which dominate cost on cache-heavy sessions.
+
+So treat the trace as an **audit trail**, not a cost meter. For real session cost, the
+agent CLI's own accounting is authoritative — `/usage` in Claude Code. WellForge does not
+try to reproduce it (a losing game against the tool's exact numbers); it reports what ran,
+clearly labels tokens as partial, and points to `/usage`.

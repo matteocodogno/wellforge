@@ -139,19 +139,17 @@ def main():
         print(json.dumps(report, indent=2))
         return 0
 
-    total_cost = sum(x["est_cost_usd"] or 0 for x in report)
     for x in report:
-        cost = f"~${x['est_cost_usd']:.3f}" if x["est_cost_usd"] is not None else "n/a"
-        toks = f"{x['input_tokens']}/{x['output_tokens']}tok" if x["events"] else "no token data"
+        toks = f"{x['input_tokens']}/{x['output_tokens']} tok (partial)" if x["events"] else "no token data"
         v = " ".join(f"{k}={vv}" for k, vv in x["verdicts"].items()) or "-"
         drift = f" ⚠{x['drift_open']} open drift" if x["drift_open"] else ""
         print(f"{x['run_id']}")
         print(f"    {x['command']} · {x['result']} · agents: {', '.join(x['agents'])}")
-        print(f"    verdicts: {v} · {toks} · {cost}{drift}")
-    if pricing:
-        print(f"\ntotal estimated cost: ~${total_cost:.3f} ({len(report)} runs) — estimate, not billed")
-    else:
-        print(f"\n{len(report)} runs (no pricing config — cost omitted)")
+        print(f"    verdicts: {v} · {toks}{drift}")
+    print(f"\n{len(report)} runs. Trajectory/verdicts/drift above are exact.")
+    print("Tokens are PARTIAL — captured from subagent stops only; the main orchestrating")
+    print("loop and cache tokens (which dominate cost) are NOT visible to WellForge.")
+    print("For real session cost run  /usage  (Claude Code), not these numbers.")
     return 0
 
 

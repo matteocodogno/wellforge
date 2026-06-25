@@ -67,25 +67,25 @@ End with a one-line summary: counts per phase (e.g. "1 done · 1 implementing ·
 
 ## Observability (when `.forge/runs/` exists)
 
-If the project has run traces, append a short **Runs** section. You MUST actually run the
-report script — do not hand-render the cost from the JSON:
+If the project has run traces, append a short **Runs** section from the report script:
 
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json [--feature <slug>]
 ```
 
-It returns, per run: `command`, `result`, `agents`, `verdicts`, `input_tokens`,
+Per run it returns `command`, `result`, `agents`, `verdicts`, `input_tokens`,
 `output_tokens`, `est_cost_usd`, `drift_open`. Render each run as: the agent trajectory
-(`a → b → c`), verdicts, `input/output` tokens, and **the `est_cost_usd` value from the
-script** (e.g. `~$0.10`). Label it an estimate, not billed.
+(`a → b → c`), the verdicts, and any open drift. **These are exact.**
 
-- The script ALWAYS returns a cost (it has a built-in pricing fallback). So the cost is
-  never unavailable — never write "cost n/a" or "no pricing config"; if `est_cost_usd` is
-  present, show it. If you genuinely could not run the script, say "run-report unavailable",
-  not "n/a".
-- If the captured tokens look implausibly low (e.g. a few hundred input on a multi-agent
-  run), note "(partial — token capture is best-effort)" — the trajectory/verdicts are
-  exact, the token/cost figure is approximate.
+**Cost/tokens — do NOT present them as real cost.** WellForge captures only a fraction of
+subagent tokens; it cannot see the main orchestrating loop or cache tokens, which dominate.
+The figure is structurally a small under-count (often by 10×+). So:
+
+- Show captured tokens only as `tok (partial)`, and the dollar figure only as a faint
+  lower bound if at all — never as "the cost".
+- End the section with: **"For real session cost run `/usage` (Claude Code) — WellForge's
+  numbers are partial subagent tokens only."**
+- The value of this section is the **audit trail** (who ran, verdicts, drift), not cost.
 - Omit the whole section if there are no traces.
 
 ## Hard rules
