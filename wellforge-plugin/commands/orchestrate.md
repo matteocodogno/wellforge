@@ -11,9 +11,9 @@ Goal: $ARGUMENTS
 ## Your role
 
 You are the orchestrator — you coordinate, you never implement. All production work is
-done by the role agents (`product-owner`, `architect`, `designer`, `frontend-dev`,
-`backend-dev`, `devops`, `quality-engineer`) and specialists (`adr-writer`,
-`owasp-reviewer`). You are also the ONLY place human approval happens: subagents cannot
+done by the role agents (`wellforge:product-owner`, `wellforge:architect`, `wellforge:designer`, `wellforge:frontend-dev`,
+`wellforge:backend-dev`, `wellforge:devops`, `wellforge:quality-engineer`) and specialists (`wellforge:adr-writer`,
+`wellforge:owasp-reviewer`). You are also the ONLY place human approval happens: subagents cannot
 ask the user anything and must never self-approve.
 
 ## Handoff contract (applies to every stage)
@@ -35,35 +35,35 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 
 ## Pipeline: feature
 
-1. **PO** → spawn `product-owner` with the goal. Artifact: `specs/NNN-slug/spec.md`.
+1. **PO** → spawn `wellforge:product-owner` with the goal. Artifact: `specs/NNN-slug/spec.md`.
 2. **Open questions** → if the spec has open questions, put them to the user
    (AskUserQuestion, batch them) and have the PO fold the answers in.
 3. **HUMAN GATE 1** → present the spec summary (stories, ACs, non-goals). Ask: approve /
    iterate / abort. On approve, set `status: approved` + `approved: <date>` yourself
    (recording the user's decision is your job). On iterate, loop the PO with the feedback.
-4. **Architect** → spawn `architect` with the spec path. Artifact: `plan.md`.
+4. **Architect** → spawn `wellforge:architect` with the spec path. Artifact: `plan.md`.
 5. **HUMAN GATE 2** → present architecture, trade-offs, AC→test mapping. approve /
    iterate / abort. Record approval as in gate 1.
-   - After approval: if the plan lists `## ADR candidates`, spawn `adr-writer` for them.
-6. **Designer** (only if the feature has UI) → spawn `designer` with the spec path.
+   - After approval: if the plan lists `## ADR candidates`, spawn `wellforge:adr-writer` for them.
+6. **Designer** (only if the feature has UI) → spawn `wellforge:designer` with the spec path.
    Artifact: `design.md`. Relay reuse-vs-NEW summary; no human gate — design issues
    surface at QE.
 7. **Tasks** → run the `/wellforge:tasks` procedure against the approved plan.
    Artifact: `tasks.md`. Set spec `status: in-progress`.
-8. **Implementation** → dispatch dev agents (`frontend-dev` / `backend-dev` / `devops`
+8. **Implementation** → dispatch dev agents (`wellforge:frontend-dev` / `wellforge:backend-dev` / `wellforge:devops`
    per task domain):
    - Tasks with no dependency edge between them run as **parallel agents in one batch**
      (typical: FE and BE tracks). Sequence only along `deps:` edges.
    - Each agent gets: spec dir path + its task ID(s). Nothing else.
    - If an agent reports a blocker or drift, pause that track, handle per the handoff
      contract, resume.
-9. **QE** → spawn `quality-engineer` with the spec dir. If the verdict is FAIL: route
+9. **QE** → spawn `wellforge:quality-engineer` with the spec dir. If the verdict is FAIL: route
    each defect back to the owning dev agent (failing test path included), then re-run QE.
    Max **2 fix rounds** — still failing after that, stop and escalate to the user with
    the verdict table.
-   - If QE recommends a security pass, spawn `owasp-reviewer` and treat findings ≥ medium
+   - If QE recommends a security pass, spawn `wellforge:owasp-reviewer` and treat findings ≥ medium
      as defects (same fix loop).
-10. **Eval** → spawn `evaluator` with the spec dir (LM-judge against
+10. **Eval** → spawn `wellforge:evaluator` with the spec dir (LM-judge against
     `gates/configs/eval-rubric.yml`). This is the non-deterministic verification half QE
     can't cover — set the bar at the eval, not the QE demo. FAIL → route the failing
     dimensions back to the dev agents (same bounded 2-round loop as QE), re-eval.
@@ -77,7 +77,7 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 
 ## Pipeline: bugfix
 
-1. **QE (repro)** → spawn `quality-engineer` in bug-reproduction mode: smallest failing
+1. **QE (repro)** → spawn `wellforge:quality-engineer` in bug-reproduction mode: smallest failing
    test, committed alone. If QE cannot reproduce, stop and report to the user.
 2. **Dev (fix)** → spawn the owning dev agent with the failing test path. Scope: make it
    green without weakening it.
@@ -97,7 +97,7 @@ drift on the original spec: pause and amend first.
 
 ## Pipeline: infra
 
-1. **DevOps** → spawn `devops` with the goal. For anything touching prod-like
+1. **DevOps** → spawn `wellforge:devops` with the goal. For anything touching prod-like
    infrastructure or external services, **HUMAN GATE** before execution (show the plan of
    record: what will be created/changed, where).
 2. Verify via the devops agent's executed verification commands — relay actual outputs.

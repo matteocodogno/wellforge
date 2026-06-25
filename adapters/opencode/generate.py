@@ -40,12 +40,14 @@ _AGENT_NAMES = []   # set in main(); lowercase agent ids (== filenames)
 
 def translate(s):
     """Map Claude Code refs to the namespaced OpenCode adapter:
-       /wellforge:x -> /wf-x   and   bare agent refs (lowercase) -> wf-<agent>.
-    Agent refs are lowercase (`architect`); prose is capitalized ("the Architect"),
-    so a lowercase word-boundary replace touches only the refs, not the prose."""
-    s = s.replace("/wellforge:", "/wf-")
+       /wellforge:x -> /wf-x        (slash commands)
+       wellforge:<agent> -> wf-<agent>   (namespaced dispatch refs — the Claude source
+                                          now namespaces these, so prose isn't touched)
+       `<agent>` -> `wf-<agent>`    (any still-bare BACKTICK'd ref; prose isn't backticked)"""
+    s = s.replace("/wellforge:", "/wf-").replace("wellforge:", "wf-")
+    bt = chr(96)
     for name in sorted(_AGENT_NAMES, key=len, reverse=True):   # longest first
-        s = re.sub(rf"(?<![\w-]){re.escape(name)}(?![\w-])", f"wf-{name}", s)
+        s = s.replace(f"{bt}{name}{bt}", f"{bt}wf-{name}{bt}")
     return s
 
 

@@ -28,7 +28,7 @@ resolved. Read spec.md, plan.md, tasks.md.
 
 ## Step 3 — Evaluate
 
-Spawn the `evaluator` agent with: the spec dir path, the central rubric
+Spawn the `wellforge:evaluator` agent with: the spec dir path, the central rubric
 (`gates/configs/eval-rubric.yml`), and any `specs/NNN-slug/eval.md` override. It scores
 each rubric dimension 1–5 with cited evidence, computes the weighted total, and writes
 `specs/NNN-slug/eval-report.md` with a PASS/FAIL verdict (PASS = total ≥ pass_score AND
@@ -47,7 +47,7 @@ every dimension ≥ floor).
 
 ## Step 5 — Record the run (observability)
 
-Write `.forge/runs/<run_id>.json` per the **observability** skill: the `evaluator` agent,
+Write `.forge/runs/<run_id>.json` per the **observability** skill: the `wellforge:evaluator` agent,
 its outcome + `score`, and `verdicts.eval`. Short trace, same audit trail as implement/
 orchestrate.
 

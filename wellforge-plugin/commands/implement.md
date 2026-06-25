@@ -42,7 +42,7 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 ## Step 3 — Dispatch
 
 - Set spec `status: in-progress` if it isn't already.
-- For each task, pick the agent by domain: `frontend-dev`, `backend-dev`, or `devops`
+- For each task, pick the agent by domain: `wellforge:frontend-dev`, `wellforge:backend-dev`, or `wellforge:devops`
   (infra/CI tasks). Each agent receives ONLY the spec dir path and its task ID(s) —
   it reads the ACs, contracts, and `done when:` itself.
 - Run dependency-independent tasks as **parallel agents in one batch**; sequence only
@@ -56,11 +56,11 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 
 ## Step 4 — Verify
 
-- Spawn `quality-engineer` scoped to the tasks just implemented: it runs the gates and
+- Spawn `wellforge:quality-engineer` scoped to the tasks just implemented: it runs the gates and
   checks the ACs those tasks serve, and returns a verdict table.
 - FAIL → route each defect back to the owning dev agent (failing test path included),
   re-run QE. **Max 2 fix rounds**, then stop and escalate with the verdict table.
-- If QE recommends a security pass, spawn `owasp-reviewer`; treat findings ≥ medium as
+- If QE recommends a security pass, spawn `wellforge:owasp-reviewer`; treat findings ≥ medium as
   defects (same loop).
 
 ## Step 5 — Report
