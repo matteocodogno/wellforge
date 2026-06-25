@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Verify agent frontmatter `model:` matches the model-routing policy (drift guard).
+"""Verify a tool's agent frontmatter `model:` matches routing × tiers (drift guard).
 
-  check-routing.py [--policy config/model-routing.yml] [--agents agents/]
+  check-routing.py [--tool claude] [--routing config/model-routing.yml]
+                   [--tiers config/model-tiers.yml] [--agents agents/]
 
-The policy is the source of truth (config/model-routing.yml); each agent's frontmatter
-must run the model its tier maps to. Exits non-zero on any mismatch or unlisted agent —
-run it after editing the policy or an agent, and in the wellforge repo's checks.
+routing.yml assigns each agent a TIER (tool-neutral); tiers.yml resolves tier → model per
+tool. Expected model for an agent = tiers[tool][routing.agents[agent].tier]. Exits non-zero
+on any mismatch — run after editing routing/tiers or an agent, and in the repo's checks.
 """
 import argparse
 import glob
@@ -34,13 +35,18 @@ def frontmatter_model(path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--policy", default=os.path.join(HERE, "..", "config", "model-routing.yml"))
+    ap.add_argument("--tool", default="claude")
+    ap.add_argument("--routing", default=os.path.join(HERE, "..", "config", "model-routing.yml"))
+    ap.add_argument("--tiers", default=os.path.join(HERE, "..", "config", "model-tiers.yml"))
     ap.add_argument("--agents", default=os.path.join(HERE, "..", "agents"))
     args = ap.parse_args()
 
-    policy = yaml.safe_load(open(args.policy))
-    tiers = policy["tiers"]
-    expected = {name: tiers[spec["tier"]] for name, spec in policy["agents"].items()}
+    routing = yaml.safe_load(open(args.routing))
+    tier_map = yaml.safe_load(open(args.tiers))["tools"]
+    if args.tool not in tier_map:
+        sys.exit(f"tool '{args.tool}' not in model-tiers.yml (have: {', '.join(tier_map)})")
+    tiers = tier_map[args.tool]                       # tier → model for this tool
+    expected = {name: tiers[spec["tier"]] for name, spec in routing["agents"].items()}
 
     problems = []
     checked = 0
@@ -62,11 +68,11 @@ def main():
         problems.append(f"{missing}: in policy but no agent file found")
 
     if problems:
-        print("model-routing drift:")
+        print(f"model-routing drift ({args.tool}):")
         for p in problems:
             print(f"  ✗ {p}")
         return 1
-    print(f"✓ model routing consistent — {checked} agents match {policy['version']}")
+    print(f"✓ model routing consistent ({args.tool}) — {checked} agents match {routing['version']}")
     return 0
 
 

@@ -76,7 +76,8 @@ Inside Claude Code:
 | `scripts/run-report.py` | Summarizes `.forge/runs/` — agents, verdicts, drift, estimated cost |
 | `scripts/check-routing.py` | Verifies agent frontmatter models match the routing policy (drift guard) |
 | `config/model-pricing.yml` | Per-model price table for run-report cost estimates |
-| `config/model-routing.yml` | Model-routing policy: agent → tier (frontier/mid/cheap) — drives OpEx down |
+| `config/model-routing.yml` | Tool-neutral: agent → tier (frontier/mid/cheap) — the portable routing policy |
+| `config/model-tiers.yml` | Per-tool: tier → concrete model (claude aliases, opencode provider/model) |
 | `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
 | `skills/observability/` | Run-trace (`.forge/runs/`) format conventions — producers and consumers |
 | `skills/connections/` | Standardized tool-connection checklists (GitHub, MCP, environments) — each ends with a verification command |

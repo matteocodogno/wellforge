@@ -5,19 +5,18 @@
 # (the paper's "intelligent model routing"). Without this, agents inherit the session
 # model — usually frontier — so every PO write and lint-fix pays opus prices.
 #
-# This is the SOURCE OF TRUTH for agent models. Each agent's frontmatter `model:` MUST
-# match the tier assigned here; `scripts/check-routing.py` verifies it (drift guard).
-# Changing the policy is a PR to the plugin, like a gate threshold. Tiers are calibrated
-# by the pilot — too cheap a tier causes rework loops that cost more than they save (the
-# OpEx trap), so move agents down a tier only with evidence.
+# TOOL-NEUTRAL: this file assigns each agent a TIER by judgment level — portable across
+# agent CLIs (architect = frontier on any provider). The tier → CONCRETE MODEL resolution
+# is per-tool in `model-tiers.yml`; an adapter generates each agent's frontmatter `model:`
+# from routing(agent→tier) × tiers(tool→model). `scripts/check-routing.py` verifies a
+# tool's generated agent files match. Changing this policy is a PR, like a gate threshold.
+# Move agents down a tier only with evidence — too cheap causes rework loops (the OpEx trap).
 version: routing-v1
 
-# Tier → model alias. Aliases (not pinned ids) so the policy survives model upgrades;
-# the trace hook captures the resolved id, and model-pricing.yml matches by substring.
-tiers:
-  frontier: opus      # highest judgment — design trade-offs, judging quality
-  mid:      sonnet    # capable default for structured writing + implementation
-  cheap:    haiku     # deterministic, low-judgment surfaces
+# The three tiers, by judgment level (concrete models per tool live in model-tiers.yml):
+#   frontier — highest judgment (design trade-offs, judging quality)
+#   mid      — structured writing + implementation
+#   cheap    — deterministic, low-judgment surfaces
 
 agents:
   # frontier — never cheap out: a weak architect or a foolable judge poisons everything

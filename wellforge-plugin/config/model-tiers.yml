@@ -1,0 +1,25 @@
+# Tier → concrete model, PER TOOL. The portable half of model routing.
+#
+# model-routing.yml stays tool-neutral: it assigns each agent a TIER (frontier/mid/cheap)
+# by judgment level — true on any provider. This file resolves a tier to the actual model
+# for each agent CLI, in that tool's expected format. An adapter generates each agent's
+# frontmatter `model:` from routing(agent→tier) × tiers(tool→model).
+#
+# Override freely (PR to the plugin): a team on OpenAI/Gemini/local just edits its tool's
+# row. Keep the three tiers' RELATIVE capability (frontier > mid > cheap) intact — the
+# routing rationale assumes it.
+version: tiers-v1
+
+tools:
+  # Claude Code — frontmatter accepts bare aliases; Claude Code resolves them.
+  claude:
+    frontier: opus
+    mid:      sonnet
+    cheap:    haiku
+
+  # OpenCode — provider-agnostic; we default to Anthropic for parity with Claude Code.
+  # Format is provider/model. Swap the provider/models for an OpenAI/Gemini/local team.
+  opencode:
+    frontier: anthropic/claude-opus-4-8
+    mid:      anthropic/claude-sonnet-4-6
+    cheap:    anthropic/claude-haiku-4-5-20251001

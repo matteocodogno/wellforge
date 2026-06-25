@@ -1,6 +1,6 @@
 {
   "name": "wellforge",
-  "version": "2.4.3",
+  "version": "2.5.0",
   "description": "Full-stack development plugin for Spring Boot Kotlin + React TypeScript projects. Bundles a spec-driven workflow (spec/plan/tasks/implement commands), a role-based agent team (PO, architect, designer, FE/BE dev, devops, QE, LM-judge evaluator) with an orchestrator, eval (rubric-scored LM-judge) and status commands, a Copier-based scaffolder with connection checklists, brownfield adoption, skills, security and ADR specialist agents, lifecycle hooks, and MCP servers (sequential-thinking, playwright, github).",
   "author": {
     "name": "WellForge"
