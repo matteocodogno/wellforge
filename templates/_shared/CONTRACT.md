@@ -58,6 +58,11 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
   PEP440-parseable tags; per-template tags like `name/v1` would be invisible to it).
   Both presets release in lockstep; a release touching one preset is a no-op update
   for the other. `gates-v*` tags are a separate, non-template series.
+- **Never tag a `gates-v*` and a `vX.Y.Z` on the same commit.** Copier ignores the
+  non-PEP440 `gates-v*` for version resolution, but `git describe` can still record it
+  as the scaffold's `_commit`, mislabeling the template version. When a release touches
+  both gates and templates, put the `gates-v*` tag on the gates-only commit and the
+  `vX.Y.Z` tag on a later (e.g. template-wiring or docs) commit — keep them one apart.
 - Semver discipline: patch = cosmetic, minor = additive, major = needs migration.
 - The hidden `template_version` answer mirrors the release version (bump it in the
   release commit); the manifest's `version` field reads it.
