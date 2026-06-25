@@ -12,8 +12,8 @@
 class Wellforge < Formula
   desc "WellForge internal platform: reproducible, AI-assisted project setup"
   homepage "https://github.com/matteocodogno/wellforge"
-  url "https://github.com/matteocodogno/wellforge/archive/refs/tags/v0.3.5.tar.gz"
-  sha256 "96a5a90b68a67d8edb0818850c9614a8b0a93aac7b18ec18a2448ce2127e7437"
+  url "https://github.com/matteocodogno/wellforge/archive/refs/tags/v0.3.7.tar.gz"
+  sha256 "d9a5965e7691f7c5b88a38a977a8eaf4944b4d772ef046984f265ae4b289398a"
   license "UNLICENSED" # internal WellForge tooling
   head "https://github.com/matteocodogno/wellforge.git", branch: "main"
 
