@@ -1,0 +1,85 @@
+# Self-CI for the WellForge repo itself.
+#
+# The other workflows here (quality-*.yml, commit-lint.yml, quality-eval.yml) are REUSABLE
+# gates with `on: workflow_call` only — they exist to be called by GENERATED projects and
+# never self-trigger. This file is the one workflow with real event triggers, so the
+# wellforge repo eats its own dog food: it lints its own commits, guards model-routing
+# drift, and proves both presets still scaffold a valid project.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Conventional Commits on wellforge's OWN history. Inline (not the reusable commit-lint.yml)
+  # because this repo also pushes straight to main — we lint the push range too, and we test
+  # HEAD's validator rather than the released gates-v* copy.
+  commits:
+    name: commit messages (Conventional Commits)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0           # need the full commit range
+      - name: Lint commit messages
+        run: |
+          if [ -n "${{ github.event.pull_request.base.sha }}" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+          # first push to a branch / unknown base → nothing to diff against
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "no comparable base ($base) — skipping"; exit 0
+          fi
+          fail=0
+          for sha in $(git rev-list "$base..$head"); do
+            msg=$(git log -1 --format=%B "$sha")
+            if ! printf '%s' "$msg" | python3 gates/scripts/check-commit-msg.py -; then
+              echo "::error::$(git log -1 --format='%h %s' "$sha")"
+              fail=1
+            fi
+          done
+          exit $fail
+
+  # Model-routing drift guard: every agent's frontmatter `model:` must match routing × tiers.
+  routing:
+    name: model-routing drift guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: check-routing.py (claude)
+        working-directory: wellforge-plugin
+        run: uv run --with pyyaml python scripts/check-routing.py --tool claude
+
+  # Both presets must still scaffold a valid project from the root copier.yml with --defaults.
+  # We assert the CONTRACT's required files exist; no build (keeps CI fast, no toolchains).
+  scaffold:
+    name: scaffold ${{ matrix.preset }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [spring-kotlin-react, hono-react]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: copier copy --defaults
+        run: uvx copier copy --defaults --trust . /tmp/out --data preset=${{ matrix.preset }}
+      - name: Assert required generated files (templates/_shared/CONTRACT.md)
+        run: |
+          fail=0
+          for f in .forge/manifest.json .copier-answers.yml AGENTS.md CLAUDE.md \
+                   .claude/settings.json specs/README.md mise.toml \
+                   .github/workflows/quality.yml .gitignore README.md; do
+            if [ -e "/tmp/out/$f" ]; then echo "  OK  $f"; else echo "::error::missing $f"; fail=1; fi
+          done
+          exit $fail
