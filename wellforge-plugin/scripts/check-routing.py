@@ -36,6 +36,7 @@ def frontmatter_model(path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tool", default="claude")
+    ap.add_argument("--provider", default="anthropic")
     ap.add_argument("--routing", default=os.path.join(HERE, "..", "config", "model-routing.yml"))
     ap.add_argument("--tiers", default=os.path.join(HERE, "..", "config", "model-tiers.yml"))
     ap.add_argument("--agents", default=os.path.join(HERE, "..", "agents"))
@@ -45,7 +46,10 @@ def main():
     tier_map = yaml.safe_load(open(args.tiers))["tools"]
     if args.tool not in tier_map:
         sys.exit(f"tool '{args.tool}' not in model-tiers.yml (have: {', '.join(tier_map)})")
-    tiers = tier_map[args.tool]                       # tier → model for this tool
+    if args.provider not in tier_map[args.tool]:
+        sys.exit(f"provider '{args.provider}' not in tiers for {args.tool} "
+                 f"(have: {', '.join(tier_map[args.tool])})")
+    tiers = tier_map[args.tool][args.provider]        # tier → model for this tool+provider
     expected = {name: tiers[spec["tier"]] for name, spec in routing["agents"].items()}
 
     problems = []

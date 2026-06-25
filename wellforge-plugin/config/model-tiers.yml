@@ -1,25 +1,36 @@
-# Tier → concrete model, PER TOOL. The portable half of model routing.
+# Tier → concrete model, per TOOL and PROVIDER. The portable half of model routing.
 #
-# model-routing.yml stays tool-neutral: it assigns each agent a TIER (frontier/mid/cheap)
-# by judgment level — true on any provider. This file resolves a tier to the actual model
-# for each agent CLI, in that tool's expected format. An adapter generates each agent's
-# frontmatter `model:` from routing(agent→tier) × tiers(tool→model).
+# model-routing.yml stays tool-neutral (agent → tier by judgment level). This file resolves
+# a tier to the actual model for a given tool + provider. setup/migrate let the user pick
+# the provider; the adapter generates each agent's `model:` from
+#   routing(agent → tier) × tiers(tool → provider → tier → model).
 #
-# Override freely (PR to the plugin): a team on OpenAI/Gemini/local just edits its tool's
-# row. Keep the three tiers' RELATIVE capability (frontier > mid > cheap) intact — the
-# routing rationale assumes it.
+# Override freely (PR to the plugin). Keep the three tiers' RELATIVE capability intact
+# (frontier > mid > cheap) — the routing rationale assumes it.
 version: tiers-v1
 
 tools:
-  # Claude Code — frontmatter accepts bare aliases; Claude Code resolves them.
+  # Claude Code — Anthropic-only; frontmatter takes bare aliases that Claude Code resolves.
   claude:
-    frontier: opus
-    mid:      sonnet
-    cheap:    haiku
+    anthropic:
+      frontier: opus
+      mid:      sonnet
+      cheap:    haiku
 
-  # OpenCode — provider-agnostic; we default to Anthropic for parity with Claude Code.
-  # Format is provider/model. Swap the provider/models for an OpenAI/Gemini/local team.
+  # OpenCode — provider-agnostic; the user picks a provider at setup/migrate. Model format
+  # is provider/model-id. `anthropic` is the default (parity with Claude Code) and the only
+  # set we ship verified; the others are TEMPLATES — confirm the model ids for your account
+  # (provider model names change) before relying on them.
   opencode:
-    frontier: anthropic/claude-opus-4-8
-    mid:      anthropic/claude-sonnet-4-6
-    cheap:    anthropic/claude-haiku-4-5-20251001
+    anthropic:                                    # ✓ default, verified
+      frontier: anthropic/claude-opus-4-8
+      mid:      anthropic/claude-sonnet-4-6
+      cheap:    anthropic/claude-haiku-4-5-20251001
+    openai:                                       # template — verify ids for your account
+      frontier: openai/gpt-5
+      mid:      openai/gpt-5-mini
+      cheap:    openai/gpt-5-nano
+    google:                                       # template — verify ids for your account
+      frontier: google/gemini-2.5-pro
+      mid:      google/gemini-2.5-flash
+      cheap:    google/gemini-2.5-flash-lite
