@@ -67,10 +67,26 @@ End with a one-line summary: counts per phase (e.g. "1 done · 1 implementing ·
 
 ## Observability (when `.forge/runs/` exists)
 
-If the project has run traces, append a short **Runs** section. Run
-`${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py` (optionally `--feature <slug>`) and relay
-its summary: recent runs (command, agents, verdicts), estimated cost, and any open drift.
-Label cost as an estimate, not billed. Omit the section entirely if there are no traces.
+If the project has run traces, append a short **Runs** section. You MUST actually run the
+report script — do not hand-render the cost from the JSON:
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json [--feature <slug>]
+```
+
+It returns, per run: `command`, `result`, `agents`, `verdicts`, `input_tokens`,
+`output_tokens`, `est_cost_usd`, `drift_open`. Render each run as: the agent trajectory
+(`a → b → c`), verdicts, `input/output` tokens, and **the `est_cost_usd` value from the
+script** (e.g. `~$0.10`). Label it an estimate, not billed.
+
+- The script ALWAYS returns a cost (it has a built-in pricing fallback). So the cost is
+  never unavailable — never write "cost n/a" or "no pricing config"; if `est_cost_usd` is
+  present, show it. If you genuinely could not run the script, say "run-report unavailable",
+  not "n/a".
+- If the captured tokens look implausibly low (e.g. a few hundred input on a multi-agent
+  run), note "(partial — token capture is best-effort)" — the trajectory/verdicts are
+  exact, the token/cost figure is approximate.
+- Omit the whole section if there are no traces.
 
 ## Hard rules
 
