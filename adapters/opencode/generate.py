@@ -35,9 +35,18 @@ def split_frontmatter(text):
     return yaml.safe_load(m.group(1)) or {}, m.group(2)
 
 
-def opencode_text(s):
-    """Translate Claude Code command refs to OpenCode (unnamespaced): /wellforge:x -> /x."""
-    return s.replace("/wellforge:", "/")
+_AGENT_NAMES = []   # set in main(); lowercase agent ids (== filenames)
+
+
+def translate(s):
+    """Map Claude Code refs to the namespaced OpenCode adapter:
+       /wellforge:x -> /wf-x   and   bare agent refs (lowercase) -> wf-<agent>.
+    Agent refs are lowercase (`architect`); prose is capitalized ("the Architect"),
+    so a lowercase word-boundary replace touches only the refs, not the prose."""
+    s = s.replace("/wellforge:", "/wf-")
+    for name in sorted(_AGENT_NAMES, key=len, reverse=True):   # longest first
+        s = re.sub(rf"(?<![\w-]){re.escape(name)}(?![\w-])", f"wf-{name}", s)
+    return s
 
 
 def perms_for(tools):
@@ -60,13 +69,13 @@ def gen_agents(plugin, out, models):
     for fp in sorted(__import__("glob").glob(os.path.join(plugin, "agents", "*.md"))):
         fm, body = split_frontmatter(open(fp).read())
         name = fm.get("name") or os.path.splitext(os.path.basename(fp))[0]
-        desc = opencode_text(" ".join((fm.get("description") or "").split()))
+        desc = translate(" ".join((fm.get("description") or "").split()))
         fmt = {"description": desc, "mode": "subagent",
                "model": models.get(name, models["_default"]),
                "permission": perms_for(fm.get("tools"))}
-        with open(os.path.join(d, f"{name}.md"), "w") as f:
+        with open(os.path.join(d, f"wf-{name}.md"), "w") as f:
             f.write("---\n" + yaml.safe_dump(fmt, sort_keys=False).strip() + "\n---\n")
-            f.write(opencode_text(body))
+            f.write(translate(body))
         n += 1
     return n
 
@@ -83,10 +92,10 @@ def gen_commands(plugin, out):
         fm_text, body = (mm.group(1), mm.group(2)) if mm else ("", text)
         name = os.path.splitext(os.path.basename(fp))[0]
         dm = re.search(r"^description:\s*(.+)$", fm_text, re.M)
-        desc = opencode_text(" ".join(dm.group(1).split())) if dm else name
+        desc = translate(" ".join(dm.group(1).split())) if dm else name
         fmt = yaml.safe_dump({"description": desc}, sort_keys=False, default_flow_style=False).strip()
-        with open(os.path.join(d, f"{name}.md"), "w") as f:
-            f.write("---\n" + fmt + "\n---\n" + opencode_text(body))
+        with open(os.path.join(d, f"wf-{name}.md"), "w") as f:
+            f.write("---\n" + fmt + "\n---\n" + translate(body))
         n += 1
     return n
 
@@ -104,7 +113,7 @@ def gen_skills(plugin, out):
         for fn in files:
             if fn.endswith(".md"):
                 p = os.path.join(root, fn)
-                open(p, "w").write(opencode_text(open(p).read()))
+                open(p, "w").write(translate(open(p).read()))
                 n += 1
     return n
 
@@ -158,6 +167,10 @@ def main():
     tiers = tiers_all[args.provider]
     models = {a: tiers[s["tier"]] for a, s in routing["agents"].items()}
     models["_default"] = tiers["mid"]   # unlisted agents (e.g. designer) → mid
+
+    # agent ids (== filenames) → drive the wf- ref translation in bodies/commands
+    _AGENT_NAMES[:] = [os.path.splitext(os.path.basename(f))[0]
+                       for f in __import__("glob").glob(os.path.join(args.plugin, "agents", "*.md"))]
 
     a = gen_agents(args.plugin, args.out, models)
     c = gen_commands(args.plugin, args.out)

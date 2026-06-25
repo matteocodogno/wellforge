@@ -177,6 +177,54 @@ check_plugin() {
   fi
 }
 
+# Detect pre-existing user components that clash with WellForge's — advisory (warns,
+# never fails). Reserved names come from the plugin itself (no drift). Scans the user's
+# global (~/.claude) and, when run from a project, project-local (.claude) config.
+check_collisions() {
+  command -v claude >/dev/null || return 0
+  local plugin="$WELLFORGE_HOME/wellforge-plugin"
+  [ -d "$plugin" ] || return 0
+  local found=0
+
+  local wf_agents wf_skills wf_mcp wf_events
+  wf_agents=$(for f in "$plugin"/agents/*.md; do [ -e "$f" ] && basename "$f" .md; done)
+  wf_skills=$(for d in "$plugin"/skills/*/; do [ -d "$d" ] && basename "$d"; done)
+  wf_mcp=$(jq -r '.mcpServers|keys[]' "$plugin/.mcp.json" 2>/dev/null)
+  wf_events=$(jq -r '.hooks|keys[]' "$plugin/hooks/hooks.json" 2>/dev/null)
+
+  local scopes=("$HOME/.claude:global"); [ -d ".claude" ] && scopes+=(".claude:project")
+  for sc in "${scopes[@]}"; do
+    local dir="${sc%%:*}" label="${sc##*:}"
+    for f in "$dir"/agents/*.md; do
+      [ -e "$f" ] || continue
+      local n; n=$(basename "$f" .md)
+      echo "$wf_agents" | grep -qx "$n" && { warn "collision" "$label agent '$n' shares a WellForge agent name — bare refs may be ambiguous"; found=1; }
+    done
+    for d in "$dir"/skills/*/; do
+      [ -d "$d" ] || continue
+      local n; n=$(basename "$d")
+      echo "$wf_skills" | grep -qx "$n" && { warn "collision" "$label skill '$n' shares a WellForge skill name"; found=1; }
+    done
+    local sf="$dir/settings.json"
+    if [ -f "$sf" ] && [ -n "$wf_events" ]; then
+      local ue; ue=$(jq -r '(.hooks//{})|keys[]' "$sf" 2>/dev/null)
+      for e in $ue; do
+        echo "$wf_events" | grep -qx "$e" && { warn "collision" "$label hook on '$e' runs alongside WellForge's — a blocking hook could interfere"; found=1; }
+      done
+    fi
+  done
+  # MCP: project .mcp.json + global ~/.claude.json
+  for mf in ".mcp.json" "$HOME/.claude.json"; do
+    [ -f "$mf" ] || continue
+    local um; um=$(jq -r '(.mcpServers//{})|keys[]' "$mf" 2>/dev/null)
+    for s in $um; do
+      echo "$wf_mcp" | grep -qx "$s" && { warn "collision" "MCP server '$s' ($mf) shadows WellForge's same-named server"; found=1; }
+    done
+  done
+
+  [ "$found" = "0" ] && ok "collisions" "none — no clashing agents/skills/hooks/MCP"
+}
+
 # ─── telegram ────────────────────────────────────────────────────────────────
 telegram_configured() {
   { [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; } || [ -f "$TELEGRAM_ENV_FILE" ]
@@ -297,6 +345,7 @@ cmd_doctor() {
   say "wellforge:"
   check_repo
   check_plugin
+  check_collisions
   if telegram_configured; then ok "telegram" "configured ($TELEGRAM_ENV_FILE)"; else
     warn "telegram" "not configured (optional) — run: wellforge telegram"
   fi

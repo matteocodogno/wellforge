@@ -16,8 +16,8 @@ Writes into `<project-dir>`:
 
 | Output | From | Notes |
 |---|---|---|
-| `.opencode/agents/*.md` | `wellforge-plugin/agents/` | OpenCode frontmatter: `mode: subagent`, `model` (provider/model), `permission` block mapped from the Claude `tools:` list |
-| `.opencode/commands/*.md` | `wellforge-plugin/commands/` | `description` + body; `$ARGUMENTS` works identically; `/wellforge:x` → `/x` (OpenCode commands are unnamespaced) |
+| `.opencode/agents/wf-*.md` | `wellforge-plugin/agents/` | `wf-` prefixed (`wf-architect`); `mode: subagent`, `model` (provider/model), `permission` block from the Claude `tools:` list |
+| `.opencode/commands/wf-*.md` | `wellforge-plugin/commands/` | `$ARGUMENTS` identical; **`wf-` prefixed** (`/wf-spec`) — OpenCode commands are unnamespaced, so the prefix avoids clashing with a user's existing `/spec` etc. `/wellforge:x` → `/wf-x`, bare agent refs → `wf-<agent>` |
 | `.opencode/skills/` | `wellforge-plugin/skills/` | SKILL.md is cross-tool — copied, refs translated |
 | `opencode.json` (`mcp`) | `wellforge-plugin/.mcp.json` | translated to OpenCode's `mcp` schema (local/remote) |
 | `.opencode/plugins/wellforge.js` | `adapters/opencode/plugin/` | enforcement plugin (static) — bash guard, post-lint, spec-drift |
