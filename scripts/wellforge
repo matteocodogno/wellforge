@@ -367,6 +367,28 @@ ${GRN}done.${RST} Open a Claude Code session and verify:
 Next: docs/QUICKSTART.md — /wellforge:new for your first project."
 }
 
+# Remove stale plugin cache version dirs, keeping only the current (source) version.
+# Conservative: operates ONLY inside the wellforge cache root, only on X.Y.Z-shaped dir
+# names, never the active version, and only when the current version is known.
+prune_plugin_cache() {
+  local cache_root="$HOME/.claude/plugins/cache/wellforge/wellforge"
+  [ -d "$cache_root" ] || return 0
+  local cur
+  cur=$(grep -m1 '"version"' "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json" 2>/dev/null | sed 's/[^0-9.]//g')
+  [ -n "$cur" ] || return 0   # can't determine active version → never prune
+  local removed=0 d name
+  for d in "$cache_root"/*/; do
+    [ -d "$d" ] || continue
+    name=$(basename "$d")
+    case "$name" in
+      "$cur") continue ;;                                   # keep the active version
+      [0-9]*.[0-9]*.[0-9]*) rm -rf "$d" 2>/dev/null && removed=$((removed+1)) ;;
+      *) : ;;                                               # ignore non-version entries
+    esac
+  done
+  [ "$removed" -gt 0 ] && ok "plugin cache" "pruned $removed stale version(s), kept v$cur"
+}
+
 # True if this script is the brew-installed CLI (vs. run from a checkout).
 is_brew_install() {
   local src
@@ -402,6 +424,7 @@ cmd_update() {
     claude plugin uninstall wellforge --scope user >/dev/null 2>&1
     if claude plugin install wellforge@wellforge --scope user >/dev/null 2>&1; then
       ok "plugin" "reinstalled from source (cache refreshed)"
+      prune_plugin_cache   # tidy stale version dirs now that the fresh one exists
     else
       warn "plugin" "reinstall failed — run: claude plugin install wellforge@wellforge --scope user"
     fi
