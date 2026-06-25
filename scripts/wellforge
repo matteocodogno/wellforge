@@ -180,7 +180,28 @@ check_plugin() {
 # Detect pre-existing user components that clash with WellForge's — advisory (warns,
 # never fails). Reserved names come from the plugin itself (no drift). Scans the user's
 # global (~/.claude) and, when run from a project, project-local (.claude) config.
+# Move a colliding loose component to a reversible backup (never delete user content).
+# Prompts only when --fix is set AND interactive; otherwise advisory. Returns 0 if resolved.
+collision_resolve() {  # <path> <kind: agent|skill> <name> <label> <fix>
+  local path="$1" kind="$2" name="$3" label="$4" fix="$5"
+  if [ -z "$fix" ] || [ ! -t 0 ]; then
+    warn "collision" "$label $kind '$name' shares a WellForge $kind name${kind:+ — run 'wellforge doctor --fix' to disable it}"
+    return 1
+  fi
+  local backup; backup="$(dirname "$path")-disabled-by-wellforge"
+  printf "  disable %s %s '%s'? WellForge keeps wellforge:%s; moves to %s (reversible) [y/N] " "$label" "$kind" "$name" "$name" "$backup"
+  read -r ans
+  case "$ans" in
+    y|Y|yes)
+      mkdir -p "$backup" 2>/dev/null && mv "$path" "$backup/" 2>/dev/null \
+        && { ok "fixed" "$label $kind '$name' disabled → $backup/ (mv back to re-enable)"; return 0; } \
+        || { warn "collision" "couldn't move $path — disable it manually"; return 1; } ;;
+    *) warn "collision" "$label $kind '$name' kept — overlaps WellForge's"; return 1 ;;
+  esac
+}
+
 check_collisions() {
+  local fix="${1:-}"
   command -v claude >/dev/null || return 0
   local plugin="$WELLFORGE_HOME/wellforge-plugin"
   [ -d "$plugin" ] || return 0
@@ -198,18 +219,18 @@ check_collisions() {
     for f in "$dir"/agents/*.md; do
       [ -e "$f" ] || continue
       local n; n=$(basename "$f" .md)
-      echo "$wf_agents" | grep -qx "$n" && { warn "collision" "$label agent '$n' shares a WellForge agent name — bare refs may be ambiguous"; found=1; }
+      echo "$wf_agents" | grep -qx "$n" && { collision_resolve "$f" agent "$n" "$label" "$fix" || found=1; }
     done
     for d in "$dir"/skills/*/; do
       [ -d "$d" ] || continue
       local n; n=$(basename "$d")
-      echo "$wf_skills" | grep -qx "$n" && { warn "collision" "$label skill '$n' shares a WellForge skill name"; found=1; }
+      echo "$wf_skills" | grep -qx "$n" && { collision_resolve "${d%/}" skill "$n" "$label" "$fix" || found=1; }
     done
     local sf="$dir/settings.json"
     if [ -f "$sf" ] && [ -n "$wf_events" ]; then
       local ue; ue=$(jq -r '(.hooks//{})|keys[]' "$sf" 2>/dev/null)
       for e in $ue; do
-        echo "$wf_events" | grep -qx "$e" && { warn "collision" "$label hook on '$e' runs alongside WellForge's — a blocking hook could interfere"; found=1; }
+        echo "$wf_events" | grep -qx "$e" && { warn "collision" "$label hook on '$e' runs alongside WellForge's — a blocking hook could interfere (not auto-fixed: it's your config; edit settings.json if needed)"; found=1; }
       done
     fi
   done
@@ -218,7 +239,7 @@ check_collisions() {
     [ -f "$mf" ] || continue
     local um; um=$(jq -r '(.mcpServers//{})|keys[]' "$mf" 2>/dev/null)
     for s in $um; do
-      echo "$wf_mcp" | grep -qx "$s" && { warn "collision" "MCP server '$s' ($mf) shadows WellForge's same-named server"; found=1; }
+      echo "$wf_mcp" | grep -qx "$s" && { warn "collision" "MCP server '$s' ($mf) shadows WellForge's (not auto-fixed: it's your config; rename it in $mf if needed)"; found=1; }
     done
   done
 
@@ -345,7 +366,7 @@ cmd_doctor() {
   say "wellforge:"
   check_repo
   check_plugin
-  check_collisions
+  check_collisions "$fix"
   if telegram_configured; then ok "telegram" "configured ($TELEGRAM_ENV_FILE)"; else
     warn "telegram" "not configured (optional) — run: wellforge telegram"
   fi
