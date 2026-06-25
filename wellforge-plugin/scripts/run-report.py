@@ -35,9 +35,10 @@ def load_pricing(path):
             import yaml
             return yaml.safe_load(open(path))
         except ImportError:
-            print("note: pyyaml unavailable — using built-in pricing fallback for cost estimate")
+            # stderr, never stdout — --json output must stay pure JSON
+            print("note: pyyaml unavailable — using built-in pricing fallback", file=sys.stderr)
         except Exception as e:  # noqa: BLE001
-            print(f"note: pricing config unreadable ({e}) — using built-in fallback")
+            print(f"note: pricing config unreadable ({e}) — using built-in fallback", file=sys.stderr)
     return _FALLBACK_PRICING
 
 
