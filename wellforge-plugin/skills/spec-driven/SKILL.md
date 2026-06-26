@@ -30,9 +30,16 @@ specs/
 │   ├── tasks.md     # ordered, dependency-aware task list
 │   ├── eval.md      # optional — per-feature rubric overrides (add dims / raise floors only)
 │   └── eval-report.md  # LM-judge scored verdict (written by /wellforge:eval)
-└── 002-csv-export/
-    └── spec.md
+├── 002-csv-export/
+│   └── spec.md
+└── 003-pricing-poc/
+    └── brief.md     # spike tier ONLY — a brief replaces spec/plan/tasks (see rigor-tiers)
 ```
+
+The full spec→plan→tasks set is the `production` tier. Lower **rigor tiers** carry less:
+`mvp` skips `plan.md`/`design.md`/`eval` (one gate), and `spike` replaces the whole set with
+a single `brief.md`. The tier lives in the feature's frontmatter as `rigor:` (default
+`production`). See the **rigor-tiers** skill — load it whenever a feature isn't production.
 
 - `NNN` is zero-padded and sequential across the project (`ls specs/ | sort | tail -1` to find the next).
 - `slug` is short kebab-case; never rename a directory after creation (it's referenced from commits).
@@ -64,6 +71,7 @@ draft ──► approved ──► in-progress ──► done
 id: 002
 slug: csv-export
 status: draft
+rigor: production   # production (default) | mvp | spike — see the rigor-tiers skill
 created: 2026-06-04
 ---
 
@@ -138,7 +146,10 @@ Rules: every task references at least one AC; every AC is covered by at least on
 
 - `/wellforge:plan` MUST refuse to run if spec.md status is not `approved`.
 - `/wellforge:tasks` MUST refuse to run if plan.md status is not `approved`.
-- Never skip a stage "because it's small" — for trivial changes the spec is 10 lines, not absent.
+- Never skip a stage "because it's small" — for trivial changes the spec is 10 lines, not
+  absent. The ONLY sanctioned way to run fewer stages is a **declared lower rigor tier**
+  (`rigor: mvp`/`spike` in frontmatter, via `/wellforge:spike` or `--mode`) — explicit and
+  recorded, never an ad-hoc skip. These gates apply in full to the `production` tier.
 
 ## Drift rule
 

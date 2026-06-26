@@ -41,3 +41,10 @@ agents:
 # mid. The mechanism is the agent frontmatter (fixed per run), so escalation is a
 # deliberate human/orchestrator choice — flag it in the plan, then run the harder model —
 # not silent per-task auto-routing. Honest about the seam.
+#
+# Rigor tiers (see the `rigor-tiers` skill) do NOT re-tier agents — frontmatter `model:` is
+# fixed per agent, so the same agent can't run at two tiers. Tiers save cost by COMPOSITION:
+#   spike — no agents at all; the main loop builds on the session model. This file is unused.
+#   mvp   — mid agents only; the orchestrator simply never spawns the frontier agents
+#           (architect, evaluator). The map below = the `production` tier.
+#   production — the full map below.

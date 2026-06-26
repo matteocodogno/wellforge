@@ -1,12 +1,26 @@
 ---
 description: Orchestrate the full agent team on a goal (spec → plan → tasks → implementation → QE verdict)
-argument-hint: <goal — feature request, bug report, refactor, or infra change>
+argument-hint: <goal> [--mode spike|mvp|production] — feature request, bug report, refactor, or infra change
 ---
 
 Drive the WellForge agent team end-to-end on this goal, following the **spec-driven** skill
 conventions (load that skill now).
 
 Goal: $ARGUMENTS
+
+## Step 0 — Resolve the rigor tier
+
+Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > the feature's
+`rigor:` frontmatter > `.forge/manifest.json` `rigor` > `production`). **State the resolved
+tier and where it came from before doing anything.** Strip the `--mode` token from the goal.
+
+- **`spike`** → do NOT run the pipeline below. Hand off to the `/wellforge:spike` procedure
+  (main loop, brief.md, no agents, advisory gates). Run that and stop.
+- **`mvp`** → run the **mvp** pipeline (one gate, mid agents only, no architect/designer/eval).
+- **`production`** (default) → run the full **feature** pipeline as written.
+
+bugfix / refactor / infra flows below are tier-independent (always production-shaped) — a
+spike doesn't need orchestration, and infra/refactor carry their own gate by nature.
 
 ## Your role
 
@@ -71,9 +85,35 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
     set spec `status: done`, summarize (stories delivered, QE + eval verdict tables,
     commits), suggest next steps.
 12. **Record the run** → write the run trace per the **observability** skill:
-    `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`) capturing the full pipeline —
-    every agent + outcome, drift events, QE + eval verdicts, `result`. Write it even when
-    the pipeline escalates or stops early (`result` records that). The audit trail.
+    `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`, include `rigor: production`)
+    capturing the full pipeline — every agent + outcome, drift events, QE + eval verdicts,
+    `result`. Write it even when the pipeline escalates or stops early (`result` records
+    that). The audit trail.
+
+## Pipeline: mvp  (rigor tier `mvp` — collapsed, one gate, mid agents only)
+
+A faster feature flow for a first release you'll validate with users. Same handoff
+contract and disk-based artifacts, fewer stages. **Never spawn the frontier agents**
+(`wellforge:architect`, `wellforge:evaluator`) — that's how mvp stays cheap (rigor-tiers skill).
+
+1. **PO** → spawn `wellforge:product-owner` with the goal. Artifact: `specs/NNN-slug/spec.md`
+   with `rigor: mvp` in frontmatter. Fold any open questions into one AskUserQuestion round.
+2. **HUMAN GATE (the only one)** → present the spec summary. approve / iterate / abort;
+   record approval as usual.
+3. **Tasks** → run the `/wellforge:tasks` procedure yourself (main loop) directly against the
+   approved spec — NO separate architect/plan.md. Capture the minimal architecture inline in
+   `tasks.md` (touched files, contracts per task). Set spec `status: in-progress`.
+4. **Implementation** → dispatch dev agents (`wellforge:frontend-dev` / `wellforge:backend-dev` /
+   `wellforge:devops`) exactly as in the feature flow (parallel where the DAG allows).
+5. **QE (light)** → spawn `wellforge:quality-engineer` scoped to the work, in **advisory** mode:
+   it runs the gates and reports numbers, but only **SAST-high, lint, typecheck, and the
+   security floor BLOCK** (rigor-tiers). Coverage is reported as gap-to-80%, not enforced.
+   Same bounded 2-round fix loop for blocking defects only.
+6. **Close** → when the blocking gates pass and all tasks are checked: set spec
+   `status: done`. **No eval** — mvp's `done` is QE-light, not the LM-judge. End with the
+   rigor-tiers visibility reminder: "rigor: mvp — coverage advisory, not yet production;
+   `/wellforge:promote NNN-slug --to production` to graduate (adds plan, full coverage, eval)."
+7. **Record the run** → trace as below with `command: orchestrate`, `rigor: mvp`.
 
 ## Pipeline: bugfix
 
@@ -104,6 +144,10 @@ drift on the original spec: pause and amend first.
 
 ## Hard rules
 
+- The **security floor** (secret scan, no hardcoded creds, critical-CVE audit) blocks in
+  EVERY tier — `mvp` may make coverage advisory but never waives the floor (rigor-tiers).
+- A lower tier is never silently promoted: `mvp`/`spike` reach `production` only via
+  `/wellforge:promote`. State the resolved tier; print the visibility reminder for non-production.
 - Exactly the gates listed — never auto-approve, never add approval theater elsewhere.
 - Never implement, edit code, or write artifacts yourself (the two exceptions: recording
   user approvals in frontmatter, and trivial mechanical fixes to artifact frontmatter).

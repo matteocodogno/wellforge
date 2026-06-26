@@ -1,6 +1,6 @@
 ---
 description: Implement tasks of a feature from its approved tasks.md (dependency-aware, parallel, QE-verified)
-argument-hint: [feature] [tasks] — e.g. "001-user-auth", "user-auth T3,T5", "T2-T4", "next", "all"
+argument-hint: [feature] [tasks] [--mode mvp|production] — e.g. "001-user-auth", "user-auth T3,T5", "T2-T4", "next", "all"
 ---
 
 Implement tasks from a feature's `tasks.md`, following the **spec-driven** skill
@@ -8,6 +8,14 @@ conventions (load it now). This is the implementation slice of the orchestrator,
 directly — for when spec/plan/tasks already exist and you just want code written.
 
 Arguments: $ARGUMENTS
+
+## Step 0 — Resolve the rigor tier
+
+Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > the feature's
+`rigor:` frontmatter > `.forge/manifest.json` `rigor` > `production`) and strip the flag from
+the args. State it. `spike` is not an implement tier (spikes have no `tasks.md`) — if asked
+for `--mode spike`, treat it as `mvp`. The tier changes only **Step 4 (verify)** and the
+closing suggestion; dispatch is identical.
 
 ## Step 1 — Resolve the feature, then the selection
 
@@ -58,8 +66,13 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 
 - Spawn `wellforge:quality-engineer` scoped to the tasks just implemented: it runs the gates and
   checks the ACs those tasks serve, and returns a verdict table.
-- FAIL → route each defect back to the owning dev agent (failing test path included),
-  re-run QE. **Max 2 fix rounds**, then stop and escalate with the verdict table.
+- **`production`** — every gate blocks. FAIL → route each defect back to the owning dev agent
+  (failing test path included), re-run QE. **Max 2 fix rounds**, then stop and escalate.
+- **`mvp`** — QE runs in **advisory** mode (rigor-tiers): only SAST-high, lint, typecheck, and
+  the security floor block; coverage is reported as gap-to-80%, not enforced. Same 2-round loop
+  for blocking defects only.
+- The **security floor** (secret scan, no hardcoded creds, critical-CVE audit) blocks in BOTH
+  tiers — never waived.
 - If QE recommends a security pass, spawn `wellforge:owasp-reviewer`; treat findings ≥ medium as
   defects (same loop).
 
@@ -67,9 +80,11 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 
 - Tasks done (with IDs), tasks skipped (already checked) and deferred (unmet deps not in
   scope), QE verdict, commits. State what remains unchecked in `tasks.md`.
-- If every task is now checked and QE passed, the next step is the **eval**
-  (`/wellforge:eval <feature>`) — the LM-judge rubric scoring is the gate into `done`,
-  not the QE pass alone. Suggest it; don't set `done` directly from here.
+- If every task is now checked and QE passed, suggest the next step **by tier**:
+  - `production` → the **eval** (`/wellforge:eval <feature>`) — the LM-judge rubric scoring is
+    the gate into `done`, not the QE pass alone. Suggest it; don't set `done` from here.
+  - `mvp` → no eval; mvp's `done` is QE-light. Note coverage is advisory and end with the
+    rigor reminder: "rigor: mvp — `/wellforge:promote <feature> --to production` to graduate."
 
 ## Step 6 — Record the run (observability)
 

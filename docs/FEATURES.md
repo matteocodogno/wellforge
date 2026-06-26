@@ -51,6 +51,22 @@ Key properties:
 Why in-house instead of BMAD/Kiro/cc-sdd: we keep the proven spec→plan→tasks *shape*
 but own the prompts, so they encode WellForge conventions and don't churn under us.
 
+**Rigor tiers — match ceremony to stakes.** Full rigor is right for production, wasteful for
+a feasibility spike that may be thrown away. A feature's `rigor:` (default `production`)
+selects how much pipeline runs:
+
+| Tier | Pipeline | Gates | For |
+|---|---|---|---|
+| `spike` | `/wellforge:spike` — main loop, `brief.md` → code, **no agents, no approval gate** | lint/typecheck/build advisory | PoC / feasibility / business-model experiments |
+| `mvp` | `--mode mvp` — PO → 1 gate → tasks → dev agents → light QE (no architect/designer/eval) | SAST-high blocks, coverage advisory | first release to validate with users |
+| `production` | the full flow above (unchanged) | full 80% + SAST + eval | long-lived products |
+
+The principle is **defer, don't lower**: a lower tier is a *declared, recorded* debt (the
+`rigor:` frontmatter), promoted to full rigor only via `/wellforge:promote` — never silently.
+A **non-negotiable security floor** (secret scan, no hardcoded creds, critical-CVE audit)
+blocks in *every* tier; "fast" never means "leaks credentials." Canonical reference: the
+`rigor-tiers` skill.
+
 ## 2. Multi-agent team
 
 Nine agents with crisp role boundaries — each has explicit inputs, one artifact, and a
