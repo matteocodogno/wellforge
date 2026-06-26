@@ -27,8 +27,9 @@ uvx copier copy --trust <wellforge repo/URL> <dest> --data preset=<preset>
 | `project_slug` | str | default derived from project_name (kebab-case); dir + artifact name |
 | `description` | str | one line |
 | `ci` | choice | `github` (default) / `none` |
+| `rigor` | choice | `production` (default) / `mvp` / `spike` — sets CI strictness; recorded in the manifest (wellforge rigor-tiers skill) |
 | `gates_repo` | str | default `matteocodogno/wellforge` — owner/repo hosting the reusable gate workflows |
-| `gates_ref` | str | default `gates-v0` — tag pinned in generated CI |
+| `gates_ref` | str | default `gates-v5` — tag pinned in generated CI |
 
 No "generated date" question/field: hidden (`when: false`) answers are not persisted to
 `.copier-answers.yml`, so copy-time injected values diverge from the re-rendered base on
@@ -48,7 +49,7 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 | `.claude/settings.json` | pre-wired permissions for the stack's routine commands (mise/pnpm/mvnw test-build-lint) |
 | `specs/README.md` | one-paragraph pointer to the spec-driven workflow |
 | `mise.toml` (+ per-service) | per the `mise` skill: tools pinned at root, tasks per service, `install/build/test/lint/dev` aggregates at root |
-| `.github/workflows/quality.yml` | when `ci == github`: **calls** `{{ gates_repo }}/.github/workflows/quality-<stack>.yml@{{ gates_ref }}` — never inlines gate logic |
+| `.github/workflows/quality.yml` | when `ci == github`: **calls** the reusable gates `{{ gates_repo }}/.github/workflows/*.yml@{{ gates_ref }}` (never inlines gate logic). Tier-conditional on `rigor`: `production`/`mvp` call `quality-<stack>.yml` (passing `rigor` so `mvp` coverage is advisory); `spike` calls `security-floor.yml` + a build sanity job only |
 | `.gitignore` | stack-appropriate + `.mise.local.toml`, `.claude/settings.local.json` |
 | `README.md` | quickstart: `mise install && mise run dev`, layout table, link to CLAUDE.md |
 
