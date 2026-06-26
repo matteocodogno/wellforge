@@ -1,0 +1,36 @@
+# Reusable security floor — the non-negotiable minimum that blocks in EVERY rigor tier
+# (see the wellforge rigor-tiers skill). Even a `spike` scaffold runs this: "fast" must
+# never mean "leaks credentials". Called by generated projects, pinned:
+#   jobs:
+#     security-floor:
+#       uses: matteocodogno/wellforge/.github/workflows/security-floor.yml@gates-v5
+#
+# Scope is deliberately narrow and stack-neutral: a secret/credential scan. The fuller
+# dependency-audit + SAST live in quality-node/jvm.yml (mvp/production tiers); a spike's
+# critical-CVE check is run locally by /wellforge:spike.
+name: security-floor
+
+on:
+  workflow_call:
+    inputs:
+      gitleaks-version:
+        description: pinned gitleaks release
+        required: false
+        type: string
+        default: "8.21.2"
+
+jobs:
+  secrets:
+    name: secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0           # scan full history, not just the tip
+
+      - name: Secret scan (gitleaks)
+        run: |
+          GL="${{ inputs.gitleaks-version }}"
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GL}/gitleaks_${GL}_linux_x64.tar.gz" -o gitleaks.tgz
+          tar -xzf gitleaks.tgz gitleaks
+          ./gitleaks detect --source . --redact --no-banner

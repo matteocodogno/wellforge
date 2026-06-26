@@ -34,6 +34,15 @@ on:
         required: false
         type: number
         default: 0
+      # Rigor tier (see the wellforge rigor-tiers skill). `production` (default) enforces
+      # everything. `mvp` makes COVERAGE advisory — the numbers are still computed and
+      # reported (gap-to-target), but they don't fail the run. Lint, typecheck, dependency
+      # audit and SAST always block, in every tier — the non-negotiable security floor.
+      rigor:
+        description: production (enforce all) | mvp (coverage advisory)
+        required: false
+        type: string
+        default: production
 
 env:
   # ── Central thresholds ──────────────────────────────────────────────
@@ -83,13 +92,20 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
         run: |
           LINES="$COVERAGE_LINES" BRANCHES="$COVERAGE_BRANCHES"
-          if [ "${{ inputs.coverage-lines-baseline }}" != "0" ]; then
-            LINES="${{ inputs.coverage-lines-baseline }}"
-            echo "::notice::ratchet baseline in effect: lines ≥ ${LINES}% (central target ${COVERAGE_LINES}%) — raise-only, via PR"
-          fi
-          if [ "${{ inputs.coverage-branches-baseline }}" != "0" ]; then
-            BRANCHES="${{ inputs.coverage-branches-baseline }}"
-            echo "::notice::ratchet baseline in effect: branches ≥ ${BRANCHES}% (central target ${COVERAGE_BRANCHES}%)"
+          if [ "${{ inputs.rigor }}" = "mvp" ]; then
+            # rigor: mvp — coverage advisory. Run with 0 thresholds so the run never fails
+            # on coverage; vitest still prints the actual table (the gap to target is visible).
+            echo "::notice::rigor mvp — coverage ADVISORY (central target ${COVERAGE_LINES}% lines / ${COVERAGE_BRANCHES}% branches, not enforced). Promote with /wellforge:promote to enforce."
+            LINES=0 BRANCHES=0
+          else
+            if [ "${{ inputs.coverage-lines-baseline }}" != "0" ]; then
+              LINES="${{ inputs.coverage-lines-baseline }}"
+              echo "::notice::ratchet baseline in effect: lines ≥ ${LINES}% (central target ${COVERAGE_LINES}%) — raise-only, via PR"
+            fi
+            if [ "${{ inputs.coverage-branches-baseline }}" != "0" ]; then
+              BRANCHES="${{ inputs.coverage-branches-baseline }}"
+              echo "::notice::ratchet baseline in effect: branches ≥ ${BRANCHES}% (central target ${COVERAGE_BRANCHES}%)"
+            fi
           fi
           pnpm exec vitest run --coverage \
             --coverage.thresholds.lines="$LINES" \

@@ -28,6 +28,14 @@ on:
         required: false
         type: number
         default: 0
+      # Rigor tier (see the wellforge rigor-tiers skill). `production` (default) enforces
+      # everything. `mvp` makes COVERAGE advisory — still reported (gap-to-target), but not
+      # failing. Lint, dependency audit and SAST always block in every tier (security floor).
+      rigor:
+        description: production (enforce all) | mvp (coverage advisory)
+        required: false
+        type: string
+        default: production
 
 env:
   # ── Central thresholds ──────────────────────────────────────────────
@@ -78,7 +86,12 @@ jobs:
       - name: Enforce coverage
         run: |
           LINES="$COVERAGE_LINES"
-          if [ "${{ inputs.coverage-lines-baseline }}" != "0" ]; then
+          if [ "${{ inputs.rigor }}" = "mvp" ]; then
+            # rigor: mvp — coverage advisory. --min-line 0 always passes; check-jacoco still
+            # prints the measured coverage, so the gap to target stays visible.
+            echo "::notice::rigor mvp — coverage ADVISORY (central target ${COVERAGE_LINES}%, not enforced). Promote with /wellforge:promote to enforce."
+            LINES=0
+          elif [ "${{ inputs.coverage-lines-baseline }}" != "0" ]; then
             LINES="${{ inputs.coverage-lines-baseline }}"
             echo "::notice::ratchet baseline in effect: lines ≥ ${LINES}% (central target ${COVERAGE_LINES}%) — raise-only, via PR"
           fi
