@@ -3,7 +3,15 @@
 {{ description }}
 
 A full-stack TypeScript monorepo: **Hono** backend + **React + TypeScript + Vite** frontend.
-
+{% if rigor != 'production' %}
+> ⚠️ **Rigor tier: `{{ rigor }}` — not production-ready.**
+{%- if rigor == 'spike' %}
+> Feasibility spike: CI runs a build + secret-scan floor only (no coverage / SAST / eval).
+{%- else %}
+> MVP: coverage is advisory in CI (SAST and the security floor still block).
+{%- endif %}
+> This is tracked debt — raise it with `/wellforge:promote` before shipping; never lower a tier silently.
+{% endif %}
 ## Quickstart
 
 ```bash

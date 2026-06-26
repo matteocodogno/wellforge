@@ -100,3 +100,14 @@ WellForge full-stack monorepo: **Spring Boot 4 Kotlin** backend + **React TypeSc
 Feature work follows the **spec-driven workflow**: author a spec under `specs/` and drive it with the
 wellforge plugin commands `/wellforge:spec` → `/wellforge:plan` → `/wellforge:tasks` →
 `/wellforge:orchestrate`. See `specs/README.md`.
+
+**Project rigor tier: `{{ rigor }}`** (recorded in `.forge/manifest.json`). It sets the default
+ceremony for new work — see the wellforge `rigor-tiers` skill.
+{%- if rigor == 'production' %}
+Full rigor: every feature runs the complete pipeline and gates (80% coverage, SAST, eval).
+{%- elif rigor == 'mvp' %}
+MVP: coverage is advisory in CI (SAST + security floor still block); features may use `--mode mvp`.
+{%- else %}
+Spike: throwaway/feasibility tier — CI is build + secret-scan floor only. Use `/wellforge:spike`.
+Not production-ready; raise with `/wellforge:promote` before this becomes real.
+{%- endif %}

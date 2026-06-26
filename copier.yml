@@ -55,6 +55,19 @@ ci:
     - none
   default: github
 
+rigor:
+  type: str
+  help: >-
+    Rigor tier — match the project's CI ceremony to its stakes (wellforge rigor-tiers skill).
+    production = full gates (80% coverage, SAST, eval). mvp = coverage advisory, SAST still
+    blocks. spike = build + secret-scan floor only (throwaway / feasibility). Recorded in
+    .forge/manifest.json; raise it later with /wellforge:promote — never lower silently.
+  choices:
+    - production
+    - mvp
+    - spike
+  default: production
+
 gates_repo:
   type: str
   help: owner/repo hosting the reusable gate workflows
@@ -63,7 +76,7 @@ gates_repo:
 gates_ref:
   type: str
   help: Tag pinning the gate workflows in generated CI
-  default: gates-v4
+  default: gates-v5
 
 # NOTE: no "generated date" question/field. Hidden (when: false) answers are NOT
 # persisted to .copier-answers.yml, so any value injected at copy time (like a date)
@@ -71,7 +84,7 @@ gates_ref:
 # conflicts (found by the Phase 6 E2E test). Generation date lives in git history.
 template_version:
   type: str
-  default: "0.3.7"
+  default: "0.4.0"
   when: false
 
 # ── Stack-specific questions ──

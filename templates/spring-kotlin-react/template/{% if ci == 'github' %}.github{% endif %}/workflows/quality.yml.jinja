@@ -7,20 +7,46 @@ name: quality
 
 permissions:
   contents: read
-
+{% endraw %}
 jobs:
-{% endraw %}  backend:
+{%- if rigor == 'spike' %}
+  # rigor: spike — build sanity + the non-negotiable secret-scan floor only.
+  # No coverage / SAST / eval. Raise with /wellforge:promote before this goes anywhere real.
+  security-floor:
+    name: security floor (secrets)
+    uses: {{ gates_repo }}/.github/workflows/security-floor.yml@{{ gates_ref }}
+
+  build:
+    name: build (sanity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+        with:
+          install: false
+      - name: Build
+        run: |
+          mise plugins install maven https://github.com/mise-plugins/mise-maven || true
+          mise install
+          mise trust --yes || true
+          mise run install
+          mise run build
+{%- else %}
+  backend:
     name: backend (JVM)
     uses: {{ gates_repo }}/.github/workflows/quality-jvm.yml@{{ gates_ref }}
     with:
       working-directory: backend
+      rigor: {{ rigor }}
 
   frontend:
     name: frontend (Node)
     uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
     with:
       working-directory: frontend
+      rigor: {{ rigor }}
 
   commits:
     name: commit messages (Conventional Commits)
     uses: {{ gates_repo }}/.github/workflows/commit-lint.yml@{{ gates_ref }}
+{%- endif %}
