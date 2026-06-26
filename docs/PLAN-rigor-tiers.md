@@ -99,12 +99,13 @@ frontmatter tier), paid when the experiment proves real. This is Pillar 6 extend
 - ☑ Wire the security floor as the non-negotiable minimum across all tiers.
 - ☑ Reuse the ratchet-baseline advisory mode for `spike`/`mvp` gate reporting.
 
-### Phase B — Scaffold dimension
-- ☐ `rigor` question in root `copier.yml` → `.forge/manifest.json`.
-- ☐ Conditional CI in templates: spike = build-only, mvp = reduced gate, production = full —
-  within the SAME templates (copier `{% if %}`), no new presets.
-- ☐ README **SPIKE/MVP** badge + CI "gates advisory" notice.
-- ☐ `/wellforge:new` interview question sets the project default.
+### Phase B — Scaffold dimension ☑
+- ☑ `rigor` question in root `copier.yml` → `.forge/manifest.json` (both presets). Template v0.4.0.
+- ☑ Conditional CI in templates: spike = security-floor + build sanity, mvp = coverage advisory,
+  production = full — same templates (copier `{% if %}`), no new presets. Gates made tier-aware
+  (`rigor` input on quality-node/jvm) + new `security-floor.yml`; cut **gates-v5**.
+- ☑ README **not-production-ready** badge for spike/mvp + AGENTS.md states the project tier.
+- ☑ `/wellforge:new` interview sets the project default from the scale/lifetime answer.
 
 ### Phase C — Graduation
 - ☐ `/wellforge:promote <feature> --to <tier>` — retro plan, backfill tests to floor, flip

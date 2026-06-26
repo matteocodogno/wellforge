@@ -18,6 +18,16 @@ Interview with AskUserQuestion (batch, max 2 rounds). You need:
 - Team & ecosystem constraints: who maintains it, existing systems it must talk to.
 - Anything already decided (DB, hosting, auth provider) — record as constraints.
 
+From the "scale & lifetime" answer, also settle the **rigor tier** (load the **rigor-tiers**
+skill; it becomes the project default in `.forge/manifest.json`):
+- throwaway experiment / feasibility PoC → `spike`
+- first release to validate with users → `mvp`
+- long-lived product / critical use case → `production` (default)
+
+State the tier you'll use and why; the user can override. It sets how strict generated CI is
+(`spike` = build + secret-scan floor; `mvp` = coverage advisory; `production` = full gates) and
+can be raised later with `/wellforge:promote`.
+
 ## Stage 2 — Recommend a stack
 
 Available presets (the only two — do not invent others):
@@ -36,7 +46,7 @@ and stop — don't force a preset. User confirms or overrides; their choice wins
 1. Locate the wellforge repo (checkout path or git URL — ask once, remember for the
    session). The template source is the REPO ROOT: one `copier.yml` serves all presets.
 2. Collect the answers (read the root `copier.yml` for the full list): preset,
-   project_name, project_slug, description, base_package (JVM preset), db, ci.
+   project_name, project_slug, description, base_package (JVM preset), db, ci, rigor.
 3. Run, from the target parent directory:
    ```bash
    uvx copier copy --trust <wellforge repo/URL> <project_slug> \
