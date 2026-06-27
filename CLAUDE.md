@@ -39,6 +39,13 @@ build verification → connection checklists → first spec. `/wellforge:upgrade
 `copier update` against the recorded template version with AI conflict resolution.
 `/wellforge:orchestrate` drives the full agent pipeline on a goal.
 
+**Rigor tiers** (cross-cutting, `rigor-tiers` skill): `spike`/`mvp`/`production` match
+ceremony to stakes — `/wellforge:spike` is the main-loop fast lane (no agents, advisory
+gates); `--mode` tunes orchestrate/implement; `/wellforge:promote` graduates a feature or
+the project up a tier, paying the deferred rigor. Defer-don't-lower: a lower tier is tracked
+debt, raised only via promote (production only on an eval PASS), and a security floor blocks
+in every tier. Tier is a copier answer (manifest) + spec/brief frontmatter + command flag.
+
 ## Repository layout
 
 ```
@@ -49,14 +56,16 @@ wellforge/
 │                             # _subdirectory (required for copier update; repo-wide vX.Y.Z tags)
 ├── .github/workflows/        # reusable gates: quality-node.yml, quality-jvm.yml
 │                             # (must live here — GitHub only resolves workflow_call from this path)
-├── wellforge-plugin/         # Claude Code plugin, v1.6.x (local marketplace install)
+├── wellforge-plugin/         # Claude Code plugin, v2.9.x (local marketplace install)
 │   ├── .claude-plugin/plugin.json
-│   ├── commands/             # spec, plan, tasks, orchestrate, new, upgrade (→ /wellforge:*)
+│   ├── commands/             # spec, plan, tasks, implement, orchestrate, eval, status, new,
+│   │                         # upgrade, adopt, spike, promote (→ /wellforge:*)
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
-│   │                         # devops, quality-engineer + specialists (owasp-reviewer, adr-writer)
-│   ├── skills/               # spec-driven, connections + stack skills (react-ts-vite,
-│   │                         # kotlin-springboot, hono-ts-backend, mise, springboot-scaffold)
-│   ├── hooks/                # 7 lifecycle hooks (incl. SubagentStop run-trace telemetry)
+│   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
+│   ├── skills/               # spec-driven, rigor-tiers, observability, connections + stack skills
+│   │                         # (react-ts-vite, kotlin-springboot, hono-ts-backend, mise, springboot-scaffold)
+│   ├── config/               # model-routing.yml + model-tiers.yml (tool-neutral tiers)
+│   ├── hooks/                # lifecycle hooks (incl. SubagentStop run-trace telemetry)
 │   └── .mcp.json             # sequential-thinking, playwright, github
 ├── templates/
 │   ├── _shared/CONTRACT.md   # binding contract: questions, required files, versioning
@@ -71,8 +80,11 @@ wellforge/
 - **All 6 pillars built** (Phases 0–6 ☑ — per-phase detail and honest deviations in
   `docs/PLAN.md`). Lifecycle E2E-tested: scaffold v0.1.0 → template change → `copier
   update` → zero conflicts.
-- Tags: `v0.1.0` (template release series, PEP440 — what copier resolves),
-  `gates-v0` (gate workflow pin series — separate, invisible to copier).
+- **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
+  across plugin, gates and templates.
+- Latest tags: `v0.4.0` (template series, PEP440 — what copier resolves), `gates-v5` (gate
+  workflow pin series — separate, invisible to copier); plugin `2.9.0`. A self-CI workflow
+  (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests both presets.
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated
   project, CI-green on GitHub (repo has no remote yet), threshold calibration, v1.0.0 cut.
 

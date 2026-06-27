@@ -229,6 +229,21 @@ LM-judge), so WellForge verifies *how good*, not just *does it pass*.
   documented. All three gap-analysis material gaps (P1 evals, P2 observability, P3 routing)
   now closed.
 
+## Phase 10 — Rigor tiers (added 2026-06-25)
+
+Goal: match ceremony to stakes — a velocity escape hatch so feasibility work isn't forced
+through full production rigor. **Full plan + per-phase detail: [PLAN-rigor-tiers.md](PLAN-rigor-tiers.md).**
+
+- ☑ A — workflow parametrization (plugin v2.7.0): `rigor-tiers` skill, `/wellforge:spike`
+  (main-loop fast lane), `--mode` on orchestrate/implement, security floor.
+- ☑ B — scaffold dimension (gates-v5, template v0.4.0): `rigor` copier question → manifest;
+  tier-conditional CI (spike = security-floor + build; mvp = coverage advisory); README/AGENTS badge.
+- ☑ C — graduation (plugin v2.9.0): `/wellforge:promote` pays the deferred debt (brief→spec→plan,
+  backfill tests, blocking gates, eval); `/wellforge:status` shows tier + staleness nag.
+
+Defer-don't-lower: a lower tier is tracked debt, raised only via promote, production only on
+an eval PASS. Self-CI (`.github/workflows/ci.yml`) added alongside.
+
 ## Order & dependencies
 
 ```

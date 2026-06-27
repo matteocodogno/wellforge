@@ -39,7 +39,7 @@ Define the workflow **once**, emit each tool's native packaging. Do NOT fork 4 c
 
 ```
 wellforge-core/                      ← tool-neutral source of truth
-  skills/        spec-driven, connections, stack skills, observability, rubric (SKILL.md — already cross-tool)
+  skills/        spec-driven, rigor-tiers, connections, stack skills, observability, rubric (SKILL.md — already cross-tool)
   agents/        the 9 role prompts (plain markdown — consumed as subagents OR adopted as role-skills)
   workflow/      the spec→plan→tasks→implement→eval procedure as prose (drives tools without commands)
   AGENTS.md      the canonical context block
