@@ -80,10 +80,10 @@ State the resolved tier before acting, and why (which level supplied it).
 ## Graduation
 
 A lower tier is debt, not a destination. `/wellforge:promote <feature> --to mvp|production`
-raises the tier and pays the deferred rigor (retro plan, backfill tests to the coverage floor,
-flip advisory gates to blocking, run eval). Production rigor is reached ONLY through promote —
-never implicitly. (Command lands in Phase C; until then, promote manually by running the
-skipped stages.)
+(or `--project --to …` for the scaffold default) raises the tier and pays the deferred rigor:
+brief → spec → retro plan, backfill tests to the coverage floor, flip advisory gates to
+blocking, and run the eval. Production rigor is reached ONLY through promote, and only on an
+eval PASS — never implicitly. Promotion only RAISES; a tier is never lowered via promote.
 
 ## Visibility (the guardrail)
 

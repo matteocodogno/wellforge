@@ -11,6 +11,9 @@ Target: $ARGUMENTS  (a feature token → detail view for that one; empty → all
 ## Gather (read-only)
 
 For every `specs/NNN-slug/` directory (or just the named one):
+- **Rigor tier** — `rigor:` from `spec.md` or `brief.md` frontmatter (default `production`
+  if absent). A `brief.md` with no `spec.md` is a **spike** feature (load the **rigor-tiers**
+  skill). Note the feature's `created:`/`status:` for the staleness check below.
 - `spec.md` frontmatter `status` (draft / approved / in-progress / done) and any
   unchecked `## Open questions`.
 - `plan.md` present? its frontmatter `status` (draft / approved).
@@ -25,14 +28,18 @@ Evaluate top-down; first matching row wins. `NNN-slug` below is the feature's fo
 
 | Condition | Phase | Next step |
 |---|---|---|
-| no `spec.md` | (not a feature) | skip |
+| `brief.md`, no `spec.md`, status ≠ `done` | **spike** | `/wellforge:spike NNN-slug` (build) |
+| `brief.md`, no `spec.md`, status `done` | **spike ✓** | graduate: `/wellforge:promote NNN-slug --to mvp` (or archive) |
+| no `spec.md` (and no `brief.md`) | (not a feature) | skip |
 | spec `draft` | **spec** | review & approve the spec — refine with `/wellforge:spec NNN-slug` |
-| spec `approved`, no `plan.md` | **plan** | `/wellforge:plan NNN-slug` |
+| spec `approved`, no `plan.md` (rigor `production`) | **plan** | `/wellforge:plan NNN-slug` |
+| spec `approved`, no `tasks.md` (rigor `mvp`) | **tasks** | `/wellforge:tasks NNN-slug` |
 | `plan.md` `draft` | **plan** | review & approve the plan |
 | plan `approved`, no `tasks.md` | **tasks** | `/wellforge:tasks NNN-slug` |
 | `tasks.md`, 0 checked | **implement** | `/wellforge:implement NNN-slug next` |
 | `tasks.md`, some unchecked | **implement** | `/wellforge:implement NNN-slug next` |
-| all tasks checked, no/ stale `eval-report.md` | **eval** | `/wellforge:eval NNN-slug` (LM-judge scored verdict) |
+| all tasks checked, rigor `mvp`, QE passed | **verify** | set spec `done` (mvp — no eval); or `/wellforge:promote NNN-slug --to production` |
+| all tasks checked, rigor `production`, no/stale `eval-report.md` | **eval** | `/wellforge:eval NNN-slug` (LM-judge scored verdict) |
 | `eval-report.md` `verdict: FAIL` | **eval** | fix the failing dimensions, then `/wellforge:eval NNN-slug` |
 | `eval-report.md` `verdict: PASS`, spec ≠ `done` | **verify** | set spec `done` |
 | spec `done` | **done** | — complete |
@@ -41,6 +48,10 @@ If spec is `draft` with open questions, append "(N open questions block approval
 If `tasks.md` is older than `spec.md`/`plan.md` (drift), flag "⚠ tasks may be stale —
 re-run `/wellforge:tasks NNN-slug`" regardless of the row.
 
+**Staleness nag (lower tiers are debt).** For a feature at `rigor: spike` or `mvp` whose
+`created:` is more than ~30 days ago, append "⏳ <tier> for Nd — promote (`/wellforge:promote`)
+or archive". A long-lived spike/mvp is unpaid debt; surface it, don't judge it.
+
 ## Output
 
 All-features (default) — one line per feature, ordered by NNN:
@@ -48,14 +59,18 @@ All-features (default) — one line per feature, ordered by NNN:
 ```
 WellForge · feature status
 
-NNN-slug      phase       progress          → next
-001-user-auth implement   tasks 3/8         → /wellforge:implement 001-user-auth next
-002-csv-export plan        plan draft        → review & approve the plan
-003-audit-log  spec        draft (2 open q)  → /wellforge:spec 003-audit-log
-004-billing    done        ✓                 → —
+NNN-slug       tier        phase       progress          → next
+001-user-auth  production  implement   tasks 3/8         → /wellforge:implement 001-user-auth next
+002-csv-export production  plan        plan draft        → review & approve the plan
+003-audit-log  production  spec        draft (2 open q)  → /wellforge:spec 003-audit-log
+004-billing    production  done        ✓                 → —
+005-pricing    spike       spike ✓     built             → /wellforge:promote 005-pricing --to mvp
+006-search     mvp         done        tasks 6/6         → set done (mvp); or promote --to production
 ```
 
-Progress column: spec/plan phases show the status word; implement shows `tasks X/Y`;
+Tier column: the feature's `rigor` (omit/blank it for the common `production` case if you
+prefer a tighter table, but always show non-`production` tiers). Progress column: spec/plan
+phases show the status word; implement shows `tasks X/Y`; spike shows built/in-progress;
 done shows ✓. Keep it a clean aligned table; no narrative per row.
 
 Single-feature (a feature token was given) — the same line, then expand: open questions,

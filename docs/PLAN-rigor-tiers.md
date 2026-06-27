@@ -107,10 +107,17 @@ frontmatter tier), paid when the experiment proves real. This is Pillar 6 extend
 - ☑ README **not-production-ready** badge for spike/mvp + AGENTS.md states the project tier.
 - ☑ `/wellforge:new` interview sets the project default from the scale/lifetime answer.
 
-### Phase C — Graduation
-- ☐ `/wellforge:promote <feature> --to <tier>` — retro plan, backfill tests to floor, flip
-  gates to blocking, run eval; one revertable commit (mirror `/wellforge:upgrade`'s shape).
-- ☐ `/wellforge:status` surfaces tier per feature + optional staleness nag.
+### Phase C — Graduation ☑
+- ☑ `/wellforge:promote <feature> --to <tier>` (and `--project`) — brief→spec→retro plan,
+  backfill tests to floor, flip gates to blocking, run eval; one revertable commit
+  (mirrors `/wellforge:upgrade`). Refuses downgrade/no-op; production only on eval PASS.
+- ☑ `/wellforge:status` recognizes spike `brief.md` features, shows the tier column, and
+  nags on spike/mvp older than ~30 days (debt surfaced).
+
+---
+
+**All three phases shipped.** Velocity escape hatch (A) + scaffold dimension (B) + graduation
+(C) are live. Plugin 2.9.0; gates-v5; template v0.4.0.
 
 ## Open / to validate during the pilot
 
