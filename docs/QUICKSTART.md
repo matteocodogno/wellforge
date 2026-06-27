@@ -71,6 +71,7 @@ For work you intend to keep, run the standard flow. Either drive the steps yours
 # review → approve
 /wellforge:plan
 # review architecture + AC→test mapping → approve
+/wellforge:design        # UI features only — flows, screens, component reuse, a11y (optional)
 /wellforge:tasks
 # review task list, then implement tasks of the feature — dependency-aware, QE-verified.
 # arg is [feature] [tasks]; the feature folder (specs/NNN-slug) leads, tasks follow:
@@ -103,7 +104,7 @@ Rules worth knowing on day one:
 | daily dev | `mise run dev` · `mise run test` · `mise run lint` |
 | fast experiment / PoC | `/wellforge:spike <goal>` — main-loop build, advisory gates, no agents |
 | graduate a spike/mvp | `/wellforge:promote <feature> --to mvp` · `--to production` (pays the deferred rigor) |
-| new feature | `/wellforge:spec` → `:plan` → `:tasks` → `:implement` (or `:orchestrate` for all of it) |
+| new feature | `/wellforge:spec` → `:plan` → `:design` (UI only) → `:tasks` → `:implement` (or `:orchestrate` for all of it) |
 | implement a feature's tasks | `/wellforge:implement <feature> T3,T5` · `<feature> next` · `all` |
 | where am I / what's next | `/wellforge:status` (all features + next command each) |
 | bugfix | `/wellforge:orchestrate <bug>` → QE writes the failing repro test first |

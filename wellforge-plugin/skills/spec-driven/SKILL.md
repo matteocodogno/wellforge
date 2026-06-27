@@ -6,7 +6,8 @@ description: >
   directory, when the user mentions a spec, feature specification, or task list, when
   implementing any task that references a specs/NNN-slug/ path, or when asked about the
   status of a feature. Also the authoritative reference for the /wellforge:spec,
-  /wellforge:plan, and /wellforge:tasks commands — they MUST follow this format exactly.
+  /wellforge:plan, /wellforge:design, and /wellforge:tasks commands — they MUST follow this
+  format exactly.
 ---
 
 # Spec-driven development — WellForge conventions
@@ -17,7 +18,14 @@ the Product Owner writes spec.md, the Architect writes plan.md, developers consu
 
 ```
 idea ──/wellforge:spec──► spec.md ──[user approves]──/wellforge:plan──► plan.md ──[user approves]──/wellforge:tasks──► tasks.md ──► implementation
+                                                              └─(UI features)─/wellforge:design──► design.md ──┘
 ```
+
+For **UI features**, the optional **design** stage (`/wellforge:design`, the `designer`
+agent) runs between plan and tasks — flows, screens/states, component reuse, a11y — so
+frontend tasks derive from a real inventory. No approval gate on design (issues surface at
+QE). `/wellforge:orchestrate` runs it automatically for UI features; in the manual flow,
+`/wellforge:plan` and `/wellforge:tasks` nudge you to it.
 
 ## Directory layout
 

@@ -17,6 +17,11 @@ Target spec: $ARGUMENTS
 
 2. **Gate check.** If plan.md status is not `approved`, STOP and point to
    `/wellforge:plan`.
+   - **Design nudge (UI features).** If the feature has a UI surface and there's no
+     `design.md` (or it's older than spec/plan), recommend running `/wellforge:design
+     NNN-slug` first so frontend tasks derive from a real screen/component inventory. This
+     is a suggestion, not a gate — proceed if the user declines (note that frontend tasks
+     will be coarser without it).
 
 3. **Derive tasks** into `specs/NNN-slug/tasks.md`:
    - Right-sized: each task is one reviewable unit (roughly one commit / ≤ half a day);

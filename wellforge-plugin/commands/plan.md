@@ -34,7 +34,10 @@ Target spec: $ARGUMENTS
    you chose AND what you rejected). Iterate.
 
 6. **Approval gate.** Ask explicitly whether to mark the plan `approved`. Only on an
-   explicit yes, set `status: approved`. Suggest `/wellforge:tasks` as the next step.
+   explicit yes, set `status: approved`. Then suggest the next step **by feature type**:
+   - **UI feature** → recommend `/wellforge:design NNN-slug` first (flows/screens/component
+     reuse so frontend tasks derive from a real inventory), *then* `/wellforge:tasks`.
+   - **non-UI feature** → `/wellforge:tasks` directly.
 
 ## Hard rules
 

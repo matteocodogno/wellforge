@@ -16,11 +16,12 @@ It is built as three layers, because no single mechanism covers everything:
 
 ## 1. Spec-driven framework
 
-One standardized path from idea to reviewed task list. Three artifacts per feature in
-`specs/NNN-slug/`, three commands, two human approval gates:
+One standardized path from idea to reviewed task list — a command per stage, two human
+approval gates, plus an optional **design** stage for UI features:
 
 ```
 idea ─/wellforge:spec→ spec.md ─[approve]─/wellforge:plan→ plan.md ─[approve]─/wellforge:tasks→ tasks.md ─/wellforge:implement→ code
+                                                  └─(UI)─/wellforge:design→ design.md ─┘
 ```
 
 | Artifact | Content | Author |

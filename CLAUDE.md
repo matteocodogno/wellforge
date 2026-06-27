@@ -58,8 +58,8 @@ wellforge/
 │                             # (must live here — GitHub only resolves workflow_call from this path)
 ├── wellforge-plugin/         # Claude Code plugin, v2.9.x (local marketplace install)
 │   ├── .claude-plugin/plugin.json
-│   ├── commands/             # spec, plan, tasks, implement, orchestrate, eval, status, new,
-│   │                         # upgrade, adopt, spike, promote (→ /wellforge:*)
+│   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, status,
+│   │                         # new, upgrade, adopt, spike, promote (→ /wellforge:*)
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, connections + stack skills
