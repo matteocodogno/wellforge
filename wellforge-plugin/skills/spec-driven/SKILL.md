@@ -23,9 +23,10 @@ idea ──/wellforge:spec──► spec.md ──[user approves]──/wellforg
 
 For **UI features**, the optional **design** stage (`/wellforge:design`, the `designer`
 agent) runs between plan and tasks — flows, screens/states, component reuse, a11y — so
-frontend tasks derive from a real inventory. No approval gate on design (issues surface at
-QE). `/wellforge:orchestrate` runs it automatically for UI features; in the manual flow,
-`/wellforge:plan` and `/wellforge:tasks` nudge you to it.
+frontend tasks derive from a real inventory. **Ungated by default** (validated at QE — the
+flow's only mandatory gates are spec and plan); opt into a design checkpoint with
+`/wellforge:design --gate`. `/wellforge:orchestrate` runs it automatically for UI features;
+in the manual flow, `/wellforge:plan` and `/wellforge:tasks` nudge you to it.
 
 ## Directory layout
 
@@ -55,7 +56,9 @@ a single `brief.md`. The tier lives in the feature's frontmatter as `rigor:` (de
 ## Status lifecycle
 
 Status lives in **spec.md frontmatter only** (plan.md has its own `status` limited to
-`draft | approved`). Transitions:
+`draft | approved`; design.md is `draft` and only reaches `approved` if you opt into the
+design checkpoint with `/wellforge:design --gate` — by default design is ungated and stays
+`draft`, validated at QE). Transitions:
 
 ```
 draft ──► approved ──► in-progress ──► done

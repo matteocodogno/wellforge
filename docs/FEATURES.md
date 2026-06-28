@@ -28,7 +28,7 @@ idea ─/wellforge:spec→ spec.md ─[approve]─/wellforge:plan→ plan.md ─
 |---|---|---|
 | `spec.md` | problem, user stories with Given/When/Then acceptance criteria, non-goals, open questions | Product Owner |
 | `plan.md` | architecture, data model, API contracts, AC→test mapping, risks | Architect |
-| `design.md` (UI features) | flows, screens & states, component reuse map, a11y | Designer |
+| `design.md` (UI features) | flows, screens & states, component reuse map, a11y | Designer (ungated by default; `/wellforge:design --gate` adds an approve/iterate checkpoint) |
 | `tasks.md` | DAG-ordered tasks, each with AC refs, deps, touched files, objective "done when" | derived |
 
 Key properties:

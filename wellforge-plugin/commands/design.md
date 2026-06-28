@@ -1,6 +1,6 @@
 ---
 description: Design the UX for a UI feature — flows, screens/states, component reuse, a11y (spec-driven workflow, optional stage for UI features)
-argument-hint: [NNN-slug] (defaults to the most recent approved spec with a UI and no design.md)
+argument-hint: [NNN-slug] [--gate] — --gate adds a human approve/iterate checkpoint before tasks
 ---
 
 Produce the interaction design for a feature with a user interface, following the
@@ -15,7 +15,8 @@ Target spec: $ARGUMENTS
 
 1. **Resolve target.** If no argument: the most recent spec with `status: approved`, a UI
    surface, and no (or stale) `design.md`. If ambiguous, ask. State which feature you
-   resolved.
+   resolved. (`--gate` is a flag, not a feature token — strip it before resolving; it
+   controls the optional approval in step 6.)
 
 2. **UI check.** If the feature has no user interface (API-only / infra / backend-only),
    this stage does not apply — say so and point at `/wellforge:tasks`. Don't design a UI no
@@ -31,10 +32,19 @@ Target spec: $ARGUMENTS
    flows → screens & states → component inventory (reuse vs NEW) → accessibility.
 
 5. **Relay.** Present the designer's summary: flow count, the reuse/NEW component ratio,
-   a11y hotspots, and any gaps it found in the spec or plan. There is **no human approval
-   gate** on design (unlike spec/plan) — design issues surface and are caught at QE.
+   a11y hotspots, and any gaps it found in the spec or plan.
 
-6. **Drift.** If the designer reports the spec/plan is wrong or lacks an API a flow needs,
+6. **Approval — opt-in (`--gate`).** By **default there is no gate**: design.md stays
+   `status: draft` and design issues surface at QE (the standard model; the feature flow's
+   only mandatory gates are spec and plan). If `--gate` was passed, treat design as a
+   checkpoint: ask the user explicitly to **approve / iterate / abort**.
+   - On **approve** → set design.md `status: approved` (record the user's decision; never
+     self-approve).
+   - On **iterate** → re-run the designer with the user's feedback (bounded — at the user's
+     request, like the spec/plan gates), then re-present.
+   - On **abort** → leave design.md `draft`, stop, state where things stand.
+
+7. **Drift.** If the designer reports the spec/plan is wrong or lacks an API a flow needs,
    pause and route the amendment to the owning agent (PO for spec, architect for plan)
    before continuing — never design around a wrong spec.
 
