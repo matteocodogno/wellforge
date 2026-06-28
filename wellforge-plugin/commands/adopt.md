@@ -32,6 +32,10 @@ AskUserQuestion (batch): which layers to adopt —
    actual stack + versions, dev commands (the project's real ones, not WellForge defaults),
    layout, conventions you OBSERVED (naming, error handling, test style), and the
    spec-driven workflow note (`specs/` + `/wellforge:*` commands).
+   - **For projects with a frontend, record the UI library & styling system explicitly**
+     (e.g. MUI / Chakra / Ant / shadcn / Mantine / Tailwind-only) — the designer and
+     frontend-dev read this to map component reuse against the *project's* library, not the
+     WellForge greenfield default. Note the component directory and any theme/design-token file.
    - Existing `CLAUDE.md` with content? Migrate its content into AGENTS.md (preserving
      every rule), then replace CLAUDE.md with the one-line `@AGENTS.md` import.
    - Existing `AGENTS.md`? Extend, never overwrite — append missing sections only.
