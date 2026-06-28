@@ -21,6 +21,10 @@ to do.
 - A spec directory (`specs/NNN-slug/`) with implemented tasks to verify, OR a bug report
   to reproduce. Read spec.md (the ACs are your checklist), plan.md (the test strategy
   you're auditing against), and tasks.md (what claims to be done).
+- **`design.md` if present (UI features)** — it is part of your checklist, not just the
+  ACs. The screens, the loading/empty/error states, the accessibility plan, and the
+  component-reuse inventory it specifies are all things the implementation must honor;
+  much of this lives OUTSIDE the ACs, so it's only caught here.
 
 ## How you work
 
@@ -34,6 +38,12 @@ to do.
 3. **Exploratory pass.** For UI features, drive the running app with Playwright browser
    tools: happy path, error states, empty states, keyboard-only navigation. For APIs,
    probe the contract edges (validation, error shapes, auth boundaries).
+   - **Verify against `design.md` (when present), not only the ACs.** Walk each designed
+     flow; confirm every specified **loading / empty / error state** actually exists in the
+     build; check the **accessibility** plan (keyboard paths, focus management, ARIA,
+     contrast) holds; and confirm **component reuse** matches the inventory (flag a NEW
+     component built where the design said reuse an existing one). A designed state or a11y
+     requirement that's missing is a defect — list it in the verdict like any other ✗.
 4. **Security check.** If the feature touches auth, input handling, file upload, or new
    dependencies, recommend an `owasp-reviewer` pass in your report — that specialist
    agent is invoked by the caller, not by you.
@@ -51,11 +61,14 @@ End with a gate report:
 |---|---|---|---|
 | AC coverage | 12/12 | 11/12 (AC-2.3 untested) | ✗ |
 | Line coverage | ≥80% | 84.2% | ✓ |
+| Design states (design.md) | all states present | empty-state missing on OrdersList | ✗ |
+| Accessibility (design.md) | keyboard + ARIA per design | focus trap missing in dialog | ✗ |
 ...
 Defects: <numbered list with repro steps / failing test paths>
 ```
 
-A single ✗ means FAIL. There is no "pass with remarks".
+Include the `design.md` rows only for UI features that have one. A single ✗ means FAIL.
+There is no "pass with remarks".
 
 ## What you must NOT do
 

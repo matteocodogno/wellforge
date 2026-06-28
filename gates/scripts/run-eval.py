@@ -39,29 +39,41 @@ def load_rubric(path):
 
 
 def gate(rubric, by_key, scores):
-    """Pure scoring: returns (verdict, total, rows). No I/O — unit-testable."""
+    """Pure scoring: returns (verdict, total, rows, failed_floor). No I/O — unit-testable.
+
+    Conditional dimensions (those with `applies_when`) are scored only when the judge
+    provided a score; otherwise they are N/A — excluded from the total (which re-normalises
+    over the dimensions that DO apply) and their floor doesn't apply. Always-on dimensions
+    with no score count as worst (1), as before. With no conditional dimension active the
+    applicable weights sum to 100 and the total equals the old un-normalised sum.
+    """
     scale = rubric["scale"]
-    total = 0.0
-    rows = []
     seen = {s["key"]: s for s in scores}
+    total_weighted = 0.0
+    total_weight = 0.0
+    rows = []
     failed_floor = []
     for key, dim in by_key.items():
         s = seen.get(key)
-        score = int(s["score"]) if s else 1  # a missing dimension scores worst
+        if s is None and dim.get("applies_when"):
+            rows.append((dim["title"], dim["weight"], None, dim["floor"], None, False))  # N/A
+            continue
+        score = int(s["score"]) if s else 1  # a missing always-on dimension scores worst
         weighted = (score / scale) * dim["weight"]
-        total += weighted
+        total_weighted += weighted
+        total_weight += dim["weight"]
         below = score < dim["floor"]
         if below:
             failed_floor.append(key)
         rows.append((dim["title"], dim["weight"], score, dim["floor"], round(weighted, 1), below))
-    total = round(total, 1)
+    total = round((total_weighted / total_weight) * 100, 1) if total_weight else 0.0
     passed = total >= rubric["pass_score"] and not failed_floor
     return ("PASS" if passed else "FAIL"), total, rows, failed_floor
 
 
 def gather(spec_dir, base):
     parts = []
-    for name in ("spec.md", "plan.md", "tasks.md"):
+    for name in ("spec.md", "plan.md", "tasks.md", "design.md"):
         p = os.path.join(spec_dir, name)
         if os.path.exists(p):
             parts.append(f"===== {name} =====\n{open(p).read()}")
@@ -85,13 +97,16 @@ def judge_via_api(rubric, materials, model):
     client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
     dims = "\n".join(
         f"- {d['key']} (1–{rubric['scale']}, floor {d['floor']}): {d['title']}. "
-        f"Anchors: {d['anchors']}"
+        + (f"[CONDITIONAL — score ONLY if {d['applies_when']} appears in the materials; "
+           "otherwise OMIT this key entirely] " if d.get("applies_when") else "")
+        + f"Anchors: {d['anchors']}"
         for d in rubric["dimensions"]
     )
     prompt = (
         "You are an adversarial LM-judge scoring a software feature against a rubric. "
         "Default to the LOWER anchor when evidence is ambiguous; cite concrete evidence "
-        "for every score. Return ONLY JSON: "
+        "for every score. Omit any CONDITIONAL dimension whose condition isn't met by the "
+        "materials (do not score it 1 — leave its key out). Return ONLY JSON: "
         '{\"scores\":[{\"key\":...,\"score\":int,\"evidence\":str}, ...]}.\n\n'
         f"RUBRIC DIMENSIONS:\n{dims}\n\nFEATURE MATERIALS:\n{materials}"
     )
@@ -125,6 +140,9 @@ def main():
     print(f"Eval ({rubric['version']}) — {args.spec_dir}")
     print(f"{'dimension':32} {'score':>5} {'floor':>5} {'weighted':>9}")
     for title, _w, score, floor, weighted, below in rows:
+        if score is None:
+            print(f"{title:32} {'n/a':>5} {'—':>5} {'n/a':>9}  (not applicable)")
+            continue
         flag = "  ✗ below floor" if below else ""
         print(f"{title:32} {score:>5} {floor:>5} {weighted:>9}{flag}")
     print(f"{'TOTAL':32} {'':>5} {'':>5} {total:>9}/100  (pass ≥ {rubric['pass_score']})")

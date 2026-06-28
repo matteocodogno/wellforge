@@ -6,11 +6,17 @@
 # Changing it is like changing a gate threshold: PR to gates/ only (the discretion point).
 # Per-feature overrides live in specs/NNN-slug/eval.md and may only ADD dimensions or
 # RAISE floors, never lower them.
-version: default-v1
+version: default-v2     # v2: added conditional design_fidelity dimension (UI features)
 
-# Pass = weighted total >= pass_score AND every dimension >= its floor.
+# Pass = weighted total >= pass_score AND every (applicable) dimension >= its floor.
 # (A single dimension under its floor fails the eval, mirroring QE's "single ✗ = FAIL".)
-pass_score: 80          # weighted 0–100
+#
+# Conditional dimensions carry `applies_when`: they are scored ONLY when their condition
+# holds (e.g. design_fidelity only when design.md exists). When not applicable they are
+# N/A — excluded from the weighted total (which RE-NORMALISES over the dimensions that do
+# apply, so dropping one never lowers the achievable max) and their floor doesn't apply.
+# With no conditional dimension active the weights sum to 100 and the total is unchanged.
+pass_score: 80          # weighted 0–100 (normalised over applicable dimensions)
 scale: 5                # each dimension scored 1–5 against its anchors
 
 dimensions:
@@ -57,6 +63,22 @@ dimensions:
       3: Works but diverges from established patterns in places.
       2: Hallucinated API/dependency, or error handling that ignores realistic failures (the "80% problem" 20%).
       1: Not idiomatic; would create maintenance burden or hides correctness gaps that look right.
+
+  # Conditional — scored ONLY when specs/NNN-slug/design.md exists (UI features). Judges the
+  # design→implementation chain: is the design complete (flows, every loading/empty/error
+  # state, an a11y plan, component reuse mapped to the inventory) AND did the implementation
+  # honor it. Non-UI features: N/A, excluded (the total re-normalises over the rest).
+  - key: design_fidelity
+    title: Design fidelity (UI)
+    weight: 15
+    floor: 3
+    applies_when: design.md present
+    anchors:
+      5: design.md is complete (all flows, every loading/empty/error state, a11y plan — keyboard/focus/ARIA/contrast, reuse mapped) AND the implementation realises it faithfully.
+      4: Flows and core states designed and built; one or two non-critical states or a11y items thin or unrealised.
+      3: Happy-path matches, but the design omits or the build misses some empty/error states or a11y requirements.
+      2: Notable divergence — missing states/flows in the design or unhonored in code, or reuse ignored (NEW components where the inventory had one).
+      1: Implementation does not follow design.md; required flows/states/a11y largely absent.
 
   - key: trajectory
     title: Trajectory

@@ -43,13 +43,22 @@ that pass basic tests. You judge — you never edit code, tests, or specs.
 1. For EACH rubric dimension: pick the 1–5 anchor that matches the evidence, and cite the
    specific evidence (file:line, test name, AC id, commit) for the score. No score without
    a citation.
+   - **Conditional dimensions** (those with `applies_when`, e.g. `design_fidelity` — applies
+     only when `design.md` exists): score them ONLY when the condition holds. When it
+     doesn't, mark the dimension **N/A** and exclude it — do not score it low. For
+     `design_fidelity`, judge the design→implementation chain: is `design.md` complete
+     (flows, every loading/empty/error state, an a11y plan, component reuse mapped to the
+     project's library) AND does the implementation realise it.
 2. **Be adversarial.** Default to the LOWER anchor when evidence is ambiguous. Be
    skeptical of anything that looks clever, tests that assert little, error handling that
    only covers the happy path, and any dependency/API you can't confirm exists. Inflated
    scores defeat the entire purpose — a generous eval is worse than no eval.
-3. Compute the weighted total (each score/5 × weight, summed → 0–100).
-4. Verdict = **PASS** iff weighted total ≥ `pass_score` AND every dimension ≥ its `floor`.
-   A single sub-floor dimension is **FAIL**, regardless of total (mirrors QE).
+3. Compute the weighted total: each score/5 × weight, summed, then **normalised over the
+   weights of the dimensions that apply** (× 100). N/A conditional dimensions are excluded
+   from both the sum and the weight pool — dropping one never lowers the achievable max.
+   (With no conditional dimension active, weights sum to 100 and this is the plain sum.)
+4. Verdict = **PASS** iff weighted total ≥ `pass_score` AND every **applicable** dimension ≥
+   its `floor`. A single sub-floor dimension is **FAIL**, regardless of total (mirrors QE).
 5. Trajectory: read the feature's run traces in `.forge/runs/*.json` (schema
    `wellforge-run/v1`, per the **observability** skill) for real evidence — which agents
    ran in what order, whether QE ran, whether verification was skipped, drift events.
@@ -64,7 +73,7 @@ Write `specs/NNN-slug/eval-report.md`:
 ---
 spec: NNN
 evaluated: <date>
-rubric: default-v1            # or "eval.md (default-v1 + overrides)"
+rubric: default-v2            # the rubric's own version; or "eval.md (default-v2 + overrides)"
 score: <0–100>
 verdict: PASS | FAIL
 ---
