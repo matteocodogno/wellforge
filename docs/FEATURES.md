@@ -158,6 +158,13 @@ reusable workflows' `env` blocks and change **only via PR** to this repo:
   which validates every PR commit against `type(scope)!: description`. CI is the
   enforcement point; a local `commit-msg` hook gives fast feedback. Shared validator
   (`gates/scripts/check-commit-msg.py`); the dev agents already commit in this format.
+- **Release management** — that enforced commit history is also the release engine.
+  `/wellforge:release` (and `mise run release`) run **release-it** with
+  `@release-it/conventional-changelog` (computes the semver bump + writes `CHANGELOG.md` from
+  the commits) and `@release-it/bumper` (syncs the per-service version files; the JVM preset
+  bumps `pom.xml` via a Maven hook). Every scaffold ships `.release-it.json` pre-wired:
+  dry-run preview → confirm → version bump, `CHANGELOG.md`, `chore(release)` commit, `vX.Y.Z`
+  tag, and a GitHub Release with generated notes — one reviewable, revertable release.
 - Projects call the workflows pinned to a `gates-v*` tag — a threshold bump propagates
   by a one-line ref bump, no re-scaffold.
 - Fresh scaffolds don't fail their own gate: modules under 50 lines skip coverage

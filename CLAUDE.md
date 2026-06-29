@@ -59,7 +59,7 @@ wellforge/
 ├── wellforge-plugin/         # Claude Code plugin, v2.9.x (local marketplace install)
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, status,
-│   │                         # new, upgrade, adopt, spike, promote (→ /wellforge:*)
+│   │                         # new, upgrade, adopt, spike, promote, release (→ /wellforge:*)
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, connections + stack skills
