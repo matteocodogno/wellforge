@@ -35,3 +35,7 @@ depends     = ["backend:lint", "frontend:lint"]
 [tasks.dev]
 description = "Start all services in development mode"
 depends     = ["backend:dev", "frontend:dev"]
+
+[tasks.release]
+description = "Cut a release — version + CHANGELOG from Conventional Commits, tag, GitHub release (release-it)"
+run = "pnpm --package=release-it@^17 --package=@release-it/conventional-changelog@^8 --package=@release-it/bumper@^6 dlx release-it"

@@ -48,9 +48,10 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 | `CLAUDE.md` | one-line `@AGENTS.md` import for Claude Code — content lives in AGENTS.md only |
 | `.claude/settings.json` | pre-wired permissions for the stack's routine commands (mise/pnpm/mvnw test-build-lint) |
 | `specs/README.md` | one-paragraph pointer to the spec-driven workflow |
-| `mise.toml` (+ per-service) | per the `mise` skill: tools pinned at root, tasks per service, `install/build/test/lint/dev` aggregates at root |
+| `mise.toml` (+ per-service) | per the `mise` skill: tools pinned at root, tasks per service, `install/build/test/lint/dev` aggregates + a `release` task (release-it) at root |
 | `.github/workflows/quality.yml` | when `ci == github`: **calls** the reusable gates `{{ gates_repo }}/.github/workflows/*.yml@{{ gates_ref }}` (never inlines gate logic). Tier-conditional on `rigor`: `production`/`mvp` call `quality-<stack>.yml` (passing `rigor` so `mvp` coverage is advisory); `spike` calls `security-floor.yml` + a build sanity job only |
 | `.gitignore` | stack-appropriate + `.mise.local.toml`, `.claude/settings.local.json` |
+| `.release-it.json` | release-it config: `@release-it/conventional-changelog` (semver bump + CHANGELOG from Conventional Commits) + `@release-it/bumper` (per-service version files); `npm.publish:false`; JVM preset bumps `pom.xml` via a Maven `after:bump` hook. Drives `mise run release` / `/wellforge:release` |
 | `README.md` | quickstart: `mise install && mise run dev`, layout table, link to CLAUDE.md |
 
 ## Versioning & lifecycle
