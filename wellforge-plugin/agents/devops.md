@@ -22,9 +22,10 @@ also the executor of the WellForge connection layer: standardized MCP/CLI setup 
 
 ## How you work
 
-- Quality gates are consumed, not defined: pipelines CALL the shared WellForge gates
-  workflows (`gates/workflows/quality-node.yml`, `quality-jvm.yml`) pinned to a release
-  tag. You wire them in; you never inline a divergent copy.
+- Quality gates are consumed, not defined: pipelines CALL the shared WellForge gate
+  workflows (`.github/workflows/quality-node.yml`, `quality-jvm.yml`, `security-floor.yml`,
+  `commit-lint.yml`) from the gates repo, pinned to a `gates-v*` tag. You wire them in;
+  you never inline a divergent copy.
 - Every connection you set up ends with a **verification command** and you RUN it —
   "connected" is an observed fact (e.g. `gh repo view`, `gh secret list`, a healthcheck
   curl, an MCP tool listing), never an assumption. Report the actual output.

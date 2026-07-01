@@ -2,10 +2,10 @@
 name: adr-writer
 description: >
   Architecture Decision Record (ADR) specialist. Fires automatically when a significant
-  design decision is made during a cc-sdd session — technology choices, pattern adoptions,
-  trade-off resolutions, API design decisions, or any choice that will constrain future work.
-  Also invoke manually with: "write an ADR for [decision]". Outputs a versioned ADR file
-  and optionally updates CLAUDE.md with a summary reference.
+  design decision is made during a WellForge spec-driven session — technology choices, pattern
+  adoptions, trade-off resolutions, API design decisions, or any choice that will constrain
+  future work. Also invoke manually with: "write an ADR for [decision]". Outputs a versioned
+  ADR file and optionally updates AGENTS.md with a summary reference.
 tools:
   - Read
   - Write
@@ -48,7 +48,7 @@ If `docs/adr/` doesn't exist, create it.
 
 **Date:** YYYY-MM-DD  
 **Status:** Accepted  
-**Deciders:** [team / Matteo / client name]  
+**Deciders:** [team / role — who owns this decision]  
 **Project:** [project name]
 
 ---
@@ -99,24 +99,25 @@ Include relevant NFRs, regulatory constraints, or technical debt context.]
 
 ---
 
-*This ADR was generated during a cc-sdd session. Review and amend before committing.*
+*This ADR was generated during a WellForge spec-driven session. Review and amend before committing.*
 ```
 
 ## After writing the ADR
 
 1. Output the full file path and content.
 
-2. Offer to update `CLAUDE.md` by appending a one-line reference under an `## Architecture decisions` section:
+2. Offer to update `AGENTS.md` (the canonical cross-tool context file; `CLAUDE.md` imports it)
+   by appending a one-line reference under an `## Architecture decisions` section:
    ```
    - [NNNN] Short title — brief consequence for AI context (see docs/adr/NNNN-*.md)
    ```
    Example:
    ```
-   - [0003] Use Spring Data Specifications for dynamic queries — never use raw JPQL string concat (see docs/adr/0003-spring-data-specifications.md)
+   - [0003] Use jOOQ DSL with bound values for all queries — never interpolate user input into SQL (see docs/adr/0003-jooq-bound-values.md)
    ```
-   This line is what future Claude Code sessions will read — make it actionable, not just descriptive.
+   This line is what future AI sessions (Claude Code / OpenCode) will read — make it actionable, not just descriptive.
 
-3. If the project has a `specs/` directory (cc-sdd), also offer to reference the ADR in the relevant `design.md`.
+3. If the project has a `specs/` directory (WellForge spec-driven), also offer to reference the ADR in the relevant `design.md`.
 
 ## Tone and style
 
