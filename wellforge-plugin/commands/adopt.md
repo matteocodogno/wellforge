@@ -1,5 +1,5 @@
 ---
-description: Adopt WellForge in an existing (brownfield) project — AI-readiness, spec workflow, calibrated quality gates
+description: Adopt WellForge in an existing (brownfield) project — AI-readiness, spec workflow, calibrated quality gates, release management
 argument-hint: (run from the project root; no arguments)
 ---
 
@@ -22,6 +22,8 @@ connections. Adoption **adds** — it never rewrites existing code or convention
 AskUserQuestion (batch): which layers to adopt —
 - **Workflow + AI-readiness** (always; the core)
 - **Quality gates in CI** (needs GitHub Actions + interface prerequisites, see stage 3)
+- **Release management** (release-it: version + CHANGELOG from Conventional Commits — stage 5;
+  offer only if the project has no release tool already, and pair it with commit-lint)
 - **Connections** (GitHub settings, MCP, environments — the `connections` skill)
 - **mise toolchain** (offer only if the project doesn't already pin tools another way;
   never fight an existing working setup)
@@ -72,20 +74,59 @@ AskUserQuestion (batch): which layers to adopt —
 Load the `connections` skill and walk its checklists (each opens and closes with a
 verification command; PENDING for anything needing rights you don't have).
 
-## Stage 5 — Hand off
+## Stage 5 — Release management (if chosen)
 
-1. One commit: `chore: adopt WellForge (workflow[, gates][, connections])` — adoption
-   must be a single revertable diff.
+Wire release-it so the project gets a version bump + `CHANGELOG.md` from its Conventional
+Commits (the `release` task / `/wellforge:release`). Additive; never destructive.
+
+1. **Never run two release tools — detect an existing one FIRST.** Look for
+   `.releaserc*`/`release.config.*` (semantic-release), `.changeset/` (Changesets),
+   `.versionrc*`/`standard-version`, a release GitHub Action, or a maintained `CHANGELOG.md`
+   with real history. If ANY exists: **STOP this stage**, report it, and do NOT add release-it
+   (offer to document their existing process in AGENTS.md instead). Never fight a working setup.
+2. **Version source — git tags (default).** release-it reads the latest `vX.Y.Z` tag as the
+   base and computes the bump from the commits. If there are NO release tags yet but a
+   manifest carries a version (`package.json`/`pom.xml`/…), use that as the starting version;
+   note future versions come from tags. Match the project's existing tag style (`v` prefix or
+   not) if it already tags.
+3. **Detect the version files to keep in sync** — document what IS, include only files that
+   actually carry a version:
+   - `package.json` (root and/or each package in a monorepo) → `@release-it/bumper` `out`.
+   - `pom.xml` → `hooks.after:bump`: `mvn versions:set -DnewVersion=${version} -DgenerateBackupPoms=false` (mvnw or mise-provided mvn).
+   - `build.gradle(.kts)` → a hook or a bumper regex on the `version` line.
+   - `pyproject.toml` → bumper (`project.version` or `tool.poetry.version`).
+   - `Cargo.toml` → bumper (`package.version`).
+   - None carry a version → git tags alone are fine (no bumper `out`).
+4. **Write `.release-it.json`**: `npm.publish:false` (adoption never publishes a package
+   unless the user explicitly asks), `github.release:true`, the `@release-it/conventional-changelog`
+   plugin (`preset: conventionalcommits`, `infile: CHANGELOG.md`), and the bumper `out`/hooks
+   from step 3. Mirror the project's commit/tag conventions.
+5. **How to run it** — if the repo uses mise, add a `release` task like the scaffold's
+   (`pnpm --package=release-it@^17 --package=@release-it/conventional-changelog@^8 --package=@release-it/bumper@^6 dlx release-it`);
+   otherwise document `npx release-it` in AGENTS.md. Needs Node available.
+6. **Conventional Commits from here on** — the changelog only works if commits are
+   conventional going forward (historical commits stay as-is; the first notes start clean at
+   the current tag). **Strongly recommend the commit-lint gate** (Quality-gates layer) so it's
+   enforced — say so explicitly. Do NOT run a release during adoption; that's `/wellforge:release`.
+
+## Stage 6 — Hand off
+
+1. One commit: `chore: adopt WellForge (workflow[, gates][, release][, connections])` —
+   adoption must be a single revertable diff.
 2. Summary table: layer / added files / status (incl. measured baseline vs central
-   target, and any stage stopped with reasons — npm migration, Gradle, …).
+   target, the release version source + files synced, and any stage stopped with reasons —
+   npm migration, Gradle, existing release tool, …).
 3. Suggest the natural next step: `/wellforge:spec <first feature>` — or
    `/wellforge:orchestrate` for a pending bugfix, which doubles as a workflow demo.
 
 ## Hard rules
 
-- Adoption ADDS files; it never modifies existing source, build config, or CI beyond
-  the new `quality.yml`. Aligning the project to WellForge conventions is refactor work —
+- Adoption ADDS files (AI-readiness, `quality.yml`, `.release-it.json`); it never modifies
+  existing source or build config, and never a version file except at an explicit
+  `/wellforge:release` later. Aligning the project to WellForge conventions is refactor work —
   offer `/wellforge:orchestrate` for it, separately, after adoption.
+- Never wire release-it over an existing release tool (semantic-release, Changesets, …) —
+  detect and defer. Two release tools on one repo is a footgun.
 - Never invent conventions for AGENTS.md — document what IS, not what should be.
 - Baselines come from measurement, never estimation; round down; prove green locally.
 - No `.forge/manifest.json` for adopted projects — that file means "born from the

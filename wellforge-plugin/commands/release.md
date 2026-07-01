@@ -14,10 +14,10 @@ auto-computed bump; `--dry-run` to preview only)
 
 ## Pre-flight (all must hold)
 
-1. **Release wiring exists.** `.release-it.json` and a `release` mise task are present (every
-   WellForge scaffold ≥ v0.5.0 ships them). If missing, this project predates release wiring —
-   offer `/wellforge:upgrade` (scaffolded) or to add the config by hand (adopted); don't
-   improvise a release without it.
+1. **Release wiring exists.** `.release-it.json` and a `release` task are present (every
+   WellForge scaffold ≥ v0.5.0 ships them; adopted projects get them from the Release layer of
+   `/wellforge:adopt`). If missing: `/wellforge:upgrade` (scaffolded) or re-run
+   `/wellforge:adopt` and pick Release management (adopted). Don't improvise a release without it.
 2. **Clean working tree** — release-it refuses a dirty tree (the release must be one
    reviewable commit). Require commit/stash first.
 3. **On `main`, with an `origin` remote** — release-it derives the repo and pushes the tag

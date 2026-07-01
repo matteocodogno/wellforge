@@ -136,10 +136,12 @@ Hard rule: max 2 presets until the pilot proves the model — template sprawl is
 platforms like this die.
 
 **Brownfield:** existing projects onboard with `/wellforge:adopt` — AI-readiness files
-generated from *observed* conventions, the spec workflow, and optionally the central
-gates with a **measured coverage baseline** (ratchet: raise-only, gap-to-target
-reported in CI) instead of the born-clean 80% bar. Adoption adds files, never rewrites
-code; `/wellforge:upgrade` remains scaffold-only (no template ancestry to re-apply).
+generated from *observed* conventions, the spec workflow, and optional layers: the central
+gates with a **measured coverage baseline** (ratchet: raise-only, gap-to-target reported in
+CI) instead of the born-clean 80% bar, and **release management** (a stack-detected
+`.release-it.json` — bumper targets its actual version files, git-tag-based, paired with
+commit-lint; skipped if the project already has a release tool). Adoption adds files, never
+rewrites code; `/wellforge:upgrade` remains scaffold-only (no template ancestry to re-apply).
 
 ## 5. Quality gates
 
