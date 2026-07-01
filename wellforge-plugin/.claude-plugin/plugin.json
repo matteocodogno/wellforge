@@ -5,5 +5,6 @@
   "author": {
     "name": "WellForge"
   },
+  "license": "MIT",
   "keywords": ["kotlin", "spring-boot", "react", "typescript", "owasp", "adr", "playwright", "monorepo"]
 }
