@@ -10,8 +10,15 @@ connections. Adoption **adds** — it never rewrites existing code or convention
 ## Stage 0 — Survey (read-only)
 
 1. Preconditions: a git repo with a reasonably clean tree (uncommitted adoption files
-   must be reviewable as one diff). Refuse to run in a project that already has
-   `.forge/` (scaffolded or already adopted — point to `/wellforge:upgrade` or report).
+   must be reviewable as one diff). Then check `.forge/`:
+   - `.forge/manifest.json` present → a **scaffolded** project (has template ancestry).
+     Refuse; point to `/wellforge:upgrade`.
+   - `.forge/adoption.json` present → **already adopted. Run in add-layers mode** (not a
+     refusal): read its `layers`, SKIP the core (Stage 2 is already done), and in Stage 1
+     offer ONLY the layers not yet adopted. This is exactly how you add a layer — e.g.
+     Release management — to an existing adoption; re-running `/wellforge:adopt` is safe and
+     purely additive.
+   - Neither → first-time adoption, full flow.
 2. Detect the stack: build files (package.json/pnpm-lock/pom.xml/build.gradle),
    languages, test runners, lint setup, CI provider, monorepo layout. Read the README
    and any existing AI-context files (CLAUDE.md, AGENTS.md, .cursorrules, …).
@@ -19,8 +26,10 @@ connections. Adoption **adds** — it never rewrites existing code or convention
 
 ## Stage 1 — Scope interview
 
-AskUserQuestion (batch): which layers to adopt —
-- **Workflow + AI-readiness** (always; the core)
+AskUserQuestion (batch): which layers to adopt. **In add-layers mode, offer only the layers
+NOT already in `adoption.json`'s `layers`** (and don't re-offer the core) — e.g. an adopted
+project that skipped release earlier sees just "Release management" here.
+- **Workflow + AI-readiness** (always on first adoption; the core — skipped when re-running)
 - **Quality gates in CI** (needs GitHub Actions + interface prerequisites, see stage 3)
 - **Release management** (release-it: version + CHANGELOG from Conventional Commits — stage 5;
   offer only if the project has no release tool already, and pair it with commit-lint)
@@ -29,6 +38,9 @@ AskUserQuestion (batch): which layers to adopt —
   never fight an existing working setup)
 
 ## Stage 2 — AI-readiness + spec workflow
+
+**Add-layers mode: skip steps 1–3 (the core already exists) and go to step 4 to record the
+new layers.** Only run steps 1–3 on a first-time adoption.
 
 1. `AGENTS.md` (canonical context file, cross-tool standard): generate from the survey —
    actual stack + versions, dev commands (the project's real ones, not WellForge defaults),
@@ -47,6 +59,9 @@ AskUserQuestion (batch): which layers to adopt —
 4. `.forge/adoption.json` — `{ "adopted": "<date>", "plugin": "<version>", "layers": [...] }`.
    Records that this is an ADOPTED project: `/wellforge:upgrade` stays unavailable
    (no template ancestry) and fleet tooling can distinguish adopted from scaffolded.
+   - **Add-layers mode: MERGE, never overwrite** — keep the original `adopted` date, append
+     the newly added layers to `layers` (dedupe), and add `"updated": "<date>"`. This is the
+     one file that changes on a re-run; it's the record of what's been adopted so far.
 
 ## Stage 3 — Quality gates (if chosen)
 
@@ -112,7 +127,8 @@ Commits (the `release` task / `/wellforge:release`). Additive; never destructive
 ## Stage 6 — Hand off
 
 1. One commit: `chore: adopt WellForge (workflow[, gates][, release][, connections])` —
-   adoption must be a single revertable diff.
+   adoption must be a single revertable diff. In add-layers mode, name only what was added,
+   e.g. `chore: adopt WellForge release management`.
 2. Summary table: layer / added files / status (incl. measured baseline vs central
    target, the release version source + files synced, and any stage stopped with reasons —
    npm migration, Gradle, existing release tool, …).
@@ -131,3 +147,6 @@ Commits (the `release` task / `/wellforge:release`). Additive; never destructive
 - Baselines come from measurement, never estimation; round down; prove green locally.
 - No `.forge/manifest.json` for adopted projects — that file means "born from the
   template" and would corrupt the upgrade contract.
+- Re-running adoption is **additive only**: never re-generate or overwrite the core
+  (AGENTS.md, specs/, settings.json) on a re-run, never re-do a layer already in
+  `adoption.json`'s `layers`. The only file a re-run rewrites is `adoption.json` itself (merge).

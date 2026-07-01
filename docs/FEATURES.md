@@ -141,7 +141,10 @@ gates with a **measured coverage baseline** (ratchet: raise-only, gap-to-target 
 CI) instead of the born-clean 80% bar, and **release management** (a stack-detected
 `.release-it.json` — bumper targets its actual version files, git-tag-based, paired with
 commit-lint; skipped if the project already has a release tool). Adoption adds files, never
-rewrites code; `/wellforge:upgrade` remains scaffold-only (no template ancestry to re-apply).
+rewrites code. It's **incremental** — re-run `/wellforge:adopt` on an already-adopted project
+to add a layer you skipped (it detects `.forge/adoption.json`, offers only the missing layers,
+and merges the record); the core is never regenerated. `/wellforge:upgrade` remains
+scaffold-only (no template ancestry to re-apply).
 
 ## 5. Quality gates
 
