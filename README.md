@@ -1,50 +1,129 @@
-# WellForge
+```
+██╗    ██╗███████╗██╗     ██╗     ███████╗ ██████╗ ██████╗  ██████╗ ███████╗
+██║    ██║██╔════╝██║     ██║     ██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝
+██║ █╗ ██║█████╗  ██║     ██║     █████╗  ██║   ██║██████╔╝██║  ███╗█████╗
+██║███╗██║██╔══╝  ██║     ██║     ██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝
+╚███╔███╔╝███████╗███████╗███████╗██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗
+ ╚══╝╚══╝ ╚══════╝╚══════╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝
 
-An open platform for **reproducible, standard, fast AI-assisted project setup**:
-product idea → building, CI-gated, spec-driven, AI-ready repository in minutes — with a
-fleet that stays upgradeable as standards evolve.
+          idea  →  a building, CI-gated, AI-ready repo  →  in minutes, not hours
 
-## Documentation
+       ___________
+      |  ◕  ◡  ◕  |    Hi, I'm Forgey — your AI blacksmith.
+      |___________|    I forge the boring part (scaffold, gates, CI,
+         |     |       the spec workflow, releases) so you get straight
+       __|     |__     to building what actually matters.
+      |___________|
+```
+
+![template](https://img.shields.io/badge/template-v0.5.0-1f6feb)
+![plugin](https://img.shields.io/badge/plugin-v2.15.0-8957e5)
+![gates](https://img.shields.io/badge/gates-gates--v5-2da44e)
+![works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode-111)
+
+> **WellForge turns a week of AI-infra setup into one command.** An open platform for
+> **reproducible, standard, fast** AI-assisted project setup — for any team.
+
+## The problem
+
+Every new project starts the same way: wire up the AI agents, the spec workflow, the
+scaffold, the quality gates, the CI, the tool connections. Hours of it, every time. Everyone
+does it a little differently — and it quietly rots the moment your standards move on.
+
+## What Forgey forges for you
+
+One interview, and you get a **building, CI-gated, spec-driven, AI-ready repository** — with a
+team of AI agents already wired in, quality gates that can't be silently weakened, and a
+lifecycle that keeps your whole fleet upgradeable.
+
+- 🏗️ **Scaffold** from a versioned template — pick a stack, get a working monorepo.
+- 🤝 **A spec-driven agent team** — idea → spec → plan → design → tasks → code → QE → LM-judge eval.
+- ✅ **Quality gates as law** — coverage, lint, types, SAST, secret-scan; enforced in CI, not by vibes.
+- 🚀 **Rigor tiers** — `spike` a PoC in minutes, or run full `production` rigor. Your call, per feature.
+- 📦 **Release & lifecycle** — Conventional-Commit releases (release-it), `copier`-based upgrades, fleet view.
+- 🧩 **Brownfield-friendly** — adopt an existing repo incrementally, one layer at a time.
+
+## See it work
 
 ```bash
 brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge
 brew install matteocodogno/wellforge/wellforge
-wellforge setup      # toolchain + repo + plugin, verified
+wellforge setup            # toolchain + repo + plugin, verified
 ```
+
+Then, in Claude Code (or OpenCode):
+
+```
+/wellforge:new a portal where external contractors manage their work orders
+```
+
+Forgey interviews you, recommends a stack, generates the repo, verifies it builds, and walks
+you through connecting GitHub / CI / MCP. ~30 minutes to a repo you'd be happy to inherit.
+In a hurry? **`/wellforge:spike <idea>`** gets a working prototype in minutes.
+
+## The commands
+
+```
+/wellforge:new          idea → interview → stack pick → scaffold → verified build → connections
+/wellforge:spike        fast lane — main-loop build from a brief, advisory gates (PoC in minutes)
+/wellforge:spec|plan|design|tasks   the spec-driven feature workflow (2 human gates)
+/wellforge:orchestrate  the full agent team on a goal   ·   --mode spike|mvp|production
+/wellforge:implement    build a feature's tasks — parallel dev agents, QE-verified
+/wellforge:eval         LM-judge score against the central rubric (the gate into "done")
+/wellforge:promote      graduate a feature/project up a rigor tier — pays the deferred debt
+/wellforge:release      version + CHANGELOG from Conventional Commits, tag, GitHub release
+/wellforge:adopt        onboard an existing (brownfield) repo — incrementally
+/wellforge:upgrade      re-template a project to a newer release, AI-resolved conflicts
+/wellforge:status       where every feature stands + the exact next command to run
+```
+
+## Rigor tiers — as fast or as careful as the work deserves
+
+Match ceremony to stakes. A lower tier is *tracked debt*, raised only via `/wellforge:promote`
+— never lowered silently. A **security floor** (secret scan, no hardcoded creds, critical-CVE
+audit) blocks in **every** tier: fast never means leaky.
+
+| Tier | Pipeline | Gates | For |
+|---|---|---|---|
+| `spike` | main loop, no agents, no approval | build + secret-scan floor (advisory) | PoC / feasibility / experiments |
+| `mvp` | collapsed team, 1 gate | SAST blocks, coverage advisory | first release to validate with users |
+| `production` | full agent team, 2 gates | full 80% + SAST + eval | long-lived products |
+
+## Documentation
 
 | Doc | For |
 |---|---|
 | **[Features](docs/FEATURES.md)** | what WellForge does — the 6 pillars in detail |
 | **[Installation](docs/INSTALLATION.md)** | machine setup — brew fast path or manual |
-| **[Quick start](docs/QUICKSTART.md)** | scaffold a greenfield project (~30 min) |
-| [PLAN.md](docs/PLAN.md) | build roadmap, per-phase status, honest deviations |
+| **[Quick start](docs/QUICKSTART.md)** | idea → running project in ~30 minutes |
+| [PLAN.md](docs/PLAN.md) · [rigor tiers](docs/PLAN-rigor-tiers.md) | build roadmap, per-phase status, honest deviations |
 
-## At a glance
+## Under the hood
+
+Three layers, because no single mechanism covers everything:
+
+| Layer | Vehicle | Covers |
+|---|---|---|
+| [`wellforge-plugin/`](wellforge-plugin/) | Claude Code / OpenCode plugin — commands, agents, skills, hooks, MCP | spec workflow, agent team, orchestration, local enforcement |
+| [`copier.yml`](copier.yml) + [`templates/`](templates/) | [Copier](https://copier.readthedocs.io) monorepo template, semver-tagged ([contract](templates/_shared/CONTRACT.md)) | scaffolding, releases, lifecycle upgrades |
+| [`.github/workflows/`](.github/workflows/) + [`gates/`](gates/) | reusable GitHub Actions + central thresholds | quality gates (CI enforcement) |
+
+Fleet view across all your generated projects: [`scripts/fleet-status.sh`](scripts/fleet-status.sh).
+
+## Status
+
+All 6 pillars built and E2E-tested, plus rigor tiers and release management. Works with
+**Claude Code and OpenCode**. Latest: template `v0.5.0`, gates `gates-v5`, plugin `2.15.0`.
+Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/PLAN.md).
+
+Built for any team. Contributions: PRs to `templates/` and gate thresholds — that review is
+the single discretion point of the quality system.
 
 ```
-/wellforge:new          idea → interview → stack pick → scaffold → verified build → connections
-/wellforge:spike        fast lane — main-loop build from a brief, advisory gates (PoC/feasibility)
-/wellforge:spec|plan|tasks   standardized spec-driven feature workflow (2 human gates)
-/wellforge:orchestrate  full agent team on a goal (PO → Architect → Devs ∥ → QE) · --mode spike|mvp|production
-/wellforge:promote      graduate a feature/project up a rigor tier — pays the deferred debt
-/wellforge:upgrade      re-template a project to a newer release, AI-resolved conflicts
+       ___________
+      |  ◕  ◡  ◕  |    "now go build something. I've got the setup."
+      |___________|                                          — Forgey
+         |     |
+       __|     |__
+      |___________|
 ```
-
-**Rigor tiers** match ceremony to stakes: `spike` (minutes, no agents, advisory gates) →
-`mvp` (collapsed pipeline) → `production` (full rigor). A lower tier is tracked debt, raised
-only via `/wellforge:promote` — never lowered silently. A security floor blocks in every tier.
-
-| Piece | Where |
-|---|---|
-| Claude Code plugin (commands, 9 agents, skills, hooks, MCP) | [`wellforge-plugin/`](wellforge-plugin/) |
-| Project templates — Copier monorepo, root [`copier.yml`](copier.yml) | [`templates/`](templates/) ([contract](templates/_shared/CONTRACT.md)) |
-| Quality gates — reusable workflows + central thresholds | [`.github/workflows/`](.github/workflows/) + [`gates/`](gates/) |
-| Fleet status script | [`scripts/fleet-status.sh`](scripts/fleet-status.sh) |
-
-**Status**: all 6 pillars built and E2E-tested, plus rigor tiers (spike/mvp/production).
-Latest: template `v0.4.0`, gates `gates-v5`, plugin `2.9.0`. Outstanding before `v1.0.0`:
-the Phase 7 pilot on a real project — see [PLAN.md](docs/PLAN.md) ·
-[rigor tiers plan](docs/PLAN-rigor-tiers.md).
-
-Internal WellForge tooling. Contributions: PRs only for `templates/` and gate thresholds
-(that review is the single discretion point of the quality system).
