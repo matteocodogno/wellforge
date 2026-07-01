@@ -38,10 +38,36 @@ real. The failure mode this design exists to prevent: a spike silently becoming 
 | Models | inherits the session model (no per-agent routing) | mid agents only — frontier architect/evaluator are NOT spawned | full `model-routing.yml` |
 | Quality gates | lint + typecheck + build, **advisory** | + smoke tests + SAST-high **blocking**; coverage advisory | full 80% coverage + SAST + eval |
 | Eval (LM-judge) | off | off | on — the gate into `done` |
+| Effort cue | minimal (bias to speed) | moderate (pragmatic) | full (deliberate) — see below |
 
 `mvp` gets cheaper not by re-tiering agents (frontmatter `model:` is fixed per agent) but by
 **composition** — it simply never spawns the frontier agents (architect, evaluator). See
 `config/model-routing.yml`.
+
+## Effort cue — how hard to think, gated by tier
+
+Distinct from *which* model runs (routing) and *which* agents run (composition): the effort
+cue is *how hard the chosen model deliberates*. It is **not** a per-agent config field (that
+would break tool-neutrality) — it's a plain-text directive the dispatching command adds to
+each agent's task prompt, derived from the resolved rigor tier. Tool-portable (just words),
+zero new config. Most useful for agents that span tiers (PO, dev agents, QE) and for the
+spike main loop; the frontier agents (architect, evaluator) run only at `production`, so
+their effort is already "full".
+
+Prepend the tier's cue to each dispatched agent's task (and, for `spike`, the main loop
+applies it to itself):
+
+- **`spike`** — "Effort: minimal. Take the shortest path that answers the question. No
+  gold-plating, no exhaustive edge-case analysis; leave `// SPIKE:` where you cut a corner.
+  Bias hard to speed."
+- **`mvp`** — "Effort: moderate. Be pragmatic and correct on the main paths; cover the
+  obvious error cases but NOTE deferred edge cases rather than solving them all now."
+- **`production`** — "Effort: full. Reason carefully about trade-offs, edge/error/failure
+  modes; verification is adversarial. Thoroughness over speed."
+
+This is a nudge, not a hard budget — honest about the seam. Where a tool exposes a real
+thinking-budget parameter, a future `model-tiers.yml`-style mapping could bind these levels to
+it; until then the directive is the mechanism.
 
 ## Security floor — non-negotiable, ALL tiers (incl. spike)
 

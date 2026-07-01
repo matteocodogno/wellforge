@@ -13,6 +13,9 @@ Goal: $ARGUMENTS
 
 - **Main loop only — you implement directly. Spawn NO subagents.** The whole point is to
   skip orchestration cold-starts. (mvp/production are where the agent team runs.)
+- **Effort: minimal** (the spike tier cue, rigor-tiers skill) — apply it to yourself: take
+  the shortest path that answers the question, no gold-plating or exhaustive edge-case work,
+  leave `// SPIKE:` where you cut a corner. Bias hard to speed.
 - **No human approval gate.** You build, then the human reviews the result.
 - **Advisory gates** (lint/typecheck/build): run them, report failures, do NOT stop on them.
 - **The security floor still blocks** (see rigor-tiers): secret scan, no hardcoded creds,

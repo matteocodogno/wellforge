@@ -33,6 +33,8 @@ Arguments: $ARGUMENTS
 
 Run only the steps the transition requires. Each missing artifact is produced by its owning
 agent (handoff contract from the **orchestrate** flow); you coordinate, agents do the work.
+Prepend the **target tier's** effort cue (rigor-tiers skill) to each agent's task — you're
+raising rigor, so agents work at the destination tier's effort, not the source's.
 
 ### → mvp  (from spike)
 1. **brief.md → spec.md** — spawn `wellforge:product-owner` with the brief + the code already

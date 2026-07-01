@@ -41,6 +41,8 @@ ask the user anything and must never self-approve.
   re-sync tasks (`/wellforge:tasks` re-sync mode), then resume.
 - Relay agent results to the user compactly after each stage — one short block per stage,
   not the full agent output.
+- **Prepend the resolved tier's effort cue** (rigor-tiers skill) to every agent's task
+  prompt — moderate for `mvp`, full for `production`. It's plain text, not config.
 
 ## Step 1 — Classify
 

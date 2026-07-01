@@ -52,7 +52,8 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 - Set spec `status: in-progress` if it isn't already.
 - For each task, pick the agent by domain: `wellforge:frontend-dev`, `wellforge:backend-dev`, or `wellforge:devops`
   (infra/CI tasks). Each agent receives ONLY the spec dir path and its task ID(s) —
-  it reads the ACs, contracts, and `done when:` itself.
+  it reads the ACs, contracts, and `done when:` itself — plus the resolved tier's **effort
+  cue** (rigor-tiers skill: moderate for `mvp`, full for `production`), prepended to its task.
 - Run dependency-independent tasks as **parallel agents in one batch**; sequence only
   along `deps:` edges.
 - Each agent checks its task's box in `tasks.md` on completion and commits
