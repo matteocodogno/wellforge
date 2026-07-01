@@ -18,6 +18,7 @@ coverage/
 
 # Claude / WellForge local settings
 .claude/settings.local.json
+.claude/transcripts/
 
 # Editor / OS
 .DS_Store
