@@ -244,6 +244,25 @@ through full production rigor. **Full plan + per-phase detail: [PLAN-rigor-tiers
 Defer-don't-lower: a lower tier is tracked debt, raised only via promote, production only on
 an eval PASS. Self-CI (`.github/workflows/ci.yml`) added alongside.
 
+## Phase 11 — SDLC extension & hardening (added 2026-06-29)
+
+Goal: close outer-loop gaps and harden the agent system, off the back of an "is this all of
+the SDLC?" review (deploy/operate still open; see FEATURES for the honest coverage map).
+
+- ☑ Release management (template v0.5.0, plugin v2.13.0): `/wellforge:release` + per-preset
+  `.release-it.json` — version bump + `CHANGELOG.md` from Conventional Commits via **release-it**
+  (`@release-it/conventional-changelog` + `@release-it/bumper`); brownfield support in `/wellforge:adopt`.
+- ☑ Incremental adoption (plugin v2.15.0): re-run `/wellforge:adopt` to add a skipped layer
+  (add-layers mode; merges `adoption.json`, never regenerates the core).
+- ☑ Tier-gated effort cue (plugin v2.16.0): a tool-neutral per-tier "how hard to think"
+  directive (spike minimal / mvp moderate / production full) — no per-agent config.
+- ☑ Agent review — Wave 1 (v2.16.1): stack/path/naming fixes (owasp jOOQ/Drizzle + Hono,
+  non-interactive; devops gates path; adr-writer de-cc-sdd). Wave 2 (v2.17.0): defect triage
+  to the true owner, proactive security scheduling, dev ADR candidates. Wave 3 (v2.17.1):
+  backup-hook de-cc-sdd, `.claude/transcripts/` gitignore (template v0.5.1), designer
+  `disallowedTools:[Edit]`, observability schema sync.
+- ☑ MIT `LICENSE`; README revamp (Forgey mascot); docs sync.
+
 ## Order & dependencies
 
 ```

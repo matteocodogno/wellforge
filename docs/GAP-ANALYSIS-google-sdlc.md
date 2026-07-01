@@ -5,6 +5,11 @@ Addy Osmani, Shubham Saboo, Sokratis Kartakis (Google, May 2026, 51 pp).
 **Compared against:** WellForge as of this commit (plugin v2.0.0, templates v0.2.x, gates-v1).
 **Date:** 2026-06-23.
 
+> **Historical snapshot.** This analysis is dated (plugin v2.0.0). The P1/P2/P3 gaps it
+> identifies are long closed, and WellForge has since added rigor tiers, release management,
+> and more. For current state see [FEATURES.md](FEATURES.md) and [PLAN.md](PLAN.md); this doc
+> is kept as the original vs-paper assessment.
+
 This maps WellForge against the paper's frameworks, states where we already embody its
 recommendations, and flags the real gaps — separating "should build" from "deliberately
 out of scope."
@@ -58,7 +63,7 @@ The paper's six context types and the static/dynamic split:
 | Memory (session + persistent) | spec files on disk = persistent; **no session memory** | ◐ |
 | Examples (few-shot, ref patterns) | skill references show patterns | ✅ |
 | Tools (precise defs) | `.mcp.json`, agent tool lists | ✅ |
-| Guardrails (hard constraints) | 6 hooks (pre-bash-guard, stop-verify) | ✅ strong |
+| Guardrails (hard constraints) | 7 hooks (pre-bash-guard, stop-verify) | ✅ strong |
 | **Static context** (always loaded) | `AGENTS.md` + `CLAUDE.md` import | ✅ exemplary |
 | **Dynamic context** (on-demand skills) | `SKILL.md` + `references/` progressive disclosure | ✅ exemplary |
 
@@ -75,7 +80,7 @@ guardrails. This is a near-exact description of WellForge:
 | Factory component | WellForge realization |
 |---|---|
 | Specifications & context | spec-driven workflow, `AGENTS.md` |
-| Agents that translate specs → impl | 9-agent team + orchestrator/implement |
+| Agents that translate specs → impl | 10-agent team + orchestrator/implement |
 | Tests & quality gates | central reusable CI gates (pillar 5) |
 | Feedback loops (failures → agents) | QE verdict → dev fix loop (bounded) |
 | Guardrails | hooks + pre-bash-guard + drift enforcement |

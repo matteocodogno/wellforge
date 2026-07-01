@@ -44,6 +44,20 @@ lifecycle that keeps your whole fleet upgradeable.
 - 📦 **Release & lifecycle** — Conventional-Commit releases (release-it), `copier`-based upgrades, fleet view.
 - 🧩 **Brownfield-friendly** — adopt an existing repo incrementally, one layer at a time.
 
+## Is it for you?
+
+WellForge is a plugin on top of an AI coding CLI, and it's opinionated about stack + platform.
+It fits best if you have:
+
+- **Claude Code** (or OpenCode) + model access — it's a plugin, not a standalone tool
+- **macOS or Linux** with Homebrew (Windows isn't supported yet)
+- **GitHub** — the quality gates are GitHub Actions; connections & releases assume `gh`
+- **Greenfield**: one of two stacks — **Spring-Kotlin + React** or **Hono + React**
+- **Brownfield**: any **Node (pnpm)** or **JVM (Maven)** repo on GitHub, via `/wellforge:adopt`
+
+Outside that (other stacks, other CIs, Windows) the fit drops off — broadening is on
+[the roadmap](docs/PLAN.md).
+
 ## See it work
 
 ```bash

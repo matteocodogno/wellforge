@@ -70,8 +70,9 @@ blocks in *every* tier; "fast" never means "leaks credentials." Canonical refere
 
 ## 2. Multi-agent team
 
-Nine agents with crisp role boundaries — each has explicit inputs, one artifact, and a
-"must NOT" list that prevents role bleed:
+Ten agents with crisp role boundaries — each has explicit inputs, one artifact, and a
+"must NOT" list that prevents role bleed (seven role agents, the LM-judge evaluator, and
+two specialists):
 
 | Agent | Produces | Hard boundary |
 |---|---|---|
@@ -82,6 +83,7 @@ Nine agents with crisp role boundaries — each has explicit inputs, one artifac
 | `backend-dev` | code + checked tasks | API contract in plan.md is law; migrations only, never edit generated sources |
 | `devops` | pipelines, infra, connections | calls central gates, never inlines copies; cannot change thresholds |
 | `quality-engineer` | evidence-based verdict table | never fixes production code; single ✗ = FAIL, no "pass with remarks" |
+| `evaluator` (LM-judge) | `eval-report.md` scored verdict | judges only, never fixes; distinct from QE — the gate into `done` (§5) |
 | `owasp-reviewer` (specialist) | OWASP Top 10 review (jOOQ/Drizzle/React-aware) | scheduled in parallel with QE when the plan flags the feature security-sensitive, or on QE recommendation |
 | `adr-writer` (specialist) | MADR-format ADRs | invoked by caller on architect's OR a dev agent's ADR candidates |
 
@@ -192,7 +194,9 @@ scores against the central rubric (`gates/configs/eval-rubric.yml`: weighted dim
 per-dimension floors, pass ≥ 80) and writes a verdict to `specs/NNN/eval-report.md`. A **passing eval is the gate into
 `done`** — QE alone isn't enough ("set the bar at the eval, not the demo"). An unmet AC
 fails regardless of the total (floor rule). Also available as an opt-in CI gate
-(`quality-eval.yml@gates-v2`, needs `ANTHROPIC_API_KEY`). The rubric is central and
+(`quality-eval.yml@gates-v2`, needs `ANTHROPIC_API_KEY`) — note that pinned tag still carries
+the `default-v1` rubric (pre-`design_fidelity`); bump the `gates-ref` to pick up the current
+rubric. The in-session evaluator always reads the repo's current rubric (`default-v2`). The rubric is central and
 PR-governed like every threshold; per-feature `eval.md` may raise floors, never lower.
 
 **Model routing (economics).** Agents don't all run the frontier model. A central

@@ -26,7 +26,7 @@ the value. The gap is the *premium* layer: multi-agent orchestration and enforce
 |---|---|
 | 4 Scaffolder · 5 Gates · 6 Lifecycle | **Already tool-neutral** (Copier, GitHub Actions, AGENTS.md). No work. |
 | 1 Spec-driven workflow | **Portable** — it's conventions (the `spec-driven` skill) + commands. Skill ports as-is; commands re-expressed per tool. |
-| 2 Agent team | **Partially portable** — the 9 role definitions become *skills the agent adopts* on tools without subagents; *dispatched subagents* where supported. |
+| 2 Agent team | **Partially portable** — the 10 agent definitions become *skills the agent adopts* on tools without subagents; *dispatched subagents* where supported. |
 | 3 Orchestrator | **Degrades by tool** — parallel multi-agent dispatch only on Claude Code/OpenCode; on Codex/Copilot it's a *documented sequential procedure* the single agent follows. |
 | Eval (P1) | **Portable** — rubric is a config file; the LM-judge is a skill/role + the headless `run-eval.py` (already tool-agnostic, calls the API directly). |
 | Observability (P2) | **Hook-dependent** — run traces need a SubagentStop-equivalent; the commands can still write traces explicitly, but auto token capture is Claude Code/OpenCode-only. |
@@ -58,7 +58,7 @@ for the user's tool. The CLI already manages env per tool.
 
 Don't pretend every tool gets the full experience — set expectations.
 
-- **Tier 1 — Claude Code (full):** commands, parallel 9-agent orchestration, 7 hooks
+- **Tier 1 — Claude Code (full):** commands, parallel 10-agent orchestration, 7 hooks
   (guard/drift/lint/observability), eval gate, run traces. The reference implementation.
 - **Tier 1 — OpenCode (near-full):** native agents + commands + skills; hooks via a TS
   plugin. Realistically reaches ~90% — the closest port, and your colleagues use it.
