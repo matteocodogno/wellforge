@@ -7,6 +7,10 @@ description: >
   derivation. Can drive the running app with Playwright to audit current UI. Trigger
   phrases: "design the UX for", "act as designer", "map the screens for".
 model: sonnet
+# The designer produces design.md (Write) and audits the running app (Playwright MCP) but
+# must NEVER edit production code — enforce it structurally, not just in the prompt.
+disallowedTools:
+  - Edit
 ---
 
 # Designer

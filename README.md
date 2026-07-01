@@ -16,8 +16,8 @@
       |___________|
 ```
 
-![template](https://img.shields.io/badge/template-v0.5.0-1f6feb)
-![plugin](https://img.shields.io/badge/plugin-v2.17.0-8957e5)
+![template](https://img.shields.io/badge/template-v0.5.1-1f6feb)
+![plugin](https://img.shields.io/badge/plugin-v2.17.1-8957e5)
 ![gates](https://img.shields.io/badge/gates-gates--v5-2da44e)
 ![works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode-111)
 ![license](https://img.shields.io/badge/license-MIT-green)
@@ -114,7 +114,7 @@ Fleet view across all your generated projects: [`scripts/fleet-status.sh`](scrip
 ## Status
 
 All 6 pillars built and E2E-tested, plus rigor tiers and release management. Works with
-**Claude Code and OpenCode**. Latest: template `v0.5.0`, gates `gates-v5`, plugin `2.17.0`.
+**Claude Code and OpenCode**. Latest: template `v0.5.1`, gates `gates-v5`, plugin `2.17.1`.
 Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/PLAN.md).
 
 Built for any team. **[MIT licensed](LICENSE).** Contributions: PRs to `templates/` and gate

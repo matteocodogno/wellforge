@@ -8,13 +8,13 @@ BACKUP_FILE="$BACKUP_DIR/session_${CLAUDE_SESSION_ID:-unknown}_${TIMESTAMP}.md"
   echo "# Snapshot — $TIMESTAMP | $PROJECT_DIR"
   echo "## Git state"; git -C "$PROJECT_DIR" log --oneline -10 2>/dev/null
   echo "## Modified"; git -C "$PROJECT_DIR" diff --name-only 2>/dev/null
-  echo "## cc-sdd specs"
+  echo "## WellForge specs"
   [ -d "$PROJECT_DIR/specs" ] && for spec in "$PROJECT_DIR/specs"/*/; do
-    name=$(basename "$spec")
-    echo "### $name"
-    [ -f "$spec/requirements.md" ] && echo "- requirements: $(wc -l < "$spec/requirements.md")L"
-    [ -f "$spec/design.md" ]       && echo "- design: $(wc -l < "$spec/design.md")L"
-    [ -f "$spec/tasks.md" ]        && echo "- tasks: $(wc -l < "$spec/tasks.md")L"
+    [ -d "$spec" ] || continue
+    echo "### $(basename "$spec")"
+    for part in brief spec plan design tasks eval-report; do
+      [ -f "$spec/$part.md" ] && echo "- $part: $(wc -l < "$spec/$part.md" | tr -d ' ')L"
+    done
   done
 } > "$BACKUP_FILE"
 echo "Snapshot → $BACKUP_FILE" >&2

@@ -40,8 +40,9 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
 {
   "schema": "wellforge-run/v1",
   "run_id": "<UTC ts, ':'→'-'>-<command>-<feature>",
-  "command": "implement | orchestrate | eval",
+  "command": "implement | orchestrate | eval | spike | promote",
   "feature": "001-user-auth",
+  "rigor": "production | mvp | spike",
   "started": "2026-06-24T10:44:00Z",
   "finished": "2026-06-24T10:52:13Z",
   "agents": [
@@ -66,6 +67,9 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
 - **Drift is recorded, not just handled.** Every time an agent reports drift and the
   command pauses to amend, append a `drift_events` entry — this is the audit beyond the
   binary stop-verify hook.
+- **`rigor`** records the resolved tier for the run (`production`/`mvp`/`spike`, per the
+  rigor-tiers skill). `spike` runs record `"agents": []` (main loop, no subagents).
+  `promote` runs additionally record the tier transition: `"from": "<tier>", "to": "<tier>"`.
 
 ## Producers (the commands)
 

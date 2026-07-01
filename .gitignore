@@ -8,6 +8,7 @@
 
 # Claude Code local state
 .claude/settings.local.json
+.claude/transcripts/
 
 # Python (copier tooling)
 __pycache__/
