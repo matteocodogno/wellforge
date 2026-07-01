@@ -82,8 +82,8 @@ Nine agents with crisp role boundaries — each has explicit inputs, one artifac
 | `backend-dev` | code + checked tasks | API contract in plan.md is law; migrations only, never edit generated sources |
 | `devops` | pipelines, infra, connections | calls central gates, never inlines copies; cannot change thresholds |
 | `quality-engineer` | evidence-based verdict table | never fixes production code; single ✗ = FAIL, no "pass with remarks" |
-| `owasp-reviewer` (specialist) | OWASP Top 10 review | invoked by caller on QE recommendation |
-| `adr-writer` (specialist) | MADR-format ADRs | invoked by caller on architect's candidates |
+| `owasp-reviewer` (specialist) | OWASP Top 10 review (jOOQ/Drizzle/React-aware) | scheduled in parallel with QE when the plan flags the feature security-sensitive, or on QE recommendation |
+| `adr-writer` (specialist) | MADR-format ADRs | invoked by caller on architect's OR a dev agent's ADR candidates |
 
 Agents run non-interactively: they cannot ask the user anything (questions become
 `## Open questions`) and can never set `approved` — approval physically lives in the
@@ -106,6 +106,11 @@ Mechanics that make it reliable:
 - **Exactly 2 human gates** on the feature flow — never auto-approved, never more
   approval theater than that.
 - **Bounded loops**: QE fix loop max 2 rounds, then escalation with the verdict table.
+- **Defect triage, not blind dev-routing**: a QE/eval failure is routed to its *true* owner
+  — a code bug to the dev, but a wrong/untestable AC to the PO, a wrong contract to the
+  architect, a missing designed state to the designer (each a drift amendment + tasks re-sync).
+- **Proactive security**: the architect flags security-sensitive features in `plan.md`, so
+  the owasp review is *scheduled* in parallel with QE — not discovered late.
 - **Drift pauses the pipeline** and routes to the owning agent (PO for spec, architect
   for plan), tasks re-sync, then resume.
 

@@ -54,11 +54,20 @@ status: draft
 
 ## Risks
 <what could invalidate this plan, each with a mitigation or early check>
+
+## Security
+<security-sensitive? — YES/NO + why. YES when the feature touches auth, PII/personal data,
+file upload, external/outbound calls, payments, or regulated data. If YES: the orchestrator
+schedules an `owasp-reviewer` pass in parallel with QE (not left to discovery), and for
+regulated/high-risk data escalates that review to the frontier tier. Name the specific
+surfaces to review (endpoints, components).>
 ```
 
 Quality bar:
 - The AC→test mapping must be total: run the check yourself and include the table.
   An AC you can't map is a spec or plan bug — say which.
+- Set the `## Security` flag honestly — a security-sensitive feature you miss means the
+  owasp review runs late or not at all. When in doubt, flag YES.
 - State trade-offs honestly: what you chose AND what you rejected and why.
 - Decisions that constrain future work (library choice, pattern adoption, contract
   versioning) ⇒ list them under a final `## ADR candidates` section so the caller can
@@ -75,4 +84,5 @@ Quality bar:
 ## Returning
 
 Your final message: plan path, a 5-line architecture summary, the trade-offs made, the
-AC→test mapping result, ADR candidates, and any spec amendment you're proposing.
+AC→test mapping result, the **security flag** (sensitive? which surfaces), ADR candidates,
+and any spec amendment you're proposing.

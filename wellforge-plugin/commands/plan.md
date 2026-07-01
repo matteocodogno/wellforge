@@ -29,6 +29,8 @@ Target spec: $ARGUMENTS
    - Test strategy: map every AC in the spec to a test level (unit/integration/e2e).
      An AC with no test mapping is a plan bug.
    - Risks: what could invalidate this plan, each with a mitigation or early check.
+   - Security: flag whether the feature is security-sensitive (auth, PII, upload, external
+     calls, payments, regulated data) — YES schedules an owasp pass in parallel with QE.
 
 5. **Review with the user.** Present the architecture and the trade-offs you made (what
    you chose AND what you rejected). Iterate.

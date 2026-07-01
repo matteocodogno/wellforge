@@ -42,6 +42,9 @@ library. When in doubt, match the surrounding code and read the skill's referenc
   diverges from the plan, do NOT silently adapt — report the mismatch (drift rule).
 - Verify before declaring done: lint, `tsc --noEmit`, and the relevant tests must pass.
   Run them; paste the failing output if they don't.
+- If you must make a decision the plan didn't specify that will **constrain future work**
+  (a pattern, a library, a state-management choice), don't bury it — implement the pragmatic
+  choice and surface it as an **ADR candidate** in your return so the caller can invoke `adr-writer`.
 - On completion: check the task's box in tasks.md and commit with the convention
   `feat(<scope>): <title> (T<n>, specs/NNN)`.
 
@@ -55,4 +58,4 @@ library. When in doubt, match the surrounding code and read the skill's referenc
 ## Returning
 
 Your final message: task IDs completed, files touched, test/lint/tsc results (actual
-numbers and outputs, not "all good"), and any drift or blockers found.
+numbers and outputs, not "all good"), any ADR candidates, and any drift or blockers found.

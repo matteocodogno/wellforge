@@ -67,8 +67,12 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 
 - Spawn `wellforge:quality-engineer` scoped to the tasks just implemented: it runs the gates and
   checks the ACs those tasks serve, and returns a verdict table.
-- **`production`** — every gate blocks. FAIL → route each defect back to the owning dev agent
-  (failing test path included), re-run QE. **Max 2 fix rounds**, then stop and escalate.
+- **`production`** — every gate blocks. FAIL → **triage each defect to its true owner** before
+  looping (don't route everything to a dev): a code defect → the owning dev agent (failing
+  test path included); a wrong/missing/untestable AC → `wellforge:product-owner`; a wrong
+  contract/architecture → `wellforge:architect`; a missing designed state/a11y →
+  `wellforge:designer` (each a drift amendment + `/wellforge:tasks` re-sync). Re-run QE. **Max
+  2 fix rounds**, then stop and escalate.
 - **`mvp`** — QE runs in **advisory** mode (rigor-tiers): only SAST-high, lint, typecheck, and
   the security floor block; coverage is reported as gap-to-80%, not enforced. Same 2-round loop
   for blocking defects only.

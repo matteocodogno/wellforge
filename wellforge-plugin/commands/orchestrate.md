@@ -73,16 +73,28 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
    - Each agent gets: spec dir path + its task ID(s). Nothing else.
    - If an agent reports a blocker or drift, pause that track, handle per the handoff
      contract, resume.
-9. **QE** → spawn `wellforge:quality-engineer` with the spec dir. If the verdict is FAIL: route
-   each defect back to the owning dev agent (failing test path included), then re-run QE.
-   Max **2 fix rounds** — still failing after that, stop and escalate to the user with
+   - If an agent surfaces an **ADR candidate** (a decision it had to make that constrains
+     future work and the plan didn't cover), collect it; after implementation, offer to spawn
+     `wellforge:adr-writer` for it — same as the architect's ADR candidates at gate 2.
+9. **QE** → spawn `wellforge:quality-engineer` with the spec dir. Spawn `wellforge:owasp-reviewer`
+   **in parallel** when the plan flagged the feature security-sensitive (its `## Security`
+   note) — not only when QE recommends it; treat owasp findings ≥ medium as defects.
+   On any FAIL, **triage each defect to its true owner before looping** — do NOT route
+   everything to a dev:
+   - a code defect → the owning dev agent (failing test path included)
+   - an AC that's wrong / missing / untestable → `wellforge:product-owner` (drift: amend spec,
+     re-approve if scope changed, re-sync `/wellforge:tasks`)
+   - a wrong contract / architecture / data model → `wellforge:architect` (drift: amend plan,
+     re-sync tasks)
+   - a missing designed state or a11y requirement (design.md) → `wellforge:designer`
+
+   Then re-run QE. Max **2 fix rounds** — still failing after that, stop and escalate with
    the verdict table.
-   - If QE recommends a security pass, spawn `wellforge:owasp-reviewer` and treat findings ≥ medium
-     as defects (same fix loop).
 10. **Eval** → spawn `wellforge:evaluator` with the spec dir (LM-judge against
     `gates/configs/eval-rubric.yml`). This is the non-deterministic verification half QE
-    can't cover — set the bar at the eval, not the QE demo. FAIL → route the failing
-    dimensions back to the dev agents (same bounded 2-round loop as QE), re-eval.
+    can't cover — set the bar at the eval, not the QE demo. FAIL → **triage each failing
+    dimension to its owner** (as in step 9: code → dev, spec → PO, plan → architect, design →
+    designer), same bounded 2-round loop, re-eval.
 11. **Close** → when QE passes, the **eval verdict is PASS**, and all tasks are checked:
     set spec `status: done`, summarize (stories delivered, QE + eval verdict tables,
     commits), suggest next steps.
@@ -110,7 +122,8 @@ contract and disk-based artifacts, fewer stages. **Never spawn the frontier agen
 5. **QE (light)** → spawn `wellforge:quality-engineer` scoped to the work, in **advisory** mode:
    it runs the gates and reports numbers, but only **SAST-high, lint, typecheck, and the
    security floor BLOCK** (rigor-tiers). Coverage is reported as gap-to-80%, not enforced.
-   Same bounded 2-round fix loop for blocking defects only.
+   Triage blocking defects to their owner (code → dev; a wrong/untestable AC → the PO for a
+   spec amendment — mvp has no architect/designer to route to). Same bounded 2-round loop.
 6. **Close** → when the blocking gates pass and all tasks are checked: set spec
    `status: done`. **No eval** — mvp's `done` is QE-light, not the LM-judge. End with the
    rigor-tiers visibility reminder: "rigor: mvp — coverage advisory, not yet production;

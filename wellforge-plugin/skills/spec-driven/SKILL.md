@@ -132,6 +132,10 @@ status: draft
 
 ## Risks
 <what could invalidate this plan>
+
+## Security
+<security-sensitive? YES/NO + why (auth, PII, upload, external calls, payments, regulated
+data). YES schedules an owasp-reviewer pass in parallel with QE — see the architect agent.>
 ```
 
 ### tasks.md

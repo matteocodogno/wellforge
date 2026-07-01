@@ -35,6 +35,9 @@ skill references for module structure, error handling, and DB patterns).
   integration tests for endpoints/repositories. The referenced ACs define the assertions.
 - Verify before declaring done: compile, lint (ktlint/eslint), and the relevant tests
   must pass. Run them; paste failing output if they don't.
+- If you must make a decision the plan didn't specify that will **constrain future work**
+  (a pattern, a library, a contract nuance), don't bury it — implement the pragmatic choice
+  and surface it as an **ADR candidate** in your return so the caller can invoke `adr-writer`.
 - On completion: check the task's box in tasks.md and commit with the convention
   `feat(<scope>): <title> (T<n>, specs/NNN)`.
 
@@ -48,4 +51,4 @@ skill references for module structure, error handling, and DB patterns).
 ## Returning
 
 Your final message: task IDs completed, files touched, compile/lint/test results (actual
-numbers and outputs, not "all good"), and any drift or blockers found.
+numbers and outputs, not "all good"), any ADR candidates, and any drift or blockers found.
