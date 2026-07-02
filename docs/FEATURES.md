@@ -48,6 +48,11 @@ Key properties:
 - `/wellforge:status` recaps every feature's position in the flow (spec/plan/tasks/
   implement/done) with task progress and the exact next command to run — read-only,
   derived from a deterministic state table so the "next step" never drifts.
+- `/wellforge:done [feature]` is the single **guarded** way to close a feature: it verifies
+  the **tier-aware done gate** (production = tasks checked + QE PASS + eval PASS; mvp =
+  tasks + QE-light; spike = brief findings) and refuses if any condition is unmet. The
+  transition is the calling session's — **never** an agent's (the evaluator judges, it
+  doesn't close). `/wellforge:orchestrate` applies the same gate to self-close.
 
 Why in-house instead of BMAD/Kiro/cc-sdd: we keep the proven spec→plan→tasks *shape*
 but own the prompts, so they encode WellForge conventions and don't churn under us.

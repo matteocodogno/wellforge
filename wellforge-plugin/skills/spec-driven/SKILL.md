@@ -67,11 +67,13 @@ draft ──► approved ──► in-progress ──► done
 
 - Only the **user** moves a spec from `draft` to `approved` — never set it yourself.
   Record approval as `approved: 2026-06-04` in the frontmatter when the user says so.
-- `in-progress` is set when the first task starts; `done` requires THREE things: every
-  task in tasks.md checked, quality gates pass (QE — deterministic), AND a passing
-  `eval-report.md` (the LM-judge rubric scoring — the non-deterministic half, run by
-  `/wellforge:eval`). QE pass alone is not enough to reach `done`: "set the bar at the
-  eval, not the demo."
+- `in-progress` is set when the first task starts. Reaching `done` goes through the guarded
+  **`/wellforge:done`** command (or `/wellforge:orchestrate`'s close step, same gate) — never
+  a hand-edit or an agent. The **done gate is tier-aware**: `production` needs every task
+  checked + QE PASS + a fresh passing `eval-report.md` (the LM-judge — QE alone isn't enough,
+  "set the bar at the eval, not the demo"); `mvp` needs tasks checked + QE-light PASS (no
+  eval); `spike` closes via its `brief.md` findings. `/wellforge:done` refuses to close a
+  feature whose gate isn't met.
 
 ## File formats
 
@@ -181,4 +183,5 @@ Enforced mechanically: the Stop hook (`stop-verify.sh`) blocks finishing a sessi
 
 - Work tasks in dependency order; set the checkbox immediately on completion.
 - Reference task IDs in commit messages: `feat(report): add CSV serializer (T1, specs/002)`.
-- When the last task is checked and gates pass, set spec status to `done`.
+- When the last task is checked and gates pass, close the feature with `/wellforge:done`
+  (it verifies the tier's done gate before flipping the status).

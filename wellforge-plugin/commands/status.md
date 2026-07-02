@@ -38,10 +38,10 @@ Evaluate top-down; first matching row wins. `NNN-slug` below is the feature's fo
 | plan `approved`, no `tasks.md` | **tasks** | `/wellforge:tasks NNN-slug` |
 | `tasks.md`, 0 checked | **implement** | `/wellforge:implement NNN-slug next` |
 | `tasks.md`, some unchecked | **implement** | `/wellforge:implement NNN-slug next` |
-| all tasks checked, rigor `mvp`, QE passed | **verify** | set spec `done` (mvp — no eval); or `/wellforge:promote NNN-slug --to production` |
+| all tasks checked, rigor `mvp`, QE passed | **verify** | `/wellforge:done NNN-slug` (mvp — no eval); or `/wellforge:promote NNN-slug --to production` |
 | all tasks checked, rigor `production`, no/stale `eval-report.md` | **eval** | `/wellforge:eval NNN-slug` (LM-judge scored verdict) |
 | `eval-report.md` `verdict: FAIL` | **eval** | fix the failing dimensions, then `/wellforge:eval NNN-slug` |
-| `eval-report.md` `verdict: PASS`, spec ≠ `done` | **verify** | set spec `done` |
+| `eval-report.md` `verdict: PASS`, spec ≠ `done` | **verify** | `/wellforge:done NNN-slug` |
 | spec `done` | **done** | — complete |
 
 If spec is `draft` with open questions, append "(N open questions block approval)".

@@ -36,8 +36,9 @@ every dimension ≥ floor).
 
 ## Step 4 — Act on the verdict
 
-- **PASS** → report the score table; offer to set spec `status: done` (eval pass is the
-  gate into `done`). 
+- **PASS** → report the score table. The eval PASS is the gate into `done`, but this command
+  doesn't flip the status — point the user at **`/wellforge:done <feature>`**, which verifies
+  the full done gate (tasks + QE + this PASS) and records the close.
 - **FAIL** → relay the failing/weak dimensions with the evaluator's evidence. Route the
   remediation: name the specific ACs/tasks to revisit and suggest
   `/wellforge:implement <feature> <those tasks>`. Do NOT fix anything here — the evaluator

@@ -86,11 +86,12 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 
 - Tasks done (with IDs), tasks skipped (already checked) and deferred (unmet deps not in
   scope), QE verdict, commits. State what remains unchecked in `tasks.md`.
-- If every task is now checked and QE passed, suggest the next step **by tier**:
-  - `production` → the **eval** (`/wellforge:eval <feature>`) — the LM-judge rubric scoring is
-    the gate into `done`, not the QE pass alone. Suggest it; don't set `done` from here.
-  - `mvp` → no eval; mvp's `done` is QE-light. Note coverage is advisory and end with the
-    rigor reminder: "rigor: mvp — `/wellforge:promote <feature> --to production` to graduate."
+- If every task is now checked and QE passed, suggest the next step **by tier** (never set
+  `done` from here — that's `/wellforge:done`'s guarded job):
+  - `production` → run **`/wellforge:eval <feature>`** (the LM-judge is the gate, not the QE
+    pass alone); on PASS, **`/wellforge:done <feature>`** closes it.
+  - `mvp` → no eval; the bar is QE-light. **`/wellforge:done <feature>`** closes it — or
+    `/wellforge:promote <feature> --to production` to graduate first.
 
 ## Step 6 — Record the run (observability)
 

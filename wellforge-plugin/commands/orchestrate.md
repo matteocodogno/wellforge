@@ -96,9 +96,11 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
     can't cover — set the bar at the eval, not the QE demo. FAIL → **triage each failing
     dimension to its owner** (as in step 9: code → dev, spec → PO, plan → architect, design →
     designer), same bounded 2-round loop, re-eval.
-11. **Close** → when QE passes, the **eval verdict is PASS**, and all tasks are checked:
-    set spec `status: done`, summarize (stories delivered, QE + eval verdict tables,
-    commits), suggest next steps.
+11. **Close** → apply the same **done gate** as `/wellforge:done` (production: all tasks
+    checked + QE PASS + eval PASS). When it's met, set spec `status: done` + `done: <date>`,
+    summarize (stories delivered, QE + eval verdict tables, commits), suggest next steps. The
+    pipeline may close itself here since it just ran the gate; a caller who stopped early
+    closes later with `/wellforge:done`.
 12. **Record the run** → write the run trace per the **observability** skill:
     `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`, include `rigor: production`)
     capturing the full pipeline — every agent + outcome, drift events, QE + eval verdicts,

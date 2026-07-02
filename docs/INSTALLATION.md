@@ -70,7 +70,7 @@ Inside a Claude Code session:
 | `/plugin` | `wellforge` listed under Installed (v2.0+) |
 | `/mcp` | `sequential-thinking`, `playwright`, `github` connected (github triggers OAuth on first use) |
 | `/hooks` | 7 hooks listed |
-| type `/wellforge:` | completions for all 14 commands: `new`, `adopt`, `spec`, `plan`, `design`, `tasks`, `implement`, `orchestrate`, `eval`, `status`, `spike`, `promote`, `release`, `upgrade` |
+| type `/wellforge:` | completions for all 15 commands: `new`, `adopt`, `spec`, `plan`, `design`, `tasks`, `implement`, `orchestrate`, `eval`, `done`, `status`, `spike`, `promote`, `release`, `upgrade` |
 
 ## 5. Optional
 
