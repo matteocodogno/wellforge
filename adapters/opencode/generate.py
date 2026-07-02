@@ -51,16 +51,39 @@ def translate(s):
     return s
 
 
-def perms_for(tools):
+def perms_for(tools, disallowed=None):
+    """Map a Claude agent's tool access to OpenCode `permission`.
+
+    `tools` = the allowlist (None → full access). `disallowed` = a deny-list
+    (Claude `disallowedTools`). A disallowed tool's OpenCode permission key is set to
+    `deny` ONLY when no still-allowed tool also needs that key — OpenCode's `edit` covers
+    both Claude `Write` and `Edit`, so denying `Edit` must not strip `Write` (design.md).
+    Un-representable denials are noted on stderr, never silently dropped.
+    """
+    disallowed = {t.lower() for t in (disallowed or [])}
     if not tools:                       # no tools: list -> full access (dev/devops/QE)
-        return dict(_ALL_ALLOW)
-    granted = {_TOOL2PERM[t.lower()] for t in tools if t.lower() in _TOOL2PERM}
-    perm = {"read": "deny", "edit": "deny", "bash": "deny", "grep": "deny",
-            "glob": "deny", "list": "deny", "webfetch": "allow", "task": "deny"}
-    for g in granted:
-        perm[g] = "allow"
-    if perm["glob"] == "allow":
-        perm["list"] = "allow"
+        perm = dict(_ALL_ALLOW)
+        available = set(_TOOL2PERM)     # effectively everything
+    else:
+        granted = {_TOOL2PERM[t.lower()] for t in tools if t.lower() in _TOOL2PERM}
+        perm = {"read": "deny", "edit": "deny", "bash": "deny", "grep": "deny",
+                "glob": "deny", "list": "deny", "webfetch": "allow", "task": "deny"}
+        for g in granted:
+            perm[g] = "allow"
+        if perm["glob"] == "allow":
+            perm["list"] = "allow"
+        available = {t.lower() for t in tools}
+    for t in disallowed:
+        k = _TOOL2PERM.get(t)
+        if not k:
+            continue
+        still_needs = any(_TOOL2PERM.get(a) == k for a in available
+                          if a != t and a not in disallowed)
+        if still_needs:
+            print(f"note: OpenCode can't deny '{t}' here — perm '{k}' is shared with another "
+                  f"allowed tool (e.g. Write); relying on the agent prompt", file=sys.stderr)
+        else:
+            perm[k] = "deny"
     return perm
 
 
@@ -74,7 +97,7 @@ def gen_agents(plugin, out, models):
         desc = translate(" ".join((fm.get("description") or "").split()))
         fmt = {"description": desc, "mode": "subagent",
                "model": models.get(name, models["_default"]),
-               "permission": perms_for(fm.get("tools"))}
+               "permission": perms_for(fm.get("tools"), fm.get("disallowedTools"))}
         with open(os.path.join(d, f"wf-{name}.md"), "w") as f:
             f.write("---\n" + yaml.safe_dump(fmt, sort_keys=False).strip() + "\n---\n")
             f.write(translate(body))
