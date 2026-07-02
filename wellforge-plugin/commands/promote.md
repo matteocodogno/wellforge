@@ -62,8 +62,14 @@ raising rigor, so agents work at the destination tier's effort, not the source's
 
 ## Pay the debt — project promotion (`--project`)
 
-The project's `rigor` is a copier answer, so flip it through copier (re-renders the
-tier-conditional `quality.yml`, README badge, AGENTS note, manifest) WITHOUT a version bump:
+**Adopted projects** (`.forge/adoption.json`, no template ancestry): there's no copier to
+re-render. Just update the `rigor` field in `adoption.json` to the target tier (a one-line
+edit) and, if the project took the gates layer, adjust its CI to the target tier's strictness
+by hand. Skip the copier steps below.
+
+**Scaffolded projects** (`.forge/manifest.json`): the `rigor` is a copier answer, so flip it
+through copier (re-renders the tier-conditional `quality.yml`, README badge, AGENTS note,
+manifest) WITHOUT a version bump:
 
 ```bash
 uvx copier update --trust --skip-answered --conflict inline \

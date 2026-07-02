@@ -147,8 +147,10 @@ generated from *observed* conventions, the spec workflow, and optional layers: t
 gates with a **measured coverage baseline** (ratchet: raise-only, gap-to-target reported in
 CI) instead of the born-clean 80% bar, and **release management** (a stack-detected
 `.release-it.json` — bumper targets its actual version files, git-tag-based, paired with
-commit-lint; skipped if the project already has a release tool). Adoption adds files, never
-rewrites code. It's **incremental** — re-run `/wellforge:adopt` on an already-adopted project
+commit-lint; skipped if the project already has a release tool). Adoption also records a
+**default rigor tier** in `.forge/adoption.json` — the brownfield equivalent of a scaffold's
+manifest rigor, so features resolve a project default (not always `production`). Adoption adds
+files, never rewrites code. It's **incremental** — re-run `/wellforge:adopt` on an already-adopted project
 to add a layer you skipped (it detects `.forge/adoption.json`, offers only the missing layers,
 and merges the record); the core is never regenerated. `/wellforge:upgrade` remains
 scaffold-only (no template ancestry to re-apply).

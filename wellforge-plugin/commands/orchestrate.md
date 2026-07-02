@@ -11,8 +11,9 @@ Goal: $ARGUMENTS
 ## Step 0 — Resolve the rigor tier
 
 Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > the feature's
-`rigor:` frontmatter > `.forge/manifest.json` `rigor` > `production`). **State the resolved
-tier and where it came from before doing anything.** Strip the `--mode` token from the goal.
+`rigor:` frontmatter > project default [`.forge/manifest.json` `rigor` if scaffolded, else
+`.forge/adoption.json` `rigor` if adopted] > `production`). **State the resolved tier and
+where it came from before doing anything.** Strip the `--mode` token from the goal.
 
 - **`spike`** → do NOT run the pipeline below. Hand off to the `/wellforge:spike` procedure
   (main loop, brief.md, no agents, advisory gates). Run that and stop.

@@ -37,6 +37,12 @@ project that skipped release earlier sees just "Release management" here.
 - **mise toolchain** (offer only if the project doesn't already pin tools another way;
   never fight an existing working setup)
 
+In the same batch, settle the **default rigor tier** (like `/wellforge:new`): a throwaway /
+experimental repo → `spike`; validating an MVP → `mvp`; a long-lived product → `production`
+(default). It's recorded in `adoption.json` and becomes the project-wide default for
+`/wellforge:implement` & `/wellforge:orchestrate` — per-feature `rigor:` frontmatter and
+`--mode` still override it. In add-layers mode, keep the existing tier unless the user changes it.
+
 ## Stage 2 — AI-readiness + spec workflow
 
 **Add-layers mode: skip steps 1–3 (the core already exists) and go to step 4 to record the
@@ -56,12 +62,17 @@ new layers.** Only run steps 1–3 on a first-time adoption.
 2. `specs/README.md` — pointer to the spec-driven workflow (same as scaffolds get).
 3. `.claude/settings.json` — pre-allow the project's routine commands (its actual
    build/test/lint invocations). Merge into an existing file, never clobber.
-4. `.forge/adoption.json` — `{ "adopted": "<date>", "plugin": "<version>", "layers": [...] }`.
+4. `.forge/adoption.json` — `{ "adopted": "<date>", "plugin": "<version>", "rigor": "<tier>", "layers": [...] }`.
    Records that this is an ADOPTED project: `/wellforge:upgrade` stays unavailable
    (no template ancestry) and fleet tooling can distinguish adopted from scaffolded.
-   - **Add-layers mode: MERGE, never overwrite** — keep the original `adopted` date, append
-     the newly added layers to `layers` (dedupe), and add `"updated": "<date>"`. This is the
-     one file that changes on a re-run; it's the record of what's been adopted so far.
+   - **`rigor`** — the project's default tier (from the Stage 1 interview; `production` if not
+     asked). It's the project default `/wellforge:implement` and `/wellforge:orchestrate`
+     resolve when a feature has no `rigor:` frontmatter and no `--mode` (rigor-tiers
+     precedence). This is the brownfield equivalent of a scaffold's `manifest.json` `rigor` —
+     without it, every feature falls back to `production`.
+   - **Add-layers mode: MERGE, never overwrite** — keep the original `adopted` date and
+     `rigor` (unless the user re-chooses it), append the newly added layers to `layers`
+     (dedupe), and add `"updated": "<date>"`. This is the one file that changes on a re-run.
 
 ## Stage 3 — Quality gates (if chosen)
 

@@ -99,7 +99,8 @@ Resolution precedence, highest wins:
 
 1. **Invocation** — `--mode <tier>` on the command.
 2. **Feature** — the `rigor:` frontmatter of the feature being worked.
-3. **Project default** — `.forge/manifest.json` `rigor` (set at scaffold time; Phase B).
+3. **Project default** — `.forge/manifest.json` `rigor` (scaffolded projects) or
+   `.forge/adoption.json` `rigor` (adopted/brownfield projects, set by `/wellforge:adopt`).
 
 State the resolved tier before acting, and why (which level supplied it).
 

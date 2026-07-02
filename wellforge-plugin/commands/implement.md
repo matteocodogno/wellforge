@@ -12,8 +12,9 @@ Arguments: $ARGUMENTS
 ## Step 0 — Resolve the rigor tier
 
 Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > the feature's
-`rigor:` frontmatter > `.forge/manifest.json` `rigor` > `production`) and strip the flag from
-the args. State it. `spike` is not an implement tier (spikes have no `tasks.md`) — if asked
+`rigor:` frontmatter > project default [`.forge/manifest.json` `rigor` if scaffolded, else
+`.forge/adoption.json` `rigor` if adopted] > `production`) and strip the flag from the args.
+State it. `spike` is not an implement tier (spikes have no `tasks.md`) — if asked
 for `--mode spike`, treat it as `mvp`. The tier changes only **Step 4 (verify)** and the
 closing suggestion; dispatch is identical.
 
