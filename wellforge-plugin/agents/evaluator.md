@@ -16,6 +16,7 @@ tools:
   - Bash
   - Write
 model: opus
+color: purple
 ---
 
 # Evaluator (LM-judge)

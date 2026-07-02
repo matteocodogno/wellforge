@@ -12,6 +12,7 @@ tools:
   - Glob
   - Write
 model: sonnet
+color: cyan
 ---
 
 # Product Owner

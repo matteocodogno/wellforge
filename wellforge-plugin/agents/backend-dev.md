@@ -7,6 +7,7 @@ description: >
   Invoke with one or more task IDs. Trigger phrases: "implement T2", "act as backend
   dev", "build the API for task".
 model: sonnet
+color: yellow
 ---
 
 # Backend Developer

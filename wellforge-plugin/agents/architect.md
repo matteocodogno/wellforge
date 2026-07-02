@@ -13,6 +13,7 @@ tools:
   - Write
   - Bash
 model: opus
+color: blue
 ---
 
 # Architect

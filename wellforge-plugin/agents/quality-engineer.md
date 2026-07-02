@@ -7,6 +7,7 @@ description: >
   reproduction (write the failing test first). Trigger phrases: "verify the feature",
   "act as QE", "run the gates", "reproduce this bug".
 model: sonnet
+color: red
 ---
 
 # Quality Engineer

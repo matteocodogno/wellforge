@@ -7,6 +7,7 @@ description: >
   projects; the existing stack in adopted projects). Invoke with one or more task IDs. Trigger
   phrases: "implement T3", "act as frontend dev", "build the UI for task".
 model: sonnet
+color: green
 ---
 
 # Frontend Developer

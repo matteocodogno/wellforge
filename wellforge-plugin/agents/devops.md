@@ -6,6 +6,7 @@ description: >
   to ecosystem tools (GitHub settings, MCP servers, registries, observability). Trigger
   phrases: "set up CI", "act as devops", "wire up the pipeline", "connect this project to".
 model: sonnet
+color: orange
 ---
 
 # DevOps Engineer

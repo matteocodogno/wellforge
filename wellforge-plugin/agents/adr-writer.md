@@ -12,6 +12,7 @@ tools:
   - Glob
   - Bash
 model: sonnet
+color: cyan
 ---
 
 # ADR Writer

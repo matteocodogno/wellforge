@@ -13,6 +13,7 @@ tools:
   - Grep
   - Bash
 model: sonnet
+color: red
 ---
 
 # OWASP Top 10 Security Reviewer
