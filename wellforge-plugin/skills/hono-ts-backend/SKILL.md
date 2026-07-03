@@ -1,18 +1,35 @@
 ---
 name: hono-ts-backend
 description: >
-  Hono + TypeScript best practices for modern backend services. Use this skill whenever building
-  or reviewing Hono TypeScript APIs, setting up a new service, defining routes, implementing
-  middleware, handling validation, or managing database operations. Covers project setup with
-  modern tooling (pnpm, tsx, Biome), Hono routing patterns, Zod validation, functional error
-  handling with Effect TS, Drizzle ORM with PostgreSQL, OpenAPI documentation, and Docker
-  deployment. Always trigger this skill for any Hono TypeScript task — even partial ones like
+  Hono + TypeScript backend — best practices AND scaffolding a new service from scratch (the
+  **TypeScript / Node backend path**). Use whenever building or reviewing Hono TS APIs, OR
+  scaffolding a new **TypeScript / Node / all-TS** backend service ("new backend service",
+  "scaffold a service", "bootstrap a TS API", "new microservice" in a TS/Node project) —
+  especially when the project is already a TS/pnpm codebase. FIRST confirm the target stack — for a
+  **JVM / Spring Boot / Kotlin** service use the `springboot-scaffold` skill instead; this skill is
+  TypeScript-only. Covers project setup (pnpm, tsx, Biome), Hono routing, Zod validation, Effect TS
+  error handling, Drizzle ORM + PostgreSQL, OpenAPI, Docker. Trigger for any Hono TS task — even
   "add a route", "create middleware", or "set up validation".
 ---
 
 # Hono with TypeScript — Best Practices
 
 Opinionated guide for production-grade Hono / TypeScript backend services.
+
+## Scaffolding a new service (from scratch) — the TypeScript/Node path
+
+This skill is the **TS/Hono backend path** (the JVM counterpart is `springboot-scaffold`).
+When asked to scaffold a *new* service, confirm the stack first — don't build Hono into a JVM repo:
+
+- **Brownfield (project already has code):** detect the stack from `AGENTS.md`,
+  `.forge/adoption.json`, and build files — `package.json`/`pnpm-lock.yaml` ⇒ TS/Node;
+  `pom.xml`/`build.gradle(.kts)` ⇒ JVM. Match the project's stack; if it's JVM/Spring, **STOP and
+  use the `springboot-scaffold` skill instead**.
+- **Ambiguous / greenfield:** ask which backend, offering **both** (Hono-TS *and* Spring-Kotlin).
+- Once confirmed TS/Node: scaffold from scratch following `references/project-setup.md` (pnpm, tsx,
+  Biome, the Hono app skeleton, Drizzle, Docker) — ask only for the service name; apply the
+  conventions below.
+
 For deep reference on a specific area, read the matching file in `references/`:
 
 | Topic | File |

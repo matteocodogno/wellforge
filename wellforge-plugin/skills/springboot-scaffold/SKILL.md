@@ -1,18 +1,37 @@
 ---
 name: springboot-scaffold
 description: >
-  Scaffold a new WellForge Spring Boot Kotlin service from scratch. Use this skill whenever the user
-  wants to create a new service, bootstrap a project, generate a Spring Boot skeleton, or start
-  a new microservice. Trigger even for phrases like "new service", "create project", "bootstrap",
-  "generate skeleton", "start a new module", or "new spring boot app". Asks only for artifactId
-  and service name, then generates the complete project with Maven, jOOQ, Liquibase, Spring Modulith,
-  Docker Compose, Result/DomainError error handling, and kotlin-logging — all pre-wired.
+  Scaffold a new WellForge Spring Boot Kotlin service from scratch — the **JVM backend path**. Use
+  when the user wants a new **Spring Boot / Kotlin / JVM** service specifically, OR when the project
+  is already a JVM/Maven codebase. Trigger phrases: "new Spring Boot service", "new Kotlin/JVM
+  microservice", "scaffold a JVM/Spring backend", "new spring boot app". FIRST confirm the target
+  stack — for a **TypeScript / Hono** service use the `hono-ts-backend` skill instead; this skill is
+  JVM-only and must NOT scaffold Spring into a TypeScript codebase. Asks for artifactId + service
+  name, then generates the complete project (Maven, jOOQ, Liquibase, Spring Modulith, Docker Compose,
+  Result/DomainError, kotlin-logging) — all pre-wired.
 ---
 
 # Spring Boot Scaffold Skill
 
 Generates a complete WellForge Spring Boot Kotlin project.  
 Only two inputs needed: `artifactId` and `serviceName`.
+
+---
+
+## Stage 0 — confirm the stack (this skill is Spring Boot Kotlin / JVM ONLY)
+
+Before scaffolding, confirm the target is genuinely a **JVM / Spring Boot / Kotlin** service —
+don't assume Spring just because someone said "new service":
+
+- **Brownfield (the project already has code):** detect the existing stack from `AGENTS.md`,
+  `.forge/adoption.json`, and build files — `pom.xml`/`build.gradle(.kts)` ⇒ JVM;
+  `package.json`/`pnpm-lock.yaml` ⇒ TypeScript/Node. A new service should **match the project's
+  stack**. If the project is TS/Node, **STOP and use the `hono-ts-backend` skill instead** — never
+  scaffold Spring into a TypeScript codebase.
+- **Ambiguous / greenfield:** ask which backend the user wants, and offer **both** options
+  (Spring-Kotlin *and* Hono-TS) — not Spring alone. Only continue here if they pick JVM/Spring.
+
+Only proceed below when the target is confirmed JVM/Spring.
 
 ---
 
