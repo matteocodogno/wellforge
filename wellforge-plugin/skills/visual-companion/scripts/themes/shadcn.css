@@ -1,0 +1,41 @@
+/*
+ * shadcn/ui theme — approximates the shadcn default (zinc/neutral palette,
+ * near-black primary, 0.5rem radius, Inter/system type, restrained buttons).
+ * For adopted projects whose real component library is shadcn/ui.
+ */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f4f4f5;      /* zinc-100 */
+  --border: #e4e4e7;           /* zinc-200 */
+  --text-primary: #09090b;     /* zinc-950 */
+  --text-secondary: #71717a;   /* zinc-500 */
+  --text-tertiary: #a1a1aa;    /* zinc-400 */
+  --accent: #18181b;           /* zinc-900 — shadcn primary is near-black */
+  --accent-hover: #27272a;     /* zinc-800 */
+  --on-accent: #fafafa;        /* light text on the near-black primary */
+  --selected-border: #18181b;
+  --selected-bg: #f4f4f5;      /* subtle zinc tint */
+  --radius: 8px;               /* shadcn default --radius: 0.5rem */
+  --radius-sm: 6px;            /* calc(var(--radius) - 2px) */
+  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --button-transform: none;
+  --button-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #09090b;     /* zinc-950 */
+    --bg-secondary: #18181b;   /* zinc-900 */
+    --bg-tertiary: #27272a;    /* zinc-800 */
+    --border: #27272a;
+    --text-primary: #fafafa;   /* zinc-50 */
+    --text-secondary: #a1a1aa;
+    --text-tertiary: #71717a;
+    --accent: #fafafa;         /* shadcn dark primary is light */
+    --accent-hover: #e4e4e7;
+    --on-accent: #18181b;      /* dark text on the light primary */
+    --selected-border: #fafafa;
+    --selected-bg: #27272a;
+  }
+}

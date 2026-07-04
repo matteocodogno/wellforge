@@ -1,0 +1,26 @@
+/*
+ * Mantine theme — approximates Mantine's default look so mockups read as the
+ * real app when the project uses the react-ts-vite (Mantine + Tailwind) stack.
+ * Overrides identity only (accent / shape / type / buttons); background + text
+ * come from the frame's built-in light/dark system so OS dark mode still works.
+ */
+:root {
+  --accent: #228be6;          /* mantine blue.6 */
+  --accent-hover: #1c7ed6;    /* mantine blue.7 */
+  --selected-border: #228be6;
+  --selected-bg: #e7f5ff;     /* mantine blue.0 */
+  --radius: 8px;              /* ~ mantine radius "md" for cards */
+  --radius-sm: 4px;           /* ~ mantine radius "sm" (default) */
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --button-transform: none;
+  --button-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #4dabf7;         /* mantine blue.4 — lifts on dark */
+    --accent-hover: #74c0fc;
+    --selected-border: #4dabf7;
+    --selected-bg: rgba(77, 171, 247, 0.15);
+  }
+}

@@ -1,6 +1,6 @@
 ---
 description: Design the UX for a UI feature — flows, screens/states, component reuse, a11y (spec-driven workflow, optional stage for UI features)
-argument-hint: [NNN-slug] [--gate] — --gate adds a human approve/iterate checkpoint before tasks
+argument-hint: [NNN-slug] [--gate] [--visual] — --gate adds an approve/iterate checkpoint; --visual enables the browser visual companion (more tokens, better UI outcome)
 ---
 
 Produce the interaction design for a feature with a user interface, following the
@@ -15,8 +15,8 @@ Target spec: $ARGUMENTS
 
 1. **Resolve target.** If no argument: the most recent spec with `status: approved`, a UI
    surface, and no (or stale) `design.md`. If ambiguous, ask. State which feature you
-   resolved. (`--gate` is a flag, not a feature token — strip it before resolving; it
-   controls the optional approval in step 6.)
+   resolved. (`--gate` and `--visual` are flags, not feature tokens — strip them before
+   resolving; `--gate` controls the step 6 approval, `--visual` the step 4 companion.)
 
 2. **UI check.** If the feature has no user interface (API-only / infra / backend-only),
    this stage does not apply — say so and point at `/wellforge:tasks`. Don't design a UI no
@@ -30,6 +30,15 @@ Target spec: $ARGUMENTS
    spec (and plan.md if present), inspects the existing UI in `frontend/src/` (and the
    running app via Playwright if available), and writes `specs/NNN-slug/design.md`:
    flows → screens & states → component inventory (reuse vs NEW) → accessibility.
+
+   **Visual companion (`--visual`).** If `--visual` was passed, add to the designer's prompt:
+   "Visual companion: ENABLED (interactive session)" so it may offer the browser-based
+   companion per the `visual-companion` skill — mockups and side-by-side layout comparisons
+   styled to the project's real component library, in exchange for more tokens. Only enable it
+   here: this is the interactive front door. Never pass it to an orchestrated run, and it does
+   not apply to the `spike` tier (which skips the designer). If `--visual` is absent, say
+   nothing about it — the designer stays text-only. Tell the user up front that `--visual`
+   trades tokens for a richer UI outcome so the choice is theirs.
 
 5. **Relay.** Present the designer's summary: flow count, the reuse/NEW component ratio,
    a11y hotspots, and any gaps it found in the spec or plan.

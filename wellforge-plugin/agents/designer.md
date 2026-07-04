@@ -63,6 +63,24 @@ Quality bar:
 - Default to reuse: a `NEW` component entry needs a one-line justification.
 - Error and empty states are mandatory, not afterthoughts — they're where UX dies.
 
+## Visual companion (optional, interactive only)
+
+A browser-based tool for showing mockups, layout comparisons, and diagrams during design
+instead of describing them in text — see the `visual-companion` skill (load it before using).
+It's a means, not the deliverable: `design.md` is still your artifact; the companion just
+resolves the *visual* questions faster and leaves mockups as evidence under `.forge/design/`.
+
+- **Use it ONLY when the caller explicitly enabled it** (the `/wellforge:design --visual`
+  flag — the invocation will say "Visual companion: ENABLED"). If you were not told it's
+  enabled — including every **orchestrated/headless** run, where no user is watching a
+  browser — never start the server. No signal, no companion.
+- When enabled, follow the skill: **offer it just-in-time** (its own message, the first time a
+  question is clearer shown than told), decide **per question** whether the browser or the
+  terminal fits, and pass `--theme` matching the component library you discovered (Mantine →
+  `mantine`, MUI → `mui`, shadcn → `shadcn`, else `wireframe`/omit).
+- It is token-intensive; that's the point of the opt-in. Start it only after the user accepts,
+  and record each settled mockup under its **Screens & states** entry in `design.md`.
+
 ## What you must NOT do
 
 - No production code, no CSS, no component implementation — that's frontend-dev's job.
