@@ -263,6 +263,42 @@ the SDLC?" review (deploy/operate still open; see FEATURES for the honest covera
   `disallowedTools:[Edit]`, observability schema sync.
 - ☑ MIT `LICENSE`; README revamp (Forgey mascot); docs sync.
 
+## Phase 12 — Design tooling & template reuse (added 2026-07-05)
+
+Goal: enrich the design stage (Pillar 2) with real mockups, and close the brownfield loop
+(Pillars 4/6 + Phase 8) so an adopted project can seed the team's next scaffold.
+
+- ☑ Visual companion for the designer (commit 63fc8cf): opt-in `--visual` flag on
+  `/wellforge:design` starts a browser-based companion the designer uses to show mockups,
+  wireframes, and side-by-side layout comparisons and read back the user's clicks — instead
+  of describing UI in text. `design.md` stays the deliverable; mockups persist as evidence
+  under `.forge/design/<feature>/`. Server adapted (MIT) from the superpowers `brainstorming`
+  skill — rebranded, telemetry/logo removed, `THIRD_PARTY_LICENSE` retained; adds design-system
+  `--theme` overlays (mantine/mui/shadcn/wireframe) so mockups match the project's real
+  component library, and per-feature `--session-name` persistence. Triple-gated: flag-enabled,
+  interactive-only (never headless `/wellforge:orchestrate`), never the `spike` tier. New
+  `visual-companion` skill + designer/command wiring; both template `.gitignore`s ignore
+  `.forge/design/`. Verified: E2E serve + themed frame + helper injection + click-event
+  capture; all four themes inject; no-key requests 403; mockups persist.
+- ☑ Stack profile + gap check, and org-internal template extraction (commit 2935355):
+  **(#1)** `/wellforge:adopt` Stage 0 now writes `.forge/stack-profile.json` (structured
+  fingerprint) and classifies the project against the shipped presets — `covered` / `partial`
+  / `novel` + closest preset + recommendation (informs only, never blocks). **(#2)** opt-in
+  extraction reverses a project into a CONTRACT-compliant Copier template the **org owns**, at
+  a user-chosen destination, so the team's next service starts from its own proven stack.
+  Hard safety gate first: skeleton-only (no domain code), secret scrub, IP/license check, and
+  a required `copier copy --defaults` render verification. New `template-extraction` skill +
+  `/wellforge:extract-template` command; adopt wires Stage 0 profile, a Stage 1 opt-in layer,
+  Stage 5b extraction, and `adoption.json`. Scope-bounded: never writes into the source project
+  or the WellForge repo, and **never opens a PR to the WellForge catalog** — upstream
+  contribution stays a separate, human-curated decision (deliberately out of scope).
+
+Honest status: both are prompt/skill-authored (no runtime tests beyond the visual-companion
+server smoke test and the extraction's `--defaults` render check). Live validation is pending —
+a real `/wellforge:design --visual` session and a `/wellforge:extract-template` run on a
+brownfield repo (pairs with the Phase 7 pilot). Shipped on the plugin v2.19.x line; plugin.json
+version not yet bumped for these.
+
 ## Order & dependencies
 
 ```
@@ -276,7 +312,10 @@ P1+P4 can start in parallel after P0. Total: ~3 weeks of focused effort.
 
 - **Copier requires Python tooling** on dev machines → mitigate: install via `mise`/`uv`,
   document in onboarding; fallback is `npx giget` + custom diff (worse, avoid).
-- **Template sprawl** → hard rule: max 2 presets until Phase 7 proves the model.
+- **Template sprawl** → hard rule: max 2 presets until Phase 7 proves the model. Phase 12
+  template extraction deliberately writes **org-owned** templates (outside the WellForge repo,
+  no upstream PR) precisely to keep this guardrail — adoptions enrich the team's own catalog,
+  not WellForge's shipped presets.
 - **Agent role bleed** (PO writing code) → explicit "must not" lists in agent prompts,
   checked during pilot.
 - **Gates too strict at first** → start thresholds at current-reality levels, ratchet up
