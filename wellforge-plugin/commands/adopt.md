@@ -22,7 +22,12 @@ connections. Adoption **adds** — it never rewrites existing code or convention
 2. Detect the stack: build files (package.json/pnpm-lock/pom.xml/build.gradle),
    languages, test runners, lint setup, CI provider, monorepo layout. Read the README
    and any existing AI-context files (CLAUDE.md, AGENTS.md, .cursorrules, …).
-3. Report what you found and what adoption will add BEFORE touching anything.
+3. **Stack profile + gap check (read-only).** Load the `template-extraction` skill and run its
+   Part 1: write `.forge/stack-profile.json` (the structured fingerprint) and classify the
+   project against the shipped presets — verdict `covered` / `partial` / `novel`, closest
+   preset, recommendation. This is metadata only; it touches no source.
+4. Report what you found — including the **gap verdict** and closest preset — and what
+   adoption will add BEFORE touching anything.
 
 ## Stage 1 — Scope interview
 
@@ -36,6 +41,11 @@ project that skipped release earlier sees just "Release management" here.
 - **Connections** (GitHub settings, MCP, environments — the `connections` skill)
 - **mise toolchain** (offer only if the project doesn't already pin tools another way;
   never fight an existing working setup)
+- **Reusable template extraction** (opt-in — reverse this project into an org-owned Copier
+  template so the team's next service starts from its own proven stack; the `template-extraction`
+  skill, Part 2 — run in Stage 5b). Frame it by the Stage 0 gap verdict: most valuable on
+  `novel` / `partial`, low value on `covered` (say so). It's higher-effort and token-heavy —
+  present it as the optional payoff, not a default.
 
 In the same batch, settle the **default rigor tier** (like `/wellforge:new`): a throwaway /
 experimental repo → `spike`; validating an MVP → `mvp`; a long-lived product → `production`
@@ -135,14 +145,25 @@ Commits (the `release` task / `/wellforge:release`). Additive; never destructive
    the current tag). **Strongly recommend the commit-lint gate** (Quality-gates layer) so it's
    enforced — say so explicitly. Do NOT run a release during adoption; that's `/wellforge:release`.
 
+## Stage 5b — Reusable template extraction (if chosen)
+
+Run the `template-extraction` skill's Part 2 on this project. **Safety gate first**
+(skeleton-only, secret scrub, IP/license check), then ask for a destination path (refuse the
+source project and the WellForge repo), generate the CONTRACT-compliant org-owned Copier
+template, and **verify it renders with `copier copy --defaults`** before hand-off. This runs
+*outside* the single adoption commit — the extracted template lives at its own destination with
+its own git history, not in this project's tree. Record `template-extraction` in
+`adoption.json`'s `layers`. It's an org-owned draft to review — say so.
+
 ## Stage 6 — Hand off
 
 1. One commit: `chore: adopt WellForge (workflow[, gates][, release][, connections])` —
    adoption must be a single revertable diff. In add-layers mode, name only what was added,
    e.g. `chore: adopt WellForge release management`.
 2. Summary table: layer / added files / status (incl. measured baseline vs central
-   target, the release version source + files synced, and any stage stopped with reasons —
-   npm migration, Gradle, existing release tool, …).
+   target, the release version source + files synced, the gap verdict from Stage 0, the
+   extracted template's destination + verification result if Stage 5b ran, and any stage
+   stopped with reasons — npm migration, Gradle, existing release tool, …).
 3. Suggest the natural next step: `/wellforge:spec <first feature>` — or
    `/wellforge:orchestrate` for a pending bugfix, which doubles as a workflow demo.
 
@@ -157,7 +178,11 @@ Commits (the `release` task / `/wellforge:release`). Additive; never destructive
 - Never invent conventions for AGENTS.md — document what IS, not what should be.
 - Baselines come from measurement, never estimation; round down; prove green locally.
 - No `.forge/manifest.json` for adopted projects — that file means "born from the
-  template" and would corrupt the upgrade contract.
+  template" and would corrupt the upgrade contract. (`.forge/stack-profile.json` from Stage 0
+  is fine — it's read-only metadata, not template ancestry.)
+- Template extraction (Stage 5b) is **org-owned and skeleton-only**: it writes to a
+  user-chosen destination outside this project and outside the WellForge repo, never carries
+  domain code/secrets/licensed code, and never opens a PR to the WellForge catalog.
 - Re-running adoption is **additive only**: never re-generate or overwrite the core
   (AGENTS.md, specs/, settings.json) on a re-run, never re-do a layer already in
   `adoption.json`'s `layers`. The only file a re-run rewrites is `adoption.json` itself (merge).

@@ -59,12 +59,13 @@ wellforge/
 ├── wellforge-plugin/         # Claude Code plugin, v2.9.x (local marketplace install)
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, done,
-│   │                         # status, new, upgrade, adopt, spike, promote, release (→ /wellforge:*)
+│   │                         # status, new, upgrade, adopt, extract-template, spike, promote,
+│   │                         # release (→ /wellforge:*)
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,
-│   │                         # connections + stack skills (react-ts-vite, kotlin-springboot,
-│   │                         # hono-ts-backend, mise, springboot-scaffold)
+│   │                         # template-extraction, connections + stack skills (react-ts-vite,
+│   │                         # kotlin-springboot, hono-ts-backend, mise, springboot-scaffold)
 │   ├── config/               # model-routing.yml + model-tiers.yml (tool-neutral tiers)
 │   ├── hooks/                # lifecycle hooks (incl. SubagentStop run-trace telemetry)
 │   └── .mcp.json             # sequential-thinking, playwright, github
