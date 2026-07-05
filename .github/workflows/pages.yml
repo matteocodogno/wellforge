@@ -1,7 +1,7 @@
 # Continuously deploy the presentation site (site/) to GitHub Pages.
 #
-# Runs on every push to main: the live site tracks main automatically. Also
-# dispatchable by hand from the Actions tab.
+# Runs when a push to main changes the site (or this workflow): the live site tracks
+# main automatically, without redeploying on unrelated commits. Also dispatchable by hand.
 #
 # One-time prerequisite (already handled, or: Settings → Pages → Source = GitHub Actions):
 # Pages must be set to build from GitHub Actions for this deploy to publish.
@@ -10,6 +10,9 @@ name: Deploy site
 on:
   push:
     branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
