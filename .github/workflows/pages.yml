@@ -1,12 +1,15 @@
-# Deploy the public presentation site (site/) to GitHub Pages.
+# Continuously deploy the presentation site (site/) to GitHub Pages.
 #
-# MANUAL ONLY — this workflow never runs on push. Publishing WellForge's site is an
-# outward-facing, hard-to-reverse action (the repo is internal tooling), so going live is a
-# deliberate human step: enable Pages (Settings → Pages → Source: GitHub Actions), then run
-# this workflow from the Actions tab. Until then, nothing is published.
+# Runs on every push to main: the live site tracks main automatically. Also
+# dispatchable by hand from the Actions tab.
+#
+# One-time prerequisite (already handled, or: Settings → Pages → Source = GitHub Actions):
+# Pages must be set to build from GitHub Actions for this deploy to publish.
 name: Deploy site
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -14,10 +17,10 @@ permissions:
   pages: write
   id-token: write
 
-# Never cancel an in-flight publish; only one at a time.
+# Let a newer push supersede an in-flight deploy — always publish the latest main.
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
