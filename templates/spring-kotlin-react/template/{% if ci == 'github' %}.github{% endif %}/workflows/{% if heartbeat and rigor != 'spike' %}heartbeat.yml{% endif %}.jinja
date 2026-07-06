@@ -36,3 +36,9 @@ jobs:
     with:
       failed: {% raw %}${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
       run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}{% endraw %}
+
+  # Pillar 6 lifecycle: has this project fallen behind its template? Files a separate
+  # deduplicated "N releases behind → /wellforge:upgrade" issue; closes it when caught up.
+  template-drift:
+    name: template drift
+    uses: {{ gates_repo }}/.github/workflows/template-drift.yml@{{ gates_ref }}

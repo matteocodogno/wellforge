@@ -50,6 +50,7 @@ Inside Claude Code:
 | `commands/tasks.md` | `/wellforge:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
 | `commands/implement.md` | `/wellforge:implement` — implement chosen tasks (IDs/range/next/all), parallel by DAG, QE-verified |
 | `commands/status.md` | `/wellforge:status` — recap every feature's phase + the next command to run (read-only) |
+| `commands/triage.md` | `/wellforge:triage` — spec-health heartbeat: stale in-progress, unresolved drift, passed-QE-never-eval'd (read-only digest) |
 | `commands/orchestrate.md` | `/wellforge:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
 | `commands/new.md` | `/wellforge:new` — interview → stack recommendation → Copier scaffold → build verify → connections |
 | `commands/upgrade.md` | `/wellforge:upgrade` — copier update to a newer template version + AI conflict resolution + gates |
@@ -80,6 +81,7 @@ Inside Claude Code:
 | `config/model-tiers.yml` | Per-tool: tier → concrete model (claude aliases, opencode provider/model) |
 | `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
 | `skills/observability/` | Run-trace (`.forge/runs/`) format conventions — producers and consumers |
+| `skills/heartbeat/` | Scheduled-automation conventions — surface-never-ship, dedup, deterministic-vs-agentic, cost bound |
 | `skills/connections/` | Standardized tool-connection checklists (GitHub, MCP, environments) — each ends with a verification command |
 | `skills/react-ts-vite/` | React + TypeScript + Vite + Mantine + TanStack |
 | `skills/kotlin-springboot/` | Spring Boot + Kotlin + jOOQ + Liquibase + Modulith |

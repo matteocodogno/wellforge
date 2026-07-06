@@ -341,7 +341,7 @@ and a fleet-drift triage agent that notices when a project falls behind the late
 The article's automations component; drafted below as **Phase 14** (starts after the Phase 7
 pilot proves the core loop).
 
-## Phase 14 — Loop engineering: heartbeat automations (drafted 2026-07-06; 14a built 2026-07-06)
+## Phase 14 — Loop engineering: heartbeat automations (drafted 2026-07-06; 14a + 14b built 2026-07-06)
 
 Goal: close the last of the five "loop engineering" components — **automations (the heartbeat)**:
 scheduled tasks that do discovery + triage on a cadence and **surface work for a human**, instead
@@ -376,36 +376,42 @@ as scheduled agents:
   issue) needs the tag + a real repo → pairs with the Phase 7 pilot. Chose "all three checks +
   weekly" per user; coverage runs too since reusing the whole gate is more DRY than a bespoke
   subset.
-- ☐ **Template-drift heartbeat** (Pillar 6 — the WellForge-native standout). Scheduled job reads
-  `.forge/manifest.json`, compares `template`+`version` against the latest `vX.Y.Z` tag of the
-  source template, and opens/updates an issue *"N versions behind → `/wellforge:upgrade`"* with the
-  changelog delta. Stretch: auto-open a **draft** upgrade PR (AI conflict resolution via
-  `/wellforge:upgrade`), never auto-merged — the human reviews and lands it.
-- ☐ **Fleet heartbeat** (org-wide triage → scheduled agent). A Claude Code scheduled agent
-  (routine) wrapping `scripts/fleet-status.sh` across the org: triages drifted / failing-gate
-  projects into one rolling report (issue or Slack). Documented + opt-in, never a hard dependency.
-- ☐ **Spec-health heartbeat** (Pillar 3 — trajectory triage). A scheduled agent (also a manual
-  `/wellforge:triage`) reads `specs/` statuses + `.forge/runs/`: stale `in-progress` features,
-  unresolved drift, features that passed QE but never reached eval/`done`. Emits a digest — surfaces
-  what the pull-only flow lets rot.
-- ☐ **New `heartbeat` skill** — canonical conventions (like `observability`/`connections`): cadence,
-  the opt-in manifest flag, the **dedup rule**, the **surface-never-ship rule**, a token-cost bound
-  (cheap model for triage, escalate only on findings), and the run-trace format. Wiring: copier
-  answer + manifest field, a `connections` checklist for enabling the schedule + required secrets/
-  auth, and an observability extension for heartbeat traces.
+- ☑ **14b — Template-drift heartbeat** (Pillar 6 — the WellForge-native standout, deterministic,
+  built 2026-07-06). New reusable `template-drift.yml`: reads `.forge/manifest.json`, resolves the
+  latest `vX.Y.Z` of the source repo (`git ls-remote`, version-aware count), and files/updates ONE
+  deduplicated *"N releases behind → `/wellforge:upgrade`"* issue (label `template-drift`) — closing
+  it automatically when the project catches up. Reuses the 14a `heartbeat-report.yml` (generalised
+  with a `body` input). Wired as a `template-drift` job in both heartbeat callers. Verified: version
+  count (0.4.0→2 behind, etc.), heredoc body + `GITHUB_OUTPUT` multiline format, renders in both
+  presets. Ships at **`gates-v7`**. Draft-PR stretch deferred.
+- ☑ **14b — Fleet heartbeat** (org-wide triage, built 2026-07-06). `scripts/fleet-triage.sh` extends
+  `fleet-status.sh`: per repo it reports template drift **and** gate health (latest default-branch CI
+  conclusion), grouped by what needs attention + a summary; degrades per-repo, never aborts. The
+  scheduled-routine recipe (post to one rolling issue, `gh`-token auth in headless runs, cost bound,
+  surface-never-ship) is in `scripts/README.md`. Not a live cron — scheduling is the org's infra.
+- ☑ **14b — Spec-health heartbeat** (Pillar 3 — trajectory triage, built 2026-07-06). New
+  `/wellforge:triage` command (also the scheduled agent): reads `specs/` + `.forge/runs/` and
+  surfaces three deterministic signals — stale `in-progress`, unresolved drift (`drift_open`), and
+  passed-QE-never-eval'd (production) — plus lower-tier debt. Read-only digest; the scheduled-routine
+  wiring + caveats are in the command. Surface, never fix.
+- ☑ **14b — `heartbeat` skill** — canonical conventions for all four heartbeats: surface-never-ship,
+  one-deduplicated-issue-per-concern, the deterministic-vs-agentic split, off-for-spike, the cost
+  bound + `gh`-auth-degrades rule for agentic ones, cadence, and the run-trace format.
 
-Sequencing inside the phase: ship the **deterministic GitHub Actions heartbeats first** (cheap,
-high-value, no token cost — gate + template-drift), prove they're low-noise on the pilot project,
-then add the **agentic** fleet/spec-health triage. Don't build the agent layer until the
-deterministic layer has earned trust. **Status: 14a (scheduled gate heartbeat) built; 14b
-(template-drift, fleet, spec-health, `heartbeat` skill) remain.**
+Sequencing inside the phase: shipped the **deterministic GitHub Actions heartbeats first** (gate +
+template-drift — cheap, no token cost), then the **agentic** fleet/spec-health triage as runnable
+pieces + scheduling recipes. **Status: all of 14a + 14b built; live scheduling and E2E pair with
+the Phase 7 pilot.**
 
-Honest status: **14a built, pending the `gates-v6` release; 14b not started.** Open questions for
-14b — Claude Code scheduled agents (routines) are the vehicle for the agentic heartbeats, and
-interactively-authenticated MCP servers (e.g. github) may be absent in headless/cron runs, so the
-agent layer must degrade to `gh`/API auth; and cadence/threshold defaults need the Phase 7 pilot's
-real signal before they're baked into a preset. The 14a/14b split is confirmed; 14b proceeds only
-if the pilot shows 14a's deterministic layer doesn't already cover most of the value.
+Honest status: **14a + 14b built (2026-07-06).** The deterministic heartbeats (gate, template-drift)
+are code-complete and render-/logic-verified but only run once **`gates-v7` is tagged** and a real
+scheduled run fires — pairs with the Phase 7 pilot. The agentic heartbeats (fleet, spec-health) ship
+as the runnable data step (`fleet-triage.sh`) + command (`/wellforge:triage`) + scheduling recipes;
+**live cron is the org's infrastructure, deliberately not auto-enabled** — the vehicle is a Claude
+Code routine, which must degrade to `gh`/API auth in headless runs (interactive MCP servers may be
+absent), and cadence/thresholds still want the pilot's real signal. 14b was built ahead of the pilot
+at the user's request; the pilot will confirm whether the agentic layer earns its keep over the
+deterministic heartbeats alone.
 
 ## Order & dependencies
 
