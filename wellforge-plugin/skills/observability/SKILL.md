@@ -46,12 +46,15 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   "started": "2026-06-24T10:44:00Z",
   "finished": "2026-06-24T10:52:13Z",
   "agents": [
-    { "agent": "backend-dev", "tasks": ["T2","T3"], "outcome": "completed", "commits": ["abc1234"] },
+    { "agent": "backend-dev", "tasks": ["T2","T3"], "outcome": "completed", "commits": ["abc1234"], "worktree": "forge/be-t2" },
     { "agent": "quality-engineer", "outcome": "PASS" },
     { "agent": "evaluator", "outcome": "PASS", "score": 86 }
   ],
   "drift_events": [
     { "agent": "backend-dev", "artifact": "plan.md", "summary": "<what diverged>", "resolved": true }
+  ],
+  "collision_events": [
+    { "tasks": ["T3","T5"], "files": ["src/app/config.ts"], "resolved_by": "added deps: T5→T3, re-ran T5" }
   ],
   "verdicts": { "qe": "PASS", "eval": "PASS" },
   "result": "completed | escalated | partial",
@@ -67,6 +70,12 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
 - **Drift is recorded, not just handled.** Every time an agent reports drift and the
   command pauses to amend, append a `drift_events` entry — this is the audit beyond the
   binary stop-verify hook.
+- **Parallel isolation is recorded too.** When a batch runs under worktree isolation
+  (implement/orchestrate dispatch of ≥2 independent agents), record each isolated agent's
+  branch in its `worktree` field. A merge **collision** (two "independent" tasks touched the
+  same file → a wrong DAG edge) is appended to `collision_events` with the tasks, files, and
+  how it was resolved. Both fields are omitted when the run used the main-tree / sequential
+  path (no isolation).
 - **`rigor`** records the resolved tier for the run (`production`/`mvp`/`spike`, per the
   rigor-tiers skill). `spike` runs record `"agents": []` (main loop, no subagents).
   `promote` runs additionally record the tier transition: `"from": "<tier>", "to": "<tier>"`.

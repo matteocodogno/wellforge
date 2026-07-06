@@ -55,14 +55,55 @@ The argument is `[feature] [tasks]` — both optional, feature first.
   (infra/CI tasks). Each agent receives ONLY the spec dir path and its task ID(s) —
   it reads the ACs, contracts, and `done when:` itself — plus the resolved tier's **effort
   cue** (rigor-tiers skill: moderate for `mvp`, full for `production`), prepended to its task.
-- Run dependency-independent tasks as **parallel agents in one batch**; sequence only
-  along `deps:` edges.
-- Each agent checks its task's box in `tasks.md` on completion and commits
-  `feat(<scope>): <title> (T<n>, specs/NNN)`. Relay each agent's result compactly
-  (files touched, test/lint output — actual numbers).
+- Order and dispatch by the DAG: run dependency-independent tasks **in one batch**;
+  sequence only along `deps:` edges. A batch of **one** agent, or a fully sequential chain,
+  runs in the **main working tree** — the agent checks its task's box in `tasks.md` on
+  completion and commits `feat(<scope>): <title> (T<n>, specs/NNN)`, exactly as before.
+- A batch of **two or more** agents runs with **worktree isolation** (below) so their edits
+  cannot collide.
+- Relay each agent's result compactly (files touched, test/lint output — actual numbers).
 - **Drift / blocker** from any agent pauses that track: surface the proposed amendment,
   route it to the owning agent (PO for spec, architect for plan), re-sync via
   `/wellforge:tasks`, then resume. Never let an agent silently work around a wrong spec.
+
+### Parallel isolation (worktrees)
+
+Two agents editing the same working tree at once can clobber each other. When a batch has
+**≥2 dependency-independent agents**, isolate each so "one agent's edits literally cannot
+touch the other's checkout":
+
+1. **Isolate.** Spawn each agent with git-worktree isolation (Task/Agent tool
+   `isolation: "worktree"`) — a fresh worktree + branch off the current HEAD, so it already
+   contains the spec, `tasks.md`, and every task integrated earlier in this run. (Set
+   `worktree.baseRef: "head"` in settings so worktrees branch from HEAD, not the remote
+   default — see the plugin `settings-snippet.jsonc`.)
+2. **Constrain the agent.** In each parallel agent's prompt add: *commit your code with the
+   standard message but **do NOT edit `tasks.md`*** (its checkbox is reconciled centrally, so
+   parallel branches never conflict on adjacent checkbox lines), and *end your report with a
+   line `WORKTREE-BRANCH: <git branch --show-current>` and `COMMITS: <n>`*. The dispatch
+   result usually also surfaces the agent's worktree branch in its metadata; the self-reported
+   line is the portable fallback — use whichever you get.
+3. **Integrate.** After the batch returns, merge each branch into the feature branch one at a
+   time, in a deterministic order, with **git's default merge message**
+   (`git merge --no-ff --no-edit <branch>`). Do NOT pass a custom lowercase `-m "merge …"`:
+   a Conventional-Commits `commit-msg` hook (this repo, and generated projects with commitlint)
+   rejects it — the default `Merge branch …` and a conventional `chore(...)` message are exempt.
+   - **Clean merge** → good. Continue.
+   - **Conflict = a collision**, not a routine merge: two tasks the DAG called independent
+     touched the same file, so they were never independent. Abort the merge
+     (`git merge --abort`), **surface it like drift** — name the two tasks and the colliding
+     files — and resolve by adding the missing `deps:` edge (`/wellforge:tasks` re-sync) and
+     re-running the later task in the now-integrated tree. Never auto-resolve code conflicts
+     silently.
+4. **Reconcile the checkboxes centrally.** Once every track is integrated, check the boxes
+   for all completed tasks in `tasks.md` in **one** commit on the feature branch.
+5. **Prune.** Remove the merged worktrees and their branches (`git worktree remove`,
+   `git branch -d`).
+
+**Fallback.** If worktree isolation is unavailable (older Claude Code, or the option is
+rejected), fall back to the main-tree path — dispatch the batch **sequentially** (not in
+parallel), each agent committing + checking its own box, to avoid collisions. State which
+mode you used.
 
 ## Step 4 — Verify
 
@@ -98,8 +139,10 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 Write a run trace per the **observability** skill (load it): capture `started` at the
 start of this run and, now, write `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`)
 with every dispatched agent + outcome, any drift events (resolved or not), the QE verdict,
-and `result` (completed / escalated / partial). One file per run; leave `tokens`/`cost`
-null (the SubagentStop hook + `run-report.py` fill cost). This is the audit trail.
+and `result` (completed / escalated / partial). Record the isolation mode used and any
+collision events (per the observability skill's `worktree` / `collision_events` fields).
+One file per run; leave `tokens`/`cost` null (the SubagentStop hook + `run-report.py` fill
+cost). This is the audit trail.
 
 ## Hard rules
 

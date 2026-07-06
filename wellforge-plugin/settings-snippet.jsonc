@@ -9,8 +9,17 @@
 //                           dangerous mode (--dangerously-skip-permissions). Set to true only on
 //                           machines where YOU control who runs claude. Never set in shared CI.
 //   attribution           — auto-populates commit/PR metadata. Fill in your preferred format strings.
+//   worktree.baseRef      — base for isolated subagent worktrees. WellForge parallel dispatch
+//                           (implement/orchestrate) runs ≥2 independent dev agents under
+//                           `isolation: "worktree"`; "head" makes each worktree branch from the
+//                           CURRENT HEAD (so it already has the spec, tasks.md, and tasks
+//                           integrated earlier in the run) instead of the remote default branch.
 
 {
+  "worktree": {
+    "baseRef": "head"
+  },
+
   "enabledPlugins": {
     // Official marketplace plugins — install once, active globally
     "pyright-lsp@claude-plugins-official": true,

@@ -44,6 +44,14 @@ ask the user anything and must never self-approve.
   not the full agent output.
 - **Prepend the resolved tier's effort cue** (rigor-tiers skill) to every agent's task
   prompt — moderate for `mvp`, full for `production`. It's plain text, not config.
+- **Parallel isolation.** Any implementation batch of **≥2 dependency-independent agents**
+  runs with git-worktree isolation (Task/Agent tool `isolation: "worktree"`) — each agent
+  commits its code on its own branch and does NOT touch `tasks.md`; you merge the reported
+  branches into the feature branch afterward and reconcile the checkboxes centrally. This is
+  the `/wellforge:implement` **Parallel isolation (worktrees)** protocol — follow it verbatim,
+  including collision handling (a merge conflict = a wrong DAG edge, surfaced like drift) and
+  the sequential fallback when isolation is unavailable. A solo agent or a sequential chain
+  runs in the main tree as usual.
 
 ## Step 1 — Classify
 
@@ -70,7 +78,10 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 8. **Implementation** → dispatch dev agents (`wellforge:frontend-dev` / `wellforge:backend-dev` / `wellforge:devops`
    per task domain):
    - Tasks with no dependency edge between them run as **parallel agents in one batch**
-     (typical: FE and BE tracks). Sequence only along `deps:` edges.
+     (typical: FE and BE tracks) under **worktree isolation** (handoff contract); sequence
+     only along `deps:` edges. Merge each track's branch back and reconcile checkboxes
+     centrally per the implement protocol; a merge collision is a wrong DAG edge → surface
+     and re-sync.
    - Each agent gets: spec dir path + its task ID(s). Nothing else.
    - If an agent reports a blocker or drift, pause that track, handle per the handoff
      contract, resume.
@@ -104,8 +115,9 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 12. **Record the run** → write the run trace per the **observability** skill:
     `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`, include `rigor: production`)
     capturing the full pipeline — every agent + outcome, drift events, QE + eval verdicts,
-    `result`. Write it even when the pipeline escalates or stops early (`result` records
-    that). The audit trail.
+    the isolation mode + any collision events (observability skill `worktree` /
+    `collision_events`), `result`. Write it even when the pipeline escalates or stops early
+    (`result` records that). The audit trail.
 
 ## Pipeline: mvp  (rigor tier `mvp` — collapsed, one gate, mid agents only)
 
@@ -121,7 +133,8 @@ contract and disk-based artifacts, fewer stages. **Never spawn the frontier agen
    approved spec — NO separate architect/plan.md. Capture the minimal architecture inline in
    `tasks.md` (touched files, contracts per task). Set spec `status: in-progress`.
 4. **Implementation** → dispatch dev agents (`wellforge:frontend-dev` / `wellforge:backend-dev` /
-   `wellforge:devops`) exactly as in the feature flow (parallel where the DAG allows).
+   `wellforge:devops`) exactly as in the feature flow — parallel where the DAG allows, under
+   worktree isolation (handoff contract) for any batch of ≥2 independent agents.
 5. **QE (light)** → spawn `wellforge:quality-engineer` scoped to the work, in **advisory** mode:
    it runs the gates and reports numbers, but only **SAST-high, lint, typecheck, and the
    security floor BLOCK** (rigor-tiers). Coverage is reported as gap-to-80%, not enforced.

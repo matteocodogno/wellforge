@@ -299,6 +299,47 @@ a real `/wellforge:design --visual` session and a `/wellforge:extract-template` 
 brownfield repo (pairs with the Phase 7 pilot). Shipped on the plugin v2.19.x line; plugin.json
 version not yet bumped for these.
 
+## Phase 13 — Loop engineering: parallel worktree isolation (added 2026-07-06)
+
+Motivated by O'Reilly's "loop engineering" (five components: automations, worktrees, skills,
+plugins/connectors, subagents). Audit found WellForge already ships four — skills, verifying
+subagents, connectors, external state — plus the article's "stay the engineer" spine (human
+gates + rigor tiers). Two genuine gaps: **worktree parallel-safety** (this phase) and
+**scheduled "heartbeat" automations** (deferred, see below).
+
+- ☑ Worktree-isolated parallel dispatch (plugin v2.21.0): `implement` Step 3 and
+  `orchestrate` (feature + mvp implementation) now isolate any batch of **≥2 dependency-
+  independent dev agents** in a git worktree (`isolation: "worktree"`) so parallel FE/BE
+  edits can't collide in one working tree. Protocol: each parallel agent commits its code on
+  its own branch and **does not touch `tasks.md`** (checkbox reconciled centrally, killing the
+  one guaranteed conflict); the main loop merges each reported branch into the feature branch,
+  reconciles all checkboxes in one commit, and prunes the worktrees. A **merge conflict is a
+  "collision"** — two tasks the DAG called independent touched the same file, so the edge was
+  wrong: surfaced like drift, resolved by adding the missing `deps:` + `/wellforge:tasks`
+  re-sync, never auto-resolved. Solo/sequential batches stay in the main tree (no overhead).
+  Wired: `settings-snippet.jsonc` sets `worktree.baseRef: "head"` (worktrees branch from HEAD,
+  not the remote default); observability schema gains per-agent `worktree` + `collision_events`;
+  CLAUDE.md conventions record the rule.
+
+Honest status: prompt-authored, **smoke-tested 2026-07-06** (not yet exercised through a real
+`/wellforge:implement` feature). The commit **flow-back** from an isolated subagent worktree is
+not officially documented, so it was verified live in two layers: (A) the reconciliation logic
+in a throwaway repo — two worktrees with disjoint edits merge clean + central checkbox reconcile,
+and two worktrees editing the same file produce a detected collision (merge aborts, tree left
+clean); (B) the real harness — two subagents dispatched in parallel with `isolation: "worktree"`,
+each committing in its own worktree, then merged back into an isolated integration branch, clean.
+Two findings from (B), now baked into the protocol: the dispatch result **surfaces each isolated
+agent's `worktreeBranch`/`worktreePath` in its metadata** (so the parent needn't rely on the
+agent self-reporting its branch — that's the portable fallback), and merge-back must use git's
+**default merge message** (`--no-edit`) because the Conventional-Commits `commit-msg` hook rejects
+a custom `-m "merge …"`. A sequential main-tree **fallback** ships for when isolation is
+unavailable. Remaining validation — a real parallel feature batch end-to-end — pairs with the
+Phase 7 pilot.
+
+Deferred (not built): scheduled "heartbeat" automations — `on: schedule` gate/dependency audits
+and a fleet-drift triage agent that notices when a project falls behind the latest template tag.
+The article's automations component; a candidate Phase 14 once the pilot proves the core loop.
+
 ## Order & dependencies
 
 ```

@@ -103,4 +103,9 @@ wellforge/
   release commit.
 - Quality thresholds live in the gate workflows' `env` blocks — changed only via PR to
   `gates/`/`.github/workflows/`; templates call them pinned to `gates-v*`.
+- Parallel implementation is worktree-isolated: `implement`/`orchestrate` dispatch batches of
+  ≥2 dependency-independent dev agents under `isolation: "worktree"` (each commits on its own
+  branch, does not touch `tasks.md`), then merge back and reconcile checkboxes centrally — a
+  merge conflict means a wrong DAG edge (a "collision"), surfaced like drift. Set
+  `worktree.baseRef: "head"`. Solo/sequential batches stay in the main tree.
 - All text/docs in English; this is internal WellForge tooling.
