@@ -23,7 +23,7 @@ jobs:
     name: commit messages (Conventional Commits)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0           # need the full commit range
       - name: Lint commit messages
@@ -54,8 +54,8 @@ jobs:
     name: model-routing drift guard
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
       - name: check-routing.py (claude)
         working-directory: wellforge-plugin
         run: uv run --with pyyaml python scripts/check-routing.py --tool claude
@@ -70,8 +70,8 @@ jobs:
       matrix:
         preset: [spring-kotlin-react, hono-react]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
       - name: copier copy --defaults
         run: uvx copier copy --defaults --trust . /tmp/out --data preset=${{ matrix.preset }}
       - name: Assert required generated files (templates/_shared/CONTRACT.md)

@@ -37,7 +37,7 @@ jobs:
       title: ${{ steps.cmp.outputs.title }}
       body: ${{ steps.cmp.outputs.body }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Compare recorded version to latest release
         id: cmp
