@@ -103,6 +103,10 @@ Goal: product description in → running repo with connections out, in <30 min.
   Questions: base_package, db (postgres/none), ci. Nested Java package dirs via hidden
   derived `package_path` answer (literal `/` in a templated dirname doesn't work).
 - ☑ `templates/hono-react/` v0.1.0 — Hono + Drizzle (postgres/none) + react frontend.
+- ☑ `templates/pulumi-gcp-ts/` (added template v0.7.0) — Pulumi Infrastructure-as-Code
+  (TypeScript) on GCP: per-environment stacks, typed config, a `SecureBucket`
+  ComponentResource, a CrossGuard policy pack, and unit tests on Pulumi's mock runtime.
+  Questions: gcp_project, gcp_region. Reuses the `quality-node` gate (single `infra` dir).
 - ☑ Both emit `.forge/manifest.json` `{ template, version, generated, answers }` and
   `.copier-answers.yml` — the upgrade contract for Phase 6.
 - ☑ Both emit project-local `CLAUDE.md` + `.claude/settings.json` (pre-allowed mise/
@@ -434,10 +438,12 @@ P1+P4 can start in parallel after P0. Total: ~3 weeks of focused effort.
 
 - **Copier requires Python tooling** on dev machines → mitigate: install via `mise`/`uv`,
   document in onboarding; fallback is `npx giget` + custom diff (worse, avoid).
-- **Template sprawl** → hard rule: max 2 presets until Phase 7 proves the model. Phase 12
-  template extraction deliberately writes **org-owned** templates (outside the WellForge repo,
-  no upstream PR) precisely to keep this guardrail — adoptions enrich the team's own catalog,
-  not WellForge's shipped presets.
+- **Template sprawl** → the pilot rule capped shipped presets at 2. A deliberate third,
+  `pulumi-gcp-ts` (template v0.7.0), was added because an IaC path is orthogonal to the two
+  app stacks and reuses the existing Node gate — it doesn't carry the sprawl risk. The bar
+  for a fourth stays high. Phase 12 template extraction still deliberately writes **org-owned**
+  templates (outside the WellForge repo, no upstream PR) — adoptions enrich the team's own
+  catalog, not WellForge's shipped presets.
 - **Agent role bleed** (PO writing code) → explicit "must not" lists in agent prompts,
   checked during pilot.
 - **Gates too strict at first** → start thresholds at current-reality levels, ratchet up

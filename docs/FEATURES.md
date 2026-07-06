@@ -132,6 +132,7 @@ Mechanics that make it reliable:
 |---|---|
 | `spring-kotlin-react` | rich domain logic, transactions, long-lived products, JVM ecosystem (Spring Boot 4, Kotlin, jOOQ, Liquibase, Modulith / React TS Vite) |
 | `hono-react` | lightweight APIs, fast iteration, all-TypeScript teams (Hono, Drizzle / React TS Vite) |
+| `pulumi-gcp-ts` | infrastructure-as-code, not an app — provisioning Google Cloud with Pulumi + TypeScript (per-env stacks, ComponentResources, CrossGuard policy, mock-runtime tests) |
 
 3. **Generation** via the root `copier.yml` (one entry point, `--data preset=<name>`).
    Every generated project ships **AI-ready**: project `CLAUDE.md`, pre-allowed
@@ -144,8 +145,10 @@ Mechanics that make it reliable:
    executed **verification command**: "connected" is an observed fact. Incompletable
    steps become explicit PENDING items, never silent skips.
 
-Hard rule: max 2 presets until the pilot proves the model — template sprawl is how
-platforms like this die.
+Preset count: the pilot rule originally capped this at 2 (template sprawl is how platforms
+like this die). `pulumi-gcp-ts` was added as a deliberate third — an infrastructure-as-code
+path is orthogonal to the two application stacks and reuses the existing Node quality gate,
+so it doesn't carry the sprawl risk the cap guarded against. The bar for a fourth stays high.
 
 **Brownfield:** existing projects onboard with `/wellforge:adopt` — AI-readiness files
 generated from *observed* conventions, the spec workflow, and optional layers: the central

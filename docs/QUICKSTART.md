@@ -18,13 +18,14 @@ What happens (you stay in the loop at every decision):
    answer also sets the **rigor tier** (`spike`/`mvp`/`production`) — how strict the
    generated CI is. Throwaway PoC → `spike`; first real release → `mvp`; long-lived →
    `production` (default). Raise it later with `/wellforge:promote`.
-2. **Stack recommendation** — one of the two presets, with the rationale and why not the
-   other. You confirm or override; your choice wins.
+2. **Stack recommendation** — one of the three presets, with the rationale and why not the
+   others. You confirm or override; your choice wins.
 
    | Preset | Pick when |
    |---|---|
    | `spring-kotlin-react` | rich domain logic, transactions, long-lived product |
    | `hono-react` | lightweight API, fast iteration, all-TS team |
+   | `pulumi-gcp-ts` | infrastructure-as-code (not an app) — provision GCP with Pulumi + TypeScript |
 
 3. **Generation** — Copier renders the project; first commit is the pristine scaffold.
 4. **Build verification** — `mise run install`, `build`, `test` must pass before
