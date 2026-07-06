@@ -84,5 +84,5 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 - Conditional files use copier's `{% if %}` filename syntax or empty-content guards —
   a `ci: none` answer must not leave an empty `.github/` directory.
 - Pinned versions (Spring Boot, Kotlin, Node, library versions) come from the stack
-  skills (`springboot-scaffold`, `react-ts-vite`, `hono-ts-backend`, `mise`) — the skills
-  are the source of truth; templates mirror them.
+  skills (`springboot-scaffold`, `react-ts-vite`, `hono-ts-backend`, `mise`, `pulumi-gcp-ts`)
+  — the skills are the source of truth; templates mirror them.
