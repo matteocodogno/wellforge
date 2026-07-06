@@ -138,6 +138,21 @@
   pre.code .c { color: #6e7781; }
   pre.code .p { color: var(--purple); }
 
+  /* Playbooks */
+  .plays { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.1rem; }
+  .play { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; display: flex; flex-direction: column; transition: border-color .15s, transform .15s; }
+  .play:hover { border-color: var(--purple); transform: translateY(-3px); }
+  .play .when { color: var(--purple); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .play h3 { font-size: 1.12rem; margin: 0.35rem 0 0.5rem; letter-spacing: -0.01em; }
+  .play > p { color: var(--muted); font-size: 0.92rem; margin-bottom: 1.1rem; }
+  .play pre { background: #0a0d12; border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem;
+    overflow-x: auto; font-size: 0.82rem; color: #d7dee8; margin-top: auto; line-height: 1.75; white-space: pre-wrap; }
+  .play pre .p { color: var(--purple); }
+  .play pre .c { color: #6e7781; }
+  .play pre .arrow { color: var(--muted); }
+  .play-note { max-width: 720px; margin: 2rem auto 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
+  .play-note b { color: var(--text); }
+
   /* Footer */
   footer { border-top: 1px solid var(--border); padding: 2.5rem 0; color: var(--muted); font-size: 0.9rem; text-align: center; }
   footer a { color: var(--muted); }
@@ -153,6 +168,7 @@
       <a href="#problem" class="hide-sm">Problem</a>
       <a href="#pillars" class="hide-sm">Pillars</a>
       <a href="#architecture" class="hide-sm">Architecture</a>
+      <a href="#workflows" class="hide-sm">Workflows</a>
       <a href="#start">Get started</a>
       <a href="https://github.com/matteocodogno/wellforge" class="nav-cta">GitHub</a>
     </nav>
@@ -171,9 +187,9 @@
         <a href="#pillars" class="btn btn-ghost">See the 6 pillars</a>
       </div>
       <div class="badges">
-        <img alt="template" src="https://img.shields.io/badge/template-v0.5.1-1f6feb">
-        <img alt="plugin" src="https://img.shields.io/badge/plugin-v2.20.0-8957e5">
-        <img alt="gates" src="https://img.shields.io/badge/gates-gates--v5-2da44e">
+        <img alt="template" src="https://img.shields.io/badge/template-v0.7.0-1f6feb">
+        <img alt="plugin" src="https://img.shields.io/badge/plugin-v2.22.0-8957e5">
+        <img alt="gates" src="https://img.shields.io/badge/gates-gates--v7-2da44e">
         <img alt="works with" src="https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode-111">
         <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
       </div>
@@ -274,6 +290,97 @@
         <div class="tier m"><h3>mvp</h3><p>Coverage advisory, SAST still blocks. Enough rigor to validate, tracked as debt you can pay down later.</p></div>
         <div class="tier p"><h3>production</h3><p>Full gates — 80% coverage, SAST, LM-judge eval. Graduate up with <span class="mono">/wellforge:promote</span>; production only on an eval pass.</p></div>
       </div>
+    </div>
+  </section>
+
+  <!-- WORKFLOWS / PLAYBOOKS -->
+  <section id="workflows">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">One command per job</span>
+        <h2>Playbooks for the whole lifecycle</h2>
+        <p>Every stage of the SDLC has a WellForge entry point. Here's the command flow for each —
+        from a blank folder to a shipped release.</p>
+      </div>
+      <div class="plays">
+
+        <div class="play">
+          <span class="when">Greenfield</span>
+          <h3>Start a new project</h3>
+          <p>One interview and you get a building, CI-gated, AI-ready repo with the agent team wired in.</p>
+<pre><span class="p">/wellforge:new</span>
+<span class="c"># interview → stack pick → scaffold →</span>
+<span class="c"># build check → connections → first spec</span></pre>
+        </div>
+
+        <div class="play">
+          <span class="when">Spec-driven</span>
+          <h3>Add a new feature</h3>
+          <p>The full spec → plan → tasks flow with a human gate at each step. A design stage kicks in for UI.</p>
+<pre><span class="p">/wellforge:spec</span> <span class="arrow">→</span> <span class="p">:plan</span> <span class="arrow">→</span> <span class="p">:tasks</span> <span class="arrow">→</span> <span class="p">:implement</span> <span class="arrow">→</span> <span class="p">:done</span>
+<span class="c"># UI feature? add /wellforge:design after :plan</span>
+<span class="c"># shortcut, end-to-end:</span>
+<span class="p">/wellforge:orchestrate</span> <span class="c">"add password reset"</span></pre>
+        </div>
+
+        <div class="play">
+          <span class="when">Test-first</span>
+          <h3>Fix a bug</h3>
+          <p>No spec ceremony. QE reproduces with the smallest failing test, a dev makes it green without weakening it, QE verifies no regressions.</p>
+<pre><span class="p">/wellforge:orchestrate</span> <span class="c">"reset email never arrives"</span>
+<span class="c"># QE repro (failing test) → dev fix → QE verify</span></pre>
+        </div>
+
+        <div class="play">
+          <span class="when">Scaffold · not a feature</span>
+          <h3>Add a new service</h3>
+          <p>A new service is scaffolding from a preset — <b>not</b> a spec-driven feature. New repo → <span class="mono">:new</span>. Inside a monorepo → ask the stack skill to scaffold one.</p>
+<pre><span class="c"># standalone repo</span>
+<span class="p">/wellforge:new</span>
+<span class="c"># inside an existing monorepo (stack skill)</span>
+<span class="c">"scaffold a new Hono service: billing"</span>
+<span class="c"># presets: spring-kotlin-react ·</span>
+<span class="c">#   hono-react · pulumi-gcp-ts</span></pre>
+        </div>
+
+        <div class="play">
+          <span class="when">Existing code</span>
+          <h3>Adopt a brownfield repo</h3>
+          <p>Brings the workflow and calibrated gates to a project you already have — additive only, one revertable commit.</p>
+<pre><span class="p">/wellforge:adopt</span>
+<span class="c"># AI-readiness → gap-check vs presets →</span>
+<span class="c"># calibrated gates → release wiring</span></pre>
+        </div>
+
+        <div class="play">
+          <span class="when">Quality check</span>
+          <h3>Evaluate an existing project</h3>
+          <p>Score a feature against the rubric, or take the pulse of the whole repo.</p>
+<pre><span class="p">/wellforge:eval</span>    <span class="c"># LM-judge a feature vs rubric</span>
+<span class="p">/wellforge:status</span>  <span class="c"># where each feature sits</span>
+<span class="p">/wellforge:triage</span>  <span class="c"># which specs are rotting</span></pre>
+        </div>
+
+        <div class="play">
+          <span class="when">Feasibility</span>
+          <h3>Spike a question</h3>
+          <p>The fast lane — build from a one-paragraph brief, advisory gates, no agents, no approval. May be thrown away.</p>
+<pre><span class="p">/wellforge:spike</span> <span class="c">"stream LLM tokens over SSE?"</span>
+<span class="c"># raise it later with /wellforge:promote</span></pre>
+        </div>
+
+        <div class="play">
+          <span class="when">Lifecycle</span>
+          <h3>Ship &amp; maintain</h3>
+          <p>Cut releases from Conventional Commits, and keep scaffolds from rotting as presets evolve.</p>
+<pre><span class="p">/wellforge:release</span>  <span class="c"># bump + CHANGELOG + tag</span>
+<span class="p">/wellforge:upgrade</span>  <span class="c"># re-template (copier update)</span>
+<span class="p">/wellforge:promote</span>  <span class="c"># graduate a rigor tier</span></pre>
+        </div>
+
+      </div>
+      <p class="play-note">Not sure which fits? <b>/wellforge:orchestrate</b> classifies any goal —
+      feature, bugfix, refactor or infra — and runs the matching pipeline.</p>
     </div>
   </section>
 
