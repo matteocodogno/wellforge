@@ -65,14 +65,17 @@ wellforge/
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,
 │   │                         # template-extraction, connections + stack skills (react-ts-vite,
-│   │                         # kotlin-springboot, hono-ts-backend, mise, springboot-scaffold)
+│   │                         # kotlin-springboot, hono-ts-backend, mise, springboot-scaffold,
+│   │                         # pulumi-gcp-ts)
 │   ├── config/               # model-routing.yml + model-tiers.yml (tool-neutral tiers)
 │   ├── hooks/                # lifecycle hooks (incl. SubagentStop run-trace telemetry)
 │   └── .mcp.json             # sequential-thinking, playwright, github
 ├── templates/
 │   ├── _shared/CONTRACT.md   # binding contract: questions, required files, versioning
 │   ├── spring-kotlin-react/template/   # SB4 Kotlin + jOOQ + Liquibase / React TS Vite
-│   └── hono-react/template/            # Hono + Drizzle / React TS Vite
+│   ├── hono-react/template/            # Hono + Drizzle / React TS Vite
+│   └── pulumi-gcp-ts/template/         # Pulumi IaC (TypeScript) on GCP — stacks, ComponentResources,
+│                                       # CrossGuard policy, mock tests (reuses quality-node gate)
 ├── gates/                    # configs (semgrep), scripts (check-jacoco.py), policy README
 └── scripts/fleet-status.sh   # org-wide table: project template versions vs latest tag
 ```
@@ -86,7 +89,7 @@ wellforge/
   across plugin, gates and templates.
 - Latest tags: `v0.6.0` (template series, PEP440 — what copier resolves), `gates-v7` (gate
   workflow pin series — separate, invisible to copier); plugin `2.22.0`. A self-CI workflow
-  (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests both presets.
+  (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets.
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated
   project, CI-green on GitHub (repo has no remote yet), threshold calibration, v1.0.0 cut.
 

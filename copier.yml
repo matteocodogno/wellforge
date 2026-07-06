@@ -29,6 +29,7 @@ preset:
   choices:
     - spring-kotlin-react
     - hono-react
+    - pulumi-gcp-ts
   default: spring-kotlin-react
 
 # ── Common questions (every preset — templates/_shared/CONTRACT.md) ──
@@ -124,3 +125,18 @@ db:
     - postgres
     - none
   default: postgres
+  # Not applicable to the infrastructure preset (no application database).
+  when: "{{ preset != 'pulumi-gcp-ts' }}"
+
+# ── pulumi-gcp-ts questions ──
+gcp_project:
+  type: str
+  help: GCP project ID the stacks deploy into (sets `gcp:project` in each Pulumi.<stack>.yaml)
+  default: "my-gcp-project"
+  when: "{{ preset == 'pulumi-gcp-ts' }}"
+
+gcp_region:
+  type: str
+  help: Default GCP region for regional resources (sets `gcp:region`)
+  default: "europe-west6"
+  when: "{{ preset == 'pulumi-gcp-ts' }}"

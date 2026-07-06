@@ -1,0 +1,60 @@
+# {{ project_name }}
+
+{{ description }}
+
+Infrastructure-as-Code for **Google Cloud** with **Pulumi** (TypeScript) — per-environment
+stacks, reusable `ComponentResource` abstractions, a CrossGuard policy pack, and unit tests
+that run against Pulumi's mock runtime (no cloud calls).
+{% if rigor != 'production' %}
+> ⚠️ **Rigor tier: `{{ rigor }}` — not production-ready.**
+{%- if rigor == 'spike' %}
+> Feasibility spike: CI runs a compile + secret-scan floor only (no coverage / SAST / eval).
+{%- else %}
+> MVP: coverage is advisory in CI (SAST and the security floor still block).
+{%- endif %}
+> This is tracked debt — raise it with `/wellforge:promote` before shipping; never lower a tier silently.
+{% endif %}
+## Quickstart
+
+```bash
+mise install                                   # install pinned tools (node, pnpm, pulumi)
+mise run install                               # install infra dependencies
+gcloud auth application-default login          # authenticate with ADC (no key files)
+
+cd infra
+pulumi stack select dev                        # or: pulumi stack init dev
+mise run infra:preview                         # see what would change (read-only)
+```
+
+Never commit a service-account key. Local runs use Application Default Credentials; CI uses
+Workload Identity Federation. See [AGENTS.md](./AGENTS.md) → **Deploying**.
+
+## Layout
+
+| Path | What |
+|---|---|
+| `infra/` | The Pulumi program (TypeScript) |
+| `infra/index.ts` | Stack entry point — wires config + components, exports outputs |
+| `infra/src/components/` | Reusable `ComponentResource` building blocks (secure GCS bucket example) |
+| `infra/src/config.ts` | Pure, unit-tested config helpers (region/labels) |
+| `infra/policy/` | CrossGuard policy pack — deploy-time guardrails |
+| `infra/Pulumi.{dev,prod}.yaml` | Per-environment stack config (no secrets committed) |
+| `specs/` | Spec-driven workflow artifacts (see `specs/README.md`) |
+| `.forge/manifest.json` | WellForge generation manifest (upgrade contract) |
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `mise run install` | Install dependencies |
+| `mise run build` | Compile-check the program (`tsc --noEmit`) |
+| `mise run test` | Unit tests (Pulumi mocks) |
+| `mise run lint` | Biome check |
+| `mise run dev` | `pulumi preview` for the current stack |
+| `mise run infra:up` | Apply changes to the current stack |
+| `mise run infra:policy` | Preview with the CrossGuard policy pack enforced |
+
+## Documentation
+
+See [AGENTS.md](./AGENTS.md) for the full stack reference, conventions, credential model,
+and the spec-driven development workflow.

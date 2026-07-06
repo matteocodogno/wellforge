@@ -1,0 +1,17 @@
+{
+  "template": "pulumi-gcp-ts",
+  "version": "{{ template_version }}",
+  "answers": {
+    "project_name": {{ project_name | tojson }},
+    "project_slug": {{ project_slug | tojson }},
+    "description": {{ description | tojson }},
+    "ci": {{ ci | tojson }},
+    "rigor": {{ rigor | tojson }},
+    "gates_repo": {{ gates_repo | tojson }},
+    "gates_ref": {{ gates_ref | tojson }},
+    "heartbeat": {{ heartbeat | tojson }},
+    "heartbeat_cron": {{ heartbeat_cron | tojson }},
+    "gcp_project": {{ gcp_project | tojson }},
+    "gcp_region": {{ gcp_region | tojson }}
+  }
+}

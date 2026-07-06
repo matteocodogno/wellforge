@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build / test output
+dist/
+coverage/
+*.tsbuildinfo
+
+# Pulumi — never commit local state, credentials, or per-developer stack overrides
+Pulumi.*.local.yaml
+.pulumi/
+bin/
+
+# Environment
+.env
+.env.local
+credentials.json
+gcp-key*.json
+
+# mise local overrides — never commit
+.mise.local.toml
+.mise.*.local.toml
+
+# Claude / WellForge local settings
+.claude/settings.local.json
+.claude/transcripts/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# WellForge run-trace token events (transient; keep semantic run JSONs committed)
+.forge/runs/.events.jsonl
+
+# WellForge visual-companion mockups (design evidence; transient, referenced from design.md)
+.forge/design/

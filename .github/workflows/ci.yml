@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        preset: [spring-kotlin-react, hono-react]
+        preset: [spring-kotlin-react, hono-react, pulumi-gcp-ts]
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7

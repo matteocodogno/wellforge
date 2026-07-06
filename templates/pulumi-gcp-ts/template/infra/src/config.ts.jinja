@@ -1,0 +1,26 @@
+/**
+ * Pure configuration helpers — no Pulumi runtime dependency, so they are unit-testable.
+ * The program entry point (index.ts) reads `pulumi.Config` / `pulumi.getStack()` and passes
+ * plain values into these helpers.
+ */
+
+/** Region used when a stack does not set `gcp:region`. */
+export const DEFAULT_REGION = '{{ gcp_region }}'
+
+/** Resolve the effective region, falling back to {@link DEFAULT_REGION} when unset or blank. */
+export function resolveRegion(configured: string | undefined): string {
+  const trimmed = configured?.trim()
+  return trimmed ? trimmed : DEFAULT_REGION
+}
+
+/**
+ * Standard label set applied to every resource. `managed-by` and `environment` are always
+ * present; callers may add more. Extra labels win on key collision — the policy pack and cost
+ * tooling key off these labels.
+ */
+export function buildLabels(
+  environment: string,
+  extra: Record<string, string> = {}
+): Record<string, string> {
+  return { 'managed-by': 'pulumi', environment, ...extra }
+}

@@ -1,0 +1,43 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+{%- if rigor == 'spike' %}
+  # rigor: spike — compile sanity + the non-negotiable secret-scan floor only.
+  # No coverage / SAST / eval. Raise with /wellforge:promote before this touches real infra.
+  security-floor:
+    name: Security floor (secrets)
+    uses: {{ gates_repo }}/.github/workflows/security-floor.yml@{{ gates_ref }}
+
+  build:
+    name: Compile (sanity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v2
+      - name: Compile-check the Pulumi program
+        run: |
+          mise run install
+          mise run build
+{%- else %}
+  infra:
+    name: Infra quality
+    uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
+    with:
+      working-directory: infra
+      rigor: {{ rigor }}
+
+  commits:
+    name: commit messages (Conventional Commits)
+    uses: {{ gates_repo }}/.github/workflows/commit-lint.yml@{{ gates_ref }}
+{%- endif %}
+
+# NOTE: this workflow gates CODE QUALITY only (lint, typecheck, unit tests with Pulumi mocks,
+# dependency audit, SAST). It never runs `pulumi preview`/`up` — that needs cloud credentials
+# and belongs in a separate deploy workflow wired via Workload Identity Federation
+# (see AGENTS.md → "Deploying"). Keeping deploy out of the quality gate keeps PR CI keyless.

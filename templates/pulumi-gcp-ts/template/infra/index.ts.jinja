@@ -1,0 +1,27 @@
+import * as pulumi from '@pulumi/pulumi'
+import { SecureBucket } from './src/components/gcs-bucket'
+import { buildLabels, resolveRegion } from './src/config'
+
+// ── Stack configuration ──────────────────────────────────────────────
+// Provider config (gcp:project, gcp:region) and app config ({{ project_slug }}:environment)
+// come from Pulumi.<stack>.yaml. Secrets: `pulumi config set --secret <key> <value>`.
+const gcpConfig = new pulumi.Config('gcp')
+const appConfig = new pulumi.Config()
+
+const environment = appConfig.get('environment') ?? pulumi.getStack()
+const region = resolveRegion(gcpConfig.get('region'))
+const labels = buildLabels(environment)
+
+// ── Resources ────────────────────────────────────────────────────────
+// Example: a secure bucket for application assets. Replace with your real infrastructure —
+// keep this file a thin composition root and put reusable logic in src/components/.
+const assets = new SecureBucket('{{ project_slug }}-assets', {
+  location: region,
+  labels,
+})
+
+// ── Stack outputs ────────────────────────────────────────────────────
+export const assetsBucket = assets.bucket.name
+export const assetsBucketUrl = assets.url
+export const gcpRegion = region
+export const stackEnvironment = environment

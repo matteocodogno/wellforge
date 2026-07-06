@@ -1,0 +1,37 @@
+name: heartbeat
+
+# Scheduled "heartbeat" (WellForge Phase 14a) — re-runs the stack quality gate on a cadence
+# to catch what PR-time gates cannot: CVEs newly disclosed against already-merged dependencies
+# (the advisory DB moves without a commit) and updated SAST rules. Findings are triaged into
+# ONE deduplicated tracking issue by the reusable heartbeat-report workflow.
+{% raw %}on:
+  schedule:
+    - cron: "{% endraw %}{{ heartbeat_cron }}{% raw %}"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+{% endraw %}
+jobs:
+  infra:
+    name: infra (Node)
+    uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
+    with:
+      working-directory: infra
+      rigor: {{ rigor }}
+
+  report:
+    name: triage findings
+    needs: [infra]
+    if: always()
+    uses: {{ gates_repo }}/.github/workflows/heartbeat-report.yml@{{ gates_ref }}
+    with:
+      failed: {% raw %}${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+      run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}{% endraw %}
+
+  # Pillar 6 lifecycle: has this project fallen behind its template? Files a separate
+  # deduplicated "N releases behind → /wellforge:upgrade" issue; closes it when caught up.
+  template-drift:
+    name: template drift
+    uses: {{ gates_repo }}/.github/workflows/template-drift.yml@{{ gates_ref }}

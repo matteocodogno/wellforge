@@ -1,0 +1,6 @@
+# Prod stack config. Non-secret values only — set secrets with
+#   pulumi config set --secret <key> <value>
+config:
+  gcp:project: {{ gcp_project }}
+  gcp:region: {{ gcp_region }}
+  {{ project_slug }}:environment: prod

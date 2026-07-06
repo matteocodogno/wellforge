@@ -1,0 +1,40 @@
+# mise.toml — project root
+# Infrastructure-as-Code project: node + pnpm for the Pulumi TS program, plus the Pulumi CLI.
+
+[tools]
+node = "22"
+pnpm = "10"
+pulumi = "3"
+
+[env]
+# Project-level non-sensitive env vars only — secrets go in .mise.local.toml.
+# For local runs authenticate with `gcloud auth application-default login` (ADC);
+# NEVER commit a service-account key. See AGENTS.md for the credential model.
+# _.file = ".env"   ← uncomment to load .env automatically
+
+[settings]
+experimental = true    # required for monorepo task features
+
+[tasks.install]
+description = "Install infra dependencies"
+depends     = ["infra:install"]
+
+[tasks.build]
+description = "Compile-check the Pulumi program (tsc, no emit)"
+depends     = ["infra:build"]
+
+[tasks.test]
+description = "Run unit tests (Pulumi mocks)"
+depends     = ["infra:test"]
+
+[tasks.lint]
+description = "Lint the Pulumi program (Biome)"
+depends     = ["infra:lint"]
+
+[tasks.dev]
+description = "Preview changes for the current stack (read-only)"
+depends     = ["infra:preview"]
+
+[tasks.release]
+description = "Cut a release — version + CHANGELOG from Conventional Commits, tag, GitHub release (release-it)"
+run = "pnpm --package=release-it@^17 --package=@release-it/conventional-changelog@^8 --package=@release-it/bumper@^6 dlx release-it"

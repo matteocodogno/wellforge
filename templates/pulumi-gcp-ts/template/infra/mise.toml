@@ -1,0 +1,59 @@
+# infra/mise.toml
+# Tools are inherited from root — do not redeclare them here.
+
+[tasks.install]
+description = "Install infra dependencies"
+run         = "pnpm install"
+sources     = ["package.json", "pnpm-lock.yaml"]
+outputs     = ["node_modules/.modules.yaml"]
+
+[tasks.build]
+description = "Compile-check the Pulumi program (no emit)"
+depends     = ["install"]
+run         = "pnpm build"
+sources     = ["index.ts", "src/**/*.ts", "tsconfig.json"]
+
+[tasks.typecheck]
+description = "Type-check without emitting"
+depends     = ["install"]
+run         = "pnpm typecheck"
+sources     = ["index.ts", "src/**/*.ts", "tsconfig.json"]
+
+[tasks.test]
+description = "Run Vitest (Pulumi mocks)"
+depends     = ["install"]
+run         = "pnpm test --run"
+sources     = ["src/**/*.ts"]
+
+[tasks.lint]
+description = "Biome check"
+depends     = ["install"]
+run         = "pnpm lint"
+sources     = ["index.ts", "src/**/*.ts", "biome.json"]
+
+[tasks."lint:fix"]
+description = "Biome check --write"
+run         = "pnpm lint:fix"
+
+[tasks.preview]
+description = "Preview changes for the selected stack (read-only)"
+depends     = ["install"]
+run         = "pulumi preview"
+
+[tasks.up]
+description = "Apply changes to the selected stack"
+depends     = ["install"]
+run         = "pulumi up"
+
+[tasks.destroy]
+description = "Tear down the selected stack"
+run         = "pulumi destroy"
+
+[tasks.refresh]
+description = "Reconcile Pulumi state with actual cloud resources"
+run         = "pulumi refresh"
+
+[tasks.policy]
+description = "Preview with the CrossGuard policy pack enforced"
+depends     = ["install"]
+run         = "pulumi preview --policy-pack ./policy"

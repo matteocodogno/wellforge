@@ -1,0 +1,46 @@
+import * as gcp from '@pulumi/gcp'
+import { PolicyPack, validateResourceOfType } from '@pulumi/policy'
+
+// CrossGuard guardrails, enforced at `pulumi preview`/`up` when run with `--policy-pack ./policy`.
+// `mandatory` violations block the update; `advisory` violations only warn.
+new PolicyPack('{{ project_slug }}-policies', {
+  policies: [
+    {
+      name: 'gcs-public-access-prevention',
+      description: 'GCS buckets must enforce public access prevention.',
+      enforcementLevel: 'mandatory',
+      validateResource: validateResourceOfType(
+        gcp.storage.Bucket,
+        (bucket, _args, reportViolation) => {
+          if (bucket.publicAccessPrevention !== 'enforced') {
+            reportViolation('Bucket must set publicAccessPrevention = "enforced".')
+          }
+        }
+      ),
+    },
+    {
+      name: 'gcs-uniform-bucket-level-access',
+      description: 'GCS buckets must use uniform bucket-level access (no per-object ACLs).',
+      enforcementLevel: 'mandatory',
+      validateResource: validateResourceOfType(
+        gcp.storage.Bucket,
+        (bucket, _args, reportViolation) => {
+          if (bucket.uniformBucketLevelAccess !== true) {
+            reportViolation('Bucket must enable uniformBucketLevelAccess.')
+          }
+        }
+      ),
+    },
+    {
+      name: 'require-environment-label',
+      description: 'Labelled resources should carry an "environment" label for cost + ownership.',
+      enforcementLevel: 'advisory',
+      validateResource: (args, reportViolation) => {
+        const labels = (args.props as { labels?: Record<string, string> }).labels
+        if (labels && labels.environment === undefined) {
+          reportViolation('Resource is missing the "environment" label.')
+        }
+      },
+    },
+  ],
+})

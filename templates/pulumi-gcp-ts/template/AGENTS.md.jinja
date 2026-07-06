@@ -1,0 +1,134 @@
+# {{ project_name }} — Project Context
+
+{{ description }}
+
+Infrastructure-as-Code for **Google Cloud** built with **Pulumi** in **TypeScript**, managed
+with **mise** + **pnpm**. Infrastructure is defined as a real program: per-environment stacks,
+reusable `ComponentResource` abstractions, policy-as-code guardrails (CrossGuard), and unit
+tests that run against Pulumi's mock runtime.
+
+## Stack & pinned versions
+
+| Layer | Tech | Version |
+|---|---|---|
+| Runtime | Node | 22 |
+| Package manager | pnpm | 10 |
+| IaC engine | Pulumi CLI | 3 |
+| Pulumi SDK | @pulumi/pulumi | ^3.145.0 |
+| GCP provider | @pulumi/gcp | ^8.13.0 |
+| Policy (CrossGuard) | @pulumi/policy | ^1.21.0 |
+| Lint/format | @biomejs/biome | ^1.9.4 |
+| Tests | vitest | ^2.1.8 |
+| TypeScript | typescript | ^5.7.2 |
+| Default region | GCP | {{ gcp_region }} |
+
+## mise commands
+
+| Command | What it does |
+|---|---|
+| `mise install` | Install pinned tools (node, pnpm, pulumi) |
+| `mise run install` | Install infra dependencies |
+| `mise run build` | Compile-check the program (`tsc --noEmit`) |
+| `mise run test` | Unit tests (Pulumi mocks) |
+| `mise run lint` | Biome check |
+| `mise run dev` | `pulumi preview` for the current stack |
+| `mise run infra:<task>` | Run an infra task directly (install/build/test/lint/typecheck/preview/up/destroy/refresh/policy) |
+
+## Layout
+
+```
+{{ project_slug }}/
+├── mise.toml                  # root tool pins + aggregate tasks
+└── infra/                     # the Pulumi program (single package)
+    ├── Pulumi.yaml            # project definition (name, runtime)
+    ├── Pulumi.dev.yaml        # dev stack config (gcp:project, gcp:region, ...)
+    ├── Pulumi.prod.yaml       # prod stack config
+    ├── index.ts               # entry point — reads config, wires components, exports outputs
+    ├── src/
+    │   ├── config.ts          # PURE, unit-tested config helpers (region/labels)
+    │   └── components/        # reusable ComponentResources (SecureBucket example)
+    ├── policy/                # CrossGuard policy pack (self-contained package)
+    │   ├── PulumiPolicy.yaml
+    │   └── index.ts
+    ├── mise.toml              # infra tasks
+    ├── biome.json / tsconfig.json / vitest.config.ts
+    └── package.json
+```
+
+## Conventions
+
+- **One program, many stacks.** A *stack* is an isolated instance of the infrastructure
+  (`dev`, `prod`). Never branch on environment with `if` in code — put per-environment values
+  in `Pulumi.<stack>.yaml` and read them through config. Select with `pulumi stack select`.
+- **Config, not constants.** Provider settings (`gcp:project`, `gcp:region`) and app values
+  live in `Pulumi.<stack>.yaml`. Secrets go in **encrypted** config
+  (`pulumi config set --secret <key> <value>`) — never in code, `.env`, or plain YAML.
+  Config *parsing* logic lives in `src/config.ts` as **pure functions** so it is unit-testable
+  without the Pulumi runtime; `index.ts` reads `pulumi.Config` and passes plain values in.
+- **ComponentResources for anything reused.** Wrap related resources in a
+  `pulumi.ComponentResource` (see `src/components/gcs-bucket.ts`) with a namespaced type token
+  (`wellforge:gcp:SecureBucket`), pass `{ parent: this }` to children, and call
+  `registerOutputs`. Components encode secure defaults once (uniform bucket-level access,
+  public-access prevention, versioning) so callers can't forget them.
+- **Explicit resource names + labels.** Every resource takes a logical name; every GCP resource
+  gets a consistent `labels` map (at least `environment` + `managed-by=pulumi`) built by
+  `buildLabels()` — this is what the policy pack and cost tooling key off.
+- **Outputs are `Output<T>`, not values.** Resource attributes resolve asynchronously. Compose
+  with `.apply()` / `pulumi.interpolate` / `pulumi.all` — never `await` an Output or read
+  `.value`. Export what other stacks or humans need via top-level `export const`.
+- **Cross-stack wiring** uses `StackReference`, never hard-coded IDs.
+
+## Policy-as-code (CrossGuard)
+
+`policy/` is a self-contained policy pack enforcing guardrails at `preview`/`up` time:
+buckets must enforce public-access prevention and uniform bucket-level access (`mandatory`),
+and resources should carry an `environment` label (`advisory`). Run it locally with
+`mise run infra:policy` (`pulumi preview --policy-pack ./policy`) and wire it into the deploy
+workflow so no stack can be updated past the guardrails. The pack manages its own
+dependencies and is intentionally outside the infra quality gate (guardrails are exercised at
+deploy, not by unit tests).
+
+## Testing
+
+Unit tests use `pulumi.runtime.setMocks(...)` to intercept resource registration — they assert
+the *inputs* your program produces (secure defaults, labels, naming) with **zero** cloud calls,
+and run in CI on every PR. Set mocks **before** importing the module under test (dynamic
+`import()` in the test). Pure helpers in `src/config.ts` are tested directly. `index.ts` is the
+thin composition root and is intentionally not unit-tested (it is covered by `pulumi preview`).
+Vitest coverage is measured over `src/**`.
+
+## Deploying
+
+- **No key files, ever.** Local: `gcloud auth application-default login` (ADC). CI: **Workload
+  Identity Federation** — the GitHub Actions OIDC token is exchanged for short-lived GCP
+  credentials; no `credentials.json` secret. `gcp-key*.json` / `credentials.json` are
+  git-ignored as a backstop.
+- **State backend.** Default is Pulumi Cloud (`pulumi login`). To self-host, use a GCS backend
+  (`pulumi login gs://<state-bucket>`) — create that bucket out-of-band with versioning on.
+- **Flow.** PR → `pulumi preview` (plan is the review artifact). Merge to `main` →
+  `pulumi up` against the target stack, with `--policy-pack ./policy` enforced. This deploy
+  workflow needs cloud credentials and is kept **separate** from `quality.yml` so PR CI stays
+  keyless. Wire it during `/wellforge:new` stage 5 (connections) or with the devops agent.
+
+## Spec-driven workflow
+
+Feature work follows the WellForge spec-driven workflow. Artifacts live in `specs/`.
+Drive it with the wellforge plugin commands:
+
+- `/wellforge:spec` — capture the change (which stacks, blast radius, rollback)
+- `/wellforge:plan` — turn the spec into a technical plan
+- `/wellforge:tasks` — break the plan into actionable tasks
+- `/wellforge:orchestrate` — execute the tasks
+
+See `specs/README.md` for the short version.
+
+**Project rigor tier: `{{ rigor }}`** (recorded in `.forge/manifest.json`). It sets the default
+ceremony for new work — see the wellforge `rigor-tiers` skill.
+{%- if rigor == 'production' %}
+Full rigor: every change runs the complete pipeline and gates (80% coverage, SAST, eval).
+{%- elif rigor == 'mvp' %}
+MVP: coverage is advisory in CI (SAST + security floor still block); changes may use `--mode mvp`.
+{%- else %}
+Spike: throwaway/feasibility tier — CI is compile + secret-scan floor only. Use `/wellforge:spike`.
+Not production-ready; raise with `/wellforge:promote` before this becomes real.
+{%- endif %}
