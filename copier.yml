@@ -99,7 +99,7 @@ heartbeat_cron:
 # conflicts (found by the Phase 6 E2E test). Generation date lives in git history.
 template_version:
   type: str
-  default: "0.6.0"
+  default: "0.7.0"
   when: false
 
 # ── Stack-specific questions ──

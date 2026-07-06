@@ -7,7 +7,7 @@ git tags in this repo (`templates/<name>/vX.Y.Z`).
 |---|---|---|
 | `spring-kotlin-react/` | Spring Boot 4 + Kotlin + jOOQ + Liquibase / React + TS + Vite | v0.1.0 |
 | `hono-react/` | Hono + TS + Drizzle / React + TS + Vite | v0.1.0 |
-| `pulumi-gcp-ts/` | Pulumi Infrastructure-as-Code (TypeScript) on GCP — stacks, ComponentResources, CrossGuard policy, mock tests | v0.6.0 |
+| `pulumi-gcp-ts/` | Pulumi Infrastructure-as-Code (TypeScript) on GCP — stacks, ComponentResources, CrossGuard policy, mock tests | v0.7.0 |
 | `_shared/CONTRACT.md` | the binding contract every template must satisfy (questions, required files, versioning) | active |
 
 Generate from the **repo root** (one copier.yml serves all presets — required for

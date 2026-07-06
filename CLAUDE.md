@@ -87,7 +87,7 @@ wellforge/
   update` → zero conflicts.
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
-- Latest tags: `v0.6.0` (template series, PEP440 — what copier resolves), `gates-v7` (gate
+- Latest tags: `v0.7.0` (template series, PEP440 — what copier resolves), `gates-v7` (gate
   workflow pin series — separate, invisible to copier); plugin `2.22.0`. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets.
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated
