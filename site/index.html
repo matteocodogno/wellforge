@@ -138,6 +138,15 @@
   pre.code .c { color: #6e7781; }
   pre.code .p { color: var(--purple); }
 
+  /* Presets */
+  .preset-tag { display: inline-block; font-family: ui-monospace, monospace; font-size: 0.72rem;
+    padding: 0.22rem 0.6rem; border-radius: 6px; margin-bottom: 0.7rem; letter-spacing: 0.03em; }
+  .preset-tag.full { background: rgba(76,141,255,0.16); color: var(--blue); }
+  .preset-tag.infra { background: rgba(255,123,57,0.16); color: var(--ember); }
+  .card h3 .mono-slug { font-family: ui-monospace, monospace; font-size: 0.98rem; }
+  .card .stack { margin-top: 0.9rem; font-size: 0.82rem; color: var(--muted); }
+  .card .stack b { color: var(--text); font-weight: 600; }
+
   /* Playbooks */
   .plays { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.1rem; }
   .play { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; display: flex; flex-direction: column; transition: border-color .15s, transform .15s; }
@@ -168,6 +177,7 @@
       <a href="#problem" class="hide-sm">Problem</a>
       <a href="#pillars" class="hide-sm">Pillars</a>
       <a href="#architecture" class="hide-sm">Architecture</a>
+      <a href="#presets" class="hide-sm">Presets</a>
       <a href="#workflows" class="hide-sm">Workflows</a>
       <a href="#start">Get started</a>
       <a href="https://github.com/matteocodogno/wellforge" class="nav-cta">GitHub</a>
@@ -271,6 +281,42 @@
           <h3>Reusable CI gates</h3>
           <p>Central thresholds and SAST configs, referenced (not copied) by every scaffold, so raising the bar is one PR for the whole fleet.</p>
           <div class="covers"><b>Covers:</b> pillar 5</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRESETS -->
+  <section id="presets">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">Pick your stack</span>
+        <h2>Versioned presets, ready to scaffold</h2>
+        <p>Every preset generates a building, gate-wired, spec-driven monorepo — and stays
+        upgradeable as it evolves. Each is backed by a stack skill that keeps its conventions and
+        pinned versions honest.</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <span class="preset-tag full">full-stack</span>
+          <h3><span class="mono-slug">spring-kotlin-react</span></h3>
+          <p>A JVM backend with a React SPA — the batteries-included enterprise path.</p>
+          <div class="stack"><b>Backend:</b> Spring Boot 4 · Kotlin · jOOQ · Liquibase<br>
+          <b>Frontend:</b> React · TypeScript · Vite</div>
+        </div>
+        <div class="card">
+          <span class="preset-tag full">full-stack</span>
+          <h3><span class="mono-slug">hono-react</span></h3>
+          <p>An all-TypeScript, edge-ready full-stack — one language end to end.</p>
+          <div class="stack"><b>Backend:</b> Hono · TypeScript · Drizzle<br>
+          <b>Frontend:</b> React · TypeScript · Vite</div>
+        </div>
+        <div class="card">
+          <span class="preset-tag infra">infrastructure</span>
+          <h3><span class="mono-slug">pulumi-gcp-ts</span></h3>
+          <p>Infrastructure-as-Code, not an app — provision Google Cloud with real TypeScript.</p>
+          <div class="stack"><b>IaC:</b> Pulumi · TypeScript · GCP<br>
+          <b>Built in:</b> per-env stacks · ComponentResources · CrossGuard policy · mock-runtime tests</div>
         </div>
       </div>
     </div>
