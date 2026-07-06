@@ -305,7 +305,13 @@ Motivated by O'Reilly's "loop engineering" (five components: automations, worktr
 plugins/connectors, subagents). Audit found WellForge already ships four — skills, verifying
 subagents, connectors, external state — plus the article's "stay the engineer" spine (human
 gates + rigor tiers). Two genuine gaps: **worktree parallel-safety** (this phase) and
-**scheduled "heartbeat" automations** (deferred, see below).
+**scheduled "heartbeat" automations** (Phase 14, below).
+
+> **Loop-engineering initiative COMPLETE (2026-07-06).** All five components are in place: the two
+> gaps are closed — worktree parallel-safety (Phase 13, plugin v2.21.0) and heartbeat automations
+> (Phase 14, `gates-v6`/`gates-v7` + template `v0.6.0` + plugin `2.22.0`). Remaining work is **live
+> field validation only** (a real scheduled run; agentic routines wired to org cron), which pairs
+> with the Phase 7 pilot — not additional build.
 
 - ☑ Worktree-isolated parallel dispatch (plugin v2.21.0): `implement` Step 3 and
   `orchestrate` (feature + mvp implementation) now isolate any batch of **≥2 dependency-
@@ -341,7 +347,7 @@ and a fleet-drift triage agent that notices when a project falls behind the late
 The article's automations component; drafted below as **Phase 14** (starts after the Phase 7
 pilot proves the core loop).
 
-## Phase 14 — Loop engineering: heartbeat automations (drafted 2026-07-06; 14a + 14b built 2026-07-06)
+## Phase 14 — Loop engineering: heartbeat automations (drafted + shipped 2026-07-06 ☑)
 
 Goal: close the last of the five "loop engineering" components — **automations (the heartbeat)**:
 scheduled tasks that do discovery + triage on a cadence and **surface work for a human**, instead
@@ -370,12 +376,11 @@ as scheduled agents:
   Files: reusable `.github/workflows/heartbeat-report.yml`; `heartbeat.yml.jinja` in both presets;
   copier answers + `gates_ref` default `gates-v5 → gates-v6`; manifest + CONTRACT + gates/README +
   preset README. Verified: renders for spring (backend JVM) and hono (backend Node) defaults,
-  correctly **absent** for `rigor=spike`; all three workflow files are valid YAML. **Pending
-  release**: the reusable `heartbeat-report.yml` only resolves once **`gates-v6` is tagged** — a
-  generated project's `@gates-v6` ref 404s until then. Full E2E (a scheduled run opens/updates the
-  issue) needs the tag + a real repo → pairs with the Phase 7 pilot. Chose "all three checks +
-  weekly" per user; coverage runs too since reusing the whole gate is more DRY than a bespoke
-  subset.
+  correctly **absent** for `rigor=spike`; all three workflow files are valid YAML. **Released**:
+  `heartbeat-report.yml` shipped at **`gates-v6`** (tagged + pushed). Full E2E (a scheduled run
+  opens/updates the issue) still needs a real generated repo → pairs with the Phase 7 pilot. Chose
+  "all three checks + weekly" per user; coverage runs too since reusing the whole gate is more DRY
+  than a bespoke subset.
 - ☑ **14b — Template-drift heartbeat** (Pillar 6 — the WellForge-native standout, deterministic,
   built 2026-07-06). New reusable `template-drift.yml`: reads `.forge/manifest.json`, resolves the
   latest `vX.Y.Z` of the source repo (`git ls-remote`, version-aware count), and files/updates ONE
@@ -400,18 +405,21 @@ as scheduled agents:
 
 Sequencing inside the phase: shipped the **deterministic GitHub Actions heartbeats first** (gate +
 template-drift — cheap, no token cost), then the **agentic** fleet/spec-health triage as runnable
-pieces + scheduling recipes. **Status: all of 14a + 14b built; live scheduling and E2E pair with
-the Phase 7 pilot.**
+pieces + scheduling recipes.
 
-Honest status: **14a + 14b built (2026-07-06).** The deterministic heartbeats (gate, template-drift)
-are code-complete and render-/logic-verified but only run once **`gates-v7` is tagged** and a real
-scheduled run fires — pairs with the Phase 7 pilot. The agentic heartbeats (fleet, spec-health) ship
-as the runnable data step (`fleet-triage.sh`) + command (`/wellforge:triage`) + scheduling recipes;
-**live cron is the org's infrastructure, deliberately not auto-enabled** — the vehicle is a Claude
-Code routine, which must degrade to `gh`/API auth in headless runs (interactive MCP servers may be
-absent), and cadence/thresholds still want the pilot's real signal. 14b was built ahead of the pilot
-at the user's request; the pilot will confirm whether the agentic layer earns its keep over the
-deterministic heartbeats alone.
+Honest status: **shipped 2026-07-06 (☑).** Released as `gates-v6` (gate reporter), `gates-v7`
+(template-drift + generic reporter body), template **`v0.6.0`** (so `/wellforge:new` scaffolds and
+`/wellforge:upgrade` carry the heartbeat callers), and plugin **`2.22.0`** (`/wellforge:triage` +
+`heartbeat` skill). Repo self-CI green, including a Node-24 action bump (`checkout@v5`,
+`setup-uv@v7`) done in passing. Two things remain, both **deliberately deferred to the Phase 7
+pilot**, not gaps in the build: (1) **live E2E** — a real scheduled run firing and opening/updating
+an issue; render + logic are verified, but no cron has fired in a generated repo yet. (2) **agentic
+scheduling** — fleet + spec-health ship as the runnable data step (`fleet-triage.sh`) + command
+(`/wellforge:triage`) + routine recipes, but **live cron is the org's infrastructure, deliberately
+not auto-enabled**; the Claude Code routine must degrade to `gh`/API auth in headless runs
+(interactive MCP servers may be absent), and cadence/thresholds still want the pilot's real signal.
+14b was built ahead of the pilot at the user's request; the pilot confirms whether the agentic layer
+earns its keep over the deterministic heartbeats alone.
 
 ## Order & dependencies
 
