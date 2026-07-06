@@ -1,0 +1,124 @@
+# Reusable template-drift heartbeat (WellForge Phase 14b, Pillar 6 lifecycle). On a schedule,
+# a generated project checks whether it has fallen behind its template: it reads
+# .forge/manifest.json (the recorded template version), resolves the latest vX.Y.Z release of
+# the template source repo, and — if behind — files/updates ONE deduplicated "N releases behind"
+# issue pointing at /wellforge:upgrade. It closes the issue when the project catches up. Surface,
+# never auto-ship: it never runs the upgrade itself.
+#   template-drift:
+#     uses: matteocodogno/wellforge/.github/workflows/template-drift.yml@gates-v7
+name: template-drift
+
+on:
+  workflow_call:
+    inputs:
+      manifest-path:
+        description: path to the WellForge manifest in the project
+        required: false
+        type: string
+        default: .forge/manifest.json
+      source-repo:
+        description: >
+          owner/repo of the template source. Empty = read `answers.gates_repo` from the
+          manifest (the WellForge default, where the template and gates share a repo).
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: manifest vs latest release
+    runs-on: ubuntu-latest
+    outputs:
+      behind: ${{ steps.cmp.outputs.behind }}
+      title: ${{ steps.cmp.outputs.title }}
+      body: ${{ steps.cmp.outputs.body }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare recorded version to latest release
+        id: cmp
+        env:
+          MANIFEST: ${{ inputs.manifest-path }}
+          SOURCE_REPO: ${{ inputs.source-repo }}
+        run: |
+          set -euo pipefail
+          emit() { { echo "behind=$1"; echo "title=$2";
+                     echo "body<<__EOF__"; printf '%s\n' "$3"; echo "__EOF__"; } >> "$GITHUB_OUTPUT"; }
+
+          if [ ! -f "$MANIFEST" ]; then
+            echo "::notice::no $MANIFEST — not a WellForge scaffold; skipping drift check"
+            emit false "" ""; exit 0
+          fi
+          current=$(jq -r '.version // empty' "$MANIFEST")
+          repo="$SOURCE_REPO"
+          [ -z "$repo" ] && repo=$(jq -r '.answers.gates_repo // empty' "$MANIFEST")
+          if [ -z "$current" ] || [ -z "$repo" ]; then
+            echo "::notice::manifest missing version or source repo; skipping"
+            emit false "" ""; exit 0
+          fi
+
+          # Latest vX.Y.Z releases of the template source (public repo → no auth needed).
+          if ! tags=$(git ls-remote --tags "https://github.com/$repo" 'v[0-9]*' 2>/dev/null); then
+            echo "::warning::could not reach $repo to list releases; skipping (won't cry wolf)"
+            emit false "" ""; exit 0
+          fi
+          versions=$(printf '%s\n' "$tags" \
+            | sed -n 's#.*refs/tags/v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)$#\1#p' | sort -Vu)
+          latest=$(printf '%s\n' "$versions" | tail -1)
+          if [ -z "$latest" ]; then
+            echo "::notice::no vX.Y.Z releases found for $repo; skipping"
+            emit false "" ""; exit 0
+          fi
+
+          # Count releases strictly newer than the recorded version (version-aware compare).
+          behind_n=0
+          while IFS= read -r v; do
+            [ -z "$v" ] && continue
+            [ "$v" = "$current" ] && continue
+            newer=$(printf '%s\n%s\n' "$current" "$v" | sort -V | tail -1)
+            [ "$newer" = "$v" ] && behind_n=$((behind_n + 1))
+          done <<< "$versions"
+
+          if [ "$behind_n" -eq 0 ]; then
+            echo "::notice::template current ($current, latest $latest)"
+            emit false "" ""; exit 0
+          fi
+
+          plural=""; [ "$behind_n" -ne 1 ] && plural="s"
+          title="📦 Template ${behind_n} release${plural} behind (${current} → ${latest})"
+          body=$(cat <<MSG
+          This project was scaffolded from template version **${current}** and is now
+          **${behind_n} release${plural} behind** the latest, **${latest}**.
+
+          Upgrade re-runs \`copier update\` against the newer template with AI conflict
+          resolution — from inside the project:
+
+          \`\`\`
+          /wellforge:upgrade
+          \`\`\`
+
+          This issue is **updated in place** each run and **closes automatically** once the
+          project reaches the latest release. Surface only — the upgrade is never run for you.
+          MSG
+          )
+          echo "::notice::$title"
+          emit true "$title" "$body"
+
+  report:
+    name: file / update the drift issue
+    needs: check
+    if: always()
+    uses: ./.github/workflows/heartbeat-report.yml
+    permissions:
+      contents: read
+      issues: write
+    with:
+      failed: ${{ needs.check.outputs.behind == 'true' }}
+      issue-label: template-drift
+      issue-title: ${{ needs.check.outputs.title || '📦 Template drift' }}
+      body: ${{ needs.check.outputs.body }}
+      run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

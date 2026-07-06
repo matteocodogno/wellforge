@@ -81,15 +81,18 @@ logic is duplicated — then calls `heartbeat-report.yml`.
 
 | Path | What |
 |---|---|
-| `/.github/workflows/heartbeat-report.yml` | given the check jobs' pass/fail, manages **one deduplicated tracking issue** (label `heartbeat`): opens it on first failure, **updates it in place** each failing run (never a new issue per cycle), and closes it with a comment when the heartbeat goes green. Needs `issues: write` (the caller declares it) |
+| `/.github/workflows/heartbeat-report.yml` | given a pass/fail (and an optional `body` + `issue-label`), manages **one deduplicated tracking issue**: opens on first failure, **updates it in place** each failing run (never a new issue per cycle), closes it with a comment when it clears. Generic — reused by both the gate and template-drift heartbeats. Needs `issues: write` (the caller declares it) |
+| `/.github/workflows/template-drift.yml` | the **template-drift heartbeat** (Phase 14b, Pillar 6): reads `.forge/manifest.json`, resolves the latest `vX.Y.Z` release of the template source, and if the project is behind files a separate deduplicated "N releases behind → `/wellforge:upgrade`" issue (label `template-drift`) via `heartbeat-report.yml`; closes it when the project catches up |
 
-- **Surface, never auto-ship** (loop-engineering principle): the heartbeat only files/updates
-  an issue — it never merges, deploys, or self-approves. A human triages.
-- **Dedup is the point.** A nightly/weekly job that opened a fresh issue each run would train
-  people to ignore it; the single-issue-updated-in-place model keeps signal high.
-- **Off for `spike`** — a spike has no enforced gates to watch (rigor-tiers skill).
-- Ships in the gate series (`heartbeat-report.yml` lands at `gates-v6`); consumers pin
-  `@gates-v*` like every other gate.
+- **Surface, never auto-ship** (loop-engineering principle): a heartbeat only files/updates an
+  issue — it never merges, deploys, upgrades, or self-approves. A human triages.
+- **Dedup is the point.** A weekly job that opened a fresh issue each run would train people to
+  ignore it; one-issue-updated-in-place (per concern label) keeps signal high.
+- **Off for `spike`** — a spike has no enforced gates or lifecycle guarantees to watch (rigor-tiers skill).
+- Ships in the gate series (`heartbeat-report.yml` v1 landed at `gates-v6`; the `body` input +
+  `template-drift.yml` land at **`gates-v7`**); consumers pin `@gates-v*` like every other gate.
+- The **agentic** heartbeats (fleet, spec-health) live outside CI — see the `heartbeat` skill,
+  `scripts/fleet-triage.sh`, and `/wellforge:triage`.
 
 ## Brownfield ratchet (adopted projects)
 

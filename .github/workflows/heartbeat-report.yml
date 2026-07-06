@@ -28,6 +28,13 @@ on:
         required: false
         type: string
         default: heartbeat
+      body:
+        description: >
+          issue body when failing. Empty = the default gate-findings text. Other heartbeats
+          (e.g. template-drift) pass their own message so this workflow stays generic.
+        required: false
+        type: string
+        default: ""
       run-url:
         description: link back to the scheduled run that produced the finding
         required: false
@@ -50,6 +57,7 @@ jobs:
           FAILED: ${{ inputs.failed }}
           TITLE: ${{ inputs.issue-title }}
           LABEL: ${{ inputs.issue-label }}
+          BODY: ${{ inputs.body }}
           RUN_URL: ${{ inputs.run-url }}
         with:
           script: |
@@ -68,7 +76,8 @@ jobs:
             const existing = open.find(i => !i.pull_request);
 
             if (failed) {
-              const body = [
+              const customBody = process.env.BODY || '';
+              const body = customBody.trim() ? customBody : [
                 'The scheduled **heartbeat** run found failing gate checks — a dependency/CVE',
                 'audit, SAST scan, or coverage check did not pass on the default branch.',
                 '',
