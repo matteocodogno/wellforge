@@ -1,0 +1,102 @@
+# Reusable heartbeat reporter — opens / updates / closes ONE deduplicated tracking issue
+# for scheduled "heartbeat" gate findings (WellForge Phase 14a). A scheduled run has no PR
+# to annotate, so findings would otherwise be invisible; this surfaces them as a single
+# issue that is updated in place (never a new issue per run — noise is the failure mode).
+# Called by a generated project's heartbeat.yml:
+#   report:
+#     needs: [backend, frontend]
+#     if: always()
+#     uses: matteocodogno/wellforge/.github/workflows/heartbeat-report.yml@gates-v6
+#     with:
+#       failed: ${{ contains(needs.*.result, 'failure') }}
+name: heartbeat-report
+
+on:
+  workflow_call:
+    inputs:
+      failed:
+        description: true when any heartbeat check job failed or was cancelled
+        required: true
+        type: boolean
+      issue-title:
+        description: title used when opening the tracking issue
+        required: false
+        type: string
+        default: "🩺 Heartbeat: scheduled gate findings"
+      issue-label:
+        description: label that identifies the single tracking issue (dedup key)
+        required: false
+        type: string
+        default: heartbeat
+      run-url:
+        description: link back to the scheduled run that produced the finding
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  report:
+    name: triage findings → tracking issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open / update / close the tracking issue
+        uses: actions/github-script@v7
+        env:
+          # Pass inputs via env (never interpolate into the script body — injection-safe).
+          FAILED: ${{ inputs.failed }}
+          TITLE: ${{ inputs.issue-title }}
+          LABEL: ${{ inputs.issue-label }}
+          RUN_URL: ${{ inputs.run-url }}
+        with:
+          script: |
+            const failed = process.env.FAILED === 'true';
+            const title = process.env.TITLE;
+            const label = process.env.LABEL;
+            const runUrl = process.env.RUN_URL || '(run url unavailable)';
+            const { owner, repo } = context.repo;
+            const stamp = new Date().toISOString();
+
+            // Dedup key: one OPEN issue carrying `label`. GitHub auto-creates the label on
+            // first `create` — no separate ensure-label step needed.
+            const open = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', labels: label, per_page: 100,
+            });
+            const existing = open.find(i => !i.pull_request);
+
+            if (failed) {
+              const body = [
+                'The scheduled **heartbeat** run found failing gate checks — a dependency/CVE',
+                'audit, SAST scan, or coverage check did not pass on the default branch.',
+                '',
+                `- Latest run: ${runUrl}`,
+                `- Last checked: ${stamp}`,
+                '',
+                'This issue is **updated in place** on each run — it will not open a new issue',
+                'every cycle. Triage the run, fix or explicitly accept each finding, then close',
+                'this issue; the next clean heartbeat confirms it stays closed.',
+              ].join('\n');
+              if (existing) {
+                await github.rest.issues.update({ owner, repo, issue_number: existing.number, body });
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: existing.number,
+                  body: `🔴 Still failing as of ${stamp} — ${runUrl}`,
+                });
+                core.notice(`Updated heartbeat issue #${existing.number}`);
+              } else {
+                const created = await github.rest.issues.create({ owner, repo, title, body, labels: [label] });
+                core.notice(`Opened heartbeat issue #${created.data.number}`);
+              }
+            } else if (existing) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existing.number,
+                body: `✅ Heartbeat green again as of ${stamp} — ${runUrl}. Closing.`,
+              });
+              await github.rest.issues.update({ owner, repo, issue_number: existing.number, state: 'closed' });
+              core.notice(`Closed heartbeat issue #${existing.number}`);
+            } else {
+              core.info('Heartbeat green and no open tracking issue — nothing to do.');
+            }

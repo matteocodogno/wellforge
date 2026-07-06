@@ -30,6 +30,7 @@ fail their own gate); the skip is printed as a CI notice, never silent.
 | `/.github/workflows/quality-jvm.yml` | reusable JVM gate (same interface) |
 | `configs/semgrep/wellforge.yml` | org-specific SAST rules (secrets, println, debugger) |
 | `scripts/check-jacoco.py` | JaCoCo threshold enforcement (tested: pass/fail/floor) |
+| `/.github/workflows/heartbeat-report.yml` | reusable heartbeat reporter (`workflow_call`) — dedup-issue manager (see below) |
 
 ## Eval gate (LM-judge — opt-in)
 
@@ -66,6 +67,29 @@ Commit messages must follow [Conventional Commits](https://www.conventionalcommi
 Types: `feat fix docs style refactor perf test build ci chore revert`. Merge/revert/
 fixup/squash commits are exempt. The WellForge dev agents already commit in this format;
 this gate enforces it for everyone (humans included — it would have caught a stray `harden:`).
+
+## Scheduled heartbeat (opt-in, Phase 14a)
+
+PR-time gates only run when someone pushes. But two findings change *without* a commit:
+CVEs **newly disclosed** against already-merged dependencies (the advisory DB moves on its
+own), and updated **SAST** rules. The heartbeat catches those on a cadence.
+
+A scaffold generated with `heartbeat: true` (default; `ci == github`, `rigor != spike`) ships
+`.github/workflows/heartbeat.yml`: a `schedule`d (default weekly, `heartbeat_cron`) +
+`workflow_dispatch` caller that **re-uses the same `quality-<stack>.yml` gates** — no gate
+logic is duplicated — then calls `heartbeat-report.yml`.
+
+| Path | What |
+|---|---|
+| `/.github/workflows/heartbeat-report.yml` | given the check jobs' pass/fail, manages **one deduplicated tracking issue** (label `heartbeat`): opens it on first failure, **updates it in place** each failing run (never a new issue per cycle), and closes it with a comment when the heartbeat goes green. Needs `issues: write` (the caller declares it) |
+
+- **Surface, never auto-ship** (loop-engineering principle): the heartbeat only files/updates
+  an issue — it never merges, deploys, or self-approves. A human triages.
+- **Dedup is the point.** A nightly/weekly job that opened a fresh issue each run would train
+  people to ignore it; the single-issue-updated-in-place model keeps signal high.
+- **Off for `spike`** — a spike has no enforced gates to watch (rigor-tiers skill).
+- Ships in the gate series (`heartbeat-report.yml` lands at `gates-v6`); consumers pin
+  `@gates-v*` like every other gate.
 
 ## Brownfield ratchet (adopted projects)
 
