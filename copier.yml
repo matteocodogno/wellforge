@@ -76,7 +76,21 @@ gates_repo:
 gates_ref:
   type: str
   help: Tag pinning the gate workflows in generated CI
-  default: gates-v5
+  default: gates-v6
+
+heartbeat:
+  type: bool
+  help: >-
+    Scheduled "heartbeat": re-run the quality gate on a cadence (default weekly) to catch
+    CVEs newly disclosed against already-merged code and SAST-rule drift, filing findings
+    into one deduplicated tracking issue. Takes effect only for ci=github and rigor != spike
+    (a spike has no enforced gates to watch); recorded in .forge/manifest.json.
+  default: true
+
+heartbeat_cron:
+  type: str
+  help: Cron schedule (UTC) for the heartbeat. Default weekly — Mondays 06:00.
+  default: "0 6 * * 1"
 
 # NOTE: no "generated date" question/field. Hidden (when: false) answers are NOT
 # persisted to .copier-answers.yml, so any value injected at copy time (like a date)

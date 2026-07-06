@@ -341,7 +341,7 @@ and a fleet-drift triage agent that notices when a project falls behind the late
 The article's automations component; drafted below as **Phase 14** (starts after the Phase 7
 pilot proves the core loop).
 
-## Phase 14 — Loop engineering: heartbeat automations (drafted 2026-07-06, not started)
+## Phase 14 — Loop engineering: heartbeat automations (drafted 2026-07-06; 14a built 2026-07-06)
 
 Goal: close the last of the five "loop engineering" components — **automations (the heartbeat)**:
 scheduled tasks that do discovery + triage on a cadence and **surface work for a human**, instead
@@ -359,13 +359,23 @@ are tracked debt, a human decides.
 Two vehicles, matching the architecture table — deterministic checks as GitHub Actions, judgment
 as scheduled agents:
 
-- ☐ **Scheduled gate heartbeat** (Pillar 5, deterministic → GitHub Actions). Reusable
-  `.github/workflows/heartbeat-*.yml` with `on: schedule`, reusing the existing gate thresholds
-  pinned `gates-v*` (referenced, not copied — the established model): a dependency/CVE audit
-  (catches CVEs *newly disclosed* against already-merged code, which PR-time gates can't), SAST
-  drift (semgrep), and a coverage-regression watch. Findings → a **single deduplicated** tracking
-  issue (update, don't re-open nightly — noise is the failure mode). Opt-in per project via a
-  copier answer (`heartbeat` + cadence) recorded in the manifest; off for `spike`.
+- ☑ **14a — Scheduled gate heartbeat** (Pillar 5, deterministic → GitHub Actions, built
+  2026-07-06). The scheduled caller **re-uses the existing `quality-<stack>.yml` gates directly**
+  (zero gate-logic duplication) — so it runs the full dependency/CVE audit + SAST + coverage on a
+  cadence — and adds ONE new reusable workflow, `heartbeat-report.yml`, that manages a **single
+  deduplicated tracking issue**: opens on first failure, updates in place each failing run (never a
+  new issue per cycle), closes with a comment when green. Opt-in via copier answers `heartbeat`
+  (default true) + `heartbeat_cron` (default `0 6 * * 1`, weekly), recorded in the manifest;
+  generated only for `ci == github` AND `rigor != spike` (copier `{% if %}` filename idiom).
+  Files: reusable `.github/workflows/heartbeat-report.yml`; `heartbeat.yml.jinja` in both presets;
+  copier answers + `gates_ref` default `gates-v5 → gates-v6`; manifest + CONTRACT + gates/README +
+  preset README. Verified: renders for spring (backend JVM) and hono (backend Node) defaults,
+  correctly **absent** for `rigor=spike`; all three workflow files are valid YAML. **Pending
+  release**: the reusable `heartbeat-report.yml` only resolves once **`gates-v6` is tagged** — a
+  generated project's `@gates-v6` ref 404s until then. Full E2E (a scheduled run opens/updates the
+  issue) needs the tag + a real repo → pairs with the Phase 7 pilot. Chose "all three checks +
+  weekly" per user; coverage runs too since reusing the whole gate is more DRY than a bespoke
+  subset.
 - ☐ **Template-drift heartbeat** (Pillar 6 — the WellForge-native standout). Scheduled job reads
   `.forge/manifest.json`, compares `template`+`version` against the latest `vX.Y.Z` tag of the
   source template, and opens/updates an issue *"N versions behind → `/wellforge:upgrade`"* with the
@@ -387,14 +397,15 @@ as scheduled agents:
 Sequencing inside the phase: ship the **deterministic GitHub Actions heartbeats first** (cheap,
 high-value, no token cost — gate + template-drift), prove they're low-noise on the pilot project,
 then add the **agentic** fleet/spec-health triage. Don't build the agent layer until the
-deterministic layer has earned trust.
+deterministic layer has earned trust. **Status: 14a (scheduled gate heartbeat) built; 14b
+(template-drift, fleet, spec-health, `heartbeat` skill) remain.**
 
-Honest status: **planned, not started.** Open questions to resolve during the phase — Claude Code
-scheduled agents (routines) are the vehicle for the agentic heartbeats, and interactively-
-authenticated MCP servers (e.g. github) may be absent in headless/cron runs, so the agent layer
-must degrade to `gh`/API auth; and cadence/threshold defaults need the Phase 7 pilot's real
-signal before they're baked into a preset. Candidate to split into 14a (GH Actions) / 14b (agents)
-if 14a alone covers most of the value.
+Honest status: **14a built, pending the `gates-v6` release; 14b not started.** Open questions for
+14b — Claude Code scheduled agents (routines) are the vehicle for the agentic heartbeats, and
+interactively-authenticated MCP servers (e.g. github) may be absent in headless/cron runs, so the
+agent layer must degrade to `gh`/API auth; and cadence/threshold defaults need the Phase 7 pilot's
+real signal before they're baked into a preset. The 14a/14b split is confirmed; 14b proceeds only
+if the pilot shows 14a's deterministic layer doesn't already cover most of the value.
 
 ## Order & dependencies
 

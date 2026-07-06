@@ -29,8 +29,11 @@ Or via the plugin: `/wellforge:new` fills the common questions automatically.
 | `project_slug` | str | derived | kebab-case dir + artifact name |
 | `description` | str | — | one line |
 | `ci` | choice | `github` | `github` / `none` |
+| `rigor` | choice | `production` | `production` / `mvp` / `spike` — CI strictness (rigor-tiers skill) |
 | `gates_repo` | str | `matteocodogno/wellforge` | owner/repo hosting gate workflows |
-| `gates_ref` | str | `gates-v0` | tag pinned in generated CI |
+| `gates_ref` | str | `gates-v6` | tag pinned in generated CI |
+| `heartbeat` | bool | `true` | scheduled gate heartbeat → one deduplicated issue (`ci=github`, `rigor≠spike`) |
+| `heartbeat_cron` | str | `0 6 * * 1` | heartbeat schedule (weekly, Mon 06:00 UTC) |
 | `base_package` | str | `com.example.<slug>` | root Kotlin/Java package |
 | `db` | choice | `postgres` | `postgres` / `none` |
 

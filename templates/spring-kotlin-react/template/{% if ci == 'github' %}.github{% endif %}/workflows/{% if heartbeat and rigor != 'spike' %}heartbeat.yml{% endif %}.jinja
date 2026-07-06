@@ -1,0 +1,38 @@
+name: heartbeat
+
+# Scheduled "heartbeat" (WellForge Phase 14a) — re-runs the stack quality gate on a cadence
+# to catch what PR-time gates cannot: CVEs newly disclosed against already-merged code (the
+# advisory DB moves without a commit) and updated SAST rules. Findings are triaged into ONE
+# deduplicated tracking issue by the reusable heartbeat-report workflow.
+{% raw %}on:
+  schedule:
+    - cron: "{% endraw %}{{ heartbeat_cron }}{% raw %}"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+{% endraw %}
+jobs:
+  backend:
+    name: backend (JVM)
+    uses: {{ gates_repo }}/.github/workflows/quality-jvm.yml@{{ gates_ref }}
+    with:
+      working-directory: backend
+      rigor: {{ rigor }}
+
+  frontend:
+    name: frontend (Node)
+    uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
+    with:
+      working-directory: frontend
+      rigor: {{ rigor }}
+
+  report:
+    name: triage findings
+    needs: [backend, frontend]
+    if: always()
+    uses: {{ gates_repo }}/.github/workflows/heartbeat-report.yml@{{ gates_ref }}
+    with:
+      failed: {% raw %}${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+      run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}{% endraw %}
