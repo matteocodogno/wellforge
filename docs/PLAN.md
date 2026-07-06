@@ -338,7 +338,63 @@ Phase 7 pilot.
 
 Deferred (not built): scheduled "heartbeat" automations — `on: schedule` gate/dependency audits
 and a fleet-drift triage agent that notices when a project falls behind the latest template tag.
-The article's automations component; a candidate Phase 14 once the pilot proves the core loop.
+The article's automations component; drafted below as **Phase 14** (starts after the Phase 7
+pilot proves the core loop).
+
+## Phase 14 — Loop engineering: heartbeat automations (drafted 2026-07-06, not started)
+
+Goal: close the last of the five "loop engineering" components — **automations (the heartbeat)**:
+scheduled tasks that do discovery + triage on a cadence and **surface work for a human**, instead
+of everything being pull-only (a person typing `/wellforge:*`). Extends Pillar 5 (gates run on a
+schedule, not only at PR time) and Pillar 6 (a project/fleet *notices* it has drifted behind the
+template — today the upgrade machinery exists but nothing watches). Prereq: Phase 7 pilot, so we
+tune cadence/thresholds against a real project before automating noise.
+
+**North-star principle — surface, never auto-ship.** Every heartbeat opens/updates an issue,
+posts a digest, or drafts a *PR gated on human review*. None merges, deploys, or self-approves.
+This is the article's own warning ("stay the engineer") and WellForge's existing gate philosophy —
+a heartbeat is discovery + triage, not autonomous shipping. Same defer-don't-lower spine: findings
+are tracked debt, a human decides.
+
+Two vehicles, matching the architecture table — deterministic checks as GitHub Actions, judgment
+as scheduled agents:
+
+- ☐ **Scheduled gate heartbeat** (Pillar 5, deterministic → GitHub Actions). Reusable
+  `.github/workflows/heartbeat-*.yml` with `on: schedule`, reusing the existing gate thresholds
+  pinned `gates-v*` (referenced, not copied — the established model): a dependency/CVE audit
+  (catches CVEs *newly disclosed* against already-merged code, which PR-time gates can't), SAST
+  drift (semgrep), and a coverage-regression watch. Findings → a **single deduplicated** tracking
+  issue (update, don't re-open nightly — noise is the failure mode). Opt-in per project via a
+  copier answer (`heartbeat` + cadence) recorded in the manifest; off for `spike`.
+- ☐ **Template-drift heartbeat** (Pillar 6 — the WellForge-native standout). Scheduled job reads
+  `.forge/manifest.json`, compares `template`+`version` against the latest `vX.Y.Z` tag of the
+  source template, and opens/updates an issue *"N versions behind → `/wellforge:upgrade`"* with the
+  changelog delta. Stretch: auto-open a **draft** upgrade PR (AI conflict resolution via
+  `/wellforge:upgrade`), never auto-merged — the human reviews and lands it.
+- ☐ **Fleet heartbeat** (org-wide triage → scheduled agent). A Claude Code scheduled agent
+  (routine) wrapping `scripts/fleet-status.sh` across the org: triages drifted / failing-gate
+  projects into one rolling report (issue or Slack). Documented + opt-in, never a hard dependency.
+- ☐ **Spec-health heartbeat** (Pillar 3 — trajectory triage). A scheduled agent (also a manual
+  `/wellforge:triage`) reads `specs/` statuses + `.forge/runs/`: stale `in-progress` features,
+  unresolved drift, features that passed QE but never reached eval/`done`. Emits a digest — surfaces
+  what the pull-only flow lets rot.
+- ☐ **New `heartbeat` skill** — canonical conventions (like `observability`/`connections`): cadence,
+  the opt-in manifest flag, the **dedup rule**, the **surface-never-ship rule**, a token-cost bound
+  (cheap model for triage, escalate only on findings), and the run-trace format. Wiring: copier
+  answer + manifest field, a `connections` checklist for enabling the schedule + required secrets/
+  auth, and an observability extension for heartbeat traces.
+
+Sequencing inside the phase: ship the **deterministic GitHub Actions heartbeats first** (cheap,
+high-value, no token cost — gate + template-drift), prove they're low-noise on the pilot project,
+then add the **agentic** fleet/spec-health triage. Don't build the agent layer until the
+deterministic layer has earned trust.
+
+Honest status: **planned, not started.** Open questions to resolve during the phase — Claude Code
+scheduled agents (routines) are the vehicle for the agentic heartbeats, and interactively-
+authenticated MCP servers (e.g. github) may be absent in headless/cron runs, so the agent layer
+must degrade to `gh`/API auth; and cadence/threshold defaults need the Phase 7 pilot's real
+signal before they're baked into a preset. Candidate to split into 14a (GH Actions) / 14b (agents)
+if 14a alone covers most of the value.
 
 ## Order & dependencies
 
