@@ -161,6 +161,13 @@
   .play pre .arrow { color: var(--muted); }
   .play-note { max-width: 720px; margin: 2rem auto 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
   .play-note b { color: var(--text); }
+  .play-tip { max-width: 760px; margin: 2rem auto 0; background: var(--surface-2); border: 1px solid var(--border);
+    border-left: 3px solid var(--ember); border-radius: 10px; padding: 1.1rem 1.3rem; }
+  .play-tip p { color: var(--muted); font-size: 0.92rem; }
+  .play-tip b { color: var(--text); }
+  .play-tip pre { background: #0a0d12; border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 0.9rem;
+    margin-top: 0.75rem; overflow-x: auto; font-size: 0.8rem; color: #d7dee8; white-space: pre-wrap; line-height: 1.6; }
+  .play-tip pre .p { color: var(--purple); }
 
   /* Footer */
   footer { border-top: 1px solid var(--border); padding: 2.5rem 0; color: var(--muted); font-size: 0.9rem; text-align: center; }
@@ -424,6 +431,15 @@
 <span class="p">/wellforge:promote</span>  <span class="c"># graduate a rigor tier</span></pre>
         </div>
 
+      </div>
+      <div class="play-tip">
+        <p><b>Iterating? Re-run the command — agent commands are one-shot, not a mode.</b>
+        <span class="mono">/wellforge:orchestrate</span> and <span class="mono">:implement</span> drive
+        the agent loop (QE → dev → QE) for that single invocation; plain follow-up messages only steer
+        the main loop. To keep the team working after a partial fix, re-invoke with the remaining
+        broken behavior:</p>
+<pre><span class="p">/wellforge:orchestrate</span> "the reset fix is incomplete — it works
+for email users but SSO users still get no token"</pre>
       </div>
       <p class="play-note">Not sure which fits? <b>/wellforge:orchestrate</b> classifies any goal —
       feature, bugfix, refactor or infra — and runs the matching pipeline.</p>

@@ -114,6 +114,20 @@ Rules worth knowing on day one:
 | template released a new version | `/wellforge:upgrade` — diff explained, conflicts resolved with you, gates re-run, one revertable commit |
 | check the fleet | `scripts/fleet-status.sh <github-org>` (from the wellforge repo) |
 
+### Iterating an agent command
+
+Agent commands are **one-shot, not a mode.** `/wellforge:orchestrate` and
+`/wellforge:implement` run the agent loop (QE → dev → QE) for that single invocation — plain
+follow-up messages only drive the main loop, so the agent team won't re-engage on its own. To
+keep iterating after a partial fix, **re-run the command** with the *remaining* broken behavior:
+
+```
+/wellforge:orchestrate "the reset fix is incomplete — it works for email users but SSO users still get no token"
+```
+
+For a fix that needs several rounds, scope it as a feature (`spec → plan → tasks`) so
+`/wellforge:implement <feature> <tasks>` can iterate task-by-task against a persistent `tasks.md`.
+
 ## Troubleshooting
 
 | Symptom | Fix |

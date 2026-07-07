@@ -106,6 +106,18 @@ calling session.
 - **refactor** — architect mini-plan with explicit behavior invariants → gate → tasks → QE
 - **infra** — devops, with a gate before prod-like changes
 
+Agent commands are **one-shot, not a sticky mode.** Each `/wellforge:orchestrate` (or
+`/wellforge:implement`) invocation runs the pipeline once; plain follow-up messages only drive
+the main loop. To keep iterating through the agent team — e.g. after a partial bug fix —
+re-invoke the command with the remaining broken behavior:
+
+```
+/wellforge:orchestrate "the reset fix is incomplete — it works for email users but SSO users still get no token"
+```
+
+For multi-round work, scope it as a feature so `/wellforge:implement <feature> <tasks>` can
+iterate task-by-task against a persistent `tasks.md`.
+
 Mechanics that make it reliable:
 - **Disk-based handoffs**: every stage's artifact is verified on disk before the next
   stage starts; agents receive file paths, not chat summaries — survives context
