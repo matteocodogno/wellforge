@@ -98,9 +98,11 @@ Copilot variant (`/wellforge:x`→`/wf-x`, `$ARGUMENTS`→`${input:args}`, bare 
    compile); non-destructive if one already exists.
 7. ☑ **README + PLAN** — `adapters/copilot/README.md` with the honest support-tier table and
    the two declared gaps.
-8. ☐ **Validate** — end-to-end generator run green (frontmatter YAML valid, 0 leftover
-   `/wellforge:` refs); **remaining:** manual VS Code smoke test that prompts / chat modes /
-   MCP load in a real session.
+8. ☑ **Validate** — end-to-end generator run green (frontmatter YAML valid, 0 leftover
+   `/wellforge:` refs); manual VS Code smoke test PASSED (all sections incl. prompts, chat
+   modes, glob-scoped instructions, MCP — see `adapters/copilot/SMOKE-TEST.md`).
+
+**Status: all 8 steps ☑ — the Copilot adapter is built and validated in VS Code.**
 
 ## Recommendation
 

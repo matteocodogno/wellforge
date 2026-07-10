@@ -266,4 +266,5 @@ The whole loop is E2E-tested: scaffold at v0.1.0 → template evolves → `copie
 - [Installation](INSTALLATION.md) — set up WellForge on your machine
 - [Quick start](QUICKSTART.md) — greenfield project in ~30 minutes
 - [PLAN.md](PLAN.md) — build phases, status, honest deviations
+- [Multi-tool support](MULTI-TOOL-SUPPORT.md) — run WellForge on OpenCode or GitHub Copilot (VS Code) via generated [adapters](../adapters/)
 - [Template contract](../templates/_shared/CONTRACT.md) · [Gates policy](../gates/README.md)

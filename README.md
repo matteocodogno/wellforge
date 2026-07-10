@@ -18,8 +18,8 @@
 
 ![template](https://img.shields.io/badge/template-v0.7.0-1f6feb)
 ![plugin](https://img.shields.io/badge/plugin-v2.22.0-8957e5)
-![gates](https://img.shields.io/badge/gates-gates--v5-2da44e)
-![works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode-111)
+![gates](https://img.shields.io/badge/gates-gates--v7-2da44e)
+![works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode%20%2B%20Copilot-111)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 > **WellForge turns a week of AI-infra setup into one command.** An open platform for
@@ -49,7 +49,7 @@ lifecycle that keeps your whole fleet upgradeable.
 WellForge is a plugin on top of an AI coding CLI, and it's opinionated about stack + platform.
 It fits best if you have:
 
-- **Claude Code** (or OpenCode) + model access — it's a plugin, not a standalone tool
+- **Claude Code**, **OpenCode**, or **GitHub Copilot** (VS Code, via a generated adapter) + model access — it's a plugin/adapter, not a standalone tool
 - **macOS or Linux** with Homebrew (Windows isn't supported yet)
 - **GitHub** — the quality gates are GitHub Actions; connections & releases assume `gh`
 - **Greenfield**: one of two stacks — **Spring-Kotlin + React** or **Hono + React**
@@ -126,10 +126,18 @@ Three layers, because no single mechanism covers everything:
 
 Fleet view across all your generated projects: [`scripts/fleet-status.sh`](scripts/fleet-status.sh).
 
+**Other AI tools:** the plugin is the source of truth; [`adapters/`](adapters/) *generates*
+tool-native files from it — [OpenCode](adapters/opencode/) (`.opencode/`) and
+[GitHub Copilot](adapters/copilot/) for VS Code (`.github/` prompts, chat modes, instructions
++ MCP, invoked as `/wf-*`). Copilot reaches the workflow + agents + skills + MCP; parallel
+multi-agent orchestration and local hooks are Claude Code / OpenCode-only (Copilot leans on CI
+gates + a generated `lefthook.yml`). See [multi-tool support](docs/MULTI-TOOL-SUPPORT.md).
+
 ## Status
 
 All 6 pillars built and E2E-tested, plus rigor tiers and release management. Works with
-**Claude Code and OpenCode**. Latest: template `v0.7.0`, gates `gates-v7`, plugin `2.22.0`.
+**Claude Code, OpenCode, and GitHub Copilot** (VS Code, via adapter). Latest: template
+`v0.7.0`, gates `gates-v7`, plugin `2.22.0`.
 Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/PLAN.md).
 
 Built for any team. **[MIT licensed](LICENSE).** Contributions: PRs to `templates/` and gate
