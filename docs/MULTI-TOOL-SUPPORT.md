@@ -48,8 +48,13 @@ adapters/
   claude-code/   the existing plugin (richest: subagents, 7 hooks, commands, MCP)   ← exists
   opencode/      generate .opencode/{agents,commands,skills}/ + plugin for hooks      ← near 1:1
   codex/         ~/.codex/skills + AGENTS.md + prompt files + config.toml MCP         ← workflow + skills
-  copilot/       .agents/skills (or .github/skills) + AGENTS.md + mcp-config.json     ← workflow + skills
+  copilot/       .github/{prompts,chatmodes,instructions} + wf-skills/ + .vscode/mcp.json ← BUILT (VS Code)
 ```
+
+> **Copilot adapter built** (VS Code, `adapters/copilot/`, see `docs/PLAN-copilot-adapter.md`).
+> It targets the VS Code Copilot customization surface — richer than the CLI sketched below —
+> reaching prompts + chat modes + skills + MCP, with a `lefthook.yml` git-hook fallback for the
+> hooks Copilot can't run. Honest gaps: no hook runtime, no parallel multi-agent orchestration.
 
 `wellforge setup` (or a new `wellforge install --tool <name>`) lays down the right adapter
 for the user's tool. The CLI already manages env per tool.

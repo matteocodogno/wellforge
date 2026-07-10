@@ -1,0 +1,66 @@
+# WellForge local quality gates — GitHub Copilot adapter.
+#
+# Copilot has NO hook runtime (unlike Claude Code / OpenCode), so the high-value LOCAL
+# WellForge hooks are ported to git hooks via lefthook (https://lefthook.dev). The DURABLE
+# enforcement is still the CI quality gates (.github/workflows/) — these are just the fast
+# local layer Copilot would otherwise lose. Install once:  lefthook install
+#
+# Port map (Claude Code hook -> git hook):
+#   pre-bash-guard  -> pre-commit secret-scan   (the .env/.pem/.key/secrets.yml floor;
+#                      the destructive-SHELL-command blocks have no commit-time analog —
+#                      they guarded an interactive shell, not committed content)
+#   post-lint       -> pre-commit lint-ts / lint-kotlin  (format + auto-fix staged files)
+#   stop-verify     -> pre-commit spec-drift  +  pre-push typecheck-ts / compile-kotlin
+#
+# Tune globs/commands per project (monorepo layout, ktlint runner, package manager).
+
+pre-commit:
+  parallel: true
+  commands:
+    # security floor — never commit secrets/credentials (all tiers, non-negotiable)
+    secret-scan:
+      glob: "*"
+      run: |
+        for f in {staged_files}; do
+          case "$f" in *.env.example|*.env.jinja) continue;; esac
+          if echo "$f" | grep -qE '\.(env|pem|key)([^A-Za-z0-9_]|$)|secrets\.ya?ml'; then
+            echo "BLOCKED: staged secret/protected file: $f"; exit 1
+          fi
+        done
+
+    # spec-driven drift rule — spec.md/plan.md changed without re-syncing tasks.md
+    spec-drift:
+      glob: "specs/*/{spec,plan}.md"
+      run: |
+        for f in {staged_files}; do
+          d=$(dirname "$f")
+          if [ -f "$d/tasks.md" ] && ! git diff --cached --name-only | grep -q "^$d/tasks.md$"; then
+            echo "$f changed but $d/tasks.md not re-synced. Run /wf-tasks to sync (drift rule)."
+            exit 1
+          fi
+        done
+
+    # post-lint — TypeScript / JS / styles / config
+    lint-ts:
+      glob: "*.{ts,tsx,js,jsx,css,json,yaml,yml}"
+      run: pnpm exec prettier --write {staged_files} && pnpm exec eslint --fix {staged_files}
+      stage_fixed: true
+
+    # post-lint — Kotlin (ktlint via the Maven plugin; formats project sources)
+    lint-kotlin:
+      glob: "*.{kt,kts}"
+      run: ./mvnw -q --no-transfer-progress com.github.gantsign.maven:ktlint-maven-plugin:format
+      stage_fixed: true
+
+pre-push:
+  parallel: true
+  commands:
+    # stop-verify — TypeScript compile check
+    typecheck-ts:
+      glob: "*.{ts,tsx}"
+      run: pnpm exec tsc --noEmit
+
+    # stop-verify — Kotlin/Maven compile check
+    compile-kotlin:
+      glob: "*.{kt,kts}"
+      run: ./mvnw -q --no-transfer-progress clean compile
