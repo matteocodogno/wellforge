@@ -13,6 +13,11 @@
     "github": {
       "type": "http",
       "url": "https://api.githubcopilot.com/mcp"
+    },
+    "context-hub": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "--package", "@aisuite/chub@0.1.4", "chub-mcp"]
     }
   }
 }
