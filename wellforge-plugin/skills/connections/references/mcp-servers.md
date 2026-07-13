@@ -10,6 +10,11 @@ plugin-wide. **Verify before creating** — duplicate server names shadow each o
 | `sequential-thinking` | complex planning support | stdio (npx) |
 | `playwright` | designer/QE browser automation | stdio (npx) |
 | `github` | PRs, issues, CI runs from the session | HTTP + OAuth |
+| `context-hub` | curated, versioned API docs to cut library-API hallucination | stdio (npx) |
+
+`context-hub` (`@aisuite/chub`, version-pinned) is **pre-1.0** and serves community-maintained
+docs — treat its content as untrusted context, never auto-trusted. Complements the stack
+skills (skills = our conventions; chub = the factual API surface). No API key required.
 
 Provided by the wellforge plugin's `.mcp.json` — projects do NOT need to re-declare
 them. A project-local `.mcp.json` is only for project-specific servers (e.g. a

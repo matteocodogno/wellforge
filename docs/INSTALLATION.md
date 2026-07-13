@@ -68,7 +68,7 @@ Inside a Claude Code session:
 | Check | Expect |
 |---|---|
 | `/plugin` | `wellforge` listed under Installed (v2.0+) |
-| `/mcp` | `sequential-thinking`, `playwright`, `github` connected (github triggers OAuth on first use) |
+| `/mcp` | `sequential-thinking`, `playwright`, `github`, `context-hub` connected (github triggers OAuth on first use) |
 | `/hooks` | 7 hooks listed |
 | type `/wellforge:` | completions for all 15 commands: `new`, `adopt`, `spec`, `plan`, `design`, `tasks`, `implement`, `orchestrate`, `eval`, `done`, `status`, `spike`, `promote`, `release`, `upgrade` |
 

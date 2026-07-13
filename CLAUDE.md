@@ -69,7 +69,7 @@ wellforge/
 │   │                         # pulumi-gcp-ts)
 │   ├── config/               # model-routing.yml + model-tiers.yml (tool-neutral tiers)
 │   ├── hooks/                # lifecycle hooks (incl. SubagentStop run-trace telemetry)
-│   └── .mcp.json             # sequential-thinking, playwright, github
+│   └── .mcp.json             # sequential-thinking, playwright, github, context-hub
 ├── templates/
 │   ├── _shared/CONTRACT.md   # binding contract: questions, required files, versioning
 │   ├── spring-kotlin-react/template/   # SB4 Kotlin + jOOQ + Liquibase / React TS Vite
