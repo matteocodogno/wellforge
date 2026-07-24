@@ -55,7 +55,7 @@ generated: 2026-07-23
     orchestrate/implement/spike run writes `terse: true` into its `.forge/runs/<id>.json`
     (AC-5.1 record half).
 
-- [ ] T7: Compute + surface terse-vs-control savings — refs: US-5 (AC-5.1 compute, AC-5.2) — deps: T6
+- [x] T7: Compute + surface terse-vs-control savings — refs: US-5 (AC-5.1 compute, AC-5.2) — deps: T6
   - touch: `wellforge-plugin/scripts/run-report.py`, `wellforge-plugin/commands/status.md`
   - `run-report.py --json` pairs a terse run to its non-terse control (output-token totals
     from `.events.jsonl`) and emits `output_tokens_saved` + `pct_saved`; `/wellforge:status`

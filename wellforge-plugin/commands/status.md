@@ -89,8 +89,22 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json [--feature <slug>]
 ```
 
 Per run it returns `command`, `result`, `agents`, `verdicts`, `input_tokens`,
-`output_tokens`, `est_cost_usd`, `drift_open`. Render each run as: the agent trajectory
-(`a → b → c`), the verdicts, and any open drift. **These are exact.**
+`output_tokens`, `est_cost_usd`, `drift_open`, `terse`. Render each run as: the agent
+trajectory (`a → b → c`), the verdicts, and any open drift. **These are exact.**
+
+**Terse savings (US-5 / AC-5.1, AC-5.2).** When a run's JSON has `terse: true` AND it also
+carries `output_tokens_saved` / `pct_saved` / `control_run_id` (run-report.py only adds these
+three when it found a comparable non-terse control run — see its `find_control` pairing
+heuristic), append one line for that run:
+
+```
+terse saved ~<output_tokens_saved> output tok (~<pct_saved>%) vs control <control_run_id>
+```
+
+**Omit the line entirely** when a terse run's entry lacks those fields (no control paired
+yet) — same omit-when-empty convention as the rest of this section; never print a
+placeholder or a "no control found" line. This is **subagent output only** (Risk R1 in the
+terse-mode plan) — never state or imply it measures the main loop's savings.
 
 **Cost/tokens — do NOT present them as real cost.** WellForge captures only a fraction of
 subagent tokens; it cannot see the main orchestrating loop or cache tokens, which dominate.

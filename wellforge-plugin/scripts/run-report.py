@@ -16,6 +16,7 @@ import glob
 import json
 import os
 import sys
+from datetime import datetime
 
 
 # Embedded fallback so cost ALWAYS computes — even without pyyaml or the config file.
@@ -105,6 +106,70 @@ def load_runs(runs_dir, feature):
     return runs
 
 
+def _parse_ts(ts):
+    """Parse a 'date -u +%FT%TZ' timestamp → datetime, or None if unparseable/absent."""
+    if not ts:
+        return None
+    try:
+        return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return None
+
+
+def find_control(run, all_runs):
+    """Pair a terse run to its non-terse control (US-5 / AC-5.1 compute half).
+
+    Pairing heuristic, in order:
+    1. **Explicit `control_run_id`** on the terse run — if it resolves to a known run in
+       `all_runs`, use it. This is the producer/author's own pairing and always wins.
+    2. **Fallback — nearest-in-time same feature+command.** Among all OTHER runs that share
+       this run's `feature` and `command` and are NOT themselves terse, pick the one whose
+       `started` timestamp is closest (absolute delta) to this run's `started`. Rationale:
+       runs of the same feature+command close together in time are the most comparable —
+       they're most likely to cover the same rough task set / codebase state, so the
+       output-token delta between them is attributable to terseness rather than to the
+       work itself having grown or shrunk. Ties are broken by `run_id` (stable, deterministic).
+       If the explicit id was set but does not resolve, we still fall back to this heuristic
+       rather than silently reporting no pairing.
+
+    Returns the control run dict, or None if no candidate exists either way.
+    """
+    control_id = run.get("control_run_id")
+    if control_id:
+        for cand in all_runs:
+            if cand.get("run_id") == control_id:
+                return cand
+        # explicit id set but not found in this runs dir — fall through to the heuristic
+
+    feature = run.get("feature")
+    command = run.get("command")
+    this_ts = _parse_ts(run.get("started"))
+
+    candidates = [
+        c for c in all_runs
+        if c is not run
+        and c.get("run_id") != run.get("run_id")
+        and not c.get("terse", False)
+        and c.get("feature") == feature
+        and c.get("command") == command
+    ]
+    if not candidates:
+        return None
+    if this_ts is None:
+        # No usable timestamp on the terse run itself — degrade to "most recent control"
+        # (still deterministic: sorted by run_id, which is timestamp-prefixed).
+        return sorted(candidates, key=lambda c: c.get("run_id", ""))[-1]
+
+    def delta(cand):
+        cand_ts = _parse_ts(cand.get("started"))
+        if cand_ts is None:
+            return float("inf")
+        return abs((cand_ts - this_ts).total_seconds())
+
+    candidates.sort(key=lambda c: (delta(c), c.get("run_id", "")))
+    return candidates[0]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs-dir", default=".forge/runs")
@@ -124,16 +189,39 @@ def main():
         print("no run traces found")
         return 0
 
+    # Pairing (control lookup) must search the FULL runs dir, not just the --feature-filtered
+    # subset, so a control run is never missed because of an unrelated CLI filter.
+    all_runs = runs if not args.feature else load_runs(args.runs_dir, "")
+
     report = []
     for r in runs:
         ti, to, cost, n = cost_in_window(events, r.get("started", ""), r.get("finished", ""), pricing)
         drift_open = [d for d in r.get("drift_events", []) if not d.get("resolved")]
-        report.append({
+        entry = {
             "run_id": r.get("run_id"), "command": r.get("command"), "feature": r.get("feature"),
             "result": r.get("result"), "agents": [a.get("agent") for a in r.get("agents", [])],
             "verdicts": r.get("verdicts", {}), "drift_open": len(drift_open),
             "input_tokens": ti, "output_tokens": to, "est_cost_usd": cost, "events": n,
-        })
+            "terse": bool(r.get("terse", False)),
+        }
+
+        # US-5 / AC-5.1 (compute half): a terse run gets paired with a non-terse control and
+        # the output-token delta is surfaced. Subagent output only (Risk R1) — never implies
+        # main-loop coverage. Only emitted when a control resolves AND the control window has
+        # a positive output-token total (dividing by a zero/undiscovered baseline is
+        # meaningless, so we omit rather than emit a bogus/undefined pct).
+        if entry["terse"]:
+            control = find_control(r, all_runs)
+            if control is not None:
+                c_ti, c_to, _, c_n = cost_in_window(
+                    events, control.get("started", ""), control.get("finished", ""), pricing
+                )
+                if c_to > 0:
+                    entry["control_run_id"] = control.get("run_id")
+                    entry["output_tokens_saved"] = c_to - to
+                    entry["pct_saved"] = round((c_to - to) / c_to * 100, 1)
+
+        report.append(entry)
 
     if args.json:
         print(json.dumps(report, indent=2))
@@ -146,6 +234,11 @@ def main():
         print(f"{x['run_id']}")
         print(f"    {x['command']} · {x['result']} · agents: {', '.join(x['agents'])}")
         print(f"    verdicts: {v} · {toks}{drift}")
+        if "output_tokens_saved" in x:
+            print(
+                f"    terse: saved ~{x['output_tokens_saved']} output tok "
+                f"(~{x['pct_saved']}%) vs control {x['control_run_id']} (subagent output only)"
+            )
     print(f"\n{len(report)} runs. Trajectory/verdicts/drift above are exact.")
     print("Tokens are PARTIAL — captured from subagent stops only; the main orchestrating")
     print("loop and cache tokens (which dominate cost) are NOT visible to WellForge.")
