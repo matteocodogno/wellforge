@@ -1,13 +1,21 @@
 ---
 description: Spike a goal fast — main-loop build from a one-paragraph brief, advisory gates, no agents, no approval (rigor tier: spike)
-argument-hint: <goal — what to prototype / which feasibility question to answer>
+argument-hint: <goal — what to prototype / which feasibility question to answer> [--no-terse]
 ---
 
 Build a **spike**: the fastest WellForge path, for feasibility / PoC / business-model
 experiments that may be thrown away. Load the **rigor-tiers** skill now — this command IS
-the `spike` tier. Resolved tier: **spike** (invocation).
+the `spike` tier. Resolved tier: **spike** (invocation). Load the **terse** skill now — its
+activation matrix defaults terse mode **ON** for this command.
 
 Goal: $ARGUMENTS
+
+## Step 0 — Resolve terse
+
+Terse is **ON by default** for spike (terse skill activation matrix — no flag required). If
+`--no-terse` appears in `$ARGUMENTS`, resolve terse **OFF** for this run instead, and strip
+the token before using the rest of `$ARGUMENTS` as the goal/brief text. State the resolved
+terse state up front, next to the tier line above.
 
 ## What spike means here
 
@@ -16,6 +24,14 @@ Goal: $ARGUMENTS
 - **Effort: minimal** (the spike tier cue, rigor-tiers skill) — apply it to yourself: take
   the shortest path that answers the question, no gold-plating or exhaustive edge-case work,
   leave `// SPIKE:` where you cut a corner. Bias hard to speed.
+- **Terse: ON by default** (the terse cue, **terse** skill) — apply it to yourself, exactly
+  like the effort cue above, unless Step 0 resolved it OFF: drop filler, preamble, and
+  restating the question from your conversational output; prefer fragments; substance only.
+  The terse skill's byte-identical invariant (code blocks, shell commands, file paths,
+  identifiers, error messages reproduced byte-for-byte) and its artifact exemption
+  (spec-driven/governance artifacts always stay full-contract) apply regardless of this
+  setting. This governs your conversational output for the whole run, including the Report
+  below — when Step 0 resolved terse OFF (`--no-terse`), report and narrate normally instead.
 - **No human approval gate.** You build, then the human reviews the result.
 - **Advisory gates** (lint/typecheck/build): run them, report failures, do NOT stop on them.
 - **The security floor still blocks** (see rigor-tiers): secret scan, no hardcoded creds,
