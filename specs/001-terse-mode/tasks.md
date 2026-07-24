@@ -10,10 +10,10 @@ generated: 2026-07-23
   - contains, mirroring the `rigor-tiers` skill: the **terse cue** directive text; the
     **byte-identical invariant** (never alter code/commands/paths/identifiers/errors); the
     **artifact-exemption list** (spec/plan/tasks/design/ADR/eval never terse); the
-    **activation matrix** (spike default-on, `--terse` flag, `/terse` toggle, off in
-    mvp/production); and `/terse` session semantics.
+    **activation matrix** (spike default-on, `--terse` flag, `/wellforge:terse` toggle, off in
+    mvp/production); and `/wellforge:terse` session semantics.
   - done when: SKILL.md exists with a heading for each of {Terse cue, Byte-identical
-    invariant, Artifact exemption, Activation matrix, /terse semantics} (verifiable by
+    invariant, Artifact exemption, Activation matrix, /wellforge:terse semantics} (verifiable by
     heading grep) and the skill is discoverable in Claude Code's skill list.
 
 - [x] T2: Parse `--terse`/`--no-terse` and prepend the terse cue per-agent in orchestrate + implement — refs: US-2 (AC-2.1, AC-2.2) — deps: T1
@@ -30,10 +30,10 @@ generated: 2026-07-23
   - done when: `/wellforge:spike` output is terse with no flag, and `--no-terse` restores
     normal verbosity (AC-1.1).
 
-- [x] T4: `/terse` main-loop toggle command — refs: US-2 (AC-2.3) — deps: T1
+- [x] T4: `/wellforge:terse` main-loop toggle command — refs: US-2 (AC-2.3) — deps: T1
   - touch: `wellforge-plugin/commands/terse.md` (new)
   - toggles session terse state and emits the resolved state ("Terse mode: ON/OFF").
-  - done when: running `/terse` on→off→on flips the emitted state and governs subsequent
+  - done when: running `/wellforge:terse` on→off→on flips the emitted state and governs subsequent
     output; command is discoverable in the command list (AC-2.3).
 
 - [x] T5: `/wellforge:terse-compress` — one-way compression with fact-preservation gate — refs: US-4 (AC-4.1, AC-4.2) — deps: T1

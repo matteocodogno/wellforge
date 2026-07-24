@@ -13,14 +13,14 @@ $ARGUMENTS
 
 1. **No persistent state store exists for the main loop.** Realize "session state" the
    WellForge way (same precedent as the effort cue): look back at this conversation for the
-   most recent `/terse` invocation and the state it declared.
-   - No prior `/terse` in this session → resolve to **ON**.
-   - Most recent `/terse` declared ON → resolve to **OFF**.
-   - Most recent `/terse` declared OFF → resolve to **ON**.
+   most recent `/wellforge:terse` invocation and the state it declared.
+   - No prior `/wellforge:terse` in this session → resolve to **ON**.
+   - Most recent `/wellforge:terse` declared ON → resolve to **OFF**.
+   - Most recent `/wellforge:terse` declared OFF → resolve to **ON**.
 
 2. **Emit the resolved state as a stated directive** — this line (and only this line, plus
    the note below) IS the mechanism; there is no config file or flag to set:
-   - Turning on: `Terse mode: ON — I will keep responses terse until you run /terse again.`
+   - Turning on: `Terse mode: ON — I will keep responses terse until you run /wellforge:terse again.`
    - Turning off: `Terse mode: OFF.`
 
 3. **From this point forward in the session:**
@@ -34,10 +34,10 @@ $ARGUMENTS
 
 ## Hard rules
 
-- No arguments are read from `$ARGUMENTS` — `/terse` only toggles; it never takes a mode.
+- No arguments are read from `$ARGUMENTS` — `/wellforge:terse` only toggles; it never takes a mode.
 - This governs **main-loop conversational output only** — it has no effect on
   `/wellforge:orchestrate --terse` / `/wellforge:implement --terse` (separate, per-invocation
   flags) or on `/wellforge:spike` (terse-by-default per the activation matrix). Those are
-  independent axes; running `/terse` does not flip them, and running them does not flip this.
+  independent axes; running `/wellforge:terse` does not flip them, and running them does not flip this.
 - Never let the toggle suppress or shorten a spec-driven/governance artifact — the artifact
   exemption in the terse skill always wins.

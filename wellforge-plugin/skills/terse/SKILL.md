@@ -3,10 +3,10 @@ name: terse
 description: >
   WellForge terse mode — the token-efficient conversational output cue, orthogonal to rigor
   tier. Use whenever running /wellforge:spike (terse by default), when /wellforge:orchestrate
-  or /wellforge:implement is given --terse/--no-terse, when the main-loop /terse toggle is
+  or /wellforge:implement is given --terse/--no-terse, when the main-loop /wellforge:terse toggle is
   invoked, or when deciding whether a piece of output should be compressed. Authoritative
   reference for the terse cue directive text, the byte-identical invariant, which artifacts
-  are exempt, the activation matrix, and /terse session semantics.
+  are exempt, the activation matrix, and /wellforge:terse session semantics.
 ---
 
 # Terse mode — token-efficient conversational output
@@ -76,21 +76,21 @@ Terse is resolved as a boolean per run/session, independent of rigor tier:
 | `/wellforge:spike` | **ON by default** | main loop self-applies the cue; `--no-terse` opts out |
 | `/wellforge:orchestrate` | `--terse` flag (**OFF by default**) | parsed/stripped in Step 0 — Resolve, alongside `--mode`; prepended per dispatched agent |
 | `/wellforge:implement` | `--terse` flag (**OFF by default**) | same Step 0 handling as orchestrate |
-| main loop | **`/terse` toggle** command | session-level directive, independent of any command flag |
+| main loop | **`/wellforge:terse` toggle** command | session-level directive, independent of any command flag |
 | `mvp` / `production` (no flag) | **OFF** | terse is never implied by tier alone outside spike |
 
 `--terse` / `--no-terse` is a separate axis from `--mode`/rigor tier — any tier can be run
 terse; spike merely defaults it on. A `--no-terse` flag on `/wellforge:spike` restores normal
 verbosity for that run.
 
-## /terse semantics
+## /wellforge:terse semantics
 
-`/terse` is a main-loop session toggle, not a one-shot flag — it has no arguments and flips
+`/wellforge:terse` is a main-loop session toggle, not a one-shot flag — it has no arguments and flips
 state on each invocation:
 
 ```
-/terse            → "Terse mode: ON until you run /terse again."
-/terse  (again)   → "Terse mode: OFF."
+/wellforge:terse            → "Terse mode: ON until you run /wellforge:terse again."
+/wellforge:terse  (again)   → "Terse mode: OFF."
 ```
 
 Because the plugin has no persistent main-loop state store, "session state" is realized the
