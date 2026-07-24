@@ -1,6 +1,6 @@
 ---
 description: Implement tasks of a feature from its approved tasks.md (dependency-aware, parallel, QE-verified)
-argument-hint: [feature] [tasks] [--mode mvp|production] — e.g. "001-user-auth", "user-auth T3,T5", "T2-T4", "next", "all"
+argument-hint: [feature] [tasks] [--mode mvp|production] [--terse|--no-terse] — e.g. "001-user-auth", "user-auth T3,T5", "T2-T4", "next", "all"
 ---
 
 Implement tasks from a feature's `tasks.md`, following the **spec-driven** skill
@@ -9,7 +9,7 @@ directly — for when spec/plan/tasks already exist and you just want code writt
 
 Arguments: $ARGUMENTS
 
-## Step 0 — Resolve the rigor tier
+## Step 0 — Resolve the rigor tier and terse mode
 
 Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > the feature's
 `rigor:` frontmatter > project default [`.forge/manifest.json` `rigor` if scaffolded, else
@@ -17,6 +17,13 @@ Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > th
 State it. `spike` is not an implement tier (spikes have no `tasks.md`) — if asked
 for `--mode spike`, treat it as `mvp`. The tier changes only **Step 4 (verify)** and the
 closing suggestion; dispatch is identical.
+
+Separately, load the **terse** skill and resolve terse mode — an **orthogonal axis from
+`--mode`**, not tied to any tier: read a `--terse` / `--no-terse` token from the args, default
+**OFF** (terse is off by default in both `mvp` and `production` for this command; only
+`/wellforge:spike` defaults it on, and spike has no `tasks.md` to implement). Strip the
+matched token from the args before resolving `[feature] [tasks]` from what remains. **State
+the resolved terse boolean.**
 
 ## Step 1 — Resolve the feature, then the selection
 
@@ -55,6 +62,9 @@ The argument is `[feature] [tasks]` — both optional, feature first.
   (infra/CI tasks). Each agent receives ONLY the spec dir path and its task ID(s) —
   it reads the ACs, contracts, and `done when:` itself — plus the resolved tier's **effort
   cue** (rigor-tiers skill: moderate for `mvp`, full for `production`), prepended to its task.
+  **When terse is resolved on** (Step 0), also prepend the terse cue (**terse** skill,
+  verbatim) to every dispatched agent's task, right beside the effort cue; when terse is
+  resolved off (the default), do not prepend it.
 - Order and dispatch by the DAG: run dependency-independent tasks **in one batch**;
   sequence only along `deps:` edges. A batch of **one** agent, or a fully sequential chain,
   runs in the **main working tree** — the agent checks its task's box in `tasks.md` on

@@ -1,6 +1,6 @@
 ---
 description: Orchestrate the full agent team on a goal (spec → plan → tasks → implementation → QE verdict)
-argument-hint: <goal> [--mode spike|mvp|production] — feature request, bug report, refactor, or infra change
+argument-hint: <goal> [--mode spike|mvp|production] [--terse|--no-terse] — feature request, bug report, refactor, or infra change
 ---
 
 Drive the WellForge agent team end-to-end on this goal, following the **spec-driven** skill
@@ -8,7 +8,7 @@ conventions (load that skill now).
 
 Goal: $ARGUMENTS
 
-## Step 0 — Resolve the rigor tier
+## Step 0 — Resolve the rigor tier and terse mode
 
 Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > the feature's
 `rigor:` frontmatter > project default [`.forge/manifest.json` `rigor` if scaffolded, else
@@ -16,12 +16,19 @@ Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > th
 where it came from before doing anything.** Strip the `--mode` token from the goal.
 
 - **`spike`** → do NOT run the pipeline below. Hand off to the `/wellforge:spike` procedure
-  (main loop, brief.md, no agents, advisory gates). Run that and stop.
+  (main loop, brief.md, no agents, advisory gates). Forward any `--terse`/`--no-terse` token
+  unchanged in that hand-off — spike resolves its own terse default itself. Run that and stop.
 - **`mvp`** → run the **mvp** pipeline (one gate, mid agents only, no architect/designer/eval).
 - **`production`** (default) → run the full **feature** pipeline as written.
 
 bugfix / refactor / infra flows below are tier-independent (always production-shaped) — a
 spike doesn't need orchestration, and infra/refactor carry their own gate by nature.
+
+Separately, load the **terse** skill and resolve terse mode — an **orthogonal axis from
+`--mode`**, not tied to any tier: read a `--terse` / `--no-terse` token from the goal, default
+**OFF** for the `mvp`/`production` pipelines below (terse is default-on only in the `spike`
+tier, handled by the hand-off above, not by this command). Strip the matched token from the
+goal before using the remainder. **State the resolved terse boolean** alongside the tier.
 
 ## Your role
 
@@ -44,6 +51,10 @@ ask the user anything and must never self-approve.
   not the full agent output.
 - **Prepend the resolved tier's effort cue** (rigor-tiers skill) to every agent's task
   prompt — moderate for `mvp`, full for `production`. It's plain text, not config.
+- **When terse is resolved on** (Step 0), also prepend the terse cue (**terse** skill,
+  verbatim — do not paraphrase) to every dispatched agent's task prompt, right beside the
+  effort cue. When terse is resolved off (the `mvp`/`production` default with no `--terse`
+  flag), do not prepend it at all.
 - **Parallel isolation.** Any implementation batch of **≥2 dependency-independent agents**
   runs with git-worktree isolation (Task/Agent tool `isolation: "worktree"`) — each agent
   commits its code on its own branch and does NOT touch `tasks.md`; you merge the reported
