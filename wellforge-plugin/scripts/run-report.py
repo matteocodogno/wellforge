@@ -213,7 +213,7 @@ def main():
         if entry["terse"]:
             control = find_control(r, all_runs)
             if control is not None:
-                c_ti, c_to, _, c_n = cost_in_window(
+                _, c_to, _, _ = cost_in_window(
                     events, control.get("started", ""), control.get("finished", ""), pricing
                 )
                 if c_to > 0:
