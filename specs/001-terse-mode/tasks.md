@@ -16,7 +16,7 @@ generated: 2026-07-23
     invariant, Artifact exemption, Activation matrix, /terse semantics} (verifiable by
     heading grep) and the skill is discoverable in Claude Code's skill list.
 
-- [ ] T2: Parse `--terse`/`--no-terse` and prepend the terse cue per-agent in orchestrate + implement — refs: US-2 (AC-2.1, AC-2.2) — deps: T1
+- [x] T2: Parse `--terse`/`--no-terse` and prepend the terse cue per-agent in orchestrate + implement — refs: US-2 (AC-2.1, AC-2.2) — deps: T1
   - touch: `wellforge-plugin/commands/orchestrate.md`, `wellforge-plugin/commands/implement.md`
   - parse+strip the flag in each "Step 0 — Resolve" block (orthogonal to `--mode`); when
     resolved on, prepend the terse cue to every dispatched agent's task, beside the effort cue;
@@ -24,19 +24,19 @@ generated: 2026-07-23
   - done when: a `--terse` dispatch shows the terse cue in dispatched agent prompts and a
     no-flag `mvp`/`production` dispatch does not (AC-2.1, AC-2.2).
 
-- [ ] T3: Spike self-applies terse by default (+ `--no-terse` opt-out) — refs: US-1 (AC-1.1) — deps: T1
+- [x] T3: Spike self-applies terse by default (+ `--no-terse` opt-out) — refs: US-1 (AC-1.1) — deps: T1
   - touch: `wellforge-plugin/commands/spike.md`
   - the spike main loop self-applies the terse cue by default; `--no-terse` disables it.
   - done when: `/wellforge:spike` output is terse with no flag, and `--no-terse` restores
     normal verbosity (AC-1.1).
 
-- [ ] T4: `/terse` main-loop toggle command — refs: US-2 (AC-2.3) — deps: T1
+- [x] T4: `/terse` main-loop toggle command — refs: US-2 (AC-2.3) — deps: T1
   - touch: `wellforge-plugin/commands/terse.md` (new)
   - toggles session terse state and emits the resolved state ("Terse mode: ON/OFF").
   - done when: running `/terse` on→off→on flips the emitted state and governs subsequent
     output; command is discoverable in the command list (AC-2.3).
 
-- [ ] T5: `/wellforge:terse-compress` — one-way compression with fact-preservation gate — refs: US-4 (AC-4.1, AC-4.2) — deps: T1
+- [x] T5: `/wellforge:terse-compress` — one-way compression with fact-preservation gate — refs: US-4 (AC-4.1, AC-4.2) — deps: T1
   - touch: `wellforge-plugin/commands/terse-compress.md` (new)
   - accepts a WellForge-owned target (`memory/*.md`, `AGENTS.md`, or our own
     skill/command/agent `description`); runs extract-facts → compress → re-extract →
