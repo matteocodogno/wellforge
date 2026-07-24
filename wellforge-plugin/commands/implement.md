@@ -151,8 +151,10 @@ start of this run and, now, write `.forge/runs/<run_id>.json` (schema `wellforge
 with every dispatched agent + outcome, any drift events (resolved or not), the QE verdict,
 and `result` (completed / escalated / partial). Record the isolation mode used and any
 collision events (per the observability skill's `worktree` / `collision_events` fields).
-One file per run; leave `tokens`/`cost` null (the SubagentStop hook + `run-report.py` fill
-cost). This is the audit trail.
+Set `terse` to the boolean resolved in Step 0 (`true` iff `--terse` resolved on for this
+run, `false` otherwise); leave `control_run_id` `null` (pairing to a control run is a later
+concern, not this command's). One file per run; leave `tokens`/`cost` null (the
+SubagentStop hook + `run-report.py` fill cost). This is the audit trail.
 
 ## Hard rules
 
