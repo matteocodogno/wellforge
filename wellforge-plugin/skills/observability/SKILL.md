@@ -59,7 +59,9 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   "verdicts": { "qe": "PASS", "eval": "PASS" },
   "result": "completed | escalated | partial",
   "tokens": null,
-  "cost_usd": null
+  "cost_usd": null,
+  "terse": false,
+  "control_run_id": null
 }
 ```
 
@@ -79,6 +81,18 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
 - **`rigor`** records the resolved tier for the run (`production`/`mvp`/`spike`, per the
   rigor-tiers skill). `spike` runs record `"agents": []` (main loop, no subagents).
   `promote` runs additionally record the tier transition: `"from": "<tier>", "to": "<tier>"`.
+- **`terse`** and **`control_run_id`** are **additive fields** (schema id stays
+  `wellforge-run/v1`; existing readers ignore unknown fields — no migration needed):
+  - `terse: boolean` — was this run dispatched with terse mode active (per the **terse**
+    skill's activation matrix: `--terse` resolved on for `orchestrate`/`implement`, or the
+    spike default unless `--no-terse`). Producers (`orchestrate`, `implement`, `spike`) set
+    this from their own resolved terse state when they write the trace; it's `false` for any
+    run where terse never applied (including runs from before this field existed — an absent
+    `terse` reads as `false`).
+  - `control_run_id: string | null` — optional: the `run_id` of the non-terse control run
+    this run is compared against for the terse-vs-control token measurement (US-5). Left
+    `null` by the producers above; pairing a terse run to its control is a later concern
+    (`run-report.py`), not something the producer command computes at write time.
 
 ## Producers (the commands)
 
@@ -86,7 +100,10 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
 `started`; dispatch agents as usual; at the END, write
 `.forge/runs/<run_id>.json` with every agent's outcome, drift events, and verdicts.
 Write it even on escalation/partial (`result` records that). One file per run; never
-overwrite a prior run.
+overwrite a prior run. `orchestrate`, `implement`, and `spike` additionally set `terse`
+from their own resolved terse boolean (Step 0 in each command) when they write this file;
+`control_run_id` stays `null` at write time (pairing is `run-report.py`'s job, not the
+producer's).
 
 ## Consumers
 

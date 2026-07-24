@@ -77,8 +77,10 @@ terse state up front, next to the tier line above.
 
 6. **Record the run (lightweight).** Per the **observability** skill, write
    `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`) with `command: spike`,
-   `rigor: spike`, no agents (`agents: []`), the advisory gate outcomes, and `result`. Leave
-   `tokens`/`cost` null.
+   `rigor: spike`, no agents (`agents: []`), the advisory gate outcomes, and `result`. Set
+   `terse` to the boolean resolved in Step 0 (`true` unless `--no-terse` was passed — spike
+   defaults terse ON); leave `control_run_id` `null` (pairing to a control run is a later
+   concern, not this command's). Leave `tokens`/`cost` null.
 
 ## Report
 

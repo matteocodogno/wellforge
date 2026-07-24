@@ -128,7 +128,10 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
     capturing the full pipeline — every agent + outcome, drift events, QE + eval verdicts,
     the isolation mode + any collision events (observability skill `worktree` /
     `collision_events`), `result`. Write it even when the pipeline escalates or stops early
-    (`result` records that). The audit trail.
+    (`result` records that). Set `terse` to the boolean resolved in Step 0 (`true` iff
+    `--terse` resolved on for this run, `false` otherwise); leave `control_run_id` `null`
+    (pairing a run to its control run is a later concern, not this command's). The audit
+    trail.
 
 ## Pipeline: mvp  (rigor tier `mvp` — collapsed, one gate, mid agents only)
 
