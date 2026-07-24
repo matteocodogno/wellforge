@@ -46,7 +46,7 @@ generated: 2026-07-23
     (no fact lost), a non-owned target is refused, and a fresh run consuming the compressed
     file behaves identically to the uncompressed baseline (AC-4.1, AC-4.2).
 
-- [ ] T6: Record terse state in the run trace — refs: US-5 (AC-5.1, record half) — deps: T2, T3
+- [x] T6: Record terse state in the run trace — refs: US-5 (AC-5.1, record half) — deps: T2, T3
   - touch: `wellforge-plugin/skills/observability/SKILL.md`, `wellforge-plugin/commands/orchestrate.md`,
     `wellforge-plugin/commands/implement.md`, `wellforge-plugin/commands/spike.md`
   - additive `terse: boolean` + `control_run_id: string|null` on the `wellforge-run/v1`
@@ -63,7 +63,7 @@ generated: 2026-07-23
   - done when: `run-report.py --json` reports the saved-token delta for a terse+control pair,
     and `/wellforge:status` shows it (present) / omits it (absent) (AC-5.1, AC-5.2).
 
-- [ ] T8: Verify output + artifact integrity under terse (LM-judge/QE) — refs: US-1 (AC-1.2), US-3 (AC-3.1, AC-3.2) — deps: T2, T3
+- [x] T8: Verify output + artifact integrity under terse (LM-judge/QE) — refs: US-1 (AC-1.2), US-3 (AC-3.1, AC-3.2) — deps: T2, T3
   - touch: `specs/001-terse-mode/` (verification fixture + notes), reuse the spec-driven
     format check + the eval rubric
   - done when: (a) code/command/path spans in terse output are byte-identical to a canonical
