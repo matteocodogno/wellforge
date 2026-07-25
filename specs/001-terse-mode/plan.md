@@ -184,7 +184,11 @@ agent-dispatched surfaces).
   potential spec refinement (drift) — flagged for the review below**, since spec AC-5.1 reads
   "a terse run" generically. Early check: confirm subagent output-token deltas are large
   enough that a ≥40% target is realistic on agent-dispatched runs before committing the
-  number.
+  number. **Resolved (T9, 2026-07-25):** the SubagentStop token layer proved a ~10–20×
+  undercount live (under-counted 4/6 sample runs, prompt-cache effects). Per accepted spec
+  amendment, the **authoritative** measure is **output length / `/usage`**; the run-trace
+  `terse`/`pct_saved` fields (T6/T7) are indicative-only. Median reduction = **40.2%** on the
+  output-length basis — see `measurement-t9.md`.
 - **R2 — third-party MCP tool descriptions are not editable.** The spec's US-4 names "MCP
   tool-description files," but MCP servers own their tool descriptions; WellForge cannot
   rewrite them from a file (there is no middleware layer, and adding a `caveman-shrink`-style

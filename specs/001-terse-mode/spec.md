@@ -32,9 +32,10 @@ _Decisions the user fixed during the interview — captured verbatim, not elabor
   path is in scope).
 - Main-loop activation is a **`/wellforge:terse` toggle** command.
 - Target output-token reduction: **≥ 40%**.
-- The measured token delta compares the terse run against a **measured non-terse control
-  run**, recorded in the **run-trace** (`.forge/runs/`, per the observability skill) and
-  surfaced to the user.
+- The measured delta compares the terse run against a **measured non-terse control run**.
+  _(Amendment, accepted 2026-07-25: the **authoritative** measure is **output length
+  (chars/words) and/or `/usage`** — the SubagentStop run-trace token layer proved a ~10–20×
+  undercount in practice (T9) and is kept only as an **indicative** signal, never the gate.)_
 - The security floor and the artifact format contracts are unaffected by terse mode.
 
 ## User stories
@@ -98,12 +99,16 @@ verifiable rather than assumed.
   work. _(Refinement, accepted 2026-07-21: the token telemetry only captures subagent
   output, not the main loop — so spike and `/wellforge:terse` main-loop savings are real but observable
   only via `/usage`, not the run-trace. The mechanical measure is scoped to agent-dispatched
-  surfaces.)_
+  surfaces.)_ _(Amendment, accepted 2026-07-25: authoritative measure = **output length /
+  `/usage`**; the run-trace token delta (T6/T7) is **indicative-only** — empirically a ~10–20×
+  undercount, see `measurement-t9.md`.)_
 - AC-5.2: Given completed terse runs, when I check status (or the designated stat surface),
   then the recorded token savings are shown.
-- AC-5.3: Given a sample of terse **agent-dispatched** runs, when their recorded savings are
-  aggregated, then the measured output-token reduction is **≥ 40%** versus the control runs.
-  _(Refinement, accepted 2026-07-21: measured on agent-dispatched surfaces per AC-5.1.)_
+- AC-5.3: Given a sample of terse **agent-dispatched** runs, when their **output reduction**
+  (measured by output length / `/usage` per AC-5.1) is aggregated, then the **median** reduction
+  is **≥ 40%** versus the control runs. _(Refinement, accepted 2026-07-21: measured on
+  agent-dispatched surfaces per AC-5.1.)_ _(Amendment, accepted 2026-07-25: median, on the
+  authoritative output-length measure; met at 40.2% median — see `measurement-t9.md`.)_
 
 ## Non-goals
 - Compressing contracted artifacts (spec/plan/tasks/design/ADR/eval) — always verbose (US-3).

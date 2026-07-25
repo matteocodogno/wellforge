@@ -71,12 +71,12 @@ generated: 2026-07-23
     spec-driven format (AC-3.1); (c) a fixture feature scored terse vs. baseline shows
     spec-fidelity & code-conventions eval scores within rubric variance (AC-3.2).
 
-- [ ] T9: Measure the ≥40% reduction on agent-dispatched runs — refs: US-5 (AC-5.3) — deps: T2, T7
-  - touch: `specs/001-terse-mode/` (measurement notes)
-  - run a sample of paired agent-dispatched terse/control runs; aggregate the recorded
-    output-token deltas.
-  - done when: median output-token reduction across the sample is **≥ 40%** versus the
-    control runs, recorded in the feature's measurement notes (AC-5.3).
+- [x] T9: Measure the ≥40% reduction on agent-dispatched runs — refs: US-5 (AC-5.3) — deps: T2, T7
+  - touch: `specs/001-terse-mode/measurement-t9.md`
+  - run a sample of paired agent-dispatched terse/control runs; aggregate the **output-length**
+    deltas (authoritative per the 2026-07-25 amendment; run-trace token layer proved unreliable).
+  - done when: median output reduction across the sample is **≥ 40%** versus the control
+    runs, recorded in the feature's measurement notes (AC-5.3). **Met: median 40.2%** (`measurement-t9.md`).
 
 - [ ] T10: Close the feature — refs: (closing) — deps: T4, T5, T8, T9
   - done when: all gates green (self-CI lint + advisory checks), every task above checked,
