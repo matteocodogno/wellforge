@@ -78,7 +78,7 @@ generated: 2026-07-23
   - done when: median output reduction across the sample is **≥ 40%** versus the control
     runs, recorded in the feature's measurement notes (AC-5.3). **Met: median 40.2%** (`measurement-t9.md`).
 
-- [ ] T11: Durable AC-4.1 fact-preservation test for /wellforge:terse-compress — refs: US-4 (AC-4.1) — deps: T5
+- [x] T11: Durable AC-4.1 fact-preservation test for /wellforge:terse-compress — refs: US-4 (AC-4.1) — deps: T5
   - touch: `specs/001-terse-mode/fixtures/t11/` (fixture memory file + compressed + fact-dropping negative control + runnable checker)
   - promote T5's scratchpad dry-run into a committed, deterministic test: a checker that
     asserts every atomic fact in the original is still present in the compressed form
@@ -87,7 +87,7 @@ generated: 2026-07-23
   - done when: the checker exits 0 on the good pair and non-zero on the fact-dropping control,
     committed under the feature (AC-4.1), added by the eval to lift test_quality.
 
-- [ ] T12: Durable AC-5.1 pairing test for run-report.py — refs: US-5 (AC-5.1) — deps: T7
+- [x] T12: Durable AC-5.1 pairing test for run-report.py — refs: US-5 (AC-5.1) — deps: T7
   - touch: `specs/001-terse-mode/fixtures/t12/` (terse + control + orphan trace fixtures + `.events.jsonl` + runnable test)
   - promote T7's scratchpad fixtures into a committed test that runs `run-report.py --json`
     against a fixture runs-dir and asserts `output_tokens_saved`/`pct_saved` for a terse+control
