@@ -1,0 +1,11 @@
+# T11 fixture — explicit atomic fact list for AC-4.1 fact-preservation checking.
+# One fact per line (blank lines and lines starting with # are ignored). Each
+# line must appear as a byte-identical substring of the target file for the
+# fact to count as "recovered". F1-F6 correspond to the numbered facts in
+# original.md. F4 is the one corrupted in compressed-BAD.md.
+40% output-token reduction target
+OFF by default in mvp and production unless --terse is passed
+TERSE_MODE_DEFAULT_TIER=spike
+mise run terse:check -- --min 0.40
+wellforge-plugin/skills/terse/SKILL.md
+AC-4.1 in `specs/001-terse-mode/spec.md`
