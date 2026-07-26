@@ -1,0 +1,5 @@
+{"ts": "2026-07-19T09:00:00Z", "event": "subagent_stop", "model": "claude-sonnet-4-5", "input_tokens": 999999, "output_tokens": 999999}
+{"ts": "2026-07-20T10:02:00Z", "event": "subagent_stop", "model": "claude-sonnet-4-5", "input_tokens": 2000, "output_tokens": 5000}
+{"ts": "2026-07-20T10:07:00Z", "event": "subagent_stop", "model": "claude-sonnet-4-5", "input_tokens": 1000, "output_tokens": 3000}
+{"ts": "2026-07-20T11:05:00Z", "event": "subagent_stop", "model": "claude-sonnet-4-5", "input_tokens": 800, "output_tokens": 4000}
+{"ts": "2026-07-20T12:03:00Z", "event": "subagent_stop", "model": "claude-sonnet-4-5", "input_tokens": 500, "output_tokens": 1000}

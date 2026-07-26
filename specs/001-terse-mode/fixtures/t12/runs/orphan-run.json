@@ -1,0 +1,19 @@
+{
+  "schema": "wellforge-run/v1",
+  "run_id": "2026-07-20T12-00-00Z-implement-999-orphan-feature",
+  "command": "implement",
+  "feature": "999-orphan-feature",
+  "rigor": "production",
+  "started": "2026-07-20T12:00:00Z",
+  "finished": "2026-07-20T12:10:00Z",
+  "agents": [
+    { "agent": "backend-dev", "tasks": ["T12-fixture-orphan"], "outcome": "completed", "commits": ["ccccccc"] }
+  ],
+  "drift_events": [],
+  "verdicts": { "qe": "PASS" },
+  "result": "completed",
+  "tokens": null,
+  "cost_usd": null,
+  "terse": true,
+  "control_run_id": null
+}
