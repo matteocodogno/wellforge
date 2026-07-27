@@ -29,6 +29,7 @@ fail their own gate); the skip is printed as a CI notice, never silent.
 | `/.github/workflows/quality-node.yml` | reusable Node/TS gate (`workflow_call`, input: `working-directory`) |
 | `/.github/workflows/quality-jvm.yml` | reusable JVM gate (same interface) |
 | `configs/semgrep/wellforge.yml` | org-specific SAST rules (secrets, println, debugger) |
+| `configs/gitleaks.toml` | security-floor gitleaks config: default rules + allowlist for 1Password `op://` references (pointers, not secrets). `security-floor.yml` passes it when present; point a local pre-commit gitleaks hook at it too |
 | `scripts/check-jacoco.py` | JaCoCo threshold enforcement (tested: pass/fail/floor) |
 | `/.github/workflows/heartbeat-report.yml` | reusable heartbeat reporter (`workflow_call`) — dedup-issue manager (see below) |
 

@@ -33,4 +33,8 @@ jobs:
           GL="${{ inputs.gitleaks-version }}"
           curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GL}/gitleaks_${GL}_linux_x64.tar.gz" -o gitleaks.tgz
           tar -xzf gitleaks.tgz gitleaks
-          ./gitleaks detect --source . --redact --no-banner
+          # Use WellForge's gitleaks config (default rules + op:// allowlist) when the caller
+          # ships it; fall back to pure defaults otherwise. Graceful for repos without it.
+          CFG=gates/configs/gitleaks.toml
+          CFGARG=""; [ -f "$CFG" ] && CFGARG="--config $CFG"
+          ./gitleaks detect --source . --redact --no-banner $CFGARG

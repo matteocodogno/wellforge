@@ -1,0 +1,22 @@
+# WellForge security-floor gitleaks configuration.
+#
+# Extends gitleaks' default ruleset (every built-in secret rule stays active) and adds a
+# global allowlist for 1Password `op://` secret REFERENCES — e.g. op://vault/item/field.
+# Those are runtime pointers resolved by the 1Password CLI/Connect at deploy time, NOT
+# secrets themselves, and they are the recommended secret-injection pattern — so a literal
+# op:// reference (incl. dummy ones in tests) must not trip the security floor.
+#
+# Wire in with `gitleaks detect --config gates/configs/gitleaks.toml ...` (the security-floor
+# workflow passes it when present; point a local pre-commit gitleaks hook at it too).
+# Changing the security floor is a gates/ PR — the deliberate discretion point.
+
+title = "WellForge security floor"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "1Password op:// secret references (runtime pointers, not secrets)"
+regexes = [
+  '''op://[A-Za-z0-9 ._%+-]+/[A-Za-z0-9 ._%+-]+(?:/[A-Za-z0-9 ._%+-]+)*''',
+]
