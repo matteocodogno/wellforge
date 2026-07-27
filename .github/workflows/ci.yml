@@ -83,3 +83,13 @@ jobs:
             if [ -e "/tmp/out/$f" ]; then echo "  OK  $f"; else echo "::error::missing $f"; fail=1; fi
           done
           exit $fail
+
+  # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
+  # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.
+  terse-mode-fixtures:
+    name: terse-mode fixtures (AC-1.2, AC-4.1, AC-5.1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Run terse-mode fixture regression suite
+        run: specs/001-terse-mode/fixtures/run-all.sh

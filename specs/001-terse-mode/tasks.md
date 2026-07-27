@@ -95,7 +95,7 @@ generated: 2026-07-23
   - done when: the test runs run-report.py on committed fixtures and asserts the delta + the
     omit case, exits 0, committed under the feature (AC-5.1).
 
-- [ ] T13: Reproducible test runner + CI wiring — refs: US-1 (AC-1.2), US-4 (AC-4.1), US-5 (AC-5.1) — deps: T8, T11, T12
+- [x] T13: Reproducible test runner + CI wiring — refs: US-1 (AC-1.2), US-4 (AC-4.1), US-5 (AC-5.1) — deps: T8, T11, T12
   - touch: `specs/001-terse-mode/fixtures/run-all.sh` (new), `.github/workflows/ci.yml`
   - a single runner that executes `t8/extract-spans.sh`, `t11/run-check.sh`, and
     `t12/test_run_report_pairing.py`, and exits non-zero if ANY fails; plus a CI step that
