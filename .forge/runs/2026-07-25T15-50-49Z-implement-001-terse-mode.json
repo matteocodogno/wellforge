@@ -1,0 +1,23 @@
+{
+  "schema": "wellforge-run/v1",
+  "run_id": "2026-07-25T15-50-49Z-implement-001-terse-mode",
+  "command": "implement",
+  "feature": "001-terse-mode",
+  "rigor": "production",
+  "terse": false,
+  "control_run_id": null,
+  "started": "2026-07-25T15:50:49Z",
+  "finished": "2026-07-25T16:10:49Z",
+  "agents": [
+    { "agent": "general-purpose", "tasks": ["T9-sample"], "outcome": "completed", "note": "6 paired terse/control measurement dispatches (C1,T1,C2,T2,C3,T3)" },
+    { "agent": "quality-engineer", "outcome": "PASS" }
+  ],
+  "drift_events": [
+    { "agent": "main-loop", "artifact": "spec.md", "summary": "AC-5.1/5.3 measurement instrument: run-trace SubagentStop token layer proved a ~10-20x undercount (under-counted 4/6 sample runs). Amended so authoritative measure = output length / /usage; run-trace token delta indicative-only. T9 met at 40.2% median on output-length basis.", "resolved": true }
+  ],
+  "collision_events": [],
+  "verdicts": { "qe": "PASS", "eval": null },
+  "result": "completed",
+  "tokens": null,
+  "cost_usd": null
+}

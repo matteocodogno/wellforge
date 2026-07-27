@@ -104,6 +104,6 @@ generated: 2026-07-23
   - done when: `run-all.sh` runs all three and exits 0 (non-zero on any failure), and
     `.github/workflows/ci.yml` has a valid step that invokes it.
 
-- [ ] T10: Close the feature — refs: (closing) — deps: T4, T5, T8, T9, T11, T12, T13
+- [x] T10: Close the feature — refs: (closing) — deps: T4, T5, T8, T9, T11, T12, T13
   - done when: all gates green (self-CI lint + advisory checks), every task above checked,
     a fresh `/wellforge:eval` PASS, and `/wellforge:done 001-terse-mode` flips spec status → done.

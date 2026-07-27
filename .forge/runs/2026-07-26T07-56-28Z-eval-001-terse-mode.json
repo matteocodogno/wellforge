@@ -1,0 +1,20 @@
+{
+  "schema": "wellforge-run/v1",
+  "run_id": "2026-07-26T07-56-28Z-eval-001-terse-mode",
+  "command": "eval",
+  "feature": "001-terse-mode",
+  "rigor": "production",
+  "terse": false,
+  "control_run_id": null,
+  "started": "2026-07-26T07:56:28Z",
+  "finished": "2026-07-26T08:01:28Z",
+  "agents": [
+    { "agent": "evaluator", "outcome": "FAIL", "score": 78 }
+  ],
+  "drift_events": [],
+  "collision_events": [],
+  "verdicts": { "qe": "PASS", "eval": "FAIL" },
+  "result": "completed",
+  "tokens": null,
+  "cost_usd": null
+}

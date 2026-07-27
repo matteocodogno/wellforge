@@ -1,0 +1,22 @@
+{
+  "schema": "wellforge-run/v1",
+  "run_id": "2026-07-24T20-07-11Z-implement-001-terse-mode",
+  "command": "implement",
+  "feature": "001-terse-mode",
+  "rigor": "production",
+  "terse": false,
+  "control_run_id": null,
+  "started": "2026-07-24T20:07:11Z",
+  "finished": "2026-07-24T20:16:11Z",
+  "agents": [
+    { "agent": "devops", "tasks": ["T6"], "outcome": "completed", "commits": ["64bc843"], "worktree": "worktree-agent-a088068c6a4be5ba5" },
+    { "agent": "quality-engineer", "tasks": ["T8"], "outcome": "completed", "commits": ["24d0309"], "worktree": "worktree-agent-a19c74969e962a1ff" },
+    { "agent": "quality-engineer", "outcome": "PASS" }
+  ],
+  "drift_events": [],
+  "collision_events": [],
+  "verdicts": { "qe": "PASS", "eval": null },
+  "result": "completed",
+  "tokens": null,
+  "cost_usd": null
+}

@@ -1,10 +1,11 @@
 ---
 id: 001
 slug: terse-mode
-status: in-progress
+status: done
 rigor: production
 created: 2026-07-16
 approved: 2026-07-16
+done: 2026-07-27
 ---
 
 # Terse mode — token-efficient conversational output

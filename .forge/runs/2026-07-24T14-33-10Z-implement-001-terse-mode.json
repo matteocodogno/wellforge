@@ -1,0 +1,24 @@
+{
+  "schema": "wellforge-run/v1",
+  "run_id": "2026-07-24T14-33-10Z-implement-001-terse-mode",
+  "command": "implement",
+  "feature": "001-terse-mode",
+  "rigor": "production",
+  "started": "2026-07-24T14:33:10Z",
+  "finished": "2026-07-24T14:47:10Z",
+  "agents": [
+    { "agent": "devops", "tasks": ["T2"], "outcome": "completed", "commits": ["23e2fc7"], "worktree": "worktree-agent-ac8f190cccca6a8dc" },
+    { "agent": "devops", "tasks": ["T3"], "outcome": "completed", "commits": ["5ad1daa"], "worktree": "worktree-agent-ab1d1d4e281b4e891" },
+    { "agent": "devops", "tasks": ["T4"], "outcome": "completed", "commits": ["091a68c"], "worktree": "worktree-agent-ad3918288fa0d0d39" },
+    { "agent": "devops", "tasks": ["T5"], "outcome": "completed", "commits": ["f18f23a"], "worktree": "worktree-agent-a24934369166614fe" },
+    { "agent": "quality-engineer", "outcome": "PASS" }
+  ],
+  "drift_events": [
+    { "agent": "quality-engineer", "artifact": "plan.md", "summary": "/terse command name was bare, inconsistent with the plugin's /wellforge:* command namespace convention (CLAUDE.md). Resolved: renamed to /wellforge:terse across spec/plan/tasks/SKILL/terse.md (commit deff563), per user decision.", "resolved": true }
+  ],
+  "collision_events": [],
+  "verdicts": { "qe": "PASS", "eval": null },
+  "result": "completed",
+  "tokens": null,
+  "cost_usd": null
+}
