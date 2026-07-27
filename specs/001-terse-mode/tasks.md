@@ -95,6 +95,15 @@ generated: 2026-07-23
   - done when: the test runs run-report.py on committed fixtures and asserts the delta + the
     omit case, exits 0, committed under the feature (AC-5.1).
 
-- [ ] T10: Close the feature — refs: (closing) — deps: T4, T5, T8, T9, T11, T12
+- [ ] T13: Reproducible test runner + CI wiring — refs: US-1 (AC-1.2), US-4 (AC-4.1), US-5 (AC-5.1) — deps: T8, T11, T12
+  - touch: `specs/001-terse-mode/fixtures/run-all.sh` (new), `.github/workflows/ci.yml`
+  - a single runner that executes `t8/extract-spans.sh`, `t11/run-check.sh`, and
+    `t12/test_run_report_pairing.py`, and exits non-zero if ANY fails; plus a CI step that
+    invokes it so these tests guard regressions on every push (they are currently reproducible
+    only by hand, referenced by no runner/CI — untriggered tests rot).
+  - done when: `run-all.sh` runs all three and exits 0 (non-zero on any failure), and
+    `.github/workflows/ci.yml` has a valid step that invokes it.
+
+- [ ] T10: Close the feature — refs: (closing) — deps: T4, T5, T8, T9, T11, T12, T13
   - done when: all gates green (self-CI lint + advisory checks), every task above checked,
     a fresh `/wellforge:eval` PASS, and `/wellforge:done 001-terse-mode` flips spec status → done.
