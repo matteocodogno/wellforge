@@ -87,9 +87,12 @@ wellforge/
   update` → zero conflicts.
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
-- Latest tags: `v0.7.0` (template series, PEP440 — what copier resolves), `gates-v7` (gate
-  workflow pin series — separate, invisible to copier); plugin `2.22.0`. A self-CI workflow
+- Latest tags: `v0.8.0` (template series, PEP440 — what copier resolves), `gates-v10` (gate
+  workflow pin series — separate, invisible to copier); plugin `2.23.0`. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets.
+  The two series move independently: a `vX.Y.Z` release does NOT carry a `gates_ref` bump to
+  existing projects (recorded answer + `--skip-answered`) — `/wellforge:upgrade` bumps it as
+  an explicit, raise-only step.
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated
   project, CI-green on GitHub (repo has no remote yet), threshold calibration, v1.0.0 cut.
 
