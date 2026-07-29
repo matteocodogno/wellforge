@@ -52,6 +52,34 @@ pre-commit:
       run: ./mvnw -q --no-transfer-progress com.github.gantsign.maven:ktlint-maven-plugin:format
       stage_fixed: true
 
+commit-msg:
+  commands:
+    # Conventional Commits — same rule as gates/scripts/check-commit-msg.py and the
+    # commit-lint.yml CI gate (merge/revert/fixup subjects are exempt).
+    conventional-commits:
+      run: |
+        subject=$(grep -vE '^\s*(#|$)' {1} | head -1)
+        case "$subject" in
+          Merge\ *|Revert\ *|fixup!*|squash!*|amend!*) exit 0;;
+        esac
+        if ! echo "$subject" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([A-Za-z0-9 .,/_-]+\))?!?: .+'; then
+          echo "✗ not Conventional Commits: $subject"
+          echo "  expected: <type>[(scope)][!]: <description>"
+          echo "  types:    feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+          exit 1
+        fi
+
+pre-merge-commit:
+  commands:
+    # Linear history — WellForge repos never carry merge commits. git runs this hook only
+    # when a merge WOULD create one, so a fast-forward merge passes straight through.
+    # Pair it with: git config merge.ff only && git config pull.rebase true
+    linear-history:
+      run: |
+        echo "✗ merge commit refused — WellForge repos keep a linear history."
+        echo "  git merge --abort, then: git rebase <target>; git merge --ff-only <branch>"
+        exit 1
+
 pre-push:
   parallel: true
   commands:
