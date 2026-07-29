@@ -140,6 +140,13 @@ ignore gates. Both workflows accept an optional `coverage-lines-baseline` (node 
 - Threshold changes happen only via PR to this directory — review is the single
   discretion point.
 - Consumers pin `@gates-v*` tags; bumping is a one-line PR per project.
+- **Pinned tool versions are refreshed, not frozen.** A pin buys reproducibility, not
+  immortality: a security tool packaged in Python (semgrep, osv-scanner) eventually stops
+  starting on a newer runner image, and the failure lands in *downstream* CI, where it reads
+  as "the project is broken" — semgrep `1.96.0` did exactly that (its
+  `opentelemetry-instrumentation` imports `pkg_resources`, removed from setuptools ≥ 81).
+  When bumping, re-verify the rules still parse AND still fire; `ci.yml`'s `sast-selftest`
+  job does this on every push so the breakage surfaces here first.
 
 ## Known deviations / future work
 
