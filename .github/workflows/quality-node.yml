@@ -19,7 +19,12 @@ on:
         description: tag/ref of the gates release
         required: false
         type: string
-        default: gates-v0
+        # Default is EMPTY on purpose, resolved below to github.job_workflow_sha — the exact
+        # commit of THIS reusable workflow. A hardcoded default rots: it used to be `gates-v0`,
+        # where the semgrep config was still named welld.yml, so any caller that omitted this
+        # input silently checked out 2026-06 configs and semgrep died with exit 7
+        # (config not found). Pass it explicitly anyway; this is the safety net.
+        default: ''
       # Ratchet baselines for brownfield adoption: 0 (default) = central
       # thresholds apply. A non-zero baseline replaces the central minimum for
       # THIS project — it may only ever be raised (PR review enforces that),
@@ -68,8 +73,21 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: ${{ inputs.gates-repo }}
-          ref: ${{ inputs.gates-ref }}
+          ref: ${{ inputs.gates-ref || github.job_workflow_sha }}
           path: .wellforge-gates
+
+      - name: Verify gate configs resolved
+        run: |
+          ref="${{ inputs.gates-ref || github.job_workflow_sha }}"
+          missing=0
+          for f in gates/configs/semgrep/wellforge.yml; do
+            [ -f ".wellforge-gates/$f" ] || { echo "::error::gate config missing at ref ${ref}: $f"; missing=1; }
+          done
+          if [ "$missing" = "1" ]; then
+            echo "::error::The gates checkout (${{ inputs.gates-repo }}@${ref}) does not contain this gate's configs. Pass gates-ref explicitly, matching the tag you call this workflow with."
+            exit 1
+          fi
+          echo "gate configs OK at ${ref}"
 
       - name: Install toolchain (mise)
         uses: jdx/mise-action@v2

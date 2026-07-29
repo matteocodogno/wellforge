@@ -89,6 +89,15 @@ jobs:
         working-directory: wellforge-plugin
         run: uv run --with pyyaml python scripts/check-routing.py --tool claude
 
+  # Gate-callable self-test: call a reusable gate with NO gates-ref and prove the fallback
+  # (github.job_workflow_sha) resolves to a real commit and its configs are found. A caller
+  # omitting gates-ref used to silently get `gates-v0` — 2026-06 configs, where the semgrep
+  # rules were still named welld.yml — which surfaced downstream as semgrep exit 7.
+  # commit-lint is the cheapest gate to exercise this with (no toolchain, no install).
+  gate-callable:
+    name: reusable gate callable with default gates-ref
+    uses: ./.github/workflows/commit-lint.yml
+
   # SAST self-test. The gates ship semgrep as a PINNED Python app, and an old pin eventually
   # stops starting on a newer runner Python — which surfaces as a red SAST gate in every
   # downstream project, not here (this repo runs no quality-*.yml on itself). That is exactly
