@@ -34,6 +34,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.ctx.outputs.tag }}
+      # Threaded as a STRING. Comparing the raw boolean input against 'true' in the other job
+      # silently evaluated to "not dry" (GHA casts a bool/string comparison via number, so
+      # true != 'true' is TRUE) and pushed a branch during a dry run. Job outputs are strings.
+      dry: ${{ steps.ctx.outputs.dry }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -71,8 +75,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0          # need the tag list to know which release is newest
+
+      - name: Refuse to bump backwards
+        id: guard
+        run: |
+          tag="${{ needs.publish.outputs.tag }}"
+          newest=$(git tag -l 'v*' --sort=v:refname | grep -v '^gates-' | tail -1)
+          if [ "$tag" != "$newest" ]; then
+            echo "::notice::$tag is not the newest template tag ($newest) — leaving the formula alone"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Compute the tarball sha256 and bump the formula
+        if: steps.guard.outputs.skip != 'true'
         id: bump
         run: |
           tag="${{ needs.publish.outputs.tag }}"
@@ -98,7 +117,7 @@ jobs:
           fi
 
       - name: Push the bump to a branch and link the PR
-        if: steps.bump.outputs.changed == 'true' && (inputs.dry-run || 'false') != 'true'
+        if: steps.bump.outputs.changed == 'true' && needs.publish.outputs.dry != 'true'
         run: |
           tag="${{ needs.publish.outputs.tag }}"
           branch="chore/brew-${tag}"
