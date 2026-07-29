@@ -1,0 +1,27 @@
+#!/bin/sh
+# Local linear-history hook: git runs pre-merge-commit only when a merge is about to create a
+# merge commit (a fast-forward merge never reaches it). Refusing here means `git merge` can only
+# ever fast-forward. Belt-and-braces with `merge.ff = only`, which scripts/setup-git-policy.sh
+# also sets — config is per-clone and easy to lose, the hook is committed.
+#
+# Install (both, via the repo root):
+#   ./scripts/setup-git-policy.sh
+# or manually:
+#   ln -sf ../../gates/hooks/pre-merge-commit .git/hooks/pre-merge-commit
+#
+# Skippable with --no-verify; CI (.github/workflows/linear-history.yml) is the enforcement point.
+cat >&2 <<'MSG'
+✗ merge commit refused — WellForge repos keep a linear history.
+
+  Git leaves the merge half-started when a hook refuses it. Back out first:
+
+      git merge --abort
+
+  Then integrate with a rebase + fast-forward instead:
+
+      git rebase <target-branch>          # or: git pull --rebase
+      git switch <target-branch>
+      git merge --ff-only <your-branch>
+
+MSG
+exit 1

@@ -93,15 +93,24 @@ touch the other's checkout":
    line `WORKTREE-BRANCH: <git branch --show-current>` and `COMMITS: <n>`*. The dispatch
    result usually also surfaces the agent's worktree branch in its metadata; the self-reported
    line is the portable fallback — use whichever you get.
-3. **Integrate.** After the batch returns, merge each branch into the feature branch one at a
-   time, in a deterministic order, with **git's default merge message**
-   (`git merge --no-ff --no-edit <branch>`). Do NOT pass a custom lowercase `-m "merge …"`:
-   a Conventional-Commits `commit-msg` hook (this repo, and generated projects with commitlint)
-   rejects it — the default `Merge branch …` and a conventional `chore(...)` message are exempt.
-   - **Clean merge** → good. Continue.
+3. **Integrate — rebase + fast-forward, never a merge commit.** WellForge repos keep a
+   **linear history** (`gates/README.md` → "Linear history gate"), so integrate each branch
+   into the feature branch one at a time, in a deterministic order:
+
+   ```bash
+   git rebase <feature-branch> <worktree-branch>   # replay the task's commits on top
+   git switch <feature-branch>
+   git merge --ff-only <worktree-branch>           # pointer move — no merge commit
+   ```
+
+   `git merge --no-ff` is **forbidden**: the repo sets `merge.ff = only`, a `pre-merge-commit`
+   hook refuses merge commits, and the `linear-history` CI gate fails the PR. The task's own
+   `feat(<scope>): … (T<n>, specs/NNN)` commits carry the history — no integration commit is
+   needed, and none may be created.
+   - **Clean rebase + fast-forward** → good. Continue.
    - **Conflict = a collision**, not a routine merge: two tasks the DAG called independent
-     touched the same file, so they were never independent. Abort the merge
-     (`git merge --abort`), **surface it like drift** — name the two tasks and the colliding
+     touched the same file, so they were never independent. Abort the rebase
+     (`git rebase --abort`), **surface it like drift** — name the two tasks and the colliding
      files — and resolve by adding the missing `deps:` edge (`/wellforge:tasks` re-sync) and
      re-running the later task in the now-integrated tree. Never auto-resolve code conflicts
      silently.

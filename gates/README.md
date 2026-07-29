@@ -31,6 +31,10 @@ fail their own gate); the skip is printed as a CI notice, never silent.
 | `configs/semgrep/wellforge.yml` | org-specific SAST rules (secrets, println, debugger) |
 | `configs/gitleaks.toml` | security-floor gitleaks config: default rules + allowlist for 1Password `op://` references (pointers, not secrets). `security-floor.yml` passes it when present; point a local pre-commit gitleaks hook at it too |
 | `scripts/check-jacoco.py` | JaCoCo threshold enforcement (tested: pass/fail/floor) |
+| `scripts/check-commit-msg.py` | Conventional Commits validator — shared by the local hook and both CI gates |
+| `hooks/commit-msg`, `hooks/pre-merge-commit` | local fast-feedback hooks; installed by `/scripts/setup-git-policy.sh` |
+| `/.github/workflows/commit-lint.yml` | reusable Conventional Commits gate (`workflow_call`) |
+| `/.github/workflows/linear-history.yml` | reusable linear-history gate (`workflow_call`) — no merge commits in the PR range |
 | `/.github/workflows/heartbeat-report.yml` | reusable heartbeat reporter (`workflow_call`) — dedup-issue manager (see below) |
 
 ## Eval gate (LM-judge — opt-in)
@@ -62,12 +66,32 @@ Commit messages must follow [Conventional Commits](https://www.conventionalcommi
 
 | Layer | What |
 |---|---|
-| Local `commit-msg` hook | `gates/hooks/commit-msg` — fast feedback. Install: `ln -sf ../../gates/hooks/commit-msg .git/hooks/commit-msg` (co-exists with a pre-commit gitleaks hook). Skippable with `--no-verify`. |
+| Local `commit-msg` hook | `gates/hooks/commit-msg` — fast feedback. Install: `./scripts/setup-git-policy.sh` (or by hand: `ln -sf ../../gates/hooks/commit-msg .git/hooks/commit-msg`; co-exists with a pre-commit gitleaks hook). Skippable with `--no-verify`. |
 | CI gate (`/.github/workflows/commit-lint.yml`) | the enforcement point — lints every commit in a PR, can't be skipped. Consume `@gates-v4`. |
 
 Types: `feat fix docs style refactor perf test build ci chore revert`. Merge/revert/
 fixup/squash commits are exempt. The WellForge dev agents already commit in this format;
 this gate enforces it for everyone (humans included — it would have caught a stray `harden:`).
+
+## Linear history gate
+
+**Every WellForge repository keeps a strictly linear history — no merge commits.** Branches
+are rebased onto `main` and integrated **fast-forward**; a PR merges as squash or rebase,
+never "create a merge commit". Rationale: `git log --oneline` *is* the changelog (release-it
+derives it from Conventional Commits), `git bisect` stays meaningful, and a revert is one
+commit rather than a merge-parent puzzle.
+
+| Layer | What |
+|---|---|
+| Local config | `merge.ff = only`, `pull.rebase = true`, `rebase.autoStash = true` — `git merge`/`git pull` can then only fast-forward. Per-clone, so it ships as a script, not a file: **`scripts/setup-git-policy.sh`** (run once per clone; also installs the hooks below) |
+| Local `pre-merge-commit` hook | `gates/hooks/pre-merge-commit` — git runs it only when a merge *would* create a merge commit; it refuses. Skippable with `--no-verify` |
+| CI gate (`/.github/workflows/linear-history.yml`) | the enforcement point — fails on any merge commit in the PR range (this also catches a backmerge of `main` into the branch). Consume `@gates-v8` |
+| Branch protection | `required_linear_history: true` + `allow_merge_commit: false` on the repo — set by the `connections` skill (`references/github.md`), verified via the API |
+
+The four layers cover different bypasses: config is the ergonomic default, the hook catches a
+`git merge` in a clone that never ran the setup script, CI catches `--no-verify`, and branch
+protection catches the GitHub merge button. Parallel worktree integration in
+`/wellforge:implement` follows the same rule (rebase each branch, then `merge --ff-only`).
 
 ## Scheduled heartbeat (opt-in, Phase 14a)
 

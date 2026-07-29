@@ -35,3 +35,12 @@ depends     = ["backend:dev", "frontend:dev"]
 [tasks.release]
 description = "Cut a release — version + CHANGELOG from Conventional Commits, tag, GitHub release (release-it)"
 run = "pnpm --package=release-it@^17 --package=@release-it/conventional-changelog@^8 --package=@release-it/bumper@^6 dlx release-it"
+
+[tasks.git-policy]
+description = "Apply the WellForge git policy to this clone — linear history (run once after cloning)"
+run = """
+git config merge.ff only          # git merge fast-forwards or fails — never a merge commit
+git config pull.rebase true       # git pull rebases instead of merging origin back in
+git config rebase.autoStash true  # rebasing with a dirty tree stashes/restores
+echo 'git policy applied: linear history (no merge commits). CI enforces it on every PR.'
+"""

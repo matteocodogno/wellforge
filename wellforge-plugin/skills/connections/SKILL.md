@@ -16,7 +16,7 @@ is an observed fact** — each checklist ends with a verification command; run i
 the output. Never report a connection done without it.
 
 References (read the one you need):
-- `references/github.md` — repo creation, branch protection, CI secrets
+- `references/github.md` — repo creation, merge strategy (linear history), branch protection, CI secrets
 - `references/mcp-servers.md` — the standard MCP set for WellForge projects
 - `references/environments.md` — env vars, secrets hygiene, local DB
 

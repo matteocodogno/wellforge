@@ -37,6 +37,18 @@ frontend, managed with **mise** + **pnpm**.
 | `mise run lint` | Lint all services |
 | `mise run backend:<task>` | Run a backend-only task (install/dev/build/test/lint/typecheck) |
 | `mise run frontend:<task>` | Run a frontend-only task (install/dev/build/test/lint/typecheck) |
+| `mise run git-policy` | Apply the linear-history git config to this clone (run once) |
+
+## Git policy — linear history + Conventional Commits
+
+- **No merge commits, ever.** Rebase onto `main` and integrate fast-forward
+  (`git rebase main`, then `git merge --ff-only`); PRs merge as **squash or rebase**.
+  CI (`linear history`) fails on any merge commit in the PR range, and branch protection
+  has `required_linear_history`. `git log --oneline` is the changelog; `git bisect` stays honest.
+- **Conventional Commits** (`type(scope)!: description`) — CI (`commit messages`) lints every
+  commit in a PR, and `mise run release` derives the version + CHANGELOG from them.
+- Run **`mise run git-policy`** once per clone: sets `merge.ff=only` and `pull.rebase=true`
+  locally, so `git merge` / `git pull` cannot create a merge commit in the first place.
 
 ## Monorepo layout
 

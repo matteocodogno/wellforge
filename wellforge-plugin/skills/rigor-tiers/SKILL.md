@@ -80,6 +80,12 @@ credentials":
 
 A tier may make coverage/lint/SAST-medium advisory; it may NEVER waive the floor.
 
+**History hygiene is tier-independent too** — for the same reason: it cannot be repaired after
+the fact without rewriting published history. Every WellForge repo, at every tier, keeps a
+**linear history** (no merge commits — rebase, then `--ff-only`) and **Conventional Commits**.
+The `linear-history.yml` gate is called from generated `quality.yml` in the spike branch as
+well; see `gates/README.md` → "Linear history gate".
+
 ## Advisory vs. blocking gates
 
 Outside the security floor, lower tiers **run** the gates but report results as **advisory** —

@@ -29,7 +29,7 @@ uvx copier copy --trust <wellforge repo/URL> <dest> --data preset=<preset>
 | `ci` | choice | `github` (default) / `none` |
 | `rigor` | choice | `production` (default) / `mvp` / `spike` — sets CI strictness; recorded in the manifest (wellforge rigor-tiers skill) |
 | `gates_repo` | str | default `matteocodogno/wellforge` — owner/repo hosting the reusable gate workflows |
-| `gates_ref` | str | default `gates-v7` — tag pinned in generated CI |
+| `gates_ref` | str | default `gates-v8` — tag pinned in generated CI |
 | `heartbeat` | bool | default `true` — add the scheduled heartbeat workflow (re-runs the gate on a cadence, files findings to one deduplicated issue). Takes effect only for `ci == github` and `rigor != spike`; recorded in the manifest |
 | `heartbeat_cron` | str | default `0 6 * * 1` (weekly, Mon 06:00 UTC) — cron for the heartbeat |
 
@@ -50,8 +50,8 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 | `CLAUDE.md` | one-line `@AGENTS.md` import for Claude Code — content lives in AGENTS.md only |
 | `.claude/settings.json` | pre-wired permissions for the stack's routine commands (mise/pnpm/mvnw test-build-lint) |
 | `specs/README.md` | one-paragraph pointer to the spec-driven workflow |
-| `mise.toml` (+ per-service) | per the `mise` skill: tools pinned at root, tasks per service, `install/build/test/lint/dev` aggregates + a `release` task (release-it) at root |
-| `.github/workflows/quality.yml` | when `ci == github`: **calls** the reusable gates `{{ gates_repo }}/.github/workflows/*.yml@{{ gates_ref }}` (never inlines gate logic). Tier-conditional on `rigor`: `production`/`mvp` call `quality-<stack>.yml` (passing `rigor` so `mvp` coverage is advisory); `spike` calls `security-floor.yml` + a build sanity job only |
+| `mise.toml` (+ per-service) | per the `mise` skill: tools pinned at root, tasks per service, `install/build/test/lint/dev` aggregates + `release` (release-it) and `git-policy` (linear-history git config, run once per clone) tasks at root |
+| `.github/workflows/quality.yml` | when `ci == github`: **calls** the reusable gates `{{ gates_repo }}/.github/workflows/*.yml@{{ gates_ref }}` (never inlines gate logic). Tier-conditional on `rigor`: `production`/`mvp` call `quality-<stack>.yml` (passing `rigor` so `mvp` coverage is advisory); `spike` calls `security-floor.yml` + a build sanity job only. **`linear-history.yml` is called at every tier** (tier-independent, like the security floor — a merge commit can't be fixed retroactively) |
 | `.github/workflows/heartbeat.yml` | **conditional** — generated only when `ci == github` AND `heartbeat` AND `rigor != spike`. A `schedule`d (cron `heartbeat_cron`) + `workflow_dispatch` caller that re-uses the same `quality-<stack>.yml@{{ gates_ref }}` gates (→ `heartbeat-report.yml` for one deduplicated findings issue) and calls `template-drift.yml@{{ gates_ref }}` (→ a separate deduplicated "behind template" issue). Needs `issues: write`. Uses the copier `{% if %}` filename idiom so it vanishes when off |
 | `.gitignore` | stack-appropriate + `.mise.local.toml`, `.claude/settings.local.json` |
 | `.release-it.json` | release-it config: `@release-it/conventional-changelog` (semver bump + CHANGELOG from Conventional Commits) + `@release-it/bumper` (per-service version files); `npm.publish:false`; JVM preset bumps `pom.xml` via a Maven `after:bump` hook. Drives `mise run release` / `/wellforge:release` |

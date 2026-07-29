@@ -33,6 +33,18 @@ tests that run against Pulumi's mock runtime.
 | `mise run lint` | Biome check |
 | `mise run dev` | `pulumi preview` for the current stack |
 | `mise run infra:<task>` | Run an infra task directly (install/build/test/lint/typecheck/preview/up/destroy/refresh/policy) |
+| `mise run git-policy` | Apply the linear-history git config to this clone (run once) |
+
+## Git policy — linear history + Conventional Commits
+
+- **No merge commits, ever.** Rebase onto `main` and integrate fast-forward
+  (`git rebase main`, then `git merge --ff-only`); PRs merge as **squash or rebase**.
+  CI (`linear history`) fails on any merge commit in the PR range, and branch protection
+  has `required_linear_history`. `git log --oneline` is the changelog; `git bisect` stays honest.
+- **Conventional Commits** (`type(scope)!: description`) — CI (`commit messages`) lints every
+  commit in a PR, and `mise run release` derives the version + CHANGELOG from them.
+- Run **`mise run git-policy`** once per clone: sets `merge.ff=only` and `pull.rebase=true`
+  locally, so `git merge` / `git pull` cannot create a merge commit in the first place.
 
 ## Layout
 

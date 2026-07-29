@@ -77,7 +77,7 @@ gates_repo:
 gates_ref:
   type: str
   help: Tag pinning the gate workflows in generated CI
-  default: gates-v7
+  default: gates-v8
 
 heartbeat:
   type: bool

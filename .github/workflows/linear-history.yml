@@ -1,0 +1,50 @@
+# Reusable linear-history gate. WellForge repos keep a strictly linear history: branches are
+# rebased onto main and integrated fast-forward, never merged. Local `merge.ff = only` can be
+# bypassed (`--no-ff`, a UI "Create a merge commit"); CI is the enforcement point.
+#
+# Consume it on PRs, pinned:
+#   jobs:
+#     linear-history:
+#       uses: matteocodogno/wellforge/.github/workflows/linear-history.yml@gates-v8
+#
+# Pair it with the repo settings the `connections` skill sets: branch protection
+# `required_linear_history: true` + `allow_merge_commit: false` — this gate catches merge
+# commits *inside* the branch (e.g. a backmerge of main), protection catches the merge button.
+name: linear-history
+
+on:
+  workflow_call:
+
+jobs:
+  linear-history:
+    name: linear history (no merge commits)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0           # need the full PR commit range
+
+      - name: Assert no merge commits in the PR range
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          [ -z "$base" ] && { echo "not a PR — skipping"; exit 0; }
+          merges=$(git rev-list --merges "$base..$head")
+          if [ -z "$merges" ]; then
+            echo "OK — $(git rev-list --count "$base..$head") commit(s), none are merges"
+            exit 0
+          fi
+          for sha in $merges; do
+            echo "::error::merge commit $(git log -1 --format='%h %s' "$sha")"
+          done
+          cat <<'MSG'
+
+          This branch contains merge commit(s). WellForge repos require a linear history.
+          Rebase instead of merging:
+
+              git fetch origin
+              git rebase origin/main
+              git push --force-with-lease
+
+          MSG
+          exit 1

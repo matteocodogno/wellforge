@@ -15,18 +15,35 @@ gh repo create <org>/<slug> --private --source . --remote origin --push
 **Verify:** `gh repo view <org>/<slug> --json name,visibility,defaultBranchRef`
 → name matches, visibility `PRIVATE`, default branch `main`.
 
-## 2. Branch protection (main)
+## 2. Merge strategy (linear history — mandatory)
 
-Standard WellForge policy: PRs only, 1 approval, gates must pass, no force push.
+Every WellForge repo keeps a **linear history**: no merge commits, ever. Disable the merge
+button and leave squash + rebase (`gates/README.md` → "Linear history gate").
+
+```bash
+gh api -X PATCH "repos/<org>/<slug>" \
+  -F allow_merge_commit=false \
+  -F allow_squash_merge=true \
+  -F allow_rebase_merge=true \
+  -F delete_branch_on_merge=true
+```
+
+**Verify:** `gh api repos/<org>/<slug> --jq '{merge: .allow_merge_commit, squash: .allow_squash_merge, rebase: .allow_rebase_merge}'`
+→ `merge: false`. If it is `true`, the linear-history policy is one click from being broken.
+
+## 3. Branch protection (main)
+
+Standard WellForge policy: PRs only, 1 approval, gates must pass, linear history, no force push.
 
 ```bash
 gh api -X PUT "repos/<org>/<slug>/branches/main/protection" \
   -H "Accept: application/vnd.github+json" \
   --input - <<'JSON'
 {
-  "required_status_checks": { "strict": true, "contexts": ["quality"] },
+  "required_status_checks": { "strict": true, "contexts": ["quality", "commits", "linear-history"] },
   "enforce_admins": false,
   "required_pull_request_reviews": { "required_approving_review_count": 1 },
+  "required_linear_history": true,
   "restrictions": null,
   "allow_force_pushes": false,
   "allow_deletions": false
@@ -34,13 +51,17 @@ gh api -X PUT "repos/<org>/<slug>/branches/main/protection" \
 JSON
 ```
 
-Note: the `quality` context must match the job name in the generated
+Note: the status-check contexts must match the job names in the generated
 `.github/workflows/quality.yml`. Check the workflow file first; adjust contexts to the
 actual job names.
 
-**Verify:** `gh api repos/<org>/<slug>/branches/main/protection --jq '{checks: .required_status_checks.contexts, reviews: .required_pull_request_reviews.required_approving_review_count}'`
+**Verify:** `gh api repos/<org>/<slug>/branches/main/protection --jq '{checks: .required_status_checks.contexts, reviews: .required_pull_request_reviews.required_approving_review_count, linear: .required_linear_history.enabled}'`
+→ `linear: true`.
 
-## 3. CI secrets & variables
+Then tell the team to run the local half once per clone (config is per-clone, not committed):
+`git config merge.ff only && git config pull.rebase true`.
+
+## 4. CI secrets & variables
 
 The gate workflows need no secrets by default (lint/test/coverage run self-contained).
 Add only what the project actually uses:

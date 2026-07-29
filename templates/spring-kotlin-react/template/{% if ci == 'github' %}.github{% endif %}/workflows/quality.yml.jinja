@@ -9,7 +9,15 @@ permissions:
   contents: read
 {% endraw %}
 jobs:
+  # Linear history holds at EVERY rigor tier, like the security floor: a merge commit can't be
+  # fixed retroactively without rewriting published history. Branches rebase onto main and
+  # integrate fast-forward (see the repo's branch protection: required_linear_history).
+  linear-history:
+    name: linear history (no merge commits)
+    uses: {{ gates_repo }}/.github/workflows/linear-history.yml@{{ gates_ref }}
+
 {%- if rigor == 'spike' %}
+
   # rigor: spike — build sanity + the non-negotiable secret-scan floor only.
   # No coverage / SAST / eval. Raise with /wellforge:promote before this goes anywhere real.
   security-floor:

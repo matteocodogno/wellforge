@@ -104,6 +104,11 @@ new layers.** Only run steps 1–3 on a first-time adoption.
    ```
 4. **Prove it locally**: lint + typecheck + coverage-at-baseline must pass before you
    commit the workflow. A gate that is born red is a calibration failure — remeasure.
+5. **Git policy** — wire `commit-lint.yml` and `linear-history.yml` (same `gates-v*` pin) into
+   the same `quality.yml`, and tell the team to run `git config merge.ff only && git config
+   pull.rebase true` per clone. Both gates only inspect the **PR range**, so an existing
+   history full of merge commits stays untouched — the policy binds from adoption forward.
+   No ratchet or baseline here: unlike coverage, this costs a legacy project nothing to meet.
 
 ## Stage 4 — Connections (if chosen)
 

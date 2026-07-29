@@ -111,4 +111,11 @@ wellforge/
   branch, does not touch `tasks.md`), then merge back and reconcile checkboxes centrally — a
   merge conflict means a wrong DAG edge (a "collision"), surfaced like drift. Set
   `worktree.baseRef: "head"`. Solo/sequential batches stay in the main tree.
+- **Git policy — non-negotiable, here and in every WellForge repo (incl. generated ones):**
+  **linear history** (no merge commits — rebase onto `main`, integrate `--ff-only`, PRs squash
+  or rebase) and **Conventional Commits**. Four enforcement layers: local config
+  (`merge.ff=only`, `pull.rebase=true`), committed hooks (`gates/hooks/{commit-msg,pre-merge-commit}`),
+  CI gates (`commit-lint.yml`, `linear-history.yml` — called at *every* rigor tier), and branch
+  protection (`required_linear_history`, `allow_merge_commit=false`). Run
+  `./scripts/setup-git-policy.sh` once per clone (generated projects: `mise run git-policy`).
 - All text/docs in English; this is internal WellForge tooling.
