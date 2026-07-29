@@ -119,6 +119,34 @@ logic is duplicated — then calls `heartbeat-report.yml`.
 - The **agentic** heartbeats (fleet, spec-health) live outside CI — see the `heartbeat` skill,
   `scripts/fleet-triage.sh`, and `/wellforge:triage`.
 
+## Service containers (integration tests)
+
+Integration tests need real backing services — Postgres, Mailhog, Redis — and a *shared* gate
+can't declare them: GitHub's `services:` block is static, `workflow_call` inputs are scalars
+only, and hardcoding Postgres would serve one stack and no other.
+
+So the gate starts **the project's own compose file**. Whatever a developer runs locally is
+what CI gets, and adding a service never requires a gate change:
+
+| Input | What |
+|---|---|
+| `compose-file` | compose file brought up with `docker compose up -d --wait` before tests (empty = no services). `--wait` blocks until every service *that declares a healthcheck* is healthy — so tests never race a booting database |
+| `env-file` | `KEY=VALUE` file exported into the job env before tests (single-line values). Lets tests read `DATABASE_URL` without a dotenv loader |
+| `pretest-command` | shell command run in `working-directory` once services are healthy — migrations, seed |
+
+On failure the gate dumps `docker compose logs --tail 200` (a red integration test is usually
+explained by the container, not the assertion), and always tears down with `down -v`.
+
+- **Add a healthcheck to every service you depend on.** Without one, `--wait` only guarantees
+  the container is *running*, and a slow starter becomes a flaky test. `ci.yml`'s
+  `services-selftest` job proves the shipped compose file's healthcheck is honest by
+  connecting to the database after `--wait` returns.
+- The JVM gate takes the same three inputs, though the Spring preset's tests use
+  testcontainers (they start their own containers, and Docker is available on the runner).
+- Generated `hono-react` projects wire `compose-file` + `env-file` automatically when
+  `db == postgres`; `pretest-command` ships commented out, since a fresh scaffold has no
+  migrations to run yet.
+
 ## Brownfield ratchet (adopted projects)
 
 Legacy codebases can't start at 80% — and a permanently red gate teaches people to

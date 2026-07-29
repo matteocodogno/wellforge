@@ -25,6 +25,27 @@ on:
         # input silently checked out 2026-06 configs and semgrep died with exit 7
         # (config not found). Pass it explicitly anyway; this is the safety net.
         default: ''
+      # ── Service containers for integration tests ──────────────────────
+      # GitHub's `services:` block cannot be passed in as an input (workflow_call inputs are
+      # scalars only), and hardcoding postgres here would serve one stack and no other. So the
+      # gate brings up the PROJECT'S OWN compose file instead: whatever a project runs locally
+      # — postgres, mailhog, redis, minio — is exactly what CI gets, and adding a service needs
+      # no gate change at all.
+      compose-file:
+        description: compose file to bring up (healthy) before tests, repo-relative. Empty = no services.
+        required: false
+        type: string
+        default: ''
+      env-file:
+        description: KEY=VALUE file exported into the job env before tests. Single-line values only.
+        required: false
+        type: string
+        default: ''
+      pretest-command:
+        description: shell command run in working-directory once services are healthy (migrations, seed)
+        required: false
+        type: string
+        default: ''
       # Ratchet baseline for brownfield adoption: 0 (default) = central
       # threshold applies. Non-zero replaces the central minimum for THIS
       # project — raise-only (PR review enforces that).
@@ -97,6 +118,34 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
         run: mise exec -- mvn -B --no-transfer-progress "$KTLINT_PLUGIN:check"
 
+      - name: Start service containers
+        if: inputs.compose-file != ''
+        env:
+          COMPOSE_FILE_INPUT: ${{ inputs.compose-file }}
+        run: |
+          # --wait blocks until every service that declares a healthcheck reports healthy, so
+          # tests never race a still-booting database. Services without one only need to be
+          # running; add a healthcheck if a test flakes on startup timing.
+          docker compose -f "$COMPOSE_FILE_INPUT" up -d --wait --wait-timeout 180
+          docker compose -f "$COMPOSE_FILE_INPUT" ps
+
+      - name: Export env file
+        if: inputs.env-file != ''
+        env:
+          ENV_FILE_INPUT: ${{ inputs.env-file }}
+        run: |
+          # Only well-formed single-line KEY=VALUE pairs; comments and blank lines are skipped
+          # rather than corrupting $GITHUB_ENV.
+          grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE_INPUT" >> "$GITHUB_ENV"
+          echo "exported $(grep -cE '^[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE_INPUT") var(s)"
+
+      - name: Pre-test setup (migrations, seed)
+        if: inputs.pretest-command != ''
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          PRETEST_COMMAND: ${{ inputs.pretest-command }}
+        run: sh -euc "$PRETEST_COMMAND"
+
       - name: Tests + JaCoCo report
         working-directory: ${{ inputs.working-directory }}
         run: |
@@ -135,3 +184,15 @@ jobs:
             --config p/kotlin \
             --error --severity ERROR \
             --exclude .wellforge-gates --exclude target
+
+      - name: Service logs (on failure)
+        if: failure() && inputs.compose-file != ''
+        env:
+          COMPOSE_FILE_INPUT: ${{ inputs.compose-file }}
+        run: docker compose -f "$COMPOSE_FILE_INPUT" logs --no-color --tail 200
+
+      - name: Stop service containers
+        if: always() && inputs.compose-file != ''
+        env:
+          COMPOSE_FILE_INPUT: ${{ inputs.compose-file }}
+        run: docker compose -f "$COMPOSE_FILE_INPUT" down -v

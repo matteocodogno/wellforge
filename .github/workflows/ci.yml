@@ -206,6 +206,50 @@ jobs:
           done
           exit $fail
 
+  # Service-container self-test. The gates start a project's OWN compose file so integration
+  # tests get a real database (a pilot project hit this: shared node gate, no Postgres, red
+  # CI). What can rot here is the generated compose file itself — a missing/broken healthcheck
+  # makes `up --wait` return before the DB accepts connections, and tests flake downstream.
+  # So: generate a scaffold, run the exact lifecycle the gate runs, and prove connectivity.
+  services-selftest:
+    name: service containers (compose up --wait → connect → down)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - name: Scaffold hono-react (db=postgres)
+        run: uvx copier copy --defaults --trust . /tmp/svc --data preset=hono-react
+
+      - name: Bring services up, exactly as the gate does
+        working-directory: /tmp/svc
+        run: |
+          docker compose -f docker-compose.yml up -d --wait --wait-timeout 180
+          docker compose -f docker-compose.yml ps
+
+      - name: Prove the database actually accepts connections
+        working-directory: /tmp/svc
+        run: |
+          # `--wait` is only as good as the compose healthcheck. If this select fails while
+          # the step above passed, the healthcheck is lying and downstream tests will flake.
+          docker compose exec -T postgres psql -U postgres -d my_service -c 'select 1;'
+
+      - name: Env file matches the compose service
+        working-directory: /tmp/svc
+        run: |
+          # The generated quality.yml exports this file so tests can parse DATABASE_URL;
+          # if the two ever drift, integration tests connect to the wrong database.
+          url=$(grep -E '^DATABASE_URL=' backend/*.example | head -1 | cut -d= -f2-)
+          echo "DATABASE_URL=$url"
+          case "$url" in
+            *@localhost:5432/my_service) echo "OK — matches docker-compose.yml" ;;
+            *) echo "::error::env example does not match the compose service: $url"; exit 1 ;;
+          esac
+
+      - name: Teardown
+        if: always()
+        working-directory: /tmp/svc
+        run: docker compose -f docker-compose.yml down -v
+
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
   # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.
   terse-mode-fixtures:
