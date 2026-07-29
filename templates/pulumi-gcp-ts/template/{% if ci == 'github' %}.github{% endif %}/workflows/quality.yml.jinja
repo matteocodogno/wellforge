@@ -37,12 +37,17 @@ jobs:
     name: Infra quality
     uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
     with:
+      gates-repo: {{ gates_repo }}
+      gates-ref: {{ gates_ref }}
       working-directory: infra
       rigor: {{ rigor }}
 
   commits:
     name: commit messages (Conventional Commits)
     uses: {{ gates_repo }}/.github/workflows/commit-lint.yml@{{ gates_ref }}
+    with:
+      gates-repo: {{ gates_repo }}
+      gates-ref: {{ gates_ref }}
 {%- endif %}
 
 # NOTE: this workflow gates CODE QUALITY only (lint, typecheck, unit tests with Pulumi mocks,

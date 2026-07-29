@@ -44,6 +44,8 @@ jobs:
     name: backend (JVM)
     uses: {{ gates_repo }}/.github/workflows/quality-jvm.yml@{{ gates_ref }}
     with:
+      gates-repo: {{ gates_repo }}
+      gates-ref: {{ gates_ref }}
       working-directory: backend
       rigor: {{ rigor }}
 
@@ -51,10 +53,15 @@ jobs:
     name: frontend (Node)
     uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
     with:
+      gates-repo: {{ gates_repo }}
+      gates-ref: {{ gates_ref }}
       working-directory: frontend
       rigor: {{ rigor }}
 
   commits:
     name: commit messages (Conventional Commits)
     uses: {{ gates_repo }}/.github/workflows/commit-lint.yml@{{ gates_ref }}
+    with:
+      gates-repo: {{ gates_repo }}
+      gates-ref: {{ gates_ref }}
 {%- endif %}

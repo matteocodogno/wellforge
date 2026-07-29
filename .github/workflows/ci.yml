@@ -167,6 +167,35 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - name: copier copy --defaults
         run: uvx copier copy --defaults --trust . /tmp/out --data preset=${{ matrix.preset }}
+      - name: Assert every gate call passes gates-repo + gates-ref
+        run: |
+          # A generated workflow that calls a gate WITHOUT these inputs falls back to the
+          # gate's own default. That default used to be `gates-v0` and produced a semgrep
+          # exit 7 in a pilot project. The fallback is fixed, but explicit beats implicit:
+          # the pin a project is on must be readable in the project's own workflow file.
+          python3 - "$GITHUB_WORKSPACE" <<'PY'
+          import pathlib, re, sys, yaml
+          TAKES = ('quality-node.yml', 'quality-jvm.yml', 'commit-lint.yml')
+          fail = 0
+          for wf in sorted(pathlib.Path('/tmp/out/.github/workflows').glob('*.yml')):
+              doc = yaml.safe_load(wf.read_text())
+              for name, job in (doc.get('jobs') or {}).items():
+                  uses = job.get('uses', '')
+                  gate = uses.split('/')[-1].split('@')[0]
+                  if gate not in TAKES:
+                      continue
+                  with_ = job.get('with') or {}
+                  for inp in ('gates-repo', 'gates-ref'):
+                      if inp not in with_:
+                          print(f"::error::{wf.name}: job '{name}' calls {gate} without '{inp}'")
+                          fail = 1
+                  if not uses.split('@')[-1].startswith('gates-v'):
+                      print(f"::error::{wf.name}: job '{name}' is not pinned to a gates-v* tag: {uses}")
+                      fail = 1
+              print(f"  checked {wf.name}")
+          sys.exit(fail)
+          PY
+
       - name: Assert required generated files (templates/_shared/CONTRACT.md)
         run: |
           fail=0

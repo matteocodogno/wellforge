@@ -18,6 +18,8 @@ jobs:
     name: infra (Node)
     uses: {{ gates_repo }}/.github/workflows/quality-node.yml@{{ gates_ref }}
     with:
+      gates-repo: {{ gates_repo }}
+      gates-ref: {{ gates_ref }}
       working-directory: infra
       rigor: {{ rigor }}
 
