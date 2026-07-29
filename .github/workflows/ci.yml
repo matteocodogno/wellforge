@@ -251,6 +251,17 @@ jobs:
         working-directory: /tmp/svc
         run: docker compose -f docker-compose.yml down -v
 
+  # pre-bash-guard regression matrix. This hook blocks on COMMAND TEXT, so every rule is an
+  # approximation with two ways to be wrong: waving a real secret through, or blocking
+  # innocent text until people route around it (a workaround for one of its false positives
+  # is what turned this very workflow red). The matrix pins both directions.
+  hook-fixtures:
+    name: plugin hooks (pre-bash-guard matrix)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: wellforge-plugin/hooks/scripts/tests/pre-bash-guard.test.sh
+
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
   # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.
   terse-mode-fixtures:
