@@ -31,8 +31,33 @@ uvx copier update --trust --skip-answered --conflict inline [--vcs-ref <target>]
 ```
 
 - Never change recorded answers during an upgrade (that's re-configuration, a separate
-  concern — `--skip-answered` enforces it).
+  concern — `--skip-answered` enforces it). **One exception: `gates_ref`** — see the next
+  section; it is template-owned infrastructure, and freezing it silently ages a project's
+  security tooling.
 - Copier applies per-version `_migrations` automatically — list any that ran.
+
+## Bump the gate pin (the one deliberate exception to `--skip-answered`)
+
+`gates_ref` is a recorded answer, so `--skip-answered` freezes it — **a template release does
+NOT carry a gate bump**. Verified E2E: updating a project v0.7.0 → v0.8.0 re-renders every
+workflow but leaves them pinned `@gates-v7`. The template version and the gate series are
+independent, and a project can sit on current templates while its SAST/audit tooling rots.
+
+That makes the pin the one answer worth revisiting on every upgrade — it is security-relevant
+infrastructure the template owns, not a user preference like `project_name`:
+
+1. Read `gates_ref` from `.copier-answers.yml`; resolve the latest `gates-v*` tag in the
+   wellforge repo (`git ls-remote --tags <src> 'gates-v*'`).
+2. Behind? Show the delta and what it contains (the gates changelog), then ask.
+3. On yes, re-run with the single answer overridden — this rewrites the recorded answer AND
+   re-renders every call site, and works even when the template version is already current:
+
+   ```bash
+   uvx copier update --trust --data gates_ref=<latest>
+   ```
+
+4. **Raise-only.** Never lower a gate pin to make CI green — that is the same discretion the
+   ratchet forbids. If the user declines the bump, say so explicitly in the report.
 
 ## Resolve conflicts (the AI-value step)
 
@@ -61,8 +86,7 @@ For every file with inline conflict markers:
    migrations run, conflicts resolved (file + one-line rationale each), and verification
    results.
 3. Report: version delta, files changed, conflicts and how each was settled, gate
-   results. If the project's CI pins `gates_ref`, note whether a gates bump is also
-   available (separate one-line PR — never bundle it into the template upgrade).
+   results, and the `gates_ref` outcome (bumped old → new, already current, or declined).
 
 ## Hard rules
 

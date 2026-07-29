@@ -68,6 +68,13 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
   as the scaffold's `_commit`, mislabeling the template version. When a release touches
   both gates and templates, put the `gates-v*` tag on the gates-only commit and the
   `vX.Y.Z` tag on a later (e.g. template-wiring or docs) commit — keep them one apart.
+- **A template release does not carry a `gates_ref` bump.** `gates_ref` is a recorded
+  answer, and `copier update --skip-answered` keeps recorded answers — verified E2E:
+  v0.7.0 → v0.8.0 re-renders every workflow and still pins `@gates-v7`. Bumping the
+  template default only affects NEW scaffolds. Existing projects move with
+  `copier update --data gates_ref=<latest>`, which `/wellforge:upgrade` now offers as an
+  explicit step. Keep the two series' currency separate in your head: `_commit` tracks
+  the template, `gates_ref` tracks the gates.
 - Semver discipline: patch = cosmetic, minor = additive, major = needs migration.
 - The hidden `template_version` answer mirrors the release version (bump it in the
   release commit); the manifest's `version` field reads it.
