@@ -1,0 +1,116 @@
+# Publish a GitHub Release when a template tag (vX.Y.Z) is pushed, and prepare the Homebrew
+# formula bump that must follow it.
+#
+# Why the formula bump is a SEPARATE, follow-up commit and not part of the tagged commit:
+# the formula pins `sha256` of GitHub's tarball for the tag, and that tarball does not exist
+# until the tag is pushed (its root directory is named after the tag, so it isn't byte-equal
+# to any pre-tag archive). Chicken-and-egg — so this workflow computes the sha after the fact,
+# pushes the bump to a branch, and links a ready-to-open PR. It never writes to main.
+#
+# Only `v*` triggers: `gates-v*` is a separate series that Homebrew and copier both ignore.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to (re)publish notes for
+        required: true
+        type: string
+      dry-run:
+        description: Render notes and compute the sha, but create/push nothing
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: publish GitHub Release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.ctx.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0          # notes are derived from the commit range between tags
+
+      - name: Resolve context
+        id: ctx
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "dry=${{ inputs.dry-run || 'false' }}" >> "$GITHUB_OUTPUT"
+          echo "releasing $tag (dry-run=${{ inputs.dry-run || 'false' }})"
+
+      - name: Render release notes
+        run: |
+          ./scripts/release-notes.sh "${{ steps.ctx.outputs.tag }}" > /tmp/notes.md
+          cat /tmp/notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create the Release
+        if: steps.ctx.outputs.dry != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.ctx.outputs.tag }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::notice::release $tag already exists — updating its notes"
+            gh release edit "$tag" --notes-file /tmp/notes.md
+          else
+            gh release create "$tag" --title "$tag" --notes-file /tmp/notes.md --latest
+          fi
+
+  formula:
+    name: prepare Homebrew formula bump
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compute the tarball sha256 and bump the formula
+        id: bump
+        run: |
+          tag="${{ needs.publish.outputs.tag }}"
+          url="https://github.com/${{ github.repository }}/archive/refs/tags/${tag}.tar.gz"
+          # Verify it is a real tarball before trusting its hash (a 404 page hashes just fine)
+          curl -fsSL "$url" -o /tmp/src.tar.gz
+          tar tzf /tmp/src.tar.gz >/dev/null
+          sha=$(sha256sum /tmp/src.tar.gz | awk '{print $1}')
+          echo "sha256($tag) = $sha"
+          python3 - "$tag" "$sha" <<'PY'
+          import pathlib, re, sys
+          tag, sha = sys.argv[1], sys.argv[2]
+          p = pathlib.Path('Formula/wellforge.rb'); t = p.read_text()
+          t = re.sub(r'archive/refs/tags/v[0-9.]+\.tar\.gz', f'archive/refs/tags/{tag}.tar.gz', t, count=1)
+          t = re.sub(r'sha256 "[0-9a-f]{64}"', f'sha256 "{sha}"', t, count=1)
+          p.write_text(t)
+          PY
+          if git diff --quiet Formula/wellforge.rb; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::formula already points at $tag — nothing to bump"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push the bump to a branch and link the PR
+        if: steps.bump.outputs.changed == 'true' && (inputs.dry-run || 'false') != 'true'
+        run: |
+          tag="${{ needs.publish.outputs.tag }}"
+          branch="chore/brew-${tag}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git commit -qam "fix(brew): formula → ${tag}"
+          git push -q --force-with-lease origin "$branch"
+          {
+            echo "### Homebrew formula bump ready"
+            echo ""
+            echo "\`brew install\` still resolves the previous tag until this lands:"
+            echo ""
+            echo "**[Open the PR](https://github.com/${{ github.repository }}/compare/${branch}?expand=1)** — branch \`${branch}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
