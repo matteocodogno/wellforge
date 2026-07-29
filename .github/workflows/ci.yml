@@ -173,7 +173,7 @@ jobs:
           # gate's own default. That default used to be `gates-v0` and produced a semgrep
           # exit 7 in a pilot project. The fallback is fixed, but explicit beats implicit:
           # the pin a project is on must be readable in the project's own workflow file.
-          python3 - "$GITHUB_WORKSPACE" <<'PY'
+          uv run --with pyyaml python - <<'PY'
           import pathlib, re, sys, yaml
           TAKES = ('quality-node.yml', 'quality-jvm.yml', 'commit-lint.yml')
           fail = 0
