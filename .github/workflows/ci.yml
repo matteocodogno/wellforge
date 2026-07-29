@@ -238,7 +238,8 @@ jobs:
         run: |
           # The generated quality.yml exports this file so tests can parse DATABASE_URL;
           # if the two ever drift, integration tests connect to the wrong database.
-          url=$(grep -E '^DATABASE_URL=' backend/*.example | head -1 | cut -d= -f2-)
+          # NB: the file is a dotfile — `backend/*.example` does NOT match it.
+          url=$(grep -hE '^DATABASE_URL=' backend/.env.example | head -1 | cut -d= -f2-)
           echo "DATABASE_URL=$url"
           case "$url" in
             *@localhost:5432/my_service) echo "OK — matches docker-compose.yml" ;;
