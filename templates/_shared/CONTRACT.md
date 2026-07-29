@@ -59,6 +59,10 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 
 ## Versioning & lifecycle
 
+> Why there are two tag series at all, and how each one reaches a project:
+> [`docs/VERSIONING.md`](../../docs/VERSIONING.md). The rules below are the binding ones
+> for template authors.
+
 - Releases are **repo-wide git tags `vX.Y.Z`** (copier resolves "latest" from
   PEP440-parseable tags; per-template tags like `name/v1` would be invisible to it).
   Both presets release in lockstep; a release touching one preset is a no-op update

@@ -167,7 +167,12 @@ ignore gates. Both workflows accept an optional `coverage-lines-baseline` (node 
   same project tasks locally for fast feedback; the QE agent runs the full gate set.
 - Threshold changes happen only via PR to this directory — review is the single
   discretion point.
-- Consumers pin `@gates-v*` tags; bumping is a one-line PR per project.
+- Consumers pin `@gates-v*` tags; bumping is a one-line PR per project. That series is
+  **separate from the template's `vX.Y.Z` tags on purpose** — a threshold change must reach
+  projects without re-templating them, and `gates-v*` is deliberately not PEP440-parseable
+  so copier ignores it. A template release does NOT carry a gate bump: `gates_ref` is a
+  recorded answer that `copier update --skip-answered` preserves. Full explanation:
+  [`docs/VERSIONING.md`](../docs/VERSIONING.md).
 - **Pinned tool versions are refreshed, not frozen.** A pin buys reproducibility, not
   immortality: a security tool packaged in Python (semgrep, osv-scanner) eventually stops
   starting on a newer runner image, and the failure lands in *downstream* CI, where it reads

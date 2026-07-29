@@ -112,6 +112,7 @@ audit) blocks in **every** tier: fast never means leaky.
 | **[Features](docs/FEATURES.md)** | what WellForge does — the 6 pillars in detail |
 | **[Installation](docs/INSTALLATION.md)** | machine setup — brew fast path or manual |
 | **[Quick start](docs/QUICKSTART.md)** | idea → running project in ~30 minutes |
+| **[Versioning](docs/VERSIONING.md)** | why there are two tag series (`vX.Y.Z` templates, `gates-vN` gates) and how each reaches a project |
 | [PLAN.md](docs/PLAN.md) · [rigor tiers](docs/PLAN-rigor-tiers.md) | build roadmap, per-phase status, honest deviations |
 
 ## Under the hood
@@ -137,7 +138,8 @@ gates + a generated `lefthook.yml`). See [multi-tool support](docs/MULTI-TOOL-SU
 
 All 6 pillars built and E2E-tested, plus rigor tiers and release management. Works with
 **Claude Code, OpenCode, and GitHub Copilot** (VS Code, via adapter). Latest: template
-`v0.9.0`, gates `gates-v11`, plugin `2.23.1`.
+`v0.9.0`, gates `gates-v11`, plugin `2.23.1` — three series that move independently, see
+[versioning](docs/VERSIONING.md).
 Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/PLAN.md).
 
 Built for any team. **[MIT licensed](LICENSE).** Contributions: PRs to `templates/` and gate
