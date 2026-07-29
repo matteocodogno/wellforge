@@ -41,6 +41,17 @@ jobs:
       gates-ref: {{ gates_ref }}
       working-directory: backend
       rigor: {{ rigor }}
+{%- if db == 'postgres' %}
+      # Integration tests get the same Postgres the project already runs locally. Add more
+      # services (mailhog, redis, minio) to docker-compose.yml and CI picks them up — the
+      # shared gate needs no change, because it starts YOUR compose file.
+      compose-file: docker-compose.yml
+      # backend/src/config/env.ts parses DATABASE_URL at import time, so tests need it set
+      # even when they never touch the database. This file matches docker-compose.yml.
+      env-file: backend/.env.example
+      # Once the project has migrations, uncomment so integration tests meet a real schema:
+      # pretest-command: pnpm db:migrate
+{%- endif %}
 
   frontend:
     name: Frontend quality

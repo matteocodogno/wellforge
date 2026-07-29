@@ -77,7 +77,7 @@ gates_repo:
 gates_ref:
   type: str
   help: Tag pinning the gate workflows in generated CI
-  default: gates-v10
+  default: gates-v11
 
 heartbeat:
   type: bool
@@ -99,7 +99,7 @@ heartbeat_cron:
 # conflicts (found by the Phase 6 E2E test). Generation date lives in git history.
 template_version:
   type: str
-  default: "0.8.0"
+  default: "0.9.0"
   when: false
 
 # ── Stack-specific questions ──

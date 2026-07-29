@@ -39,6 +39,21 @@ frontend, managed with **mise** + **pnpm**.
 | `mise run frontend:<task>` | Run a frontend-only task (install/dev/build/test/lint/typecheck) |
 | `mise run git-policy` | Apply the linear-history git config to this clone (run once) |
 
+## Integration tests and backing services
+
+`docker-compose.yml` is the single source of truth for backing services — locally **and** in
+CI. The quality gate starts it with `docker compose up -d --wait` before running tests, so an
+integration test meets the same Postgres you develop against.
+
+- **Adding a service** (mailhog, redis, minio): add it to `docker-compose.yml` with a
+  `healthcheck:`. CI picks it up with no workflow change — the gate starts *your* file.
+  Without a healthcheck, `--wait` only proves the container is running, and a slow starter
+  becomes a flaky test.
+- **Env**: `.github/workflows/quality.yml` exports `backend/.env.example` into the job, which
+  is why `DATABASE_URL` is set in CI. Keep that file in step with `docker-compose.yml`.
+- **Migrations**: once the project has some, uncomment `pretest-command: pnpm db:migrate` in
+  `.github/workflows/quality.yml` so integration tests run against a real schema.
+
 ## Git policy — linear history + Conventional Commits
 
 - **No merge commits, ever.** Rebase onto `main` and integrate fast-forward
