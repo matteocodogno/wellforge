@@ -89,6 +89,61 @@ jobs:
         working-directory: wellforge-plugin
         run: uv run --with pyyaml python scripts/check-routing.py --tool claude
 
+  # SAST self-test. The gates ship semgrep as a PINNED Python app, and an old pin eventually
+  # stops starting on a newer runner Python — which surfaces as a red SAST gate in every
+  # downstream project, not here (this repo runs no quality-*.yml on itself). That is exactly
+  # how the 1.96.0 / pkg_resources breakage reached a pilot project before us. This job runs
+  # the pinned semgrep against a known-bad and a known-good fixture, so the pin failing to run,
+  # the rules failing to parse, or the rules failing to FIRE all break wellforge's own CI first.
+  sast-selftest:
+    name: SAST self-test (pinned semgrep runs + rules fire)
+    runs-on: ubuntu-latest
+    env:
+      SEMGREP_SEND_METRICS: "off"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Read the pin from the gates (and assert node/jvm agree)
+        id: pin
+        run: |
+          node=$(grep -E '^\s*SEMGREP_VERSION:' .github/workflows/quality-node.yml | awk '{print $2}')
+          jvm=$(grep -E '^\s*SEMGREP_VERSION:' .github/workflows/quality-jvm.yml | awk '{print $2}')
+          if [ "$node" != "$jvm" ]; then
+            echo "::error::gates pin different semgrep versions (node=$node jvm=$jvm)"; exit 1
+          fi
+          echo "version=$node" >> "$GITHUB_OUTPUT"
+          echo "pinned semgrep: $node"
+
+      - name: Fixtures
+        run: |
+          mkdir -p /tmp/sast/bad/src/main/kotlin /tmp/sast/good/src
+          # Deliberately LOW-entropy placeholder: it must trip wellforge-hardcoded-secret
+          # (16+ chars after an api_key-ish name) without tripping the gitleaks security
+          # floor, which scans this workflow file itself and rejects a realistic-looking key.
+          cat > /tmp/sast/bad/src/bad.ts <<'EOF'
+          const apiKey = "notarealsecretnotarealsecret";
+          export function f() { debugger; return apiKey; }
+          EOF
+          printf 'fun main() {\n    println("hello")\n}\n' > /tmp/sast/bad/src/main/kotlin/App.kt
+          printf 'export function g(): number { return 42; }\n' > /tmp/sast/good/src/good.ts
+
+      - name: Known-bad fixture must FAIL the gate
+        run: |
+          if pipx run semgrep=="${{ steps.pin.outputs.version }}" scan \
+               --config "$GITHUB_WORKSPACE/gates/configs/semgrep/wellforge.yml" \
+               --error --severity ERROR /tmp/sast/bad; then
+            echo "::error::semgrep did not flag the known-bad fixture — rules stopped firing"
+            exit 1
+          fi
+          echo "OK — known-bad fixture rejected"
+
+      - name: Known-good fixture must PASS the gate
+        run: |
+          pipx run semgrep=="${{ steps.pin.outputs.version }}" scan \
+            --config "$GITHUB_WORKSPACE/gates/configs/semgrep/wellforge.yml" \
+            --error --severity ERROR /tmp/sast/good
+          echo "OK — known-good fixture accepted"
+
   # Both presets must still scaffold a valid project from the root copier.yml with --defaults.
   # We assert the CONTRACT's required files exist; no build (keeps CI fast, no toolchains).
   scaffold:

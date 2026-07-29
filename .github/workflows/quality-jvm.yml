@@ -44,7 +44,11 @@ env:
   JACOCO_VERSION: 0.8.12
   KTLINT_PLUGIN: com.github.gantsign.maven:ktlint-maven-plugin:3.2.0
   OSV_SCANNER_VERSION: v2.0.0
-  SEMGREP_VERSION: 1.96.0
+  # Keep this pin CURRENT, not just reproducible — see the note in quality-node.yml: an old
+  # semgrep stops starting on new runner Pythons (pkg_resources, removed in setuptools >= 81),
+  # which shows up as a red SAST gate in every downstream project. `sast-selftest` in ci.yml
+  # catches it here first.
+  SEMGREP_VERSION: 1.172.0
   SEMGREP_SEND_METRICS: "off"
 
 jobs:

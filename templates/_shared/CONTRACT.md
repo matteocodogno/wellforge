@@ -29,7 +29,7 @@ uvx copier copy --trust <wellforge repo/URL> <dest> --data preset=<preset>
 | `ci` | choice | `github` (default) / `none` |
 | `rigor` | choice | `production` (default) / `mvp` / `spike` — sets CI strictness; recorded in the manifest (wellforge rigor-tiers skill) |
 | `gates_repo` | str | default `matteocodogno/wellforge` — owner/repo hosting the reusable gate workflows |
-| `gates_ref` | str | default `gates-v8` — tag pinned in generated CI |
+| `gates_ref` | str | default `gates-v9` — tag pinned in generated CI |
 | `heartbeat` | bool | default `true` — add the scheduled heartbeat workflow (re-runs the gate on a cadence, files findings to one deduplicated issue). Takes effect only for `ci == github` and `rigor != spike`; recorded in the manifest |
 | `heartbeat_cron` | str | default `0 6 * * 1` (weekly, Mon 06:00 UTC) — cron for the heartbeat |
 

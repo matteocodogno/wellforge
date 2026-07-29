@@ -49,7 +49,13 @@ env:
   COVERAGE_LINES: "80"
   COVERAGE_BRANCHES: "70"
   AUDIT_LEVEL: high
-  SEMGREP_VERSION: 1.96.0
+  # Keep this pin CURRENT, not just reproducible. semgrep ships as a Python app, and old
+  # releases stop starting on new runner Pythons: 1.96.0 pulled an opentelemetry-instrumentation
+  # that imports `pkg_resources`, which Python 3.12+ dropped and setuptools >= 81 REMOVED — so
+  # "install setuptools" is not a fix (it needs setuptools<81, pinning a second EOL package).
+  # A stale pin is a silently red SAST gate for every downstream project. See ci.yml's
+  # `sast-selftest` job — it fails here first if this pin stops running.
+  SEMGREP_VERSION: 1.172.0
   SEMGREP_SEND_METRICS: "off"
 
 jobs:

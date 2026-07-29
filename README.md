@@ -18,7 +18,7 @@
 
 ![template](https://img.shields.io/badge/template-v0.7.0-1f6feb)
 ![plugin](https://img.shields.io/badge/plugin-v2.22.0-8957e5)
-![gates](https://img.shields.io/badge/gates-gates--v7-2da44e)
+![gates](https://img.shields.io/badge/gates-gates--v9-2da44e)
 ![works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode%20%2B%20Copilot-111)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -137,7 +137,7 @@ gates + a generated `lefthook.yml`). See [multi-tool support](docs/MULTI-TOOL-SU
 
 All 6 pillars built and E2E-tested, plus rigor tiers and release management. Works with
 **Claude Code, OpenCode, and GitHub Copilot** (VS Code, via adapter). Latest: template
-`v0.7.0`, gates `gates-v8`, plugin `2.22.0`.
+`v0.7.0`, gates `gates-v9`, plugin `2.22.0`.
 Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/PLAN.md).
 
 Built for any team. **[MIT licensed](LICENSE).** Contributions: PRs to `templates/` and gate
