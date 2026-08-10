@@ -19,19 +19,49 @@ if [ -n "$SPECS_CHANGED" ] && [ -z "$TASKS_CHANGED" ]; then
 fi
 
 # ── TypeScript compile check ─────────────────────────────────────────────────
+# Monorepo-aware: for each changed .ts/.tsx file walk UP to the nearest directory holding BOTH
+# a package.json and a tsconfig.json — that is the real compile unit. Never assume `frontend/`
+# or the repo root: lerna/pnpm/nx workspaces routinely have a root package.json with no
+# tsconfig and no typescript dep (tooling only), so the old fallback ran `tsc` where it cannot
+# exist and blocked EVERY turn touching a .ts file.
+# Blocks only on genuine type errors; a missing/unrunnable tsc is an environment fact → advisory.
 CHANGED_TS=$(git -C "$PROJECT_DIR" diff --name-only 2>/dev/null | grep -E '\.(ts|tsx)$')
-if [ -n "$CHANGED_TS" ]; then
-  FRONTEND_DIR="$PROJECT_DIR/frontend"
-  [ ! -d "$FRONTEND_DIR" ] && FRONTEND_DIR="$PROJECT_DIR"
-  if [ -f "$FRONTEND_DIR/package.json" ]; then
-    cd "$FRONTEND_DIR" || exit 0
-    TSC_OUT=$(pnpm exec tsc --noEmit 2>&1)
-    if [ $? -ne 0 ]; then
-      echo "TypeScript errors — fix before finishing:" >&2
+if [ -n "$CHANGED_TS" ] && command -v pnpm >/dev/null 2>&1; then
+  TS_DIRS=""
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    d="$PROJECT_DIR/$(dirname "$f")"
+    while [ "$d" != "/" ]; do
+      if [ -f "$d/tsconfig.json" ] && [ -f "$d/package.json" ]; then
+        case "$TS_DIRS" in
+          *"|$d|"*) ;;
+          *) TS_DIRS="$TS_DIRS|$d|"$'\n' ;;
+        esac
+        break
+      fi
+      [ "$d" = "$PROJECT_DIR" ] && break
+      d=$(dirname "$d")
+    done
+  done <<< "$CHANGED_TS"
+
+  if [ -z "$TS_DIRS" ]; then
+    echo "stop-verify: no tsconfig.json found above the changed .ts files — type check skipped (advisory)" >&2
+  fi
+  while IFS= read -r marked; do
+    [ -z "$marked" ] && continue
+    dir="${marked#|}"; dir="${dir%|}"
+    # `pnpm exec tsc --version` separates "typescript isn't installed here" (advisory) from
+    # "the code doesn't compile" (blocking) — both would otherwise be a non-zero exit.
+    if ! (cd "$dir" && pnpm exec tsc --version) >/dev/null 2>&1; then
+      echo "stop-verify: typescript not available in $dir — type check skipped (advisory)" >&2
+      continue
+    fi
+    if ! TSC_OUT=$( (cd "$dir" && pnpm exec tsc --noEmit) 2>&1 ); then
+      echo "TypeScript errors in $dir — fix before finishing:" >&2
       echo "$TSC_OUT" | head -20 >&2
       exit 2
     fi
-  fi
+  done <<< "$TS_DIRS"
 fi
 
 # ── Kotlin/Maven compile check ───────────────────────────────────────────────

@@ -27,7 +27,16 @@ has_eslint_config() {
 
 case "$EXT" in
   ts|tsx|js|jsx|json|yaml|yml)
-    FRONTEND_DIR="$PROJECT_DIR/frontend"; [ ! -d "$FRONTEND_DIR" ] && FRONTEND_DIR="$PROJECT_DIR"
+    # Same monorepo rule as stop-verify.sh: walk UP from the edited file to the nearest
+    # package.json rather than assuming `frontend/` or the repo root — in a lerna/pnpm
+    # workspace the formatter config lives in the package, not at the root.
+    FRONTEND_DIR=$(dirname "$FILE")
+    while [ "$FRONTEND_DIR" != "/" ]; do
+      [ -f "$FRONTEND_DIR/package.json" ] && break
+      [ "$FRONTEND_DIR" = "$PROJECT_DIR" ] && break
+      FRONTEND_DIR=$(dirname "$FRONTEND_DIR")
+    done
+    [ -f "$FRONTEND_DIR/package.json" ] || exit 0
     command -v pnpm &>/dev/null || exit 0
     cd "$FRONTEND_DIR" || exit 0
     # Prettier: only when the project configures it; failures are advisory, never blocking.
