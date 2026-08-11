@@ -28,7 +28,7 @@ idea ─/wellforge:spec→ spec.md ─[approve]─/wellforge:plan→ plan.md ─
 |---|---|---|
 | `spec.md` | problem, user stories with Given/When/Then acceptance criteria, non-goals, open questions | Product Owner |
 | `plan.md` | architecture, data model, API contracts, AC→test mapping, risks | Architect |
-| `design.md` (UI features) | flows, screens & states, component reuse map, a11y | Designer (ungated by default; `/wellforge:design --gate` adds an approve/iterate checkpoint) |
+| `design.md` (UI features) | flows, screens & states, component reuse map, a11y, and — for a new product surface only — a `## Visual direction` token system (`frontend-design` skill) | Designer (ungated by default; `/wellforge:design --gate` adds an approve/iterate checkpoint) |
 | `tasks.md` | DAG-ordered tasks, each with AC refs, deps, touched files, objective "done when" | derived |
 
 Key properties:
@@ -95,6 +95,12 @@ two specialists):
 Agents run non-interactively: they cannot ask the user anything (questions become
 `## Open questions`) and can never set `approved` — approval physically lives in the
 calling session.
+
+When anything goes red, every agent (and the main loop) debugs under the
+`systematic-debugging` skill: no fix without a stated root cause, one change at a time, no
+silencing a symptom with a raised timeout / retry / skipped test / lowered threshold, and a
+**3-failed-attempts stop** that treats the fourth try as an architecture question — routed as
+drift to the architect, not patched.
 
 ## 3. AI orchestrator
 

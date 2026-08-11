@@ -301,7 +301,8 @@ Honest status: both are prompt/skill-authored (no runtime tests beyond the visua
 server smoke test and the extraction's `--defaults` render check). Live validation is pending —
 a real `/wellforge:design --visual` session and a `/wellforge:extract-template` run on a
 brownfield repo (pairs with the Phase 7 pilot). Shipped on the plugin v2.19.x line; plugin.json
-version not yet bumped for these.
+was not bumped in those two commits — the version caught up at the Phase 14 release (`2.22.0`),
+so both are carried by every plugin version since.
 
 ## Phase 13 — Loop engineering: parallel worktree isolation (added 2026-07-06)
 
@@ -424,6 +425,49 @@ not auto-enabled**; the Claude Code routine must degrade to `gh`/API auth in hea
 (interactive MCP servers may be absent), and cadence/thresholds still want the pilot's real signal.
 14b was built ahead of the pilot at the user's request; the pilot confirms whether the agentic layer
 earns its keep over the deterministic heartbeats alone.
+
+## Phase 15 — Craft skills: visual direction & debugging discipline (added 2026-08-11)
+
+Goal: two gaps that surfaced from comparing WellForge's skill set against public skill
+collections. Both are **discipline** skills (like `rigor-tiers`), not stack conventions —
+they govern *how* work is done rather than what a stack looks like.
+
+- ☑ **`frontend-design`** (plugin `2.24.0`, commit 48c61f7). Everything else in the plugin
+  pushes toward sameness — reuse the library, match the surrounding code, never add a second
+  UI library — which is right for internal apps and wrong when the surface *is* the product.
+  This is the gated exception. A **surface-class gate** runs first: a feature inside an
+  existing design system → the system wins (the common case, and the skill says so rather
+  than implying a shortfall); a new public-facing area → inherit type + neutrals, spend ONE
+  new axis; a greenfield first UI / prototype / demo → full two-pass direction. Produces a
+  token system (color / type / layout / signature) as an optional `## Visual direction`
+  section in `design.md`, which frontend-dev implements as **theme tokens**, never ad-hoc
+  CSS. Anti-default calibration names the three AI-design clichés plus **our own fourth**
+  (untouched Mantine + slate/indigo Tailwind + `rounded-md` + a gradient stat row).
+  Checkable floor: computed contrast (4.5:1 / 3:1), visible focus, reduced motion by media
+  query, 360px — plus a font-delivery rule (no CDN `<link>` under a CSP or an offline build).
+  Wired into designer (artifact template + when to load), frontend-dev (binding when
+  present), `/wellforge:design` step 4, and the Copilot adapter as a command-scoped skill.
+- ☑ **`systematic-debugging`** (plugin `2.25.0`, commit e9cbdb8). The `bugfix` pipeline
+  covered the *workflow* (QE repro → dev fix → QE verify) but nothing covered the
+  *investigation*, and it only existed inside `/wellforge:orchestrate` — while most debugging
+  happens in the main loop, in a spike, or inside a dev agent whose own tests go red. Adds
+  the **iron law** (no fix without a stated root cause, at every tier including spike), the
+  **fix-attempt counter** (3 failures on one symptom = architecture signal → routed through
+  the existing drift rule to the architect, never a fourth patch; in a spike it *is* the
+  finding), and **never-make-the-symptom-disappear**, which extends the dev agents' existing
+  "don't weaken the gate" rule to raised timeouts, unexplained retries, catch-and-log,
+  `.skip`/`@Disabled` and lowered thresholds. Phase 4 delegates to `quality-engineer`'s
+  bug-reproduction mode rather than restating it, keeping one source of truth for the repro
+  rule. The counter **composes** with `/wellforge:implement`'s 2-round QE loop — whichever
+  trips first, stops. Wired into both dev agents, QE, the bugfix pipeline, implement's
+  escalation loop, and spike's advisory-gate step; Copilot gets the iron law + counter
+  repo-wide in `copilot-instructions.md` (no path glob fits an "anything goes red" trigger).
+
+Honest status: both are prompt-authored, verified only by re-running the Copilot adapter
+(both land in `.github/wf-skills/`). Neither has runtime teeth — in particular the attempt
+counter is a discipline the model keeps, not something a hook enforces. The enforceable
+version would be a `PostToolUse` hook counting consecutive edit→failed-test cycles on the
+same file; deliberately not built yet. Live validation pairs with the Phase 7 pilot.
 
 ## Order & dependencies
 
