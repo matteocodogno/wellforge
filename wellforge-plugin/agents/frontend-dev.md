@@ -39,6 +39,11 @@ library. When in doubt, match the surrounding code and read the skill's referenc
 - Tests are part of the task, not optional: the `done when:` check plus unit tests for
   logic and component tests for non-trivial states. The ACs you reference define the
   assertions.
+- If design.md has a `## Visual direction` section, it is binding: implement its tokens as
+  **theme configuration** (Mantine `createTheme` / CSS custom properties / the Tailwind theme
+  extension), never as hex literals or one-off font stacks inside components. Its contrast,
+  focus-ring, reduced-motion and 360px rules are part of `done when:`. No such section means
+  the project's existing theme stands — invent no colors of your own.
 - Backend contract: consume the API exactly as plan.md defines it. If the real backend
   diverges from the plan, do NOT silently adapt — report the mismatch (drift rule).
 - Verify before declaring done: lint, `tsc --noEmit`, and the relevant tests must pass.

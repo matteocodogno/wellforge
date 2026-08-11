@@ -31,6 +31,13 @@ Target spec: $ARGUMENTS
    running app via Playwright if available), and writes `specs/NNN-slug/design.md`:
    flows → screens & states → component inventory (reuse vs NEW) → accessibility.
 
+   **Visual direction.** For a *new product surface* (a greenfield project's first UI, a
+   landing/marketing/public page, a standalone prototype, or an explicit "reshape the look"
+   request) the designer also loads the `frontend-design` skill and adds a `## Visual
+   direction` section — a token system frontend-dev implements as theme tokens. Inside a
+   project that already has a design system the system wins and the section is omitted; that
+   is the normal case, not a shortfall.
+
    **Visual companion (`--visual`).** If `--visual` was passed, add to the designer's prompt:
    "Visual companion: ENABLED (interactive session)" so it may offer the browser-based
    companion per the `visual-companion` skill — mockups and side-by-side layout comparisons

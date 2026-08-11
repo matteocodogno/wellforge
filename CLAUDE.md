@@ -64,9 +64,9 @@ wellforge/
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,
-│   │                         # template-extraction, connections + stack skills (react-ts-vite,
-│   │                         # kotlin-springboot, hono-ts-backend, mise, springboot-scaffold,
-│   │                         # pulumi-gcp-ts)
+│   │                         # frontend-design, template-extraction, connections + stack
+│   │                         # skills (react-ts-vite, kotlin-springboot, hono-ts-backend,
+│   │                         # mise, springboot-scaffold, pulumi-gcp-ts)
 │   ├── config/               # model-routing.yml + model-tiers.yml (tool-neutral tiers)
 │   ├── hooks/                # lifecycle hooks (incl. SubagentStop run-trace telemetry)
 │   └── .mcp.json             # sequential-thinking, playwright, github, context-hub

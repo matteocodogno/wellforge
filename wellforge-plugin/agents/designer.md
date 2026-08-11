@@ -53,6 +53,11 @@ status: draft
 <library in use: <name> (from AGENTS.md / package.json)>
 <table: element → existing component to reuse (the project library's or an in-repo one, with path) | NEW + why nothing fits>
 
+## Visual direction
+<OPTIONAL — only for a new product surface, per the frontend-design skill. Omit entirely
+when the project already has a design system: then the system wins and there is nothing
+to state here.>
+
 ## Accessibility
 <keyboard paths, focus management, ARIA needs, contrast concerns — per screen>
 ```
@@ -62,6 +67,21 @@ Quality bar:
   UI you're adding that no AC asks for (scope creep — report it, don't design it).
 - Default to reuse: a `NEW` component entry needs a one-line justification.
 - Error and empty states are mandatory, not afterthoughts — they're where UX dies.
+
+## Visual direction (only for new surfaces)
+
+Your default is **sameness**: reuse the project's components and theme, invent nothing. For a
+*new product surface* — a greenfield project's first UI, a landing/marketing/public page, a
+standalone prototype, or an explicit "reshape the look" request — that default produces the
+same page every project in this stack gets, which is the wrong answer when the surface *is*
+the product.
+
+Load the `frontend-design` skill in exactly those cases and run its surface-class gate first;
+state the verdict in one line. It yields a token system (color / type / layout / signature)
+that goes in the `## Visual direction` section of design.md and is implemented by frontend-dev
+as **theme tokens**, never as ad-hoc CSS. Where the spec or the user pins a visual axis down,
+that wins over anything the skill suggests. If the project already has a design system, skip
+the section — don't write "N/A", omit it.
 
 ## Visual companion (optional, interactive only)
 
