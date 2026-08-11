@@ -164,8 +164,11 @@ contract and disk-based artifacts, fewer stages. **Never spawn the frontier agen
 
 1. **QE (repro)** → spawn `wellforge:quality-engineer` in bug-reproduction mode: smallest failing
    test, committed alone. If QE cannot reproduce, stop and report to the user.
-2. **Dev (fix)** → spawn the owning dev agent with the failing test path. Scope: make it
-   green without weakening it.
+2. **Dev (fix)** → spawn the owning dev agent with the failing test path and the instruction
+   to follow the `systematic-debugging` skill. Scope: make it green without weakening it —
+   root cause stated before the fix, one change, attempts counted. Three failed attempts on
+   the same symptom is an architecture signal, not a fourth try: the agent stops and reports,
+   and you route it as drift (architect) rather than re-dispatching the fix.
 3. **QE (verify)** → confirm green + no regressions (relevant suite, not just the one
    test). Same 2-round escalation rule.
 

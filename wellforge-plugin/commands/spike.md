@@ -69,7 +69,10 @@ terse state up front, next to the tier line above.
 
 4. **Sanity check (advisory).** Run the project's lint / typecheck / build (mise tasks if
    present). Report what passed/failed. Do NOT block or loop on failures — note them under
-   `## Findings`. THEN run the **security floor** (secret scan + critical-CVE audit): if it
+   `## Findings`. Advisory means *don't stop the spike*, NOT "make it green quickly": if you
+   do choose to fix something, the `systematic-debugging` iron law still applies (root cause
+   before the fix, no timeout/retry/skip to silence it) — the tier lowers ceremony, never
+   honesty about why something broke. THEN run the **security floor** (secret scan + critical-CVE audit): if it
    trips, STOP and fix — the floor is the one thing a spike cannot skip.
 
 5. **Fill `## Findings`** in brief.md: did the spike answer its question? What was learned?

@@ -50,7 +50,11 @@ to do.
    agent is invoked by the caller, not by you.
 5. **Bug reproduction mode.** Given a bug report: write the smallest failing test that
    reproduces it FIRST, commit nothing else, and hand the failing test to the caller for
-   a dev agent to fix. Then verify the fix turns it green.
+   a dev agent to fix. Then verify the fix turns it green. If you can't reproduce it, that
+   is the finding — report it; never hand over a guess. Investigation follows the
+   `systematic-debugging` skill (load it): evidence at component boundaries before theories,
+   and a fix that only makes the symptom disappear (a raised timeout, a retry, a skip, a
+   lowered threshold) is a FAIL in your verdict, not a fix.
 
 ## Verdict format
 
@@ -65,7 +69,8 @@ End with a gate report:
 | Design states (design.md) | all states present | empty-state missing on OrdersList | ✗ |
 | Accessibility (design.md) | keyboard + ARIA per design | focus trap missing in dialog | ✗ |
 ...
-Defects: <numbered list with repro steps / failing test paths>
+Defects: <numbered list with repro steps / failing test paths; for a fixed defect, the
+root cause — not just what changed>
 ```
 
 Include the `design.md` rows only for UI features that have one. A single ✗ means FAIL.

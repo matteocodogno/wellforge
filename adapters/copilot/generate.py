@@ -47,8 +47,8 @@ _ALL_COPILOT = ["codebase", "search", "usages", "editFiles", "runCommands", "run
 # Skills that map to file paths -> a glob-scoped `.instructions.md` that auto-applies only
 # when matching files are in context (Copilot has no on-demand skill loading, so scoping is
 # how we avoid always-on bloat). `applyTo` takes a comma-separated glob list. Skills NOT here
-# (connections, heartbeat, template-extraction, visual-companion, frontend-design) are
-# command-scoped: copied
+# (connections, heartbeat, template-extraction, visual-companion, frontend-design,
+# systematic-debugging) are command-scoped: copied
 # to the library and referenced by their prompt, never auto-applied.
 _SKILL_APPLY = {
     "react-ts-vite":       "**/*.tsx,**/*.jsx,**/*.css",
@@ -215,6 +215,13 @@ conventions). The full skills — with their `references/` deep-dives — live i
 No secrets/credentials in code; dependency audit on critical CVEs; lint + type-check + tests
 must pass before "done". Gates run in CI (`.github/workflows/`) and locally via the generated
 git hooks (`lefthook.yml`). Never weaken a gate to make code pass.
+
+## Debugging (all work, non-negotiable)
+No fix without a stated root cause — "X is the root cause because Y" before you edit. One
+change at a time; never silence a symptom with a raised timeout, a retry, a skipped test, or
+a lowered threshold. Count fix attempts: after 3 failures on the same symptom, stop and
+question the design instead of trying a fourth. Full process:
+`.github/wf-skills/systematic-debugging/SKILL.md`.
 """
 
 

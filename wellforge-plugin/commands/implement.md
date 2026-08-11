@@ -133,7 +133,10 @@ mode you used.
   test path included); a wrong/missing/untestable AC → `wellforge:product-owner`; a wrong
   contract/architecture → `wellforge:architect`; a missing designed state/a11y →
   `wellforge:designer` (each a drift amendment + `/wellforge:tasks` re-sync). Re-run QE. **Max
-  2 fix rounds**, then stop and escalate.
+  2 fix rounds**, then stop and escalate. Dev agents debug per the `systematic-debugging`
+  skill; its **3-attempts-on-one-symptom** stop composes with this 2-round cap — whichever
+  trips first, stop. An agent reporting three failed attempts is an architecture signal:
+  route it to the architect, don't spend the second round re-dispatching the same fix.
 - **`mvp`** — QE runs in **advisory** mode (rigor-tiers): only SAST-high, lint, typecheck, and
   the security floor block; coverage is reported as gap-to-80%, not enforced. Same 2-round loop
   for blocking defects only.

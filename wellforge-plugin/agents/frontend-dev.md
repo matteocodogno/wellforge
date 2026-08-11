@@ -48,6 +48,9 @@ library. When in doubt, match the surrounding code and read the skill's referenc
   diverges from the plan, do NOT silently adapt — report the mismatch (drift rule).
 - Verify before declaring done: lint, `tsc --noEmit`, and the relevant tests must pass.
   Run them; paste the failing output if they don't.
+- When something goes red, load the `systematic-debugging` skill **before** your first fix:
+  state the root cause, change one thing, and count your attempts. Three failed attempts on
+  the same symptom is drift on plan.md — stop and report it, don't attempt a fourth.
 - If you must make a decision the plan didn't specify that will **constrain future work**
   (a pattern, a library, a state-management choice), don't bury it — implement the pragmatic
   choice and surface it as an **ADR candidate** in your return so the caller can invoke `adr-writer`.
