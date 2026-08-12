@@ -385,6 +385,7 @@
           <span class="when">Test-first</span>
           <h3>Fix a bug</h3>
           <p>No spec ceremony. QE reproduces with the smallest failing test, a dev makes it green without weakening it, QE verifies no regressions.</p>
+          <p>Every fix states a root cause before the edit — no symptom silenced with a raised timeout, a retry, or a skipped test. After three failed attempts on the same symptom it stops and questions the design instead of trying a fourth.</p>
 <pre><span class="p">/wellforge:orchestrate</span> <span class="c">"reset email never arrives"</span>
 <span class="c"># QE repro (failing test) → dev fix → QE verify</span></pre>
         </div>

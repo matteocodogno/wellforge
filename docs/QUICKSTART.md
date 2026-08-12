@@ -114,6 +114,30 @@ Rules worth knowing on day one:
 | template released a new version | `/wellforge:upgrade` — diff explained, conflicts resolved with you, gates re-run, one revertable commit |
 | check the fleet | `scripts/fleet-status.sh <github-org>` (from the wellforge repo) |
 
+### When something breaks
+
+Debugging is a **skill, not a command** — there is no `/wellforge:debug`. It loads itself the
+moment anything goes red (failing test, red gate, build or CI failure, flaky test, unexpected
+behavior), because that's when it's needed, not when you remember to ask. Paste the stack
+trace or say "the build's failing" and it applies. To force it: `/wellforge:systematic-debugging`,
+or "use systematic debugging on this".
+
+It applies everywhere, not just in agent runs — the main loop, a `/wellforge:spike`, and dev
+agents mid-task all work under it. What you'll notice:
+
+| Instead of | You get |
+|---|---|
+| a fix proposed straight from the error | a stated root cause first — "X is the root cause because Y" |
+| three changes at once, then re-run | one change per hypothesis, so you know which one mattered |
+| the symptom quietly silenced | no raised timeout, unexplained retry, `.skip`/`@Disabled`, or lowered threshold — each hides the bug *and* the evidence |
+| a fourth fix attempt | a stop: 3 failures on one symptom is an architecture signal, routed as drift to the architect (in a spec'd feature), recorded as the finding (in a spike), or said to you plainly (main loop) |
+
+The 3-attempt stop composes with `/wellforge:implement`'s 2-round QE loop — whichever trips
+first, the work stops and escalates rather than looping.
+
+This is discipline, not enforcement: nothing counts attempts for you. If a fix ever arrives
+without a root cause, say "root cause first" — that's the whole trigger.
+
 ### Iterating an agent command
 
 Agent commands are **one-shot, not a mode.** `/wellforge:orchestrate` and
