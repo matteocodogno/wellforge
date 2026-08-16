@@ -520,6 +520,16 @@ else**, and we had reasoned as though it isolated the environment.
   *counter*, and their merge is clean while the ordering is wrong. `/wellforge:tasks` gains an
   overlap check at derivation time (declare the edge, merge the tasks, or say why). Phase 13's
   merge-conflict detection stays as the backstop for overlap the lists failed to declare.
+- ☑ **ADRs must state the failure shape** (the meta-finding). ADR 0013 in the pilot described
+  its rule at *mechanism* level; an agent who had read it, and was actively applying it on the
+  read side, reintroduced the same defect on the write side. Correct rule, correctly followed,
+  and it still didn't transfer. `adr-writer`'s MADR template gains a required **`## Failure
+  shape`** section — the class of mistake, stated so it's recognisable in a context we haven't
+  met — plus a **symmetry test** (read/write, request/response, serialize/deserialize: would
+  this text catch me in the mirror-image position?) and "no failure shape" as a legitimate,
+  explicit answer for pure preferences. The `AGENTS.md` one-liner — often the only part a
+  future session reads — now leads with the shape, not the ban.
+
 Deferred to its own cut (template series, so a `vX.Y.Z` release per `docs/VERSIONING.md`):
 **per-worktree test-database naming** and a **dev-database guard** in the presets. The plugin
 can refuse to *dispatch* into an unsafe batch, but a guard that refuses to run at all from a

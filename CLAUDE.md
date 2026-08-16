@@ -96,6 +96,10 @@ wellforge/
   an explicit, raise-only step. Read `docs/VERSIONING.md` before cutting any release: it
   covers which series to bump, why they are separate, and the never-tag-both-on-one-commit
   rule.
+- **Phase 16** (`docs/PLAN.md`) hardens parallel execution from the pilot's field findings —
+  the `worktree-isolation` skill, environment faults, `touch:`-overlap edges, ADR failure
+  shapes (plugin `2.26.0`). Its template half — per-worktree test databases and a dev-database
+  guard in the presets — is deliberately deferred to its own `vX.Y.Z` cut.
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated
   project, CI-green on GitHub (repo has no remote yet), threshold calibration, v1.0.0 cut.
 
