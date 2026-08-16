@@ -52,8 +52,16 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 - **Refuse to start a task with unchecked deps** that are not themselves in this run.
   If the selection pulls in unmet deps, report them and offer to expand the set to
   include them (user confirms) rather than silently widening scope.
-- Topologically order the selected set by `deps:`. Tasks with no edge between them are
-  **parallelizable** — typically the FE and BE tracks.
+- Build the **effective graph**, which is *not* just `deps:` — load the
+  **worktree-isolation** skill and compute `deps:` ∪ **overlap of `touch:`**:
+  - two tasks whose `touch:` lists share a path get an edge, even with no declared
+    dependency — they were never safe to run concurrently;
+  - **glob overlap counts** (two tasks touching `**/db/migrations/*` collide on the
+    *counter*, not on a file);
+  - **report the edges you added** ("T8 and T12 both touch `db/migrations/*` →
+    serialized") before dispatching. A silently different graph isn't auditable.
+- Topologically order the selected set by that effective graph. Tasks with no edge
+  between them are **parallelizable** — typically the FE and BE tracks.
 
 ## Step 3 — Dispatch
 
@@ -65,8 +73,9 @@ The argument is `[feature] [tasks]` — both optional, feature first.
   **When terse is resolved on** (Step 0), also prepend the terse cue (**terse** skill,
   verbatim) to every dispatched agent's task, right beside the effort cue; when terse is
   resolved off (the default), do not prepend it.
-- Order and dispatch by the DAG: run dependency-independent tasks **in one batch**;
-  sequence only along `deps:` edges. A batch of **one** agent, or a fully sequential chain,
+- Order and dispatch by the **effective graph from Step 2** (`deps:` ∪ `touch:` overlap):
+  run tasks with no edge between them **in one batch**; sequence along every edge, declared
+  or induced. A batch of **one** agent, or a fully sequential chain,
   runs in the **main working tree** — the agent checks its task's box in `tasks.md` on
   completion and commits `feat(<scope>): <title> (T<n>, specs/NNN)`, exactly as before.
 - A batch of **two or more** agents runs with **worktree isolation** (below) so their edits
@@ -95,9 +104,10 @@ follow it verbatim. In order, for any batch of ≥2:
    **integrate** by rebase + `--ff-only` (never a merge commit — the repo forbids them),
    **reconcile** every checkbox centrally in one commit, then **prune** the worktrees *and*
    whatever the preflight isolated.
-4. **A rebase conflict is a collision** — two tasks the DAG called independent touched the
-   same file, so the edge was wrong: surfaced like drift, resolved by a `/wellforge:tasks`
-   re-sync, never auto-resolved.
+4. **A rebase conflict is a collision** — a wrong edge, surfaced like drift, resolved by a
+   `/wellforge:tasks` re-sync, never auto-resolved. With Step 2's `touch:` overlap now
+   feeding the graph, a collision also means the colliding tasks' `touch:` lists were wrong:
+   say so when you surface it.
 
 **Environment faults beat code diagnoses.** If an agent in a worktree reports failures it
 attributes to "pre-existing breakage", check the fault table in the worktree-isolation skill

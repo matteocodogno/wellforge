@@ -46,8 +46,10 @@ Key properties:
   in-progress spec). Dep-free tasks dispatch to FE/BE/devops agents in parallel, then a
   scoped QE verdict — the implementation slice of the orchestrator, callable directly.
 - **Parallel work is isolated, and the isolation is checked** (`worktree-isolation` skill).
-  Each parallel agent runs in its own git worktree, integrated back by rebase +
-  fast-forward. Because a worktree isolates the
+  Two tasks count as independent only on the *effective* graph — declared `deps:` **plus**
+  overlap of their `touch:` lists, globs included, so two tasks both adding a numbered
+  migration get serialized instead of colliding. Each parallel agent then runs in its own git
+  worktree, integrated back by rebase + fast-forward. Because a worktree isolates the
   *checkout* and not the database, ports, containers or credentials the project also reaches,
   a **shared-state preflight** runs first and states what is isolated, forbidden or accepted
   for that batch — anything it can't classify means the batch runs sequentially rather than

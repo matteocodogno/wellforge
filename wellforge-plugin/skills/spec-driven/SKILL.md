@@ -151,13 +151,31 @@ generated: 2026-06-04
 # Tasks: CSV export for reports
 
 - [ ] T1: <imperative title> — refs: US-1, AC-1.1 — deps: none
-  - touch: `backend/src/.../ReportExporter.kt`
+  - touch: `backend/src/.../ReportExporter.kt`, `backend/src/db/migrations/*`
   - done when: <objective check, e.g. "integration test X passes">
 - [ ] T2: ... — deps: T1
 ```
 
 Rules: every task references at least one AC; every AC is covered by at least one task;
 `deps:` must form a DAG (tasks with no mutual deps may run in parallel).
+
+**`touch:` is binding, not commentary.** It is a comma-separated list of repo-relative paths
+or globs, and the parallel dispatcher reads it: two tasks whose `touch:` lists overlap get a
+scheduling edge **even with no declared `deps:`**, because they were never safe to run
+concurrently. So:
+
+- **Effective graph = declared `deps:` ∪ `touch:` overlap.** `deps:` records what must exist
+  before what; overlap records what cannot happen *at the same time*. Both are edges, and
+  only the union is safe to batch on.
+- **Use a glob when the task creates rather than edits** — `db/migrations/*` rather than a
+  guessed filename. Two tasks that each add a sequentially-numbered migration collide on the
+  *counter*, not on a file: the merge is clean and the ordering is wrong. The glob is what
+  makes that visible. Same for any other numbered series.
+- An incomplete `touch:` list is the input that makes a parallel batch unsafe. If a task's
+  real footprint isn't knowable yet, say so (`touch: unknown — <why>`) and it will be
+  scheduled alone rather than guessed at.
+
+See [[worktree-isolation]] for how the effective graph is computed and enforced at dispatch.
 
 ## Workflow gates
 

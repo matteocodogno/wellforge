@@ -60,7 +60,8 @@ ask the user anything and must never self-approve.
   (a class left unclassified means sequential, not a gamble), the env **carry-in** and its
   verification, `isolation: "worktree"` dispatch (each agent commits on its own branch and does
   NOT touch `tasks.md`), rebase + `--ff-only` integration, central checkbox reconciliation, and
-  pruning. Collision handling (a conflict = a wrong edge, surfaced like
+  pruning. Independence is judged on the **effective graph** — declared `deps:` ∪ `touch:`
+  overlap — not on `deps:` alone. Collision handling (a conflict = a wrong edge, surfaced like
   drift) and the sequential fallback come from the same skill. A solo agent or a sequential
   chain runs in the main tree as usual.
 
@@ -88,11 +89,12 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
    Artifact: `tasks.md`. Set spec `status: in-progress`.
 8. **Implementation** → dispatch dev agents (`wellforge:frontend-dev` / `wellforge:backend-dev` / `wellforge:devops`
    per task domain):
-   - Tasks with no dependency edge between them run as **parallel agents in one batch**
-     (typical: FE and BE tracks) under **worktree isolation** (handoff contract); sequence
-     only along `deps:` edges. Merge each track's branch back and reconcile checkboxes
-     centrally per the worktree-isolation protocol; a collision is a wrong edge → surface
-     and re-sync.
+   - Tasks with no edge between them on the **effective graph** (declared `deps:` ∪ `touch:`
+     overlap — glob overlap included, so two tasks creating migrations are serialized) run as
+     **parallel agents in one batch** (typical: FE and BE tracks) under **worktree isolation**
+     (handoff contract). Report any edge the overlap check added. Merge each track's branch
+     back and reconcile checkboxes centrally per the worktree-isolation protocol; a collision
+     is a wrong edge → surface and re-sync.
    - Each agent gets: spec dir path + its task ID(s). Nothing else.
    - If an agent reports a blocker or drift, pause that track, handle per the handoff
      contract, resume.
@@ -147,8 +149,9 @@ contract and disk-based artifacts, fewer stages. **Never spawn the frontier agen
    approved spec — NO separate architect/plan.md. Capture the minimal architecture inline in
    `tasks.md` (touched files, contracts per task). Set spec `status: in-progress`.
 4. **Implementation** → dispatch dev agents (`wellforge:frontend-dev` / `wellforge:backend-dev` /
-   `wellforge:devops`) exactly as in the feature flow — parallel where the DAG allows, under
-   worktree isolation (handoff contract) for any batch of ≥2 independent agents.
+   `wellforge:devops`) exactly as in the feature flow — parallel where the effective graph
+   allows (`deps:` ∪ `touch:` overlap), under worktree isolation (handoff contract) for any
+   batch of ≥2 independent agents.
 5. **QE (light)** → spawn `wellforge:quality-engineer` scoped to the work, in **advisory** mode:
    it runs the gates and reports numbers, but only **SAST-high, lint, typecheck, and the
    security floor BLOCK** (rigor-tiers). Coverage is reported as gap-to-80%, not enforced.

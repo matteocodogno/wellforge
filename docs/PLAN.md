@@ -509,6 +509,17 @@ else**, and we had reasoned as though it isolated the environment.
   never consuming a QE fix round. Wired into both dev agents + devops (worktree blast radius),
   `quality-engineer` (env faults listed separately from defects), implement's triage, and
   `observability` (`env_faults`, additive — schema id unchanged).
+- ☑ **File overlap is a DAG edge.** The pilot batched T8 with T10/T12 correctly per the declared
+  graph and they still collided: no dependency edge, same repository file. `deps:` records what
+  must exist before what; it does not record what cannot happen *at the same time*. So
+  **effective graph = declared `deps:` ∪ `touch:` overlap**, computed before batching, with the
+  added edges reported like drift. `touch:` becomes **binding** rather than commentary
+  (spec-driven skill): repo-relative paths or globs, `unknown` written explicitly rather than
+  omitted or guessed. **Glob overlap counts** — which is what handles the migration case that
+  was worked around by hand in the pilot: two tasks creating in `db/migrations/*` collide on the
+  *counter*, and their merge is clean while the ordering is wrong. `/wellforge:tasks` gains an
+  overlap check at derivation time (declare the edge, merge the tasks, or say why). Phase 13's
+  merge-conflict detection stays as the backstop for overlap the lists failed to declare.
 Deferred to its own cut (template series, so a `vX.Y.Z` release per `docs/VERSIONING.md`):
 **per-worktree test-database naming** and a **dev-database guard** in the presets. The plugin
 can refuse to *dispatch* into an unsafe batch, but a guard that refuses to run at all from a

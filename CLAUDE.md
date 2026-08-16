@@ -119,8 +119,9 @@ wellforge/
   shared-state **preflight** runs before any batch of ≥2 and an unclassified class means
   sequential dispatch, not a gamble. Gitignored env files are **carried in and verified** (env
   that resolves to empty in a worktree looks exactly like broken code — that's an **environment
-  fault**, reported, never fixed in code). Each agent commits on its own branch and does not
-  touch `tasks.md`; branches integrate by rebase + `--ff-only`, checkboxes reconcile
+  fault**, reported, never fixed in code). Independence is judged on the **effective graph**:
+  declared `deps:` ∪ `touch:` overlap, globs included. Each agent commits on its own branch and
+  does not touch `tasks.md`; branches integrate by rebase + `--ff-only`, checkboxes reconcile
   centrally, and a conflict means a wrong edge (a "collision"), surfaced like drift. Set
   `worktree.baseRef: "head"`. Solo/sequential batches stay in the main tree.
 - **Git policy — non-negotiable, here and in every WellForge repo (incl. generated ones):**

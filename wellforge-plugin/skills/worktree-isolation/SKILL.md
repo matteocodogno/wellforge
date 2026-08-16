@@ -7,7 +7,7 @@ description: >
   `/wellforge:orchestrate` implementation stages), whenever an agent working in a worktree hits
   a failure it cannot explain, and whenever deciding if a batch is safe to parallelize at all.
   Authoritative reference for the touches-nothing-outside-itself rule, the shared-state
-  enumeration and its three dispositions, the env carry-in step, and the
+  enumeration and its three dispositions, the env carry-in step, file-overlap DAG edges, and the
   isolate → constrain → integrate → reconcile → prune protocol.
 ---
 
@@ -52,7 +52,7 @@ Walk this list against the project in front of you. It is the checklist the pref
 | 4 | **Containers, compose projects, volumes, networks** | compose project name defaults to the directory (differs), but an explicit `container_name`, a fixed host port, or a named volume does not | **isolate** (explicit per-key project name) |
 | 5 | **Credential stores & secret-backed env** — `.env*`, `.mise.local.toml`, `op://` refs, keychain, cloud CLI default profile / ADC | gitignored, so not *shared* — **absent**. See carry-in below | read: **carry-in** · write: **forbid** |
 | 6 | **Caches & tool state outside the tree** — `~/.m2`, `~/.gradle`, the pnpm store, turbo/nx cache | built for concurrent access | **accept** — except any key the project chooses itself, which is **isolate** |
-| 7 | **Sequence-numbered artifacts** — migration files, ADR numbers, spec numbers | the shared resource is the **counter**, not a file | **forbid** concurrency (two such tasks are ordered, never batched) |
+| 7 | **Sequence-numbered artifacts** — migration files, ADR numbers, spec numbers | the shared resource is the **counter**, not a file | **forbid** concurrency (a DAG edge, see below) |
 | 8 | **External services & tenancies** — staging APIs, queues, buckets, cloud projects, Pulumi stacks, GitHub issues/labels | one mutable tenancy, same address from every checkout | write: **forbid** · read: **accept** |
 | 9 | **Machine-global files & sockets** — fixed `/tmp` paths, lockfiles, sockets, `core.hooksPath` | a literal path, shared by construction | **isolate** (key in the path) or **forbid** |
 | 10 | **The repository outside your checkout** | worktrees share ONE `.git`: refs, tags, stash, local `git config`, hooks. You own only your branch, index and HEAD | **forbid** — no tags, no `git config` writes, no stash, no deleting others' branches |
@@ -87,8 +87,8 @@ or cleanup silently leaks resources and the second run is not reproducible.
 
 ## The preflight — before dispatching a batch of ≥2
 
-Walk the enumeration against this project — read the compose file, the env/mise config and
-the migration directory — and give every class that is **present**
+Walk the enumeration against this project — read the compose file, the env/mise config, the
+migration directory, and the batch's own `touch:` lists — and give every class that is **present**
 a disposition. Then state it compactly before dispatching:
 
 ```
@@ -97,6 +97,7 @@ worktree preflight — 3 agents, batch [T8, T10, T12]
   dev database    forbid     no task in this batch migrates dev
   ports           n/a        no dev server in this batch
   secret env      carry-in   .mise.local.toml, .env.local → verified in all 3
+  migrations      order      T8, T12 both create db/migrations/* → edge added, T12 after T8
   git refs        forbid     agents commit on their own branch only
 ```
 
@@ -129,6 +130,26 @@ failure surfaces much deeper, inside application code, looking exactly like brok
 An agent that meets an unresolved variable reports an **environment fault** and stops. It does not
 diagnose the code, and it never reports "pre-existing breakage" on that evidence — see
 [[systematic-debugging]].
+
+## File overlap is a DAG edge
+
+`deps:` records **logical** order — what must exist before what. It does not record two tasks
+writing the same file, and two tasks can be logically independent and still unsafe to run
+concurrently. Both are edges.
+
+**Effective batching graph = declared `deps:` ∪ overlap of `touch:`.**
+
+- Compute it *before* batching, from the `touch:` list every task carries ([[spec-driven]]).
+- **Glob overlap counts.** Two tasks that both touch `backend/src/db/migrations/*` collide on the
+  counter (class 7) even though neither names the other's file.
+- **Report the edges you added** — "T8 and T12 both touch `db/migrations/*` → serialized" — the
+  same way drift is surfaced. A silently different graph is not auditable.
+- Where two tasks are inseparable rather than merely ordered (both must create in one numbered
+  series as a single unit), the right answer is one task, not two ordered ones. That's a
+  `/wellforge:tasks` re-sync.
+
+This *prevents* the collision that Phase 13's merge-conflict detection *catches*. Keep both: the
+merge check remains the backstop for overlap the `touch:` lists failed to declare.
 
 ## The protocol
 
@@ -175,6 +196,9 @@ independent touched the same file, so they were never independent. Abort the reb
 and resolve by adding the missing edge (`/wellforge:tasks` re-sync) and re-running the later task
 in the now-integrated tree. Never auto-resolve code conflicts silently. Record it in
 `collision_events` ([[observability]]).
+
+A collision after this skill shipped is also a signal about the *inputs*: the tasks' `touch:` lists
+did not describe what the tasks actually did. Say so when you surface it.
 
 ## Symptoms — under-isolation is diagnosable
 
