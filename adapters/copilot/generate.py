@@ -48,7 +48,7 @@ _ALL_COPILOT = ["codebase", "search", "usages", "editFiles", "runCommands", "run
 # when matching files are in context (Copilot has no on-demand skill loading, so scoping is
 # how we avoid always-on bloat). `applyTo` takes a comma-separated glob list. Skills NOT here
 # (connections, heartbeat, template-extraction, visual-companion, frontend-design,
-# systematic-debugging) are command-scoped: copied
+# systematic-debugging, worktree-isolation) are command-scoped: copied
 # to the library and referenced by their prompt, never auto-applied.
 _SKILL_APPLY = {
     "react-ts-vite":       "**/*.tsx,**/*.jsx,**/*.css",

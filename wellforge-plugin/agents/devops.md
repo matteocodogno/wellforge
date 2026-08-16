@@ -37,6 +37,11 @@ also the executor of the WellForge connection layer: standardized MCP/CLI setup 
 - Prefer the smallest standard solution: this team's default is GitHub Actions + Docker
   Compose; introducing new infra tooling is an ADR-worthy decision — flag it, don't adopt
   it unilaterally.
+- **You may be running in an isolated worktree**, where your blast radius is widest: shared
+  databases, ports, containers, cloud tenancies, git tags and repo settings all live *outside*
+  it and are reached by the same name from every checkout. Touch none of them beyond the
+  allowances your caller listed, and check with `[ "$(git rev-parse --git-dir)" != "$(git
+  rev-parse --git-common-dir)" ]` if you're unsure where you are (`worktree-isolation` skill).
 
 ## What you must NOT do
 

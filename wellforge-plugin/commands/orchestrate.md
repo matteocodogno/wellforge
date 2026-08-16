@@ -55,14 +55,13 @@ ask the user anything and must never self-approve.
   verbatim — do not paraphrase) to every dispatched agent's task prompt, right beside the
   effort cue. When terse is resolved off (the `mvp`/`production` default with no `--terse`
   flag), do not prepend it at all.
-- **Parallel isolation.** Any implementation batch of **≥2 dependency-independent agents**
-  runs with git-worktree isolation (Task/Agent tool `isolation: "worktree"`) — each agent
-  commits its code on its own branch and does NOT touch `tasks.md`; you merge the reported
-  branches into the feature branch afterward and reconcile the checkboxes centrally. This is
-  the `/wellforge:implement` **Parallel isolation (worktrees)** protocol — follow it verbatim,
-  including collision handling (a merge conflict = a wrong DAG edge, surfaced like drift) and
-  the sequential fallback when isolation is unavailable. A solo agent or a sequential chain
-  runs in the main tree as usual.
+- **Parallel isolation.** Any implementation batch of **≥2 independent agents** runs under the
+  **worktree-isolation** skill — load it and follow it verbatim: the shared-state **preflight**
+  (a class left unclassified means sequential, not a gamble), `isolation: "worktree"` dispatch (each agent commits on its own branch and does
+  NOT touch `tasks.md`), rebase + `--ff-only` integration, central checkbox reconciliation, and
+  pruning. Collision handling (a conflict = a wrong edge, surfaced like
+  drift) and the sequential fallback come from the same skill. A solo agent or a sequential
+  chain runs in the main tree as usual.
 
 ## Step 1 — Classify
 
@@ -91,7 +90,7 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
    - Tasks with no dependency edge between them run as **parallel agents in one batch**
      (typical: FE and BE tracks) under **worktree isolation** (handoff contract); sequence
      only along `deps:` edges. Merge each track's branch back and reconcile checkboxes
-     centrally per the implement protocol; a merge collision is a wrong DAG edge → surface
+     centrally per the worktree-isolation protocol; a collision is a wrong edge → surface
      and re-sync.
    - Each agent gets: spec dir path + its task ID(s). Nothing else.
    - If an agent reports a blocker or drift, pause that track, handle per the handoff

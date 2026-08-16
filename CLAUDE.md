@@ -56,7 +56,7 @@ wellforge/
 │                             # _subdirectory (required for copier update; repo-wide vX.Y.Z tags)
 ├── .github/workflows/        # reusable gates: quality-node.yml, quality-jvm.yml
 │                             # (must live here — GitHub only resolves workflow_call from this path)
-├── wellforge-plugin/         # Claude Code plugin, v2.9.x (local marketplace install)
+├── wellforge-plugin/         # Claude Code plugin, v2.26.x (local marketplace install)
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, done,
 │   │                         # status, new, upgrade, adopt, extract-template, spike, promote,
@@ -64,7 +64,8 @@ wellforge/
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,
-│   │                         # frontend-design, systematic-debugging, template-extraction,
+│   │                         # frontend-design, systematic-debugging, worktree-isolation,
+│   │                         # template-extraction,
 │   │                         # connections + stack skills (react-ts-vite, kotlin-springboot,
 │   │                         # hono-ts-backend, mise, springboot-scaffold, pulumi-gcp-ts)
 │   ├── config/               # model-routing.yml + model-tiers.yml (tool-neutral tiers)
@@ -88,7 +89,7 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.9.0` (template series, PEP440 — what copier resolves), `gates-v11` (gate
-  workflow pin series — separate, invisible to copier); plugin `2.23.1`. A self-CI workflow
+  workflow pin series — separate, invisible to copier); plugin `2.26.0`. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets.
   The two series move independently: a `vX.Y.Z` release does NOT carry a `gates_ref` bump to
   existing projects (recorded answer + `--skip-answered`) — `/wellforge:upgrade` bumps it as
@@ -111,10 +112,14 @@ wellforge/
   release commit.
 - Quality thresholds live in the gate workflows' `env` blocks — changed only via PR to
   `gates/`/`.github/workflows/`; templates call them pinned to `gates-v*`.
-- Parallel implementation is worktree-isolated: `implement`/`orchestrate` dispatch batches of
-  ≥2 dependency-independent dev agents under `isolation: "worktree"` (each commits on its own
-  branch, does not touch `tasks.md`), then merge back and reconcile checkboxes centrally — a
-  merge conflict means a wrong DAG edge (a "collision"), surfaced like drift. Set
+- Parallel implementation is worktree-isolated, per the **`worktree-isolation` skill** (the
+  authority; `implement`/`orchestrate` delegate to it). Its rule: **a worktree touches nothing
+  outside itself except by explicit allowance** — a worktree isolates the *checkout*, not the
+  databases, ports, containers, credentials or migration counter the project also reaches, so a
+  shared-state **preflight** runs before any batch of ≥2 and an unclassified class means
+  sequential dispatch, not a gamble. Each agent commits on its own branch and does not
+  touch `tasks.md`; branches integrate by rebase + `--ff-only`, checkboxes reconcile
+  centrally, and a conflict means a wrong edge (a "collision"), surfaced like drift. Set
   `worktree.baseRef: "head"`. Solo/sequential batches stay in the main tree.
 - **Git policy — non-negotiable, here and in every WellForge repo (incl. generated ones):**
   **linear history** (no merge commits — rebase onto `main`, integrate `--ff-only`, PRs squash

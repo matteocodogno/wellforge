@@ -51,6 +51,8 @@ library. When in doubt, match the surrounding code and read the skill's referenc
 - When something goes red, load the `systematic-debugging` skill **before** your first fix:
   state the root cause, change one thing, and count your attempts. Three failed attempts on
   the same symptom is drift on plan.md — stop and report it, don't attempt a fourth.
+- **You may be running in an isolated worktree.** Touch nothing outside it beyond the
+  allowances your caller listed (`worktree-isolation` skill).
 - If you must make a decision the plan didn't specify that will **constrain future work**
   (a pattern, a library, a state-management choice), don't bury it — implement the pragmatic
   choice and surface it as an **ADR candidate** in your return so the caller can invoke `adr-writer`.

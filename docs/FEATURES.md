@@ -45,6 +45,13 @@ Key properties:
   e.g. `001-user-auth T3,T5`, `user-auth next`, or just `all` (feature inferred from the
   in-progress spec). Dep-free tasks dispatch to FE/BE/devops agents in parallel, then a
   scoped QE verdict — the implementation slice of the orchestrator, callable directly.
+- **Parallel work is isolated, and the isolation is checked** (`worktree-isolation` skill).
+  Each parallel agent runs in its own git worktree, integrated back by rebase +
+  fast-forward. Because a worktree isolates the
+  *checkout* and not the database, ports, containers or credentials the project also reaches,
+  a **shared-state preflight** runs first and states what is isolated, forbidden or accepted
+  for that batch — anything it can't classify means the batch runs sequentially rather than
+  gambling.
 - `/wellforge:status` recaps every feature's position in the flow (spec/plan/tasks/
   implement/done) with task progress and the exact next command to run — read-only,
   derived from a deterministic state table so the "next step" never drifts.

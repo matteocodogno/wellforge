@@ -469,6 +469,44 @@ counter is a discipline the model keeps, not something a hook enforces. The enfo
 version would be a `PostToolUse` hook counting consecutive edit→failed-test cycles on the
 same file; deliberately not built yet. Live validation pairs with the Phase 7 pilot.
 
+## Phase 16 — Parallel-safety, round 2: the pilot's field findings (added 2026-08-16)
+
+The first four defects the **Phase 7 pilot** found by running spec→plan→tasks→orchestrate on a
+real project (Byline). All four are WellForge-level — they recur on every project and every
+batch, not just that one. Phase 13 built worktree isolation and smoke-tested it; this phase is
+what a *real* parallel feature batch taught us that the smoke test could not.
+
+Three of the four are the same underlying error: **a worktree isolates the checkout and nothing
+else**, and we had reasoned as though it isolated the environment.
+
+- ☑ **`worktree-isolation` skill** (plugin `2.26.0`) — the protocol moves out of
+  `implement.md` (which now delegates, as `orchestrate` already did) into a skill, and gains the
+  part that was missing. The rule is stated once — **a worktree touches nothing outside itself
+  except by explicit allowance** — and backed by a **10-class enumeration** of what a worktree
+  can still reach (databases, migration history, ports, containers/compose, credential stores &
+  secret env, external caches, sequence-numbered artifacts, external tenancies, machine-global
+  files/sockets, the shared `.git`), each with a disposition: **isolate** / **forbid** /
+  **accept**. Deliberately *not* two patches for the two failures we tripped over (a shared
+  `byline_test` dropped mid-run; a migration applied to shared dev from a since-discarded
+  branch) — both were the same shape, *two checkouts, one name, one object*, so the class is
+  what gets fixed. A **preflight** runs before any ≥2 batch and states each present class's
+  disposition; **unclassified is not a pass** — it means sequential dispatch, not a gamble.
+  Includes the isolation-key convention (worktree-derived, never random — cleanup depends on
+  it), a symptom→class fault table, and the linked-worktree test
+  (`git rev-parse --git-dir != --git-common-dir`).
+Deferred to its own cut (template series, so a `vX.Y.Z` release per `docs/VERSIONING.md`):
+**per-worktree test-database naming** and a **dev-database guard** in the presets. The plugin
+can refuse to *dispatch* into an unsafe batch, but a guard that refuses to run at all from a
+linked worktree belongs to the project's own task definitions — the only layer that also covers
+a human running the command by hand. That cut is also the right moment to answer the question
+this phase deliberately left open: **is the dev database reachable from a worktree at all?**
+The skill forbids it by default until a project says otherwise.
+
+Honest status: prompt-authored, not yet exercised through a real parallel batch — same caveat
+Phase 13 carried, and the reason this phase exists. Validation is the next pilot batch, which is
+also the only thing that can tell us whether the preflight's sequential fallback fires too often
+to be tolerable.
+
 ## Order & dependencies
 
 ```

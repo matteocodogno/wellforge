@@ -39,6 +39,9 @@ skill references for module structure, error handling, and DB patterns).
 - When something goes red, load the `systematic-debugging` skill **before** your first fix:
   state the root cause, change one thing, and count your attempts. Three failed attempts on
   the same symptom is drift on plan.md — stop and report it, don't attempt a fourth.
+- **You may be running in an isolated worktree.** If so, you touch nothing outside it except
+  the allowances your caller listed (`worktree-isolation` skill): no shared dev database, no
+  migrations against dev, no tags or `git config`.
 - If you must make a decision the plan didn't specify that will **constrain future work**
   (a pattern, a library, a contract nuance), don't bury it — implement the pragmatic choice
   and surface it as an **ADR candidate** in your return so the caller can invoke `adr-writer`.

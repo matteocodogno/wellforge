@@ -78,51 +78,28 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 
 ### Parallel isolation (worktrees)
 
-Two agents editing the same working tree at once can clobber each other. When a batch has
-**≥2 dependency-independent agents**, isolate each so "one agent's edits literally cannot
-touch the other's checkout":
+Two agents editing the same working tree at once can clobber each other — and a worktree
+isolates only the *checkout*, not the database, ports, containers, credentials or migration
+counter the project also reaches. The **worktree-isolation** skill owns this: load it and
+follow it verbatim. In order, for any batch of ≥2:
 
-1. **Isolate.** Spawn each agent with git-worktree isolation (Task/Agent tool
-   `isolation: "worktree"`) — a fresh worktree + branch off the current HEAD, so it already
-   contains the spec, `tasks.md`, and every task integrated earlier in this run. (Set
-   `worktree.baseRef: "head"` in settings so worktrees branch from HEAD, not the remote
-   default — see the plugin `settings-snippet.jsonc`.)
-2. **Constrain the agent.** In each parallel agent's prompt add: *commit your code with the
-   standard message but **do NOT edit `tasks.md`*** (its checkbox is reconciled centrally, so
-   parallel branches never conflict on adjacent checkbox lines), and *end your report with a
-   line `WORKTREE-BRANCH: <git branch --show-current>` and `COMMITS: <n>`*. The dispatch
-   result usually also surfaces the agent's worktree branch in its metadata; the self-reported
-   line is the portable fallback — use whichever you get.
-3. **Integrate — rebase + fast-forward, never a merge commit.** WellForge repos keep a
-   **linear history** (`gates/README.md` → "Linear history gate"), so integrate each branch
-   into the feature branch one at a time, in a deterministic order:
-
-   ```bash
-   git rebase <feature-branch> <worktree-branch>   # replay the task's commits on top
-   git switch <feature-branch>
-   git merge --ff-only <worktree-branch>           # pointer move — no merge commit
-   ```
-
-   `git merge --no-ff` is **forbidden**: the repo sets `merge.ff = only`, a `pre-merge-commit`
-   hook refuses merge commits, and the `linear-history` CI gate fails the PR. The task's own
-   `feat(<scope>): … (T<n>, specs/NNN)` commits carry the history — no integration commit is
-   needed, and none may be created.
-   - **Clean rebase + fast-forward** → good. Continue.
-   - **Conflict = a collision**, not a routine merge: two tasks the DAG called independent
-     touched the same file, so they were never independent. Abort the rebase
-     (`git rebase --abort`), **surface it like drift** — name the two tasks and the colliding
-     files — and resolve by adding the missing `deps:` edge (`/wellforge:tasks` re-sync) and
-     re-running the later task in the now-integrated tree. Never auto-resolve code conflicts
-     silently.
-4. **Reconcile the checkboxes centrally.** Once every track is integrated, check the boxes
-   for all completed tasks in `tasks.md` in **one** commit on the feature branch.
-5. **Prune.** Remove the merged worktrees and their branches (`git worktree remove`,
-   `git branch -d`).
+1. **Preflight** the shared-state enumeration against this project and state each class's
+   disposition (isolate / forbid / accept). **Unclassified is not a pass** — it means this
+   batch runs sequentially instead.
+2. **Isolate** (`isolation: "worktree"`), **constrain** each agent (commit on its own branch,
+   never edit `tasks.md`, report `WORKTREE-BRANCH` / `COMMITS`, treat anything outside the
+   stated allowances as an environment fault to report rather than work around),
+   **integrate** by rebase + `--ff-only` (never a merge commit — the repo forbids them),
+   **reconcile** every checkbox centrally in one commit, then **prune** the worktrees *and*
+   whatever the preflight isolated.
+3. **A rebase conflict is a collision** — two tasks the DAG called independent touched the
+   same file, so the edge was wrong: surfaced like drift, resolved by a `/wellforge:tasks`
+   re-sync, never auto-resolved.
 
 **Fallback.** If worktree isolation is unavailable (older Claude Code, or the option is
-rejected), fall back to the main-tree path — dispatch the batch **sequentially** (not in
-parallel), each agent committing + checking its own box, to avoid collisions. State which
-mode you used.
+rejected), or the preflight left a class unclassified, fall back to the main-tree path —
+dispatch the batch **sequentially** (not in parallel), each agent committing + checking its
+own box. State which mode you used and, if the preflight forced it, which class.
 
 ## Step 4 — Verify
 
@@ -162,7 +139,8 @@ Write a run trace per the **observability** skill (load it): capture `started` a
 start of this run and, now, write `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`)
 with every dispatched agent + outcome, any drift events (resolved or not), the QE verdict,
 and `result` (completed / escalated / partial). Record the isolation mode used and any
-collision events (per the observability skill's `worktree` / `collision_events` fields).
+collision events (per the observability skill's `worktree` / `collision_events` fields) —
+including, when a batch fell back to sequential, the preflight class that forced it.
 Set `terse` to the boolean resolved in Step 0 (`true` iff `--terse` resolved on for this
 run, `false` otherwise); leave `control_run_id` `null` (pairing to a control run is a later
 concern, not this command's). One file per run; leave `tokens`/`cost` null (the
