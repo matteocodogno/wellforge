@@ -51,8 +51,14 @@ library. When in doubt, match the surrounding code and read the skill's referenc
 - When something goes red, load the `systematic-debugging` skill **before** your first fix:
   state the root cause, change one thing, and count your attempts. Three failed attempts on
   the same symptom is drift on plan.md — stop and report it, don't attempt a fourth.
-- **You may be running in an isolated worktree.** Touch nothing outside it beyond the
-  allowances your caller listed (`worktree-isolation` skill).
+- **You may be running in an isolated worktree**, which contains the tracked tree and nothing
+  else — every gitignored env file is absent unless your caller carried it in, so
+  `import.meta.env` variables can resolve to empty and fail deep in app code, looking exactly
+  like a bug. Before blaming the code: check the variable actually resolved, and whether the
+  failure reproduces on the main tree. If not, it is an **environment fault** — report it with
+  `ENV-FAULT:` and stop; never add a fallback URL or a guard to make it pass
+  (`worktree-isolation` skill). Touch nothing outside your worktree beyond the allowances
+  your caller listed.
 - If you must make a decision the plan didn't specify that will **constrain future work**
   (a pattern, a library, a state-management choice), don't bury it — implement the pragmatic
   choice and surface it as an **ADR candidate** in your return so the caller can invoke `adr-writer`.
@@ -70,3 +76,6 @@ library. When in doubt, match the surrounding code and read the skill's referenc
 
 Your final message: task IDs completed, files touched, test/lint/tsc results (actual
 numbers and outputs, not "all good"), any ADR candidates, and any drift or blockers found.
+Add `ENV-FAULT: <what didn't resolve or was shared> — <what you checked>` for any failure you
+traced to the environment rather than the code; never report a failure as "pre-existing
+breakage" without that check behind it.

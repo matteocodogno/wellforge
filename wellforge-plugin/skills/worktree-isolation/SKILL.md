@@ -7,7 +7,7 @@ description: >
   `/wellforge:orchestrate` implementation stages), whenever an agent working in a worktree hits
   a failure it cannot explain, and whenever deciding if a batch is safe to parallelize at all.
   Authoritative reference for the touches-nothing-outside-itself rule, the shared-state
-  enumeration and its three dispositions, and the
+  enumeration and its three dispositions, the env carry-in step, and the
   isolate → constrain → integrate → reconcile → prune protocol.
 ---
 
@@ -50,7 +50,7 @@ Walk this list against the project in front of you. It is the checklist the pref
 | 2 | **Migration history** — the applied-migrations table | travels with the database it lives in | with its database |
 | 3 | **Ports** — dev server, API, debugger, DB forward | a fixed number in config or compose | **isolate** (offset) or **forbid** concurrent servers |
 | 4 | **Containers, compose projects, volumes, networks** | compose project name defaults to the directory (differs), but an explicit `container_name`, a fixed host port, or a named volume does not | **isolate** (explicit per-key project name) |
-| 5 | **Credential stores & secret-backed env** — `.env*`, `.mise.local.toml`, `op://` refs, keychain, cloud CLI default profile / ADC | gitignored, so not *shared* — **absent** from a fresh worktree | read: **must be provided** · write: **forbid** |
+| 5 | **Credential stores & secret-backed env** — `.env*`, `.mise.local.toml`, `op://` refs, keychain, cloud CLI default profile / ADC | gitignored, so not *shared* — **absent**. See carry-in below | read: **carry-in** · write: **forbid** |
 | 6 | **Caches & tool state outside the tree** — `~/.m2`, `~/.gradle`, the pnpm store, turbo/nx cache | built for concurrent access | **accept** — except any key the project chooses itself, which is **isolate** |
 | 7 | **Sequence-numbered artifacts** — migration files, ADR numbers, spec numbers | the shared resource is the **counter**, not a file | **forbid** concurrency (two such tasks are ordered, never batched) |
 | 8 | **External services & tenancies** — staging APIs, queues, buckets, cloud projects, Pulumi stacks, GitHub issues/labels | one mutable tenancy, same address from every checkout | write: **forbid** · read: **accept** |
@@ -96,6 +96,7 @@ worktree preflight — 3 agents, batch [T8, T10, T12]
   test database   isolate    byline_test_${WF_WORKTREE_ID}
   dev database    forbid     no task in this batch migrates dev
   ports           n/a        no dev server in this batch
+  secret env      carry-in   .mise.local.toml, .env.local → verified in all 3
   git refs        forbid     agents commit on their own branch only
 ```
 
@@ -105,13 +106,37 @@ which class forced it. The trade is not close — sequential costs a few minutes
 under-isolated batch costs the whole run *and* produces confident wrong diagnoses that can lead an
 agent to "fix" working code.
 
+## Carry-in — the env that simply isn't there
+
+A fresh worktree contains the tracked tree at HEAD and nothing else. Everything gitignored is
+missing, and by WellForge policy env config *is* gitignored (`.env*`, `.mise.local.toml`, service
+account files). So env does not fail loudly in a worktree — **it resolves to nothing**, and the
+failure surfaces much deeper, inside application code, looking exactly like broken code.
+
+1. **Carry the files in.** Enumerate what the main tree has and the worktree won't
+   (`git status --ignored --porcelain` at the repo root, filtered to config/env files), and copy
+   them into each worktree. Do not carry build output or `node_modules` — those are rebuilt. This
+   adds no exposure: same machine, same repo, same user, same secrets already on disk.
+2. **Verify — do not assume.** Resolve the required env inside the worktree the way the app
+   resolves it (`mise env`, the config module's own parse/validate step) and diff it against the
+   main tree. **Any variable that resolves in the main tree and not in the worktree is a hard
+   stop**, not a warning: fix the carry-in, or dispatch sequentially. Never dispatch an agent into
+   a worktree whose environment is thinner than the tree those tests were last green in.
+3. **A file is only half of a secret reference.** A value fetched at run time from a credential
+   store (`op://…`) also needs that store reachable from a **non-interactive** process. Check the
+   resolution, not the presence of the reference.
+
+An agent that meets an unresolved variable reports an **environment fault** and stops. It does not
+diagnose the code, and it never reports "pre-existing breakage" on that evidence — see
+[[systematic-debugging]].
+
 ## The protocol
 
 1. **Isolate.** Spawn each agent with `isolation: "worktree"` — a fresh worktree + branch off the
    current HEAD, so it already contains the spec, `tasks.md`, and every task integrated earlier in
    this run. Set `worktree.baseRef: "head"` in settings so worktrees branch from HEAD, not the
-   remote default (see the plugin `settings-snippet.jsonc`). Run the **preflight** before any agent starts
-   work.
+   remote default (see the plugin `settings-snippet.jsonc`). Run the **preflight** and the
+   **carry-in** before any agent starts work.
 2. **Constrain the agent.** In each parallel agent's prompt: *commit your code with the standard
    message but **do NOT edit `tasks.md`*** (checkboxes are reconciled centrally, killing the one
    guaranteed conflict); *stay inside your worktree — the allowances for this batch are `<the
@@ -151,9 +176,23 @@ and resolve by adding the missing edge (`/wellforge:tasks` re-sync) and re-runni
 in the now-integrated tree. Never auto-resolve code conflicts silently. Record it in
 `collision_events` ([[observability]]).
 
+## Symptoms — under-isolation is diagnosable
+
+| What you see | Likely class |
+|---|---|
+| A large number of tests fail suddenly, mid-run, having passed minutes ago | 1 — a sibling worktree dropped/recreated the shared database |
+| Tests fail in the worktree but pass on the integrated branch | 5 — carry-in missing; env resolved to nothing |
+| "Port already in use" / a dev server answering with another branch's code | 3 |
+| Migration history has a row for a file that doesn't exist in the tree | 1 + 7 — a discarded branch migrated a shared database |
+| Green solo, red only when the batch runs in parallel | any of 1, 3, 4, 8 |
+| A tag/stash/branch appearing that no agent claims | 10 |
+
+Every row is an **environment fault**. It gets reported as one and routed — it is never fixed by
+editing application code, and it never justifies a "pre-existing breakage" verdict.
+
 ## Where the guard lives
 
-- **Dispatch-time preflight → the plugin** (this skill). It knows a batch is about
+- **Dispatch-time preflight and carry-in → the plugin** (this skill). It knows a batch is about
   to run and can refuse to parallelize.
 - **A guard that refuses to run at all from a linked worktree** (a migration task, a deploy task,
   a seed task) → the **project's own task definitions**, shipped by the template. That is the only
@@ -166,6 +205,6 @@ in the now-integrated tree. Never auto-resolve code conflicts silently. Record i
 - **Fallback.** If worktree isolation is unavailable (older Claude Code, the option rejected), or
   the preflight left a class unclassified, dispatch the batch **sequentially** in the main tree,
   each agent committing and checking its own box. State which mode you used and why.
-- **Recording.** Record the isolation mode, each isolated agent's branch (`worktree`) and any
-  `collision_events` in the run trace per [[observability]]. A batch
+- **Recording.** Record the isolation mode, each isolated agent's branch (`worktree`), any
+  `collision_events`, and any environment faults in the run trace per [[observability]]. A batch
   that fell back to sequential records *why* — the preflight line that forced it is the finding.

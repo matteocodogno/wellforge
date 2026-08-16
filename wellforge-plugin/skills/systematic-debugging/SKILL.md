@@ -53,6 +53,10 @@ much you *instrument and document* — never whether you find the cause.
   evidence run beats three speculative fixes.
 - **Trace backwards to the source.** A bad value deep in a call stack is not where the bug
   is. Follow it up until you reach where it was created — fix there.
+- **Check *where* you are running, not only what changed.** A worktree, a container, a CI
+  runner and your main tree are four different environments; a failure that only happens in
+  one of them is about the environment until proven otherwise. See **Environment faults**
+  below — that check comes before any verdict about the code.
 
 ## Phase 2 — find the thing that works
 
@@ -65,6 +69,50 @@ another repository, another module, another spec's implementation of the same pa
   [[hono-ts-backend]], [[react-ts-vite]], [[pulumi-gcp-ts]]). If the bug is in a pattern they
   cover, read the relevant reference **completely** before adapting it. Partial understanding
   of a pattern is how the bug got there.
+
+## Environment faults — when the code isn't the thing that's broken
+
+Some failures are not defects in the code under test; they are the *environment* the code is
+running in being different from the one it was green in. They matter out of proportion to how
+often they happen, because they don't merely waste a cycle — they produce a **confident wrong
+diagnosis**, and the next step after "this is pre-existing code breakage" is somebody editing
+working code.
+
+**The verdict "pre-existing breakage" requires an environment check first.** Two questions,
+both cheap, both before you write anything down:
+
+1. **Does it reproduce outside this environment?** Run the same command on the integrated
+   branch / the main working tree. Green there and red here is not a code defect — it is a
+   difference between the two environments, and *that difference* is the bug.
+2. **Did the config the code needs actually resolve?** Print the variables the failing path
+   reads, in the environment it failed in. Env resolves to *nothing* far more often than it
+   errors: a missing secret becomes `undefined`, and the failure surfaces several layers deep
+   as a bad URL, a null client, a timeout — all of which look exactly like broken code.
+
+The common case in WellForge is a **git worktree**: it contains the tracked tree at HEAD and
+nothing else, so every gitignored env file (`.env*`, `.mise.local.toml`, credentials) is
+absent, and secret-backed variables silently resolve to empty. [[worktree-isolation]] owns the
+prevention (carry-in + verification) and carries a symptom→cause table for the rest of the
+class — shared test databases, ports, containers, migration counters. Read that table before
+concluding anything about code that fails only inside a worktree.
+
+When it is an environment fault:
+
+- **Report it as one and stop.** A dev agent ends its report with `ENV-FAULT: <what didn't
+  resolve / what was shared> — <what you checked>`, and does **not** attempt a fix. It is not
+  a defect, so it doesn't belong to a dev, doesn't consume a QE fix round, and doesn't count
+  against the attempt counter below.
+- **Never adapt the code to the broken environment.** Adding a default for a variable that
+  should have resolved, or a guard for a client that should have existed, is the
+  make-the-symptom-disappear rule below — it hides the fault *and* ships a wrong default.
+- **Say what you could not verify.** "Four frontend tests fail; `VITE_API_BASE_URL` is empty
+  in this worktree and set in the main tree — environment fault, not assessed further" is a
+  complete, useful report. "Pre-existing breakage" is not.
+
+Environment is a *conclusion you checked*, exactly like a root cause — not a shrug, and not a
+first guess either. The section at the end of this skill (**When there really is no root
+cause**) is about genuinely external causes; this one is about a difference you can find in
+two commands, and you are expected to find it.
 
 ## Phase 3 — one hypothesis, one change
 

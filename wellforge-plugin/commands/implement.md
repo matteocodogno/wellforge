@@ -86,15 +86,23 @@ follow it verbatim. In order, for any batch of ≥2:
 1. **Preflight** the shared-state enumeration against this project and state each class's
    disposition (isolate / forbid / accept). **Unclassified is not a pass** — it means this
    batch runs sequentially instead.
-2. **Isolate** (`isolation: "worktree"`), **constrain** each agent (commit on its own branch,
+2. **Carry in** the gitignored env files each worktree would otherwise lack, and **verify**
+   the env resolves there. A variable that resolves in the main tree and not in the worktree
+   is a hard stop, not a warning.
+3. **Isolate** (`isolation: "worktree"`), **constrain** each agent (commit on its own branch,
    never edit `tasks.md`, report `WORKTREE-BRANCH` / `COMMITS`, treat anything outside the
    stated allowances as an environment fault to report rather than work around),
    **integrate** by rebase + `--ff-only` (never a merge commit — the repo forbids them),
    **reconcile** every checkbox centrally in one commit, then **prune** the worktrees *and*
    whatever the preflight isolated.
-3. **A rebase conflict is a collision** — two tasks the DAG called independent touched the
+4. **A rebase conflict is a collision** — two tasks the DAG called independent touched the
    same file, so the edge was wrong: surfaced like drift, resolved by a `/wellforge:tasks`
    re-sync, never auto-resolved.
+
+**Environment faults beat code diagnoses.** If an agent in a worktree reports failures it
+attributes to "pre-existing breakage", check the fault table in the worktree-isolation skill
+before believing it — tests that fail in a worktree and pass on the integrated branch are an
+isolation defect, and code must not be "fixed" on that evidence.
 
 **Fallback.** If worktree isolation is unavailable (older Claude Code, or the option is
 rejected), or the preflight left a class unclassified, fall back to the main-tree path —
@@ -106,7 +114,9 @@ own box. State which mode you used and, if the preflight forced it, which class.
 - Spawn `wellforge:quality-engineer` scoped to the tasks just implemented: it runs the gates and
   checks the ACs those tasks serve, and returns a verdict table.
 - **`production`** — every gate blocks. FAIL → **triage each defect to its true owner** before
-  looping (don't route everything to a dev): a code defect → the owning dev agent (failing
+  looping (don't route everything to a dev): an **environment fault** → nobody, it is not a
+  defect (worktree-isolation skill — fix the isolation or the carry-in and re-run; never spend
+  a fix round on it); a code defect → the owning dev agent (failing
   test path included); a wrong/missing/untestable AC → `wellforge:product-owner`; a wrong
   contract/architecture → `wellforge:architect`; a missing designed state/a11y →
   `wellforge:designer` (each a drift amendment + `/wellforge:tasks` re-sync). Re-run QE. **Max
@@ -138,9 +148,10 @@ own box. State which mode you used and, if the preflight forced it, which class.
 Write a run trace per the **observability** skill (load it): capture `started` at the
 start of this run and, now, write `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`)
 with every dispatched agent + outcome, any drift events (resolved or not), the QE verdict,
-and `result` (completed / escalated / partial). Record the isolation mode used and any
-collision events (per the observability skill's `worktree` / `collision_events` fields) —
-including, when a batch fell back to sequential, the preflight class that forced it.
+and `result` (completed / escalated / partial). Record the isolation mode used, any
+collision events, and any environment faults (per the observability skill's `worktree` /
+`collision_events` / `env_faults` fields) — including, when a batch fell back to sequential,
+the preflight class that forced it.
 Set `terse` to the boolean resolved in Step 0 (`true` iff `--terse` resolved on for this
 run, `false` otherwise); leave `control_run_id` `null` (pairing to a control run is a later
 concern, not this command's). One file per run; leave `tokens`/`cost` null (the

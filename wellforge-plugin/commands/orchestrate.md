@@ -57,7 +57,8 @@ ask the user anything and must never self-approve.
   flag), do not prepend it at all.
 - **Parallel isolation.** Any implementation batch of **≥2 independent agents** runs under the
   **worktree-isolation** skill — load it and follow it verbatim: the shared-state **preflight**
-  (a class left unclassified means sequential, not a gamble), `isolation: "worktree"` dispatch (each agent commits on its own branch and does
+  (a class left unclassified means sequential, not a gamble), the env **carry-in** and its
+  verification, `isolation: "worktree"` dispatch (each agent commits on its own branch and does
   NOT touch `tasks.md`), rebase + `--ff-only` integration, central checkbox reconciliation, and
   pruning. Collision handling (a conflict = a wrong edge, surfaced like
   drift) and the sequential fallback come from the same skill. A solo agent or a sequential
@@ -125,8 +126,8 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 12. **Record the run** → write the run trace per the **observability** skill:
     `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`, include `rigor: production`)
     capturing the full pipeline — every agent + outcome, drift events, QE + eval verdicts,
-    the isolation mode + any collision events (observability skill `worktree` /
-    `collision_events`), `result`. Write it even when the pipeline escalates or stops early
+    the isolation mode + any collision events + any environment faults (observability skill
+    `worktree` / `collision_events` / `env_faults`), `result`. Write it even when the pipeline escalates or stops early
     (`result` records that). Set `terse` to the boolean resolved in Step 0 (`true` iff
     `--terse` resolved on for this run, `false` otherwise); leave `control_run_id` `null`
     (pairing a run to its control run is a later concern, not this command's). The audit

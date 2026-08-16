@@ -56,6 +56,9 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   "collision_events": [
     { "tasks": ["T3","T5"], "files": ["src/app/config.ts"], "resolved_by": "added deps: T5→T3, re-ran T5" }
   ],
+  "env_faults": [
+    { "agent": "frontend-dev", "class": "secret env", "detail": "VITE_API_BASE_URL empty in worktree, set in main tree", "resolved_by": "carried .mise.local.toml in, re-ran" }
+  ],
   "verdicts": { "qe": "PASS", "eval": "PASS" },
   "result": "completed | escalated | partial",
   "tokens": null,
@@ -78,6 +81,13 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   same file → a wrong DAG edge) is appended to `collision_events` with the tasks, files, and
   how it was resolved. Both fields are omitted when the run used the main-tree / sequential
   path (no isolation).
+- **`env_faults`** (additive) records failures traced to the environment rather than the code
+  — an unresolved variable in a worktree, a shared resource another worktree mutated (see the
+  [[worktree-isolation]] enumeration for the `class` values). Record them even when they cost
+  no fix round: an env fault that surfaced as "N tests failing" is exactly the evidence the
+  evaluator's trajectory review and the next preflight need, and its absence from the trace is
+  how the same one gets rediagnosed next month. When a batch **fell back to sequential**,
+  record the preflight class that forced it here too, with `"resolved_by": "sequential"`.
 - **`rigor`** records the resolved tier for the run (`production`/`mvp`/`spike`, per the
   rigor-tiers skill). `spike` runs record `"agents": []` (main loop, no subagents).
   `promote` runs additionally record the tier transition: `"from": "<tier>", "to": "<tier>"`.

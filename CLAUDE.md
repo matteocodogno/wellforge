@@ -117,7 +117,9 @@ wellforge/
   outside itself except by explicit allowance** — a worktree isolates the *checkout*, not the
   databases, ports, containers, credentials or migration counter the project also reaches, so a
   shared-state **preflight** runs before any batch of ≥2 and an unclassified class means
-  sequential dispatch, not a gamble. Each agent commits on its own branch and does not
+  sequential dispatch, not a gamble. Gitignored env files are **carried in and verified** (env
+  that resolves to empty in a worktree looks exactly like broken code — that's an **environment
+  fault**, reported, never fixed in code). Each agent commits on its own branch and does not
   touch `tasks.md`; branches integrate by rebase + `--ff-only`, checkboxes reconcile
   centrally, and a conflict means a wrong edge (a "collision"), surfaced like drift. Set
   `worktree.baseRef: "head"`. Solo/sequential batches stay in the main tree.

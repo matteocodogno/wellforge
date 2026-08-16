@@ -220,7 +220,11 @@ git hooks (`lefthook.yml`). Never weaken a gate to make code pass.
 No fix without a stated root cause — "X is the root cause because Y" before you edit. One
 change at a time; never silence a symptom with a raised timeout, a retry, a skipped test, or
 a lowered threshold. Count fix attempts: after 3 failures on the same symptom, stop and
-question the design instead of trying a fourth. Full process:
+question the design instead of trying a fourth. Before concluding "pre-existing breakage",
+check the environment: does it reproduce on the main tree, and did the config the failing
+path reads actually resolve? Env resolves to *nothing* more often than it errors, and the
+failure then surfaces deep in app code looking exactly like a bug — that is an environment
+fault, reported as one, never fixed with a default or a guard. Full process:
 `.github/wf-skills/systematic-debugging/SKILL.md`.
 """
 

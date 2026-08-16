@@ -51,7 +51,9 @@ Key properties:
   *checkout* and not the database, ports, containers or credentials the project also reaches,
   a **shared-state preflight** runs first and states what is isolated, forbidden or accepted
   for that batch — anything it can't classify means the batch runs sequentially rather than
-  gambling.
+  gambling. Gitignored env files are carried into each worktree and verified: a variable that
+  resolves in your tree and not in the worktree is an **environment fault**, reported as one
+  and never "fixed" in code.
 - `/wellforge:status` recaps every feature's position in the flow (spec/plan/tasks/
   implement/done) with task progress and the exact next command to run — read-only,
   derived from a deterministic state table so the "next step" never drifts.

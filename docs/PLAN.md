@@ -494,6 +494,21 @@ else**, and we had reasoned as though it isolated the environment.
   Includes the isolation-key convention (worktree-derived, never random — cleanup depends on
   it), a symptom→class fault table, and the linked-worktree test
   (`git rev-parse --git-dir != --git-common-dir`).
+- ☑ **Env carry-in + the environment-fault class** (the expensive finding). A worktree holds
+  the tracked tree at HEAD and nothing else, so every gitignored env file is **absent** and
+  secret-backed variables resolve to *empty* rather than erroring — the failure then surfaces
+  deep in app code. In the pilot two capable agents independently reported four frontend test
+  failures and both concluded "pre-existing code breakage"; the tests were green on the
+  integrated branch. That is worse than a wasted cycle: it is a confident wrong diagnosis that
+  can lead an agent to "fix" working code. Two halves: **prevention** — the skill's carry-in
+  step copies the gitignored env files into each worktree and *verifies* resolution against the
+  main tree, where a variable resolving in one and not the other is a hard stop; and
+  **diagnosis** — `systematic-debugging` gains an **Environment faults** section making the
+  verdict "pre-existing breakage" require two checks first (does it reproduce on the main tree;
+  did the config resolve). Reported as `ENV-FAULT:`, owned by nobody, never fixed in code,
+  never consuming a QE fix round. Wired into both dev agents + devops (worktree blast radius),
+  `quality-engineer` (env faults listed separately from defects), implement's triage, and
+  `observability` (`env_faults`, additive — schema id unchanged).
 Deferred to its own cut (template series, so a `vX.Y.Z` release per `docs/VERSIONING.md`):
 **per-worktree test-database naming** and a **dev-database guard** in the presets. The plugin
 can refuse to *dispatch* into an unsafe batch, but a guard that refuses to run at all from a

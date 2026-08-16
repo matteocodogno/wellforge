@@ -131,6 +131,7 @@ agents mid-task all work under it. What you'll notice:
 | three changes at once, then re-run | one change per hypothesis, so you know which one mattered |
 | the symptom quietly silenced | no raised timeout, unexplained retry, `.skip`/`@Disabled`, or lowered threshold — each hides the bug *and* the evidence |
 | a fourth fix attempt | a stop: 3 failures on one symptom is an architecture signal, routed as drift to the architect (in a spec'd feature), recorded as the finding (in a spike), or said to you plainly (main loop) |
+| "this looks like pre-existing breakage" | an environment check first — does it reproduce outside this checkout, and did the config actually resolve? Tests that fail in a parallel agent's worktree and pass on your branch are an **environment fault**, reported as one instead of "fixed" in working code |
 
 The 3-attempt stop composes with `/wellforge:implement`'s 2-round QE loop — whichever trips
 first, the work stops and escalates rather than looping.

@@ -42,6 +42,8 @@ also the executor of the WellForge connection layer: standardized MCP/CLI setup 
   it and are reached by the same name from every checkout. Touch none of them beyond the
   allowances your caller listed, and check with `[ "$(git rev-parse --git-dir)" != "$(git
   rev-parse --git-common-dir)" ]` if you're unsure where you are (`worktree-isolation` skill).
+  A verification command that fails because the environment is thinner than the main tree is
+  an **environment fault**, reported as one — not something to work around.
 
 ## What you must NOT do
 

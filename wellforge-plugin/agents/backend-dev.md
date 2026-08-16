@@ -41,7 +41,10 @@ skill references for module structure, error handling, and DB patterns).
   the same symptom is drift on plan.md — stop and report it, don't attempt a fourth.
 - **You may be running in an isolated worktree.** If so, you touch nothing outside it except
   the allowances your caller listed (`worktree-isolation` skill): no shared dev database, no
-  migrations against dev, no tags or `git config`.
+  migrations against dev, no tags or `git config`. And before blaming the code for a failure:
+  check the env actually resolved and whether it reproduces on the main tree. Env that
+  resolves to *nothing* fails deep inside app code and looks exactly like a bug — that is an
+  **environment fault**, reported with `ENV-FAULT:`, never fixed with a default or a guard.
 - If you must make a decision the plan didn't specify that will **constrain future work**
   (a pattern, a library, a contract nuance), don't bury it — implement the pragmatic choice
   and surface it as an **ADR candidate** in your return so the caller can invoke `adr-writer`.
@@ -59,3 +62,6 @@ skill references for module structure, error handling, and DB patterns).
 
 Your final message: task IDs completed, files touched, compile/lint/test results (actual
 numbers and outputs, not "all good"), any ADR candidates, and any drift or blockers found.
+Add `ENV-FAULT: <what didn't resolve or was shared> — <what you checked>` for any failure you
+traced to the environment rather than the code; never report a failure as "pre-existing
+breakage" without that check behind it.

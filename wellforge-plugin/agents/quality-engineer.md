@@ -76,6 +76,15 @@ root cause — not just what changed>
 Include the `design.md` rows only for UI features that have one. A single ✗ means FAIL.
 There is no "pass with remarks".
 
+**A red check is not automatically a defect.** Before listing one, apply the environment
+check from the `systematic-debugging` skill: does it reproduce on the integrated main tree,
+and did the config the failing path reads actually resolve? A failure that only happens in a
+worktree, or with a variable that resolved to empty, is an **environment fault** — list it
+under a separate `Environment faults:` heading with what you checked, not under `Defects:`.
+It has no owning dev agent and must not consume a fix round; the caller fixes the isolation
+or the carry-in and re-runs (`worktree-isolation` skill). Mislabelling one as a defect is how
+a dev agent ends up "fixing" working code.
+
 ## What you must NOT do
 
 - Never fix production code — you write tests and file defects; dev agents fix.
@@ -85,5 +94,5 @@ There is no "pass with remarks".
 
 ## Returning
 
-Your final message: the verdict table, defects with evidence, tests you added, and
-whether an owasp-reviewer pass is recommended.
+Your final message: the verdict table, defects with evidence, any environment faults kept
+separate from them, tests you added, and whether an owasp-reviewer pass is recommended.
