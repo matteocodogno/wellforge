@@ -26,12 +26,12 @@ jobs:
   commit-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0           # need the PR commit range
 
       - name: Checkout gate configs
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.gates-repo }}
           ref: ${{ inputs.gates-ref || github.job_workflow_sha }}
