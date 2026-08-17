@@ -28,8 +28,8 @@ jobs:
     name: build (sanity)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: jdx/mise-action@v2
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
         with:
           install: false
       - name: Build
