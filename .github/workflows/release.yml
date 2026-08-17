@@ -39,7 +39,7 @@ jobs:
       # true != 'true' is TRUE) and pushed a branch during a dry run. Job outputs are strings.
       dry: ${{ steps.ctx.outputs.dry }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0          # notes are derived from the commit range between tags
 
@@ -74,7 +74,7 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0          # need the tag list to know which release is newest
 

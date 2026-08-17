@@ -81,17 +81,17 @@ env:
   # "install setuptools" is not a fix (it needs setuptools<81, pinning a second EOL package).
   # A stale pin is a silently red SAST gate for every downstream project. See ci.yml's
   # `sast-selftest` job — it fails here first if this pin stops running.
-  SEMGREP_VERSION: 1.172.0
+  SEMGREP_VERSION: 1.173.0
   SEMGREP_SEND_METRICS: "off"
 
 jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Checkout gate configs
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.gates-repo }}
           ref: ${{ inputs.gates-ref || github.job_workflow_sha }}
@@ -111,7 +111,7 @@ jobs:
           echo "gate configs OK at ${ref}"
 
       - name: Install toolchain (mise)
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@v4
 
       - name: Require lockfile (reproducible builds)
         working-directory: ${{ inputs.working-directory }}

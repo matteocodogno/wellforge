@@ -67,24 +67,27 @@ env:
   # ── Central thresholds ──────────────────────────────────────────────
   COVERAGE_LINES: "80"          # enforced
   COVERAGE_BRANCHES: "70"       # reported, not yet enforced (see gates/README)
-  JACOCO_VERSION: 0.8.12
+  JACOCO_VERSION: 0.8.15
+  # NOTE: kept at 3.2.0 deliberately — the presets' pom.xml binds ktlint-check to `verify` at
+  # this same version, so bumping here alone makes CI flag lint that local `mvn verify` does
+  # not. Raise both in one template release, never this one on its own.
   KTLINT_PLUGIN: com.github.gantsign.maven:ktlint-maven-plugin:3.2.0
-  OSV_SCANNER_VERSION: v2.0.0
+  OSV_SCANNER_VERSION: v2.5.1
   # Keep this pin CURRENT, not just reproducible — see the note in quality-node.yml: an old
   # semgrep stops starting on new runner Pythons (pkg_resources, removed in setuptools >= 81),
   # which shows up as a red SAST gate in every downstream project. `sast-selftest` in ci.yml
   # catches it here first.
-  SEMGREP_VERSION: 1.172.0
+  SEMGREP_VERSION: 1.173.0
   SEMGREP_SEND_METRICS: "off"
 
 jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Checkout gate configs
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.gates-repo }}
           ref: ${{ inputs.gates-ref || github.job_workflow_sha }}
@@ -104,7 +107,7 @@ jobs:
           echo "gate configs OK at ${ref}"
 
       - name: Install mise
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@v4
         with:
           install: false
 

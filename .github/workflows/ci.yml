@@ -23,7 +23,7 @@ jobs:
     name: commit messages (Conventional Commits)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0           # need the full commit range
       - name: Lint commit messages
@@ -56,7 +56,7 @@ jobs:
     name: linear history (no merge commits)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Assert no merge commits
@@ -83,7 +83,7 @@ jobs:
     name: model-routing drift guard
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
       - name: check-routing.py (claude)
         working-directory: wellforge-plugin
@@ -110,7 +110,7 @@ jobs:
     env:
       SEMGREP_SEND_METRICS: "off"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Read the pin from the gates (and assert node/jvm agree)
         id: pin
@@ -163,7 +163,7 @@ jobs:
       matrix:
         preset: [spring-kotlin-react, hono-react, pulumi-gcp-ts]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
       - name: copier copy --defaults
         run: uvx copier copy --defaults --trust . /tmp/out --data preset=${{ matrix.preset }}
@@ -215,7 +215,7 @@ jobs:
     name: service containers (compose up --wait → connect → down)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
       - name: Scaffold hono-react (db=postgres)
         run: uvx copier copy --defaults --trust . /tmp/svc --data preset=hono-react
@@ -259,7 +259,7 @@ jobs:
     name: plugin hooks (pre-bash-guard matrix)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: wellforge-plugin/hooks/scripts/tests/pre-bash-guard.test.sh
 
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
@@ -268,6 +268,6 @@ jobs:
     name: terse-mode fixtures (AC-1.2, AC-4.1, AC-5.1)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Run terse-mode fixture regression suite
         run: specs/001-terse-mode/fixtures/run-all.sh
