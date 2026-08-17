@@ -5,8 +5,12 @@ Effect TS replaces try/catch, Promise chains, and ad-hoc error handling. Use it 
 ## Installation
 
 ```bash
-pnpm add effect @effect/schema
+pnpm add effect
 ```
+
+`Schema` ships inside `effect` itself (`import { Schema } from 'effect'`). The separate
+`@effect/schema` package is deprecated — it was merged into the main package and its last
+release was 0.75.5.
 
 ---
 
@@ -71,7 +75,7 @@ export type { HttpError }
 
 ```typescript
 // features/users/types.ts
-import { Schema } from '@effect/schema'
+import { Schema } from 'effect'
 
 const UserSchema = Schema.Struct({
   id: Schema.String,
@@ -93,8 +97,7 @@ export type { User }
 
 ```typescript
 // features/users/hooks/useUsers.ts — the Effect-powered queryFn
-import { Effect, pipe } from 'effect'
-import { Schema } from '@effect/schema'
+import { Effect, pipe, Schema } from 'effect'
 import { fetchJson } from '@/utils/http'
 import { UserSchema } from '../types'
 import type { HttpError } from '@/utils/http'
