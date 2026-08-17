@@ -60,7 +60,7 @@ wellforge/
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, done,
 │   │                         # status, new, upgrade, adopt, extract-template, spike, promote,
-│   │                         # release (→ /wellforge:*)
+│   │                         # release, triage, terse, terse-compress (19 → /wellforge:*)
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,

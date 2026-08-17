@@ -49,6 +49,10 @@ Remaining gaps vs. Claude Code, honestly:
 
 ## Status
 
-Validated: 10 agents · 10 commands · skills · 3 MCP servers · enforcement plugin (valid
-ESM, guard parity 13/13), provider swap working. Next: `wellforge setup/migrate` wiring
-(tool + provider choice) to lay this down automatically.
+Validated: 10 agents · 19 commands · 40 skill files · 4 MCP servers · enforcement plugin
+(valid ESM, guard parity 13/13), provider swap working. Next: `wellforge setup/migrate`
+wiring (tool + provider choice) to lay this down automatically.
+
+(Counts come from the generator's own summary line — re-run
+`python3 adapters/opencode/generate.py --plugin wellforge-plugin --out <dir>` after adding
+commands or agents, and paste the real numbers rather than incrementing by hand.)

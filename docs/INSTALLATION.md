@@ -70,7 +70,16 @@ Inside a Claude Code session:
 | `/plugin` | `wellforge` listed under Installed (v2.0+) |
 | `/mcp` | `sequential-thinking`, `playwright`, `github`, `context-hub` connected (github triggers OAuth on first use) |
 | `/hooks` | 7 hooks listed |
-| type `/wellforge:` | completions for all 15 commands: `new`, `adopt`, `spec`, `plan`, `design`, `tasks`, `implement`, `orchestrate`, `eval`, `done`, `status`, `spike`, `promote`, `release`, `upgrade` |
+| type `/wellforge:` | completions for all 19 commands (grouped below) |
+
+The 19 commands, by what they are for:
+
+| Group | Commands |
+|---|---|
+| Spec-driven workflow | `spec`, `plan`, `design`, `tasks`, `implement`, `eval`, `done` |
+| Project lifecycle | `new`, `adopt`, `upgrade`, `release`, `extract-template` |
+| Orchestration & tiers | `orchestrate`, `spike`, `promote` |
+| Visibility & session | `status`, `triage`, `terse`, `terse-compress` |
 
 ## 5. Optional
 
