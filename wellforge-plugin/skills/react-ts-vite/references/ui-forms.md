@@ -124,7 +124,7 @@ const useCreateUser = () => {
 
 ```bash
 pnpm add react-hook-form @hookform/resolvers
-# @effect/schema already installed from main stack
+# Schema comes from `effect`, already installed from main stack
 ```
 
 ### Pattern: schema → resolver → hook → component
@@ -133,7 +133,7 @@ pnpm add react-hook-form @hookform/resolvers
 
 ```typescript
 // features/users/types.ts
-import { Schema } from '@effect/schema'
+import { Schema } from 'effect'
 
 const CreateUserSchema = Schema.Struct({
   name: Schema.String.pipe(Schema.minLength(2), Schema.maxLength(100)),
@@ -151,8 +151,7 @@ export type { CreateUserFormValues }
 
 ```typescript
 // src/utils/effectSchemaResolver.ts
-import { Schema } from '@effect/schema'
-import { Effect, pipe } from 'effect'
+import { Effect, pipe, Schema } from 'effect'
 import type { Resolver } from 'react-hook-form'
 
 const effectSchemaResolver =

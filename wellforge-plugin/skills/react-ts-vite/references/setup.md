@@ -59,12 +59,11 @@ Always access env vars through `src/config.ts`. This gives one place to audit, m
 
 ```typescript
 // src/config.ts
-import { Schema } from '@effect/schema'
-import { Effect, pipe } from 'effect'
+import { Effect, pipe, Schema } from 'effect'
 
 const EnvSchema = Schema.Struct({
-  VITE_API_BASE_URL: Schema.String.pipe(Schema.nonEmpty()),
-  VITE_APP_NAME: Schema.String.pipe(Schema.nonEmpty()),
+  VITE_API_BASE_URL: Schema.String.pipe(Schema.nonEmptyString()),
+  VITE_APP_NAME: Schema.String.pipe(Schema.nonEmptyString()),
 })
 
 const parseEnv = pipe(
