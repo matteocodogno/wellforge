@@ -10,6 +10,14 @@
 .claude/settings.local.json
 .claude/transcripts/
 
+# WellForge run-trace token events (transient; keep semantic run JSONs committed).
+# This repo runs its own plugin, so the SubagentStop hook writes here just as it does in a
+# generated project — same two entries the presets ship in .gitignore.jinja.
+.forge/runs/.events.jsonl
+
+# WellForge visual-companion mockups (design evidence; transient, referenced from design.md)
+.forge/design/
+
 # Python (copier tooling)
 __pycache__/
 .venv/
