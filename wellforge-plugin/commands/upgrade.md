@@ -1,6 +1,6 @@
 ---
 description: Upgrade a scaffolded project to a newer template version (copier update + AI conflict resolution)
-argument-hint: [target version, e.g. v0.2.0 — defaults to latest]
+argument-hint: [target version, e.g. v0.2.0 — defaults to latest] [--dry-run]
 ---
 
 Upgrade this project to a newer WellForge template version. The mechanical re-templating
@@ -8,6 +8,27 @@ is copier's job; your job is the judgment: explaining the diff, resolving confli
 without losing local work, and proving the result with the quality gates.
 
 Target version: $ARGUMENTS
+
+## `--dry-run` — show the plan, change nothing
+
+With `--dry-run` anywhere in the arguments, run every **read** step below and none of the
+writes: produce the plan of record and stop. `/wellforge:release` has had this since it
+shipped, for the obvious reason — re-templating touches files a human edited since, and seeing the diff first is the difference between an upgrade and a surprise.
+
+Print, in this order:
+
+1. **What would change** — every file written, created or deleted, one line of reason each.
+   Run `copier update --pretend` and relay its output verbatim — it is the authority on the file set, not your reading of the template.
+2. **What would run** — the exact commands, copy-pasteable, in order.
+3. **What would be irreversible** — anything outward-facing or hard to undo, called out
+   separately. If nothing is, say so.
+4. **What it cannot predict** — the honest half. `--pretend` does not resolve conflicts, so a clean pretend can still produce merge markers for real. Declared `_migrations` for the crossed versions are listed, not executed.
+
+End with the exact command to run for real (this invocation minus `--dry-run`).
+
+**Hard rule:** a dry run writes **nothing** — not a spec, not a status flip, not a scratch
+file, not a git config. If a step cannot be planned without performing it, say so in
+section 4 rather than performing it.
 
 ## Pre-flight (all must pass before touching anything)
 

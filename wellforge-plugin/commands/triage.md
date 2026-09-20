@@ -31,11 +31,11 @@ Read each run's `feature`, `verdicts` (qe / eval), and `drift_open` (unresolved 
 
 Evaluate every feature; a feature can appear under more than one signal.
 
-0. **Terminal statuses are skipped entirely.** `done` and `superseded` are both exits from the
-   lifecycle (spec-driven skill): a superseded spec was replaced by another, so it will never
-   move again and reporting it as rot trains people to ignore the digest. Skip it in every
-   signal below — but if its `superseded_by:` names a feature that does not exist, say so
-   once under a **broken pointer** line: that is a real defect, not staleness.
+0. **Terminal statuses are skipped entirely.** `done`, `superseded` and `archived` are all
+   exits from the lifecycle (spec-driven skill): they will never move again, and reporting
+   them as rot trains people to ignore the digest. Skip them in every signal below — with
+   one exception: if a superseded spec's `superseded_by:` names a feature that does not
+   exist, say so once under a **broken pointer** line. That is a real defect, not staleness.
 
 1. **Stale in-progress.** `status: in-progress` AND the most recent edit to `spec.md`/`plan.md`/
    `tasks.md` is older than the stale-days threshold (default 14). → "idle Nd — pick it back up,
@@ -72,7 +72,7 @@ WellForge · spec-health triage        (stale-days: 14)
   004-billing       production   tasks 8/8, QE PASS, no eval → /wellforge:eval 004-billing
 
 💤 Lower-tier debt
-  002-spike-search  spike        spike for 44d → promote or archive
+  002-spike-search  spike        spike for 44d → /wellforge:promote, or /wellforge:done --archive "<why>"
 
 Summary: 5 features need attention · 2 stale · 1 drift · 1 unevaluated · 1 tier-debt
 ```

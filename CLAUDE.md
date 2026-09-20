@@ -59,13 +59,14 @@ wellforge/
 ├── wellforge-plugin/         # Claude Code plugin, v2.27.x (local marketplace install)
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, done,
-│   │                         # status, new, upgrade, adopt, extract-template, spike, promote,
-│   │                         # release (→ /wellforge:*)
+│   │                         # status, triage, doctor, new, upgrade, adopt, extract-template,
+│   │                         # spike, promote, release, terse, terse-compress (→ /wellforge:*)
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,
 │   │                         # frontend-design, systematic-debugging, worktree-isolation,
-│   │                         # self-critique, template-extraction,
+│   │                         # self-critique, template-extraction, git-policy, quality-gates,
+│   │                         # template-contract,
 │   │                         # connections + stack skills (react-ts-vite, kotlin-springboot,
 │   │                         # hono-ts-backend, mise, springboot-scaffold, pulumi-gcp-ts)
 │   ├── config/               # model-routing.yml + model-tiers.yml (tool-neutral tiers)
@@ -89,7 +90,7 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.9.0` (template series, PEP440 — what copier resolves), `gates-v11` (gate
-  workflow pin series — separate, invisible to copier); plugin `2.31.0`. A self-CI workflow
+  workflow pin series — separate, invisible to copier); plugin `2.32.0`. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets;
   it runs on `origin` (`github.com/matteocodogno/wellforge`, public) and has been green on
   `main` since 2026-08-17.

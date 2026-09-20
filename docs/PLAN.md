@@ -817,6 +817,41 @@ Step 0 and the QE-FAIL triage table, duplicated verbatim across implement / orch
 promote, are now defined once in `rigor-tiers` with each command citing it and stating only
 its own deviation.
 
+## Phase 18 — Operability: doctor, dry runs, the third exit, portable conventions (added 2026-09-20)
+
+Not defects — five gaps where the plugin promised or implied something it didn't carry.
+
+- ☑ **`/wellforge:doctor`** — health check with a fix command per FAIL: toolchain
+  (`jq` in particular, whose absence makes every hook exit 0 while doing nothing), declared
+  MCP servers, hooks whose scripts exist and are executable (a missing one fails *open*),
+  both drift guards, project shape and template-drift, and the git policy config. `--tests`
+  runs the four regression matrices from the installed plugin, which is otherwise only
+  possible by pushing. It closes with the command index, so it doubles as the `help` the
+  plugin never had. Read-only by hard rule: it diagnoses, it never fixes.
+- ☑ **`--dry-run` on `upgrade`, `promote`, `adopt`** — previously only `release` had one,
+  and these are the three commands that rewrite a repo that already exists. Same shape each
+  time: what would change, what would run, what is irreversible, and **what it cannot
+  predict** (upgrade's `--pretend` doesn't resolve conflicts; promote can't know whether the
+  eval will pass; adopt's plan is only as good as its survey). A dry run spawns no agents —
+  an agent that runs has already changed the world.
+- ☑ **`archived` — the third terminal status.** `/wellforge:status` and `/wellforge:triage`
+  had been telling users to "promote or archive" since they shipped, with no archive to
+  reach for: the only exits were to finish the work, lie with `done`, or hand-edit
+  frontmatter. Now `/wellforge:done --archive "<reason>"`, reason **required**, alongside
+  `--superseded-by`. Distinct from superseded (another spec took over) and from done (it
+  shipped); triage skips all three.
+- ☑ **Three skills for conventions the plugin kept citing but didn't carry** —
+  `git-policy` (the commit format, the rebase-not-merge rule, the four enforcement layers,
+  and what to do when a gate rejects you), `quality-gates` (the catalogue, the
+  referenced-never-copied calling convention, tier behaviour, and how a threshold changes),
+  and `template-contract` (one root copier.yml, the shared questions, the manifest, the two
+  version series). All three existed only as repo files — `CLAUDE.md`, `gates/README.md`,
+  `templates/_shared/CONTRACT.md` — which a *generated* project cannot read. An agent
+  working in a scaffolded project now carries them.
+
+`check-docs.py`, added hours earlier, caught the new command and all three skills missing
+from the README before this was committed. That is the intended failure mode.
+
 ## Order & dependencies
 
 ```

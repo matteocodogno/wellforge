@@ -1,6 +1,6 @@
 ---
 description: Graduate a feature (or the project) up a rigor tier — pay the deferred debt (retro plan, backfill tests, blocking gates, eval)
-argument-hint: <feature> --to mvp|production   |   --project --to mvp|production
+argument-hint: <feature> --to mvp|production   |   --project --to mvp|production   [--dry-run]
 ---
 
 Raise the rigor tier of a feature (or the whole project) and **pay the rigor it deferred**.
@@ -9,6 +9,23 @@ Load the **rigor-tiers** and **spec-driven** skills now. This mirrors `/wellforg
 clean-tree pre-flight → plan of record → execute → verify → one revertable commit.
 
 Arguments: $ARGUMENTS
+
+## `--dry-run` — show the plan, change nothing
+
+With `--dry-run` anywhere in the arguments, run every **read** step below and none of the
+writes, then stop with the plan of record. Promotion is the expensive, multi-agent path: it backfills tests, raises gates from advisory to blocking, and for a project promotion re-renders copier answers. Knowing the size of that before starting is the point.
+
+1. **What would change** — every file written, created or deleted, one line of reason each.
+   For `--project`, include the copier answer that changes (`rigor`) and every generated file the re-render would touch.
+2. **What would run** — the exact commands and **which agents would be spawned**, in order.
+3. **What would be irreversible** — called out separately; if nothing is, say so.
+4. **What it cannot predict** — the honest half. Agent work is not predictable: how many tests a backfill needs, whether the eval passes, and what the QE verdict will be are all unknown until it runs. Say which gates would become blocking, not whether they would pass.
+
+End with the exact command to run for real (this invocation minus `--dry-run`).
+
+**Hard rule:** a dry run writes nothing and **spawns no agents** — an agent that runs has
+already changed the world (tokens, traces, and often files). Naming the agents you *would*
+spawn is the deliverable.
 
 ## Step 0 — Resolve scope, current tier, target
 

@@ -53,6 +53,7 @@ Inside Claude Code:
 | `commands/orchestrate.md` | `/wellforge:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
 | `commands/eval.md` | `/wellforge:eval` — LM-judge scores the feature against the central rubric (gate into `done`) |
 | `commands/done.md` | `/wellforge:done` — verify the tier-aware done gate, then record `status: done` (or retire as superseded) |
+| `commands/doctor.md` | `/wellforge:doctor` — health check (tools, MCP, hooks, guards, `--tests`) + the command index |
 | `commands/status.md` | `/wellforge:status` — recap every feature's phase + the next command to run (read-only) |
 | `commands/triage.md` | `/wellforge:triage` — spec-health heartbeat: stale in-progress, unresolved drift, passed-QE-never-eval'd (read-only digest) |
 | `commands/new.md` | `/wellforge:new` — interview → stack recommendation → Copier scaffold → build verify → connections |
@@ -113,6 +114,9 @@ something a guard once got wrong — add yours there rather than only widening a
 | `config/model-tiers.yml` | Per-tool: tier → concrete model (claude aliases, opencode provider/model) |
 | `skills/connections/` | Standardized tool-connection checklists (GitHub, MCP, environments) — each ends with a verification command |
 | `skills/frontend-design/` | visual direction for NEW product surfaces — the surface-class gate and two-pass token system |
+| `skills/git-policy/` | Linear history + Conventional Commits — the format, the four enforcement layers, what to do when a gate rejects you |
+| `skills/quality-gates/` | What CI enforces, where thresholds live, and the rule that they change only by PR to `gates/` |
+| `skills/template-contract/` | The binding contract every Copier template satisfies — one root copier.yml, the shared questions, the manifest, the two version series |
 | `skills/heartbeat/` | Scheduled-automation conventions — surface-never-ship, dedup, deterministic-vs-agentic, cost bound |
 | `skills/hono-ts-backend/` | Hono + TypeScript + Drizzle + Effect — best practices and scaffolding |
 | `skills/kotlin-springboot/` | Spring Boot + Kotlin + jOOQ + Liquibase + Modulith |

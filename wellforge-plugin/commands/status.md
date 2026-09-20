@@ -37,7 +37,7 @@ Evaluate top-down; first matching row wins. `NNN-slug` below is the feature's fo
 | Condition | Phase | Next step |
 |---|---|---|
 | `brief.md`, no `spec.md`, status ≠ `done` | **spike** | `/wellforge:spike NNN-slug` (build) |
-| `brief.md`, no `spec.md`, status `done` | **spike ✓** | graduate: `/wellforge:promote NNN-slug --to mvp` (or archive) |
+| `brief.md`, no `spec.md`, status `done` | **spike ✓** | graduate: `/wellforge:promote NNN-slug --to mvp`, or stop here: `/wellforge:done NNN-slug --archive "<why>"` |
 | no `spec.md` (and no `brief.md`) | (not a feature) | skip |
 | spec `draft` | **spec** | review & approve the spec — refine with `/wellforge:spec NNN-slug` |
 | spec `approved`, no `plan.md` (rigor `production`) | **plan** | `/wellforge:plan NNN-slug` |
@@ -54,6 +54,7 @@ Evaluate top-down; first matching row wins. `NNN-slug` below is the feature's fo
 | `eval-report.md` `verdict: PASS`, spec ≠ `done` | **verify** | `/wellforge:done NNN-slug` |
 | spec `done` | **done** | — complete |
 | spec `superseded` | **retired** | — replaced by `superseded_by:`; nothing to do (flag it only if that feature doesn't exist) |
+| spec `archived` | **retired** | — stopped on purpose (`archive_reason:`); nothing to do |
 
 If spec is `draft` with open questions, append "(N open questions block approval)".
 If `tasks.md` is older than `spec.md`/`plan.md` (drift), flag "⚠ tasks may be stale —

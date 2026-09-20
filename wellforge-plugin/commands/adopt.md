@@ -1,11 +1,28 @@
 ---
 description: Adopt WellForge in an existing (brownfield) project — AI-readiness, spec workflow, calibrated quality gates, release management
-argument-hint: (run from the project root; no arguments)
+argument-hint: [--dry-run] (run from the project root)
 ---
 
 Onboard this existing project onto WellForge: AI-readiness files, the spec-driven
 workflow, optionally the central quality gates (with a measured baseline) and tool
 connections. Adoption **adds** — it never rewrites existing code or conventions.
+
+## `--dry-run` — show the plan, change nothing
+
+With `--dry-run` anywhere in the arguments, run every **read** step below and none of the
+writes, then stop with the plan of record. Adoption writes into a repo that already exists and already works — the one place a WellForge command touches code it did not generate. A preview is the difference between adoption and an unrequested refactor.
+
+1. **What would change** — every file written, created or deleted, one line of reason each.
+   Separate **added** files (AGENTS.md, specs/, CI workflows) from **modified** ones; a modification to an existing config is what a maintainer actually wants to see first.
+2. **What would run** — the exact commands and **which agents would be spawned**, in order.
+3. **What would be irreversible** — called out separately; if nothing is, say so.
+4. **What it cannot predict** — the honest half. Stage 0's survey drives everything after it, so the plan is only as good as what the survey can see: a gate threshold calibrated from a measured baseline cannot be known until the baseline is measured.
+
+End with the exact command to run for real (this invocation minus `--dry-run`).
+
+**Hard rule:** a dry run writes nothing and **spawns no agents** — an agent that runs has
+already changed the world (tokens, traces, and often files). Naming the agents you *would*
+spawn is the deliverable.
 
 ## Stage 0 — Survey (read-only)
 

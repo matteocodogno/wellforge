@@ -62,11 +62,25 @@ design checkpoint with `/wellforge:design --gate` — by default design is ungat
 
 ```
 draft ──► approved ──► in-progress ──► done
-                                └────► superseded (link the successor)
+                                ├────► superseded (another spec took the work over)
+                                └────► archived   (deliberately stopped, no successor)
 ```
+
+Three terminal statuses, one guarded command. `done` means it shipped and met its gate;
+`superseded` means another spec owns the work now; `archived` means it was stopped on
+purpose. All three are set only by `/wellforge:done` (`--superseded-by` / `--archive`), and
+the distinction matters downstream: `/wellforge:triage` skips all three, but only `archived`
+carries a recorded reason, and only `superseded` carries a pointer that triage checks.
 
 - Only the **user** moves a spec from `draft` to `approved` — never set it yourself.
   Record approval as `approved: 2026-06-04` in the frontmatter when the user says so.
+- **`archived`** is the exit for work deliberately stopped with no successor — the rejected
+  approach, the deprioritised feature, the spike that answered its question and ends there.
+  Set it with `/wellforge:done <feature> --archive "<reason>"`; the reason is **required**,
+  because an archived spec without one is indistinguishable from an abandoned one. It runs
+  no gate and touches nothing but the frontmatter (`status`, `archived:`,
+  `archive_reason:`) — the code stays in git. Never an agent's decision: stopping work is a
+  human call.
 - **`superseded`** is the lifecycle's other exit: another spec took the work over, so this one
   stops without being delivered. Set it with `/wellforge:done <feature> --superseded-by
   <NNN-slug>` — the same guarded command, since it is the same kind of transition; it records

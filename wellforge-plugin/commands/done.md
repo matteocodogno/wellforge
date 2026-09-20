@@ -1,6 +1,6 @@
 ---
 description: Close a feature — verifies the tier-aware done gate (tasks + QE + eval) then sets status: done, or retires it as superseded
-argument-hint: [feature] [--superseded-by <NNN-slug>] — NNN-slug / slug / NNN; omit to infer the in-progress feature ready to close
+argument-hint: [feature] [--superseded-by <NNN-slug>] [--archive "<reason>"] — NNN-slug / slug / NNN; omit to infer the in-progress feature ready to close
 ---
 
 Close a feature: verify it has genuinely met its **done gate**, then set `status: done`.
@@ -26,6 +26,31 @@ A caller that just ran the gate's inputs still re-verifies them here. That is th
 gate is checked against the **artifacts on disk**, never against a caller's recollection of
 having passed it. Four copies of this transition is how one of them ends up not checking that
 the tasks are all ticked.
+
+## Step 0a — `--archive "<reason>"`: stopping without finishing
+
+`/wellforge:status` and `/wellforge:triage` have always told users to "promote or archive" a
+stale spike or mvp. Until now nothing implemented archiving, so the only ways out of that
+sentence were to finish the work, lie with `done`, or hand-edit the frontmatter. This is the
+missing exit.
+
+**Archived** = deliberately stopped, with no successor: the experiment answered its question
+and nobody will build on it, the priority moved, the approach was rejected. Distinct from
+**superseded** (another spec took the work over — use `--superseded-by`) and from **done**
+(it shipped).
+
+With the flag, skip the done gate entirely and:
+
+1. **Require the reason.** `--archive` with no reason is refused — an archived spec with no
+   recorded why is indistinguishable from an abandoned one six months later, which is
+   exactly the confusion this status exists to prevent.
+2. Refuse if the feature is already `done`: shipped work is not archived, and rewriting its
+   status hides that it shipped.
+3. Set `status: archived`, `archived: <today>`, `archive_reason: "<reason>"` on the spec or
+   brief. Change nothing else — no tasks touched, no code reverted, no branches deleted.
+   Archiving is a statement about intent, not a cleanup.
+4. Report what was archived, the reason, and that the work is still in git if anyone wants
+   it back.
 
 ## Step 0b — `--superseded-by <NNN-slug>`: the other terminal status
 
@@ -98,8 +123,11 @@ verdict, eval score/date), and that status is now `done`. If a spike proved out,
 - **A promoted feature is gated at its NEW tier.** `mvp → production` does not inherit the
   mvp close: the production branch runs in full, so an eval PASS and a fresh QE are required
   even though the feature was already `done` as an mvp.
-- No other command may write `status: done` **or `status: superseded`**. If you find one
-  that does, that is the bug — this is the single guarded place those transitions live, and
+- No other command may write `status: done`, **`status: superseded` or `status: archived`**.
+  If you find one that does, that is the bug — this is the single guarded place those transitions live, and
   it is only true while that stays literally true.
-- `superseded` is never a way around a failing gate. If the work was finished but can't pass,
-  that is a defect to fix, not a spec to retire; the flag is for work another spec replaced.
+- **Neither `superseded` nor `archived` is a way around a failing gate.** If the work is
+  finished but cannot pass, that is a defect to fix, not a status to escape into. Use
+  `--superseded-by` only when another spec took the work over, and `--archive` only when the
+  work is deliberately stopped. An agent must never choose either on its own initiative — a
+  human decides to stop work.
