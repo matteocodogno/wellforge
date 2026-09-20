@@ -112,10 +112,17 @@ release series, whether the **CLI** you are running is behind the checkout's cop
 
 > **The plugin runs from a version-keyed cache, not the checkout.** Pulling the source
 > (`git pull` / `wellforge update`'s first step) and `/reload-plugins` do **not** refresh
-> that cache — only a reinstall does. So `wellforge update` now reinstalls the plugin for
-> you (uninstall + install), and `wellforge doctor` flags a stale cache (`! plugin cache
-> loaded vX but source is vY`). After `wellforge update`, run `/reload-plugins`. Manual
-> refresh: `claude plugin uninstall wellforge && claude plugin install wellforge@wellforge --scope user`.
+> that cache. `wellforge update` refreshes it **only when the cached version differs from
+> the source**, with `claude plugin update` — it no longer uninstalls anything, so a failed
+> refresh leaves the working plugin in place instead of leaving you with none. `wellforge
+> doctor` flags a stale cache (`! plugin cache loaded vX but source is vY`). After
+> `wellforge update`, run `/reload-plugins`. Manual refresh:
+> `claude plugin update wellforge@wellforge`.
+>
+> Note that `claude plugin install` on an already-installed plugin is idempotent and does
+> **not** pick up a newer source version — it says so and points at `update`. That is why
+> `uninstall && install` used to be the only refresh anyone reached for, and why it was the
+> wrong one.
 
 ```bash
 # CLI binary (the formula is versioned — new releases appear via brew update):

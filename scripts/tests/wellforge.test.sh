@@ -113,6 +113,14 @@ case "$*" in
   "plugin marketplace add"*)   exit "${FAKE_CLAUDE_MKT_ADD_RC:-0}" ;;
   "plugin install"*)
     [ "${FAKE_CLAUDE_INSTALL_RC:-0}" = "0" ] || { echo "Error: install refused" >&2; exit 1; } ;;
+  "plugin update"*)
+    # Modelled on the real CLI, verified by hand: a successful update WRITES a new
+    # version-keyed cache dir and leaves the old one for the caller to prune.
+    if [ "${FAKE_CLAUDE_UPDATE_RC:-0}" != "0" ]; then
+      echo "${FAKE_CLAUDE_UPDATE_ERR:-Error: could not reach the marketplace}" >&2; exit 1
+    fi
+    [ -n "${FAKE_CLAUDE_UPDATE_TO:-}" ] \
+      && mkdir -p "$HOME/.claude/plugins/cache/wellforge/wellforge/$FAKE_CLAUDE_UPDATE_TO" ;;
   "plugin uninstall"*)         ;;
 esac
 exit 0
@@ -261,6 +269,7 @@ FAKE_VARS=(FAKE_BREW_VERSION FAKE_BREW_OUTDATED FAKE_BREW_OUTDATED_PKG_RC
            FAKE_BREW_UPGRADE_ERR FAKE_BREW_UPDATE_RC FAKE_BREW_LIST_VERSION
            FAKE_CLAUDE_VERSION FAKE_CLAUDE_MARKETPLACES FAKE_CLAUDE_PLUGINS
            FAKE_CLAUDE_MKT_ADD_RC FAKE_CLAUDE_INSTALL_RC
+           FAKE_CLAUDE_UPDATE_RC FAKE_CLAUDE_UPDATE_ERR FAKE_CLAUDE_UPDATE_TO
            FAKE_GH_AUTH_RC FAKE_DOCKER_INFO_RC FAKE_COPIER_RC
            FAKE_MISE_USE_RC FAKE_MISE_USE_ERR FAKE_NPM_INSTALL_RC FAKE_NPM_INSTALL_ERR
            FAKE_TG_GETME FAKE_TG_GETUPDATES FAKE_TG_SEND)
@@ -432,17 +441,72 @@ assert_file_has "$HOME_DIR/.config/wellforge/config" "$SANDBOX/dest"
 assert_exists "$SANDBOX/dest/.claude-plugin/marketplace.json"
 finish
 
-# ── 9. update must not churn a plugin that is already current ─────────────────
-#    Reinstalling unconditionally throws away a good cache and costs a download every
-#    run. Expected to fail until that behaviour lands.
-reset_fakes; begin "update, plugin already current: no uninstall/install" xfail
+# ── 9. update: only when needed, and never destructive ───────────────────────
+# The old step ran `uninstall && install` on every run. It did the work even when the
+# cache already matched, and a failing install left the user with no plugin at all.
+reset_fakes; begin "update, cache already current: no plugin calls at all"
 new_sandbox "${ALL_TOOLS[@]}"
 make_checkout "$SANDBOX/wf" "2.43.0"
 mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.43.0"
 FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
 run_cli "$SANDBOX/wf" update
+assert_has "$OUT" "v2.43.0 already loaded"
 assert_lacks "$(cat "$SHIM_LOG")" "plugin uninstall"
 assert_lacks "$(cat "$SHIM_LOG")" "plugin install"
+assert_lacks "$(cat "$SHIM_LOG")" "plugin update"
+finish
+
+reset_fakes; begin "update, cache stale: updates in place, never uninstalls"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.40.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+FAKE_CLAUDE_UPDATE_TO="2.43.0"
+run_cli "$SANDBOX/wf" update
+assert_has "$OUT" "updated to v2.43.0"
+assert_has "$(cat "$SHIM_LOG")" "plugin update"
+assert_lacks "$(cat "$SHIM_LOG")" "plugin uninstall"
+assert_exists "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.43.0"
+assert_absent "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.40.0"   # pruned after
+finish
+
+# The whole point: a failed refresh must cost nothing. The previous version still loads.
+reset_fakes; begin "update fails: nothing uninstalled, the old cache survives"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.40.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+FAKE_CLAUDE_UPDATE_RC=1
+FAKE_CLAUDE_UPDATE_ERR="Error: could not reach the marketplace"
+run_cli "$SANDBOX/wf" update
+assert_has "$OUT" "could not reach the marketplace"
+assert_has "$OUT" "previous version left in place"
+assert_lacks "$(cat "$SHIM_LOG")" "plugin uninstall"
+assert_exists "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.40.0"
+finish
+
+# A cache dir NEWER than the source is someone testing an unreleased bump. Pruning it
+# would delete the only copy of work in progress.
+reset_fakes; begin "prune: keeps a cached version newer than the source"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.40.0" \
+         "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/9.9.9"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+FAKE_CLAUDE_UPDATE_TO="2.43.0"
+run_cli "$SANDBOX/wf" update
+assert_exists "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/9.9.9"    # newer: kept
+assert_absent "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.40.0"   # older: pruned
+assert_has "$OUT" "NEWER than the source"
+finish
+
+reset_fakes; begin "update, plugin not installed: says so, does not try to update"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS=""
+run_cli "$SANDBOX/wf" update
+assert_has "$OUT" "not installed"
+assert_lacks "$(cat "$SHIM_LOG")" "plugin update"
 finish
 
 # ── 10. dispatch ──────────────────────────────────────────────────────────────

@@ -30,7 +30,7 @@ set -uo pipefail
 # Bumped only by scripts/release-cli.sh, which also updates Formula/wellforge.rb and cuts
 # the tag. The Formula's test block asserts this string, and CI asserts it equals the
 # newest `cli-v*` tag — an unbumped release and an untagged bump are both caught.
-WELLFORGE_CLI_VERSION="1.0.0"
+WELLFORGE_CLI_VERSION="1.1.0"
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
 CONFIG_DIR="$HOME/.config/wellforge"
@@ -250,6 +250,37 @@ check_cli() {
   fi
 }
 
+PLUGIN_CACHE_ROOT="$HOME/.claude/plugins/cache/wellforge/wellforge"
+
+# Source version vs the newest cached (loaded) version. Claude Code runs the plugin from a
+# version-keyed cache copy, not from the checkout, so "I pulled" and "the plugin changed"
+# are different facts. One answer, used by both the report and the updater — they disagreed
+# before, and the updater's disagreement was to reinstall unconditionally.
+#
+#   current            the newest cache dir is the source version
+#   stale <cached> <src>
+#   missing            no cache dir, or none version-shaped
+#   unknown            the source version cannot be read (no checkout here)
+plugin_cache_state() {
+  local src_ver cached_ver
+  src_ver=$(plugin_json_version "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json")
+  [ -n "$src_ver" ] || { printf 'unknown'; return 0; }
+  [ -d "$PLUGIN_CACHE_ROOT" ] || { printf 'missing'; return 0; }
+  # A glob and version_lt, not `ls | sort`: filenames here are whatever is on disk, and
+  # the old lexical/field sort called v2.9.0 newer than v2.10.0.
+  local d n
+  cached_ver=""
+  for d in "$PLUGIN_CACHE_ROOT"/*/; do
+    [ -d "$d" ] || continue
+    n="$(basename "$d")"
+    case "$n" in [0-9]*.[0-9]*.[0-9]*) ;; *) continue ;; esac
+    if [ -z "$cached_ver" ] || version_lt "$cached_ver" "$n"; then cached_ver="$n"; fi
+  done
+  [ -n "$cached_ver" ] || { printf 'missing'; return 0; }
+  if [ "$cached_ver" = "$src_ver" ]; then printf 'current'
+  else printf 'stale %s %s' "$cached_ver" "$src_ver"; fi
+}
+
 check_plugin() {
   command -v claude >/dev/null || { skip "plugin" "skipped — claude not installed"; return 0; }
   if claude plugin marketplace list 2>/dev/null | grep -q "wellforge"; then ok "marketplace" "WellForge registered"; else
@@ -258,20 +289,15 @@ check_plugin() {
   if claude plugin list 2>/dev/null | grep -q "wellforge"; then ok "plugin" "wellforge installed"; else
     bad "plugin" "run: claude plugin install wellforge@wellforge --scope user"; FAILURES=$((FAILURES+1))
   fi
-  # Loaded-plugin freshness: the running plugin is a version-keyed cache copy, not the
-  # source. Compare the newest cached version to the source plugin.json version — they
-  # diverge when source moved ahead but no reinstall happened (update+reload don't refresh).
-  local cache_root="$HOME/.claude/plugins/cache/wellforge/wellforge"
-  local src_ver cached_ver
-  src_ver=$(plugin_json_version "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json")
-  if [ -n "$src_ver" ] && [ -d "$cache_root" ]; then
-    cached_ver=$(ls "$cache_root" 2>/dev/null | sort -t. -k1,1n -k2,2n -k3,3n | tail -1) || cached_ver=""
-    if [ -n "$cached_ver" ] && [ "$cached_ver" != "$src_ver" ]; then
-      warn "plugin cache" "loaded v$cached_ver but source is v$src_ver — run: wellforge update (reinstalls), then /reload-plugins"
-    else
-      ok "plugin cache" "v${cached_ver:-?} matches source"
-    fi
-  fi
+  # Loaded-plugin freshness, from the one place that computes it.
+  local state; state="$(plugin_cache_state)"
+  case "$state" in
+    current)  ok   "plugin cache" "v$(plugin_json_version "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json") matches source" ;;
+    stale*)   set -- $state
+              warn "plugin cache" "loaded v$2 but source is v$3 — run: wellforge update, then /reload-plugins" ;;
+    missing)  warn "plugin cache" "no cached version — the plugin has not been installed from this source: run: wellforge update" ;;
+    unknown)  : ;;   # no checkout; check_repo already said so, and repeating it is noise
+  esac
 }
 
 # Detect pre-existing user components that clash with WellForge's — advisory (warns,
@@ -589,22 +615,33 @@ Fix the ✗ lines (each carries its command), then re-run: wellforge doctor"
 # Conservative: operates ONLY inside the wellforge cache root, only on X.Y.Z-shaped dir
 # names, never the active version, and only when the current version is known.
 prune_plugin_cache() {
-  local cache_root="$HOME/.claude/plugins/cache/wellforge/wellforge"
+  local cache_root="$PLUGIN_CACHE_ROOT"
   [ -d "$cache_root" ] || return 0
   local cur
   cur=$(plugin_json_version "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json")
   [ -n "$cur" ] || return 0   # can't determine active version → never prune
-  local removed=0 d name
+  local removed=0 kept_newer=0 d name
   for d in "$cache_root"/*/; do
     [ -d "$d" ] || continue
     name=$(basename "$d")
     case "$name" in
       "$cur") continue ;;                                   # keep the active version
-      [0-9]*.[0-9]*.[0-9]*) rm -rf "$d" 2>/dev/null && removed=$((removed+1)) ;;
+      [0-9]*.[0-9]*.[0-9]*)
+        # Only OLDER versions are stale. A cache dir newer than the source belongs to a
+        # developer testing an unreleased bump, or to a checkout that has since been rolled
+        # back — deleting it would destroy the one copy of work in progress, and pruning is
+        # supposed to be tidying, not data loss.
+        if version_lt "$name" "$cur"; then
+          rm -rf "$d" 2>/dev/null && removed=$((removed+1))
+        else
+          kept_newer=$((kept_newer+1))
+        fi ;;
       *) : ;;                                               # ignore non-version entries
     esac
   done
-  if [ "$removed" -gt 0 ]; then ok "plugin cache" "pruned $removed stale version(s), kept v$cur"; fi
+  [ "$removed" -gt 0 ] && ok "plugin cache" "pruned $removed stale version(s), kept v$cur"
+  [ "$kept_newer" -gt 0 ] && warn "plugin cache" "kept $kept_newer cached version(s) NEWER than the source v$cur — an unreleased bump? nothing was removed"
+  return 0
 }
 
 # True if this script is the brew-installed CLI (vs. run from a checkout).
@@ -645,17 +682,49 @@ cmd_update() {
   fi
 
   # 3. the LOADED plugin — Claude Code runs it from a version-keyed cache that neither
-  # `git pull` nor /reload-plugins refreshes; only a reinstall does.
-  if command -v claude >/dev/null && claude plugin list 2>/dev/null | grep -q "wellforge"; then
-    claude plugin uninstall wellforge --scope user >/dev/null 2>&1 \
-      || warn "plugin" "uninstall reported an error — continuing; the install below is what matters"
-    local perr
-    if perr=$(claude plugin install wellforge@wellforge --scope user 2>&1 >/dev/null); then
-      ok "plugin" "reinstalled from source (cache refreshed)"
-      prune_plugin_cache   # tidy stale version dirs now that the fresh one exists
-    else
-      warn "plugin" "reinstall failed: $(err_tail "$perr") — run: claude plugin install wellforge@wellforge --scope user"
-    fi
+  # `git pull` nor /reload-plugins refreshes.
+  #
+  # This used to `uninstall && install` every single run. Two problems: it did the work
+  # even when the cache already matched the source, and if the install half failed the
+  # user was left with NO plugin and a warn line. Nothing is removed here any more.
+  #
+  # Verified against the CLI rather than assumed:
+  #   `claude plugin install` on an already-installed plugin is idempotent and does NOT
+  #   refresh — it exits 0 and says so, pointing at `claude plugin update`.
+  #   `claude plugin update` is the refresh: it writes the new version-keyed cache dir,
+  #   re-records the version, and leaves the old dir behind for pruning.
+  if ! command -v claude >/dev/null; then
+    skip "plugin" "skipped — claude not installed"
+  elif ! claude plugin list 2>/dev/null | grep -q "wellforge"; then
+    warn "plugin" "not installed — run: wellforge setup (or: claude plugin install wellforge@wellforge --scope user)"
+  else
+    local state perr src_now
+    state="$(plugin_cache_state)"
+    src_now="$(plugin_json_version "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json")"
+    case "$state" in
+      current)
+        ok "plugin" "v$src_now already loaded — nothing to refresh" ;;
+      unknown)
+        warn "plugin" "no readable plugin source at $WELLFORGE_HOME — skipped (the checkout step above is what fixes this)" ;;
+      stale*|missing)
+        set -- $state
+        [ "$1" = "stale" ] && say "  ${DIM}plugin cache is v$2, source is v$3 — updating…${RST}" \
+                           || say "  ${DIM}plugin has no cached version — installing…${RST}"
+        if perr=$(claude plugin update wellforge@wellforge 2>&1 >/dev/null); then
+          # Trust the filesystem, not the exit code: prune only once the new version is
+          # actually on disk, so a "successful" update that produced nothing cannot take
+          # the working copy with it.
+          if [ -d "$PLUGIN_CACHE_ROOT/$src_now" ]; then
+            ok "plugin" "updated to v$src_now (cache refreshed)"
+            prune_plugin_cache
+          else
+            warn "plugin" "update reported success but no cache dir for v$src_now appeared — nothing pruned; run: claude plugin update wellforge@wellforge"
+          fi
+        else
+          # The previous version is untouched and still loads. That is the point.
+          bad "plugin" "update failed: $(err_tail "$perr") — previous version left in place; retry: claude plugin update wellforge@wellforge"
+        fi ;;
+    esac
   fi
   say "${DIM}plugin reloaded? run /reload-plugins (or start a new Claude Code session).${RST}"
 

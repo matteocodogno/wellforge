@@ -493,7 +493,14 @@ jobs:
       # used on a directory of version-shaped names). A genuine warning-level false positive
       # gets an inline `# shellcheck disable=SCxxxx` with the reason on the line above it,
       # never a blanket exclusion — there is exactly one today, on prose containing a tilde.
+      # LC_ALL matters: these scripts are full of em dashes, and shellcheck CRASHES writing
+      # a finding that contains one under a non-UTF-8 locale
+      # ("commitBuffer: invalid argument (cannot encode character '\8212')") — a crash that
+      # reads like a parse error in the script rather than a locale problem in the tool.
       - name: shellcheck
+        env:
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
         run: shellcheck -s bash --severity=warning scripts/wellforge scripts/*.sh
                         wellforge-plugin/hooks/scripts/*.sh
 
