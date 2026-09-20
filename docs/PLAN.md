@@ -505,6 +505,23 @@ not auto-enabled**; the Claude Code routine must degrade to `gh`/API auth in hea
 14b was built ahead of the pilot at the user's request; the pilot confirms whether the agentic layer
 earns its keep over the deterministic heartbeats alone.
 
+**Follow-up fix** (plugin `2.28.0`, 2026-09-20): the guard hooks were tested by attack rather
+than by reading, and both halves failed. Six bash rules had bypasses — `push -f`, `push origin
++main`, `reset --hard <ref>` (only `HEAD~2..9` was covered), `branch -D`, `rm` with flags in
+separate tokens, `DROP TABLE` without a trailing semicolon — and `.envrc`, direnv's file and the
+same secret class, was invisible while `.env` was blocked. All six now block, with
+`--force-with-lease`, `branch -d` and `rm -rf <path>` still allowed because the worktree and
+linear-history workflows depend on them. The structural finding is bigger than the six: the
+guard only ever covered **Bash**, because it matches command text. `Write` could create a
+secret file, `Read` could read one — the tools an agent actually reaches for. New
+`pre-file-guard.sh` (PreToolUse on `Read|Write|Edit|MultiEdit|NotebookEdit`) inspects the
+`file_path` *parameter*, so it is exact where the text rule can only guess; `.mise.local.toml`
+is deliberately write-allowed and read-blocked, since it is the sanctioned secret store the
+setup flow writes but whose values must not reach the transcript. Regression matrices for both
+(53 + 48 cases, wired into ci.yml), verified meaningful against the pre-fix guard: 13 fail. The
+text-only limits — false positives on any command *mentioning* a protected name, and evadability
+by anyone actually trying — are now documented in the plugin README rather than being folklore.
+
 ## Phase 15 — Craft skills: visual direction & debugging discipline (added 2026-08-11)
 
 Goal: two gaps that surfaced from comparing WellForge's skill set against public skill

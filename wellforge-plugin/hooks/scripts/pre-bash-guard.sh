@@ -4,10 +4,10 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 [ -z "$COMMAND" ] && exit 0
 # Block deleting /, /*, ~, ~/, ~/*, bare * — NOT legitimate paths like /tmp/foo
 # (the original unanchored "rm -rf /" matched every absolute-path deletion).
-if echo "$COMMAND" | grep -qE "rm\s+-[a-zA-Z]+\s+(/|/\*|~|~/\*?|\*)([[:space:];\"')]|$)"; then
+if echo "$COMMAND" | grep -qE "rm(\s+-[a-zA-Z-]+)+\s+(/|/\*|~|~/\*?|\*)([[:space:];\"')]|$)"; then
   echo "BLOCKED: recursive deletion from root/home not allowed" >&2; exit 2
 fi
-if echo "$COMMAND" | grep -qiE 'DROP\s+DATABASE|DROP\s+TABLE\s+\w+\s*;|TRUNCATE\s+TABLE'; then
+if echo "$COMMAND" | grep -qiE 'DROP\s+DATABASE|DROP\s+TABLE\s+[`"'"'"']?\w|TRUNCATE\s+TABLE'; then
   echo "BLOCKED: destructive SQL requires manual execution" >&2; exit 2
 fi
 # Word-boundary after sh/bash/zsh — without it "| shasum" matched "| sh"
@@ -32,14 +32,28 @@ fi
 # .env.example / .env.jinja are legitimately referenced — scrub them first.
 SCRUBBED=$(echo "$COMMAND" | sed 's/\.env\.example//g; s/\.env\.jinja//g')
 if echo "$SCRUBBED" | grep -qE '(^|[^A-Za-z0-9_.])\.env([^A-Za-z0-9_]|$)' \
-  || echo "$SCRUBBED" | grep -qE '\.(pem|key)([^A-Za-z0-9_]|$)|secrets\.ya?ml'; then
+  || echo "$SCRUBBED" | grep -qE '(^|[^A-Za-z0-9_.])\.envrc([^A-Za-z0-9_]|$)' \
+  || echo "$SCRUBBED" | grep -qE '\.(pem|key|p12|pfx)([^A-Za-z0-9_]|$)|secrets\.ya?ml|(^|/)id_(rsa|ed25519)([^A-Za-z0-9_]|$)'; then
   echo "BLOCKED: touches protected file (.env/.pem/.key/secrets.yml)" >&2; exit 2
 fi
-# `--force` needs a trailing boundary too: the bare prefix also matched
-# `--force-with-lease`, which is the SAFE force push (it refuses when the remote moved
-# under you) and the one this repo's own linear-history policy tells people to use after
-# a rebase. Blocking it made the documented workflow impossible.
-if echo "$COMMAND" | grep -qE 'git\s+(push\s+--force([^-]|$)|reset\s+--hard\s+HEAD~[2-9])'; then
+# ── Destructive git (widened 2026-09: the narrow patterns had documented bypasses) ──────
+# Force-push in every spelling EXCEPT --force-with-lease, which is the SAFE one (it refuses
+# when the remote moved under you) and the one this repo's linear-history policy prescribes
+# after a rebase. Covered: --force, -f, and a leading-plus refspec (git push origin +main),
+# which is a force push wearing different clothes.
+if echo "$COMMAND" | grep -qE 'git\s+push\b' \
+   && echo "$COMMAND" | grep -qvE '\-\-force-with-lease' \
+   && echo "$COMMAND" | grep -qE '(\-\-force([^-]|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s\+[A-Za-z0-9_./@-]+(:|\s|$))'; then
+  echo "BLOCKED: force push requires manual confirmation (use --force-with-lease if you mean it)" >&2; exit 2
+fi
+# `git reset --hard` at ANY target, not just HEAD~2..9: `--hard origin/main` discards the same
+# work and was the reported bypass. `--soft`/`--mixed` stay allowed — they keep the tree.
+if echo "$COMMAND" | grep -qE 'git\s+reset\s+(--\w+\s+)*--hard'; then
   echo "BLOCKED: destructive git operation requires manual confirmation" >&2; exit 2
+fi
+# Force-delete a branch. Lowercase -d (delete only if merged) stays allowed: the
+# worktree-isolation prune step depends on it.
+if echo "$COMMAND" | grep -qE 'git\s+branch\s+(-[a-zA-Z]*D[a-zA-Z]*|--delete\s+--force|--force\s+--delete)\b'; then
+  echo "BLOCKED: force-deleting a branch requires manual confirmation (-d deletes merged branches)" >&2; exit 2
 fi
 exit 0

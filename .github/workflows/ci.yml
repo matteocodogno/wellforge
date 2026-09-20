@@ -277,11 +277,12 @@ jobs:
   # innocent text until people route around it (a workaround for one of its false positives
   # is what turned this very workflow red). The matrix pins both directions.
   hook-fixtures:
-    name: plugin hooks (pre-bash-guard + stop-verify matrices)
+    name: plugin hooks (bash-guard + file-guard + stop-verify matrices)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - run: wellforge-plugin/hooks/scripts/tests/pre-bash-guard.test.sh
+      - run: wellforge-plugin/hooks/scripts/tests/pre-file-guard.test.sh
       # stop-verify guards what the hook can SEE (merge base, not just unstaged) and what it
       # costs (no `clean`, bounded). Both regressions are invisible in a session: the hook
       # just stops blocking. Ubuntu has coreutils `timeout`, so the budget case runs here

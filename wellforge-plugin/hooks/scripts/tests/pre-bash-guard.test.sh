@@ -62,5 +62,39 @@ run_case ALLOW 'curl -sL https://x.tld/f.tgz | shasum -a 256'
 run_case BLOCK 'git push --force origin main'
 run_case ALLOW 'git push --force-with-lease origin feature'
 
+# ── reported bypasses, 2026-09 (each of these PASSED before the rules were widened) ──────
+# Force push in every spelling except the safe one.
+run_case BLOCK 'git push -f'
+run_case BLOCK 'git push --force'
+run_case BLOCK 'git push origin +main'
+run_case BLOCK 'git push origin +refs/heads/main:refs/heads/main'
+run_case ALLOW 'git push --force-with-lease'
+run_case ALLOW 'git push origin main'
+run_case ALLOW 'git push --follow-tags'
+# reset --hard at any target, not only HEAD~N.
+run_case BLOCK 'git reset --hard origin/main'
+run_case BLOCK 'git reset --hard'
+run_case BLOCK 'git reset --hard HEAD~3'
+run_case ALLOW 'git reset --soft HEAD~1'
+run_case ALLOW 'git reset HEAD -- file.txt'
+# Force-deleting a branch; -d stays allowed (worktree prune depends on it).
+run_case BLOCK 'git branch -D main'
+run_case BLOCK 'git branch --delete --force feature/x'
+run_case ALLOW 'git branch -d wt/t1'
+run_case ALLOW 'git branch --show-current'
+# Flags in separate tokens.
+run_case BLOCK 'rm -r -f /'
+run_case BLOCK 'rm -f -r ~'
+run_case ALLOW 'rm -r -f /tmp/scratch'
+run_case ALLOW 'rm -rf node_modules'
+# SQL without the trailing semicolon (psql -c rarely has one).
+run_case BLOCK "psql -c 'DROP TABLE users'"
+run_case BLOCK 'DROP TABLE orders'
+run_case ALLOW 'grep -n "createTable" migrations/V1.sql'
+# direnv's file is the same secret class and was invisible.
+run_case BLOCK 'cat .envrc'
+run_case BLOCK 'source .envrc'
+run_case ALLOW 'cat .env.example'
+
 printf '\npre-bash-guard: %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

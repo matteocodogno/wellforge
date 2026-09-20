@@ -68,15 +68,39 @@ Inside Claude Code:
 | `agents/adr-writer.md` | Specialist: Architecture Decision Record writer |
 | `hooks/hooks.json` | 7 lifecycle hooks |
 | `hooks/scripts/session-start.sh` | Injects git state + domain glossary at session start |
-| `hooks/scripts/pre-bash-guard.sh` | Blocks rm -rf /, SQL nukes, pipe-to-shell, .env writes |
+| `hooks/scripts/pre-bash-guard.sh` | Blocks recursive deletion from root/home, SQL nukes, pipe-to-shell, force push / `reset --hard` / force branch delete, and commands naming a secret file |
+| `hooks/scripts/pre-file-guard.sh` | The same protected files for the Read/Write/Edit tools — it reads the `file_path` parameter, so no text guessing |
 | `hooks/scripts/post-lint.sh` | ts/tsx → Prettier+ESLint · kt/kts → ktlintFormat |
 | `hooks/scripts/notify.sh` | macOS notification + Telegram DM |
-| `hooks/scripts/stop-verify.sh` | Checks spec drift + tsc before Claude stops |
+| `hooks/scripts/stop-verify.sh` | Blocks on spec drift + type/compile errors before Claude stops — over the branch's whole change set (merge base ∪ working tree), not just unstaged files |
 | `hooks/scripts/pre-compact-backup.sh` | Snapshots session state before compaction |
 | `hooks/scripts/trace-subagent.sh` | SubagentStop → best-effort token events to `.forge/runs/.events.jsonl` (observability) |
 | `scripts/run-report.py` | Summarizes `.forge/runs/` — agents, verdicts, drift, estimated cost |
 | `scripts/check-routing.py` | Verifies agent frontmatter models match the routing policy (drift guard) |
 | `config/model-pricing.yml` | Per-model price table for run-report cost estimates |
+
+### What the guards can and cannot do
+
+Two hooks protect secrets and destructive operations, and they work differently on purpose:
+
+- **`pre-file-guard.sh`** reads the tool's `file_path` **parameter** (Read/Write/Edit/
+  MultiEdit/NotebookEdit). It is exact: a path is protected or it isn't.
+- **`pre-bash-guard.sh`** can only match the **text of a command**, because that is all a
+  shell invocation gives it. Two consequences worth knowing before you file a bug:
+  1. **False positives.** A command that merely *mentions* a protected name is blocked even
+     if it opens nothing — `grep -rn ".env" docs/`, a loop containing the string, this very
+     README's examples. That is the accepted cost of a text-only rule; `.env.example`,
+     `*.jinja` and `--force-with-lease` are scrubbed because they came up constantly, and
+     more exceptions get added the same way. Work around it by not naming the file, or run
+     the command yourself.
+  2. **It is a seatbelt, not a sandbox.** Text matching is evadable by anyone trying —
+     variable indirection, base64, an unusual spelling. It is there to stop an accident, not
+     an adversary. Real enforcement lives where it cannot be talked around: the gitleaks
+     pre-commit hook, the security-floor CI gate, and branch protection.
+
+Both have regression matrices (`hooks/scripts/tests/`, run by CI). Every case in them is
+something a guard once got wrong — add yours there rather than only widening a regex.
+
 | `config/model-routing.yml` | Tool-neutral: agent → tier (frontier/mid/cheap) — the portable routing policy |
 | `config/model-tiers.yml` | Per-tool: tier → concrete model (claude aliases, opencode provider/model) |
 | `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
