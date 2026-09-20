@@ -31,7 +31,7 @@ set -uo pipefail
 # Bumped only by scripts/release-cli.sh, which also updates Formula/wellforge.rb and cuts
 # the tag. The Formula's test block asserts this string, and CI asserts it equals the
 # newest `cli-v*` tag — an unbumped release and an untagged bump are both caught.
-WELLFORGE_CLI_VERSION="1.2.0"
+WELLFORGE_CLI_VERSION="1.3.0"
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
 CONFIG_DIR="$HOME/.config/wellforge"
@@ -456,8 +456,11 @@ check_collisions() {
 }
 
 # ─── telegram ────────────────────────────────────────────────────────────────
+# The FILE is the configuration. The env vars are the CI escape hatch, where there is no
+# home directory to write to — they are not how a workstation is meant to be set up, and
+# nothing puts them into a user's shell any more (see the note in cmd_telegram).
 telegram_configured() {
-  { [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; } || [ -f "$TELEGRAM_ENV_FILE" ]
+  [ -f "$TELEGRAM_ENV_FILE" ] || { [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; }
 }
 
 tg_api() { # token method [curl args…]
@@ -509,67 +512,140 @@ cmd_telegram() {
   open_url "https://t.me/$bot_user"
   printf "Press Enter once you've sent the message… "; read -r _
 
-  local chat_id="" tries=0
+  # PRIVATE chats only, and never "whatever arrived last". `last` meant that if the bot
+  # was in a group, or anyone else had messaged it, the wizard silently saved that chat —
+  # and every future permission prompt went there. A notification that says what Claude is
+  # about to do is not something to post into a group by accident.
+  local chat_id="" chat_user="" tries=0 updates="" err_desc="" ids=""
   while [ -z "$chat_id" ] && [ $tries -lt 10 ]; do
-    chat_id=$(tg_api "$token" getUpdates | jq -r '[.result[].message.chat.id] | last // empty') || chat_id=""
-    [ -z "$chat_id" ] && { tries=$((tries+1)); say "  ${DIM}no message yet — retrying ($tries/10)…${RST}"; sleep 2; }
+    updates=$(tg_api "$token" getUpdates) || updates=""
+
+    # A webhook and getUpdates are mutually exclusive; polling returns 409 forever and the
+    # retry loop would just spin for 20 seconds and blame the user for not sending anything.
+    err_desc=$(printf '%s' "$updates" | jq -r 'select(.ok == false) .description // empty' 2>/dev/null) || err_desc=""
+    if [ -n "$err_desc" ]; then
+      case "$err_desc" in
+        *webhook*)
+          die "Telegram refused getUpdates: $err_desc
+    This bot has a webhook set, so it cannot be polled. Delete it and re-run:
+      curl -s \"https://api.telegram.org/bot<token>/deleteWebhook\"" ;;
+        *) die "Telegram refused getUpdates: $err_desc" ;;
+      esac
+    fi
+
+    # id<TAB>username, newest first, one line per distinct private chat.
+    ids=$(printf '%s' "$updates" | jq -r '
+            [ .result[]? | select(.message.chat.type == "private") | .message.chat ]
+            | reverse | unique_by(.id)
+            | .[] | "\(.id)\t\(.username // .first_name // "unknown")"' 2>/dev/null) || ids=""
+
+    if [ -n "$ids" ]; then
+      if [ "$(printf '%s\n' "$ids" | wc -l | tr -d ' ')" -eq 1 ]; then
+        chat_id=$(printf '%s' "$ids" | cut -f1); chat_user=$(printf '%s' "$ids" | cut -f2)
+      elif [ -t 0 ]; then
+        # More than one person has messaged this bot. Guessing is how the wrong person
+        # starts receiving someone else's permission prompts.
+        say ""
+        say "  ${YLW}More than one private chat has messaged @$bot_user:${RST}"
+        printf '%s\n' "$ids" | awk -F'\t' '{printf "    %d) @%s  (id %s)\n", NR, $2, $1}'
+        printf "  Which one is you? [1-%s] " "$(printf '%s\n' "$ids" | wc -l | tr -d ' ')"
+        read -r pick
+        case "$pick" in
+          ''|*[!0-9]*) die "not a number: '$pick' — re-run: wellforge telegram" ;;
+        esac
+        chat_id=$(printf '%s\n' "$ids" | sed -n "${pick}p" | cut -f1)
+        chat_user=$(printf '%s\n' "$ids" | sed -n "${pick}p" | cut -f2)
+        [ -n "$chat_id" ] || die "no option $pick — re-run: wellforge telegram"
+      else
+        die "more than one private chat has messaged @$bot_user, and this is not an
+    interactive session, so there is nothing safe to pick:
+$(printf '%s\n' "$ids" | awk -F'\t' '{printf "      @%s  (id %s)\n", $2, $1}')
+    Re-run \`wellforge telegram\` from a terminal, or set TELEGRAM_CHAT_ID yourself."
+      fi
+    fi
+
+    [ -z "$chat_id" ] && { tries=$((tries+1)); say "  ${DIM}no private message yet — retrying ($tries/10)…${RST}"; sleep 2; }
   done
   if [ -z "$chat_id" ]; then
-    die "no message received by @$bot_user. Make sure you pressed START and sent something, then re-run: wellforge telegram"
+    die "no private message received by @$bot_user. Make sure you pressed START and sent
+    a direct message (a group message does not count), then re-run: wellforge telegram"
   fi
-  ok "chat detected" "id $chat_id"
+  ok "chat detected" "@$chat_user (id $chat_id)"
 
   # ── step 3: persist + verify ──
   say ""
   say "${YLW}Step 3/3 — save and verify${RST}"
   mkdir -p "$(dirname "$TELEGRAM_ENV_FILE")"
+  chmod 700 "$(dirname "$TELEGRAM_ENV_FILE")" 2>/dev/null
   {
     echo "# WellForge Telegram notifications — written by 'wellforge telegram'. Never commit."
+    echo "# Read directly by the notify hook. NOT sourced from your shell: see 'wellforge telegram'."
     echo "export TELEGRAM_BOT_TOKEN=\"$token\""
     echo "export TELEGRAM_CHAT_ID=\"$chat_id\""
   } > "$TELEGRAM_ENV_FILE"
   chmod 600 "$TELEGRAM_ENV_FILE"
-  ok "saved" "$TELEGRAM_ENV_FILE (chmod 600)"
+  ok "saved" "$TELEGRAM_ENV_FILE (chmod 600, dir 700)"
 
-  # The rc file the login shell actually reads — not a hard-coded ~/.zshrc, which on Linux
-  # or a bash macOS meant appending to a file nothing sources and then reporting success.
-  local rc src_line
-  rc="$(shell_rc)"
-  src_line="[ -f \"$TELEGRAM_ENV_FILE\" ] && . \"$TELEGRAM_ENV_FILE\""
-  if [ -z "$rc" ]; then
-    # fish (and anything else): its syntax is not POSIX, so it cannot source that file at
-    # all. Say so and hand over the exact lines rather than writing something that looks
-    # wired and is not. The token stays in the 600 file instead of on screen.
-    warn "shell wired" "$(login_shell) cannot source $TELEGRAM_ENV_FILE (POSIX export syntax) — auto-wiring skipped"
-    say "    add to ~/.config/fish/config.fish (fish) or your shell's rc:"
-    say "      set -gx TELEGRAM_CHAT_ID $chat_id"
-    say "      set -gx TELEGRAM_BOT_TOKEN <the token — it is in $TELEGRAM_ENV_FILE>"
-  elif ! grep -qsF "$TELEGRAM_ENV_FILE" "$rc"; then
-    if printf "\n# WellForge Telegram notifications\n%s\n" "$src_line" >> "$rc"; then
-      ok "shell wired" "source line appended to $rc"
-    else
-      warn "shell wired" "could not write $rc — add this line yourself:  $src_line"
-    fi
-  else
-    ok "shell wired" "$rc already sources it"
-  fi
+  # NOTHING is wired into the shell. The notify hook reads the file itself, so exporting
+  # the token into every process the user starts added exposure and no function — and
+  # "every process" includes everything Claude Code runs, where one `env` in a transcript
+  # leaks a live bot token. Earlier versions appended that line; offer to take it back out.
+  tg_unwire
 
   export TELEGRAM_BOT_TOKEN="$token" TELEGRAM_CHAT_ID="$chat_id"
   tg_test || die "test message failed — check your network and re-run: wellforge telegram"
   say ""
-  local rc_hint; rc_hint="$(shell_rc)"
-  say "${GRN}done.${RST} ${DIM}Open a new terminal${rc_hint:+ (or 'source $rc_hint')} so Claude Code sessions inherit the vars.${RST}"
+  say "${GRN}done.${RST} ${DIM}Nothing to reload: the notify hook reads $TELEGRAM_ENV_FILE directly, so the token never enters your shell environment.${RST}"
+}
+
+# Remove the rc line earlier versions added. It exported TELEGRAM_BOT_TOKEN into every
+# process the user starts — including everything Claude Code runs — while the hook was
+# already reading the file, so it was exposure without function.
+tg_unwire() {
+  local rc found=0
+  for rc in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"; do
+    [ -f "$rc" ] || continue
+    grep -qsF "$TELEGRAM_ENV_FILE" "$rc" || continue
+    found=1
+    say ""
+    warn "shell env" "$rc sources $TELEGRAM_ENV_FILE, which exports the bot token into every process you start (Claude Code included). It is not needed — the notify hook reads the file itself."
+    if [ -t 0 ]; then
+      printf "  Remove that line from %s? [Y/n] " "$rc"
+      read -r ans
+      case "$ans" in
+        n|N|no) say "    ${DIM}left in place — remove it yourself when convenient.${RST}" ;;
+        *)
+          # Drop the source line and the comment WellForge wrote above it.
+          local tmp; tmp="$(mktemp)"
+          grep -vF "$TELEGRAM_ENV_FILE" "$rc" | grep -v '^# WellForge Telegram notifications$' > "$tmp" \
+            && cat "$tmp" > "$rc" && ok "shell env" "removed from $rc"
+          rm -f "$tmp" ;;
+      esac
+    else
+      say "    ${DIM}delete this line from $rc:${RST}"
+      say "      $(grep -nF "$TELEGRAM_ENV_FILE" "$rc" | head -1)"
+    fi
+  done
+  [ "$found" -eq 0 ] && ok "shell env" "token stays out of your shell — nothing sources the env file"
+  return 0
 }
 
 tg_test() {
   # shellcheck source=/dev/null
   [ -f "$TELEGRAM_ENV_FILE" ] && [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && . "$TELEGRAM_ENV_FILE"
-  local out
-  out=$(tg_api "$TELEGRAM_BOT_TOKEN" sendMessage \
-    -d "chat_id=${TELEGRAM_CHAT_ID}" \
-    -d "text=🤖 WellForge: notifications are working." | jq -r '.ok') || out=""
-  if [ "$out" = "true" ]; then ok "test message" "delivered — check Telegram"; return 0; fi
-  bad "test message" "no 'ok' from the Telegram API (network down, or token/chat id wrong)"; return 1
+  local resp ok_field desc
+  # --data-urlencode, matching notify.sh: `-d` does not encode, so an `&` in a field
+  # truncates the request. The test must send the way the hook sends, or it proves nothing.
+  resp=$(tg_api "$TELEGRAM_BOT_TOKEN" sendMessage \
+    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+    --data-urlencode "text=🤖 WellForge: notifications are working.") || resp=""
+  ok_field=$(printf '%s' "$resp" | jq -r '.ok // empty' 2>/dev/null) || ok_field=""
+  if [ "$ok_field" = "true" ]; then ok "test message" "delivered — check Telegram"; return 0; fi
+  # Telegram says exactly what is wrong ("chat not found", "bot was blocked by the user");
+  # the old generic line made the user guess between three possibilities.
+  desc=$(printf '%s' "$resp" | jq -r '.description // empty' 2>/dev/null) || desc=""
+  bad "test message" "${desc:-no response from the Telegram API (network down?)}"
+  return 1
 }
 
 # ─── commands ────────────────────────────────────────────────────────────────

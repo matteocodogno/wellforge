@@ -84,6 +84,16 @@ never blocks and never says so).
   ```bash
   wellforge telegram
   ```
+  It writes `~/.config/wellforge/telegram.env` (mode 600, directory 700) and **touches no
+  shell rc file**. The notify hook reads that file itself, so the bot token never enters
+  your shell environment — and therefore never reaches the processes Claude Code starts,
+  where an `env` in a transcript would leak it. Nothing to `source`, no new terminal
+  needed. If an older version added a `source` line to your rc, the wizard offers to
+  remove it.
+
+  The wizard picks the chat from **private** messages only, and asks if more than one
+  person has messaged the bot — a bot that also sits in a group used to save the group,
+  and then every permission prompt went there.
 - **Settings to merge** into `~/.claude/settings.json` — see
   `wellforge-plugin/settings-snippet.jsonc` (companion plugins, attribution).
 - **Domain glossary** — create `.claude/context/glossary.md` in any project; the

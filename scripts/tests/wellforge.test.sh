@@ -268,6 +268,15 @@ advance_upstream() { # <checkout-dir> <n>  — put N commits on the bare origin 
   rm -rf "$work"
 }
 
+# Telegram wizard inputs: the token line and the Enter after "send a message". Stdin is a
+# FILE, so `[ -t 0 ]` stays false and the non-interactive branches are what gets exercised.
+tg_stdin() { printf 'shim-token\n\n' > "$SANDBOX/stdin"; RUN_STDIN="$SANDBOX/stdin"; }
+tg_canned() {
+  FAKE_TG_GETME='{"ok":true,"result":{"username":"shim_bot"}}'
+  FAKE_TG_GETUPDATES='{"ok":true,"result":[{"message":{"chat":{"id":4242,"type":"private"}}}]}'
+  FAKE_TG_SEND='{"ok":true}'
+}
+
 # ── runner ────────────────────────────────────────────────────────────────────
 # Each case gets its own HOME, its own bin dir and its own shim log.
 SANDBOX_N=0
@@ -638,18 +647,61 @@ assert_has "$OUT" "shim_bot"
 assert_has "$OUT" "4242"
 finish
 
-# A group chat in the same payload must not be picked: the notify hook DMs one person,
-# and posting Claude's permission prompts into a group is a privacy leak. `last` takes
-# whatever arrived most recently. Expected to fail until the selection is type-aware.
-reset_fakes; begin "telegram: picks the PRIVATE chat when a group message is also present" xfail
+# A group chat in the same payload must not be picked: the hook DMs one person, and
+# posting Claude's permission prompts into a group is a leak. `last` took whatever
+# arrived most recently, which on a bot that sits in a group is the group.
+reset_fakes; begin "telegram: picks the PRIVATE chat when a group message is also present"
 new_sandbox "${ALL_TOOLS[@]}"
 printf 'shim-token\n\n' > "$SANDBOX/stdin"; RUN_STDIN="$SANDBOX/stdin"
 FAKE_TG_GETME='{"ok":true,"result":{"username":"shim_bot"}}'
-FAKE_TG_GETUPDATES='{"ok":true,"result":[{"message":{"chat":{"id":4242,"type":"private"}}},{"message":{"chat":{"id":-1009,"type":"group"}}}]}'
+FAKE_TG_GETUPDATES='{"ok":true,"result":[{"message":{"chat":{"id":4242,"type":"private","username":"me"}}},{"message":{"chat":{"id":-1009,"type":"group","title":"team"}}}]}'
 FAKE_TG_SEND='{"ok":true}'
 run_cli "$SANDBOX/nowhere" telegram
 assert_has "$OUT" "4242"
+assert_has "$OUT" "@me"                       # the chosen account is named, not just its id
 assert_lacks "$OUT" "-1009"
+assert_file_has "$HOME_DIR/.config/wellforge/telegram.env" "TELEGRAM_CHAT_ID=\"4242\""
+finish
+
+# Two people have messaged the bot. Picking one is a coin flip that sends someone else's
+# permission prompts to the wrong person, so non-interactively it must refuse.
+reset_fakes; begin "telegram: two private chats, non-interactive: dies with the list"
+new_sandbox "${ALL_TOOLS[@]}"
+tg_stdin
+FAKE_TG_GETME='{"ok":true,"result":{"username":"shim_bot"}}'
+FAKE_TG_GETUPDATES='{"ok":true,"result":[{"message":{"chat":{"id":111,"type":"private","username":"alice"}}},{"message":{"chat":{"id":222,"type":"private","username":"bob"}}}]}'
+FAKE_TG_SEND='{"ok":true}'
+run_cli "$SANDBOX/nowhere" telegram
+assert_rc "$RC" 1
+assert_has "$OUT" "more than one private chat"
+assert_has "$OUT" "@alice"
+assert_has "$OUT" "@bob"
+assert_absent "$HOME_DIR/.config/wellforge/telegram.env"   # nothing saved on a refusal
+finish
+
+# getUpdates and a webhook are mutually exclusive; without this the retry loop spins for
+# 20s and then blames the user for not sending a message.
+reset_fakes; begin "telegram: a webhook conflict is explained, not retried"
+new_sandbox "${ALL_TOOLS[@]}"
+tg_stdin
+FAKE_TG_GETME='{"ok":true,"result":{"username":"shim_bot"}}'
+FAKE_TG_GETUPDATES='{"ok":false,"error_code":409,"description":"Conflict: can'"'"'t use getUpdates method while webhook is active"}'
+run_cli "$SANDBOX/nowhere" telegram
+assert_rc "$RC" 1
+assert_has "$OUT" "webhook"
+assert_has "$OUT" "deleteWebhook"
+assert_lacks "$OUT" "retrying (5/10)"
+finish
+
+# Telegram says exactly what is wrong; the old code printed a generic three-way guess.
+reset_fakes; begin "telegram: a send failure shows Telegram's own description"
+new_sandbox "${ALL_TOOLS[@]}"
+tg_stdin
+FAKE_TG_GETME='{"ok":true,"result":{"username":"shim_bot"}}'
+FAKE_TG_GETUPDATES='{"ok":true,"result":[{"message":{"chat":{"id":4242,"type":"private","username":"me"}}}]}'
+FAKE_TG_SEND='{"ok":false,"error_code":403,"description":"Forbidden: bot was blocked by the user"}'
+run_cli "$SANDBOX/nowhere" telegram
+assert_has "$OUT" "bot was blocked by the user"
 finish
 
 # Found while building this suite, not from the brief: with stdin at EOF the token loop
@@ -668,52 +720,51 @@ finish
 # its Linux failures were the quiet kind: a source line written to a file the shell never
 # reads, followed by a tick.
 
-tg_stdin() { printf 'shim-token\n\n' > "$SANDBOX/stdin"; RUN_STDIN="$SANDBOX/stdin"; }
-tg_canned() {
-  FAKE_TG_GETME='{"ok":true,"result":{"username":"shim_bot"}}'
-  FAKE_TG_GETUPDATES='{"ok":true,"result":[{"message":{"chat":{"id":4242,"type":"private"}}}]}'
-  FAKE_TG_SEND='{"ok":true}'
-}
 
-reset_fakes; begin "linux + bash: wires ~/.bashrc, not ~/.zshrc"
+# The wizard no longer writes to ANY rc file. Sourcing the env file from the shell put
+# TELEGRAM_BOT_TOKEN into every process the user starts — Claude Code's children included,
+# where one `env` in a transcript leaks a live token — while the notify hook was already
+# reading the file itself. Exposure with no function. One case per shell, because the old
+# code branched per shell and a regression would most likely come back that way.
+for _sh in /usr/bin/zsh /bin/bash /usr/bin/fish; do
+  for _os in Linux Darwin; do
+    reset_fakes; begin "telegram writes no rc file ($(basename "$_sh") on $_os)"
+    new_sandbox "${ALL_TOOLS[@]}"
+    FAKE_UNAME="$_os"; RUN_SHELL="$_sh"; tg_stdin; tg_canned
+    run_cli "$SANDBOX/nowhere" telegram
+    assert_absent "$HOME_DIR/.zshrc"
+    assert_absent "$HOME_DIR/.bashrc"
+    assert_absent "$HOME_DIR/.bash_profile"
+    assert_absent "$HOME_DIR/.profile"
+    assert_has "$OUT" "token never enters your shell environment"
+    finish
+  done
+done
+
+# The env file is the whole configuration, so its permissions are the whole protection.
+reset_fakes; begin "telegram: env file 600, its directory 700"
 new_sandbox "${ALL_TOOLS[@]}"
-FAKE_UNAME=Linux; RUN_SHELL=/bin/bash; tg_stdin; tg_canned
+tg_stdin; tg_canned
 run_cli "$SANDBOX/nowhere" telegram
-assert_has "$OUT" ".bashrc"
-assert_exists "$HOME_DIR/.bashrc"
-assert_absent "$HOME_DIR/.zshrc"
-assert_file_has "$HOME_DIR/.bashrc" "telegram.env"
+assert_exists "$HOME_DIR/.config/wellforge/telegram.env"
+[ "$(stat -f '%Lp' "$HOME_DIR/.config/wellforge/telegram.env" 2>/dev/null \
+     || stat -c '%a' "$HOME_DIR/.config/wellforge/telegram.env" 2>/dev/null)" = "600" ] \
+  || _bad "env file is not mode 600"
+[ "$(stat -f '%Lp' "$HOME_DIR/.config/wellforge" 2>/dev/null \
+     || stat -c '%a' "$HOME_DIR/.config/wellforge" 2>/dev/null)" = "700" ] \
+  || _bad "config dir is not mode 700"
 finish
 
-reset_fakes; begin "macos + bash: wires ~/.bash_profile (login shells read that one)"
+# An earlier run wired the shell. Offer to undo it — non-interactively, print the line.
+reset_fakes; begin "telegram: an rc line from an earlier version is surfaced for removal"
 new_sandbox "${ALL_TOOLS[@]}"
-FAKE_UNAME=Darwin; RUN_SHELL=/bin/bash; tg_stdin; tg_canned
+RUN_SHELL=/bin/bash; tg_stdin; tg_canned
+printf '# WellForge Telegram notifications\n[ -f "%s/.config/wellforge/telegram.env" ] && . "%s/.config/wellforge/telegram.env"\n' \
+  "$HOME_DIR" "$HOME_DIR" > "$HOME_DIR/.bashrc"
 run_cli "$SANDBOX/nowhere" telegram
-assert_has "$OUT" ".bash_profile"
-assert_exists "$HOME_DIR/.bash_profile"
-assert_absent "$HOME_DIR/.bashrc"
-finish
-
-reset_fakes; begin "zsh: wires ~/.zshrc on either platform"
-new_sandbox "${ALL_TOOLS[@]}"
-FAKE_UNAME=Linux; RUN_SHELL=/usr/bin/zsh; tg_stdin; tg_canned
-run_cli "$SANDBOX/nowhere" telegram
-assert_has "$OUT" ".zshrc"
-assert_exists "$HOME_DIR/.zshrc"
-finish
-
-# fish cannot source a file of POSIX `export` lines. Writing one anyway and reporting
-# success is the exact failure this platform work exists to remove.
-reset_fakes; begin "fish: refuses to auto-wire, prints the lines, writes no rc file"
-new_sandbox "${ALL_TOOLS[@]}"
-FAKE_UNAME=Linux; RUN_SHELL=/usr/bin/fish; tg_stdin; tg_canned
-run_cli "$SANDBOX/nowhere" telegram
-assert_has "$OUT" "auto-wiring skipped"
-assert_has "$OUT" "set -gx TELEGRAM_CHAT_ID 4242"
-assert_lacks "$OUT" "source line appended"
-assert_absent "$HOME_DIR/.zshrc"
-assert_absent "$HOME_DIR/.bashrc"
-assert_absent "$HOME_DIR/.config/fish/config.fish"
+assert_has "$OUT" "exports the bot token into every process"
+assert_has "$OUT" "delete this line"
+assert_file_has "$HOME_DIR/.bashrc" "telegram.env"   # non-interactive: reported, not edited
 finish
 
 # On Linux, `open` is util-linux's open(1) — it opens a virtual terminal, not a browser.
