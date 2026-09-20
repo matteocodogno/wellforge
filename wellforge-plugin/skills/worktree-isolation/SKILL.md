@@ -1,14 +1,14 @@
 ---
 name: worktree-isolation
 description: >
-  WellForge parallel-safety discipline — what a git worktree isolates, what it does NOT, and the
-  preflight that must run before dispatching a parallel batch. Use whenever ≥2 dependency-
-  independent agents are about to be dispatched (`/wellforge:implement` Step 3,
-  `/wellforge:orchestrate` implementation stages), whenever an agent working in a worktree hits
-  a failure it cannot explain, and whenever deciding if a batch is safe to parallelize at all.
-  Authoritative reference for the touches-nothing-outside-itself rule, the shared-state
-  enumeration and its three dispositions, the env carry-in step, file-overlap DAG edges, and the
-  isolate → constrain → integrate → reconcile → prune protocol.
+  WellForge parallel-safety discipline — what a git worktree isolates, what it does NOT, and
+  the preflight before dispatching a parallel batch. Use whenever ≥2 dependency-independent
+  agents are about to be dispatched (`/wellforge:implement` Step 3, `/wellforge:orchestrate`
+  implementation stages), whenever an agent in a worktree hits a failure it cannot explain,
+  and whenever deciding if a batch is safe to parallelize at all. Authoritative for the
+  touches-nothing-outside-itself rule, the shared-state enumeration and its three
+  dispositions, the env carry-in step, file-overlap DAG edges, and the isolate → constrain →
+  integrate → reconcile → prune protocol.
 ---
 
 # Worktree isolation — a worktree touches nothing outside itself

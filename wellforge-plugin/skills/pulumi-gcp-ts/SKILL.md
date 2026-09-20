@@ -1,16 +1,15 @@
 ---
 name: pulumi-gcp-ts
 description: >
-  Pulumi Infrastructure-as-Code in TypeScript on Google Cloud — best practices AND scaffolding a
-  new IaC project from scratch (the **Pulumi / GCP / TypeScript path**). Use whenever building or
-  reviewing Pulumi TS programs for GCP, OR scaffolding a new infrastructure project ("new Pulumi
-  project", "set up infrastructure as code", "provision GCP with Pulumi", "IaC for this service").
-  Covers project + stack layout, typed config, `ComponentResource` abstractions, CrossGuard
-  policy-as-code, unit testing with Pulumi mocks, the keyless credential model (ADC + Workload
-  Identity Federation), and state backends. Trigger for any Pulumi TS task — even "add a bucket",
-  "create a component", "write a policy", or "add a stack". This is **infrastructure**, not an
-  application backend — for a Hono API use `hono-ts-backend`, for Spring `springboot-scaffold`.
-  Source of truth for the `pulumi-gcp-ts` Copier preset; versions here and there must match.
+  Pulumi Infrastructure-as-Code in TypeScript on GCP — best practices and scaffolding a new
+  IaC project. Use for any Pulumi TS task, building or reviewing: "new Pulumi project", "set
+  up infrastructure as code", "provision GCP with Pulumi", "IaC for this service", and the
+  small ones too — "add a bucket", "create a component", "write a policy", "add a stack".
+  Covers stack layout, typed config, `ComponentResource`, CrossGuard policy-as-code, unit
+  testing with Pulumi mocks, the keyless credential model (ADC + Workload Identity
+  Federation), state backends. This is **infrastructure**, not an application backend — for
+  a Hono API use `hono-ts-backend`, for Spring `springboot-scaffold`. Source of truth for
+  the `pulumi-gcp-ts` Copier preset; versions here and there must match.
 ---
 
 # Pulumi + TypeScript on GCP — Best Practices

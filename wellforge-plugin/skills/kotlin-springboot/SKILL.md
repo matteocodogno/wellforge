@@ -1,13 +1,13 @@
 ---
 name: kotlin-springboot
 description: >
-  Kotlin and Spring Boot development. Trigger this skill for ANY task involving Kotlin, Spring Boot,
-  JVM, Maven, jOOQ, Liquibase, database migrations, REST APIs, or backend services. Covers WellForge
-  best practices including functional error handling with Result/DomainError, Spring Modulith module
-  boundaries, repository patterns, and Spring configuration. Use for writing code, reviewing code,
-  setting up new services, defining migrations, configuring dependencies, scaffolding modules, or
-  debugging Spring applications. Always trigger for partial tasks like "add a repository", "create
-  a migration", "set up a new module", "add an endpoint", or "fix a Spring Boot issue".
+  Kotlin and Spring Boot development. Trigger for ANY Kotlin, Spring Boot, JVM, Maven, jOOQ,
+  Liquibase, database-migration, REST-API or backend-service task — writing or reviewing
+  code, setting up services, defining migrations, configuring dependencies, scaffolding
+  modules, debugging Spring apps. Covers WellForge practices: functional error handling with
+  Result/DomainError, Spring Modulith module boundaries, repository patterns, Spring
+  configuration. Trigger for partial tasks too: "add a repository", "create a migration",
+  "set up a new module", "add an endpoint", "fix a Spring Boot issue".
 ---
 
 # Spring Boot with Kotlin — WellForge Best Practices

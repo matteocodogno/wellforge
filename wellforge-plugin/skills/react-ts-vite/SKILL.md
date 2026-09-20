@@ -1,14 +1,13 @@
 ---
 name: react-ts-vite
 description: >
-  Expert React + TypeScript + Vite frontend development skill. Use this skill whenever the user asks
-  to build, scaffold, extend, or refactor a React application using TypeScript. Triggers include:
-  "create a React component", "build a page with React", "add a feature to my React app",
-  "scaffold a new Vite project", "write a custom hook", "set up React Context", "add TanStack Query/Router",
-  "style with Tailwind", "refactor this component", "use Effect TS in React", or any time the user
-  describes frontend work in a React/TypeScript codebase. Always use this skill proactively whenever
-  frontend React/TypeScript code is being produced — even if the user just says "create a form" or
-  "add a new page". Prefer this skill over generic coding responses for any React work.
+  React + TypeScript + Vite frontend development. Use whenever building, scaffolding,
+  extending or refactoring a React app in TypeScript: "create a React component", "build a
+  page with React", "add a feature to my React app", "scaffold a new Vite project", "write a
+  custom hook", "set up React Context", "add TanStack Query/Router", "style with Tailwind",
+  "refactor this component", "use Effect TS in React" — or any frontend work in a
+  React/TypeScript codebase. Use it proactively whenever React/TS code is being produced,
+  even for "create a form" or "add a new page", in preference to a generic coding response.
 ---
 
 # React + TypeScript + Vite Skill

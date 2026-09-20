@@ -93,6 +93,12 @@ jobs:
       - name: check-docs.py
         working-directory: wellforge-plugin
         run: uv run --with pyyaml python scripts/check-docs.py
+      # Session-injection budget: every description is loaded into every session in every
+      # project where the plugin is enabled. The ceiling is a ratchet at today's total, so
+      # growth has to be a decision rather than an accident.
+      - name: check-budget.py
+        working-directory: wellforge-plugin
+        run: uv run --with pyyaml python scripts/check-budget.py
 
   # Eval-rubric mirror guard. The rubric is central in gates/configs/, but a SCAFFOLDED
   # project has no gates/ on disk (gates are referenced by CI, never copied), so the plugin

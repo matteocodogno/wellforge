@@ -1,16 +1,15 @@
 ---
 name: frontend-design
 description: >
-  WellForge visual direction — deciding palette, typography, layout and the one signature
-  element deliberately, instead of shipping the look every project in the same stack gets by
-  default. Use when the designer is designing a NEW product surface (a greenfield project's
-  first UI, a landing/marketing/public page, a standalone prototype or demo), when reshaping
-  an existing UI's look on purpose, or when the user asks for something with "personality",
-  "a visual identity", or that "doesn't look AI-generated". Do NOT use to add a feature
-  inside a project that already has a design system — there the system wins. Authoritative
-  reference for the surface-class gate, the two-pass token system, the anti-default
-  calibration list, the contrast/motion floor, and how visual direction lands in design.md
-  and the theme (never ad-hoc CSS).
+  WellForge visual direction — choosing palette, typography, layout and the one signature
+  element deliberately, instead of the look every project in the stack gets by default. Use
+  when designing a NEW product surface (a greenfield first UI, a landing/marketing/public
+  page, a standalone prototype or demo), when reshaping an existing UI on purpose, or when
+  the user asks for "personality", "a visual identity", or something that "doesn't look
+  AI-generated". Do NOT use to add a feature inside a project that already has a design
+  system — there the system wins. Authoritative for the surface-class gate, the two-pass
+  token system, the anti-default calibration list, the contrast/motion floor, and how
+  direction lands in design.md and the theme (never ad-hoc CSS).
 ---
 
 # Frontend design — visual direction, gated

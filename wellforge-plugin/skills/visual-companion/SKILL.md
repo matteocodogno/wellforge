@@ -1,15 +1,15 @@
 ---
 name: visual-companion
 description: >
-  WellForge Visual Companion — a browser-based tool the designer agent uses during
-  /wellforge:design to show mockups, wireframes, diagrams, and side-by-side layout
-  comparisons instead of describing them in text, capturing the user's clicks. Use ONLY
-  when the designer was invoked interactively with the visual companion enabled (the
-  `--visual` flag on /wellforge:design); NEVER in a headless/orchestrated run and NEVER in
-  the spike tier. Covers the just-in-time offer, the per-question show-vs-tell test, theme
-  selection from the project's real component library, the write-screen/read-events loop,
-  .forge/design/ persistence, and the CSS classes the frame provides. The design.md artifact
-  is still the deliverable — the browser only helps resolve visual questions faster.
+  WellForge Visual Companion — a browser tool the designer uses during /wellforge:design to
+  show mockups, wireframes, diagrams and side-by-side layouts instead of describing them,
+  capturing the user's clicks. Use ONLY when the designer was invoked interactively with the
+  companion enabled (the `--visual` flag on /wellforge:design); NEVER in a headless or
+  orchestrated run and NEVER in the spike tier. Covers the just-in-time offer, the
+  per-question show-vs-tell test, theme selection from the project's real component library,
+  the write-screen/read-events loop, .forge/design/ persistence, and the CSS classes the
+  frame provides. design.md is still the deliverable — the browser only resolves visual
+  questions faster.
 ---
 
 # Visual Companion — mockups in the browser during design

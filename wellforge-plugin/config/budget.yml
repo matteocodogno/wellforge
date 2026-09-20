@@ -1,0 +1,49 @@
+# Session-injection budget — what this plugin costs before the user types a word.
+#
+# Claude Code loads every skill, command and agent DESCRIPTION into the session prompt so it
+# can route. Bodies are lazy; descriptions are not. That is a fixed toll in EVERY project
+# where the plugin is enabled at user scope, including repos with nothing to do with
+# WellForge — the cost is paid by people who will never run a WellForge command today.
+#
+# Enforced by scripts/check-budget.py in CI. The ceiling only moves in its own commit, with
+# a reason: a budget that rises whenever it is inconvenient is a log, not a budget.
+version: budget-v1
+
+session_injection:
+  # Measured 2026-09-20: 20,351 chars → 19,540 after compressing the ten largest
+  # descriptions (-4% overall; -11% across those ten).
+  #
+  # The ceiling is a RATCHET at exactly today's total, not the 85% (17,300) the task asked
+  # for, and the difference is worth stating because it is a real finding rather than a
+  # shortfall in effort:
+  #
+  #   85% needs 17,300. Reaching it means removing another 2,240 characters, and the
+  #   compressible material is gone — what remains in these descriptions is trigger
+  #   phrases and "do NOT use when" clauses, which are the routing logic itself. The
+  #   fact-preservation gate (terse-compress Step 3) refuses to drop them, correctly:
+  #   a skill that stops firing costs far more than the tokens it saves.
+  #
+  #   The remaining 2,240 is available from exactly one place — the five stack skills
+  #   (hono-ts-backend, kotlin-springboot, react-ts-vite, pulumi-gcp-ts, mise ≈ 3,000
+  #   chars), whose descriptions are long BECAUSE they carry many trigger phrases. Whether
+  #   to one-line them is a trigger-accuracy decision, not a budget one: see
+  #   docs/adr/0001-stack-skill-description-length.md. If that ADR is ever revisited in
+  #   favour of short descriptions, drop this ceiling to 17300 in the same commit.
+  #
+  # A ratchet at the current total is strictly stronger than a ceiling with headroom: you
+  # cannot add a character to any description without removing one somewhere, or moving
+  # this number deliberately, in its own commit, with a reason.
+  max_chars: 19540
+
+  # Estimated tokens = chars / 4. Stated, not implied: the true count is tokenizer-specific
+  # (Claude 4.7+ uses a different one than earlier models), so the CHARACTER count is what
+  # is governed and the token figure is an order-of-magnitude aid.
+  chars_per_token: 4
+
+  # The loader's own per-description limit. A single description over this is a hard fail
+  # regardless of the total.
+  max_chars_per_item: 1024
+
+# Why 85% rather than "today's number": a ceiling set at the current total ratchets on the
+# next commit that adds a skill, which trains people to raise it reflexively. Set below the
+# line, it forces the question *now* — which existing description pays for the new one.

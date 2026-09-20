@@ -891,6 +891,36 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 22 — What the plugin costs before you type (added 2026-09-20)
+
+Nobody had measured the toll. Claude Code injects every skill, command and agent
+**description** into every session prompt in every project where the plugin is enabled —
+bodies are lazy, descriptions are not — so 51 items are paid for in repos that will never
+run a WellForge command.
+
+- ☑ **`scripts/check-budget.py`** + **`config/budget.yml`**: per-item table sorted by size,
+  totals by kind, estimated tokens at chars/4 (**stated**, since the true count is
+  tokenizer-specific), a hard per-item 1024 limit, and a total ceiling enforced in CI.
+  Measuring it found its own bug first: strict YAML parsing skipped 14 of 20 commands
+  (`argument-hint: [x]` is a valid Claude Code hint and an invalid YAML flow sequence), so
+  the first number was a third too low.
+- ☑ **Compressed the ten largest** under the terse-compress fact-preservation gate, run
+  mechanically: every trigger phrase and "do NOT use" clause asserted present in the
+  compressed text or the file left untouched. **20,351 → 19,540 chars** (~5,088 → ~4,885
+  est. tokens); −11% across the ten.
+- ☑ **The −30% target was not reachable, and that is the finding.** What remains in these
+  descriptions is trigger phrases and disambiguation clauses — the routing logic itself.
+  The gate refuses to drop them, correctly. So the ceiling is a **ratchet at today's exact
+  total** rather than the 85% asked for: you cannot add a character without removing one, or
+  moving the number in its own commit. The arithmetic to reach 85% is written in
+  `budget.yml`, and it runs through the stack skills.
+- ☑ **ADR 0001** (first in this repo): the five stack skills **keep** full descriptions.
+  They are 3,288 chars (17% of the total) and almost entirely trigger phrases; the token
+  cost is measurable and certain, the mis-routing cost of shortening is real and — with no
+  skill-trigger eval suite in this repo — unmeasurable. Optimising the measured side against
+  the unmeasured one is the failure the ADR names. Revisit when either changes; shipping the
+  stack skills as a separate optional plugin is the first alternative if the budget bites.
+
 ## Phase 21 — The lifecycle rules as mechanism (added 2026-09-20)
 
 Two rules the commands were rewritten around — **only `/wellforge:done` writes

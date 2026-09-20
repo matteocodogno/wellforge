@@ -1,15 +1,14 @@
 ---
 name: template-extraction
 description: >
-  WellForge template extraction — turn an existing project into (1) a structured stack
-  profile checked against the shipped presets (the gap check), and (2) an opt-in, org-internal
-  reusable Copier template so a team can scaffold its next service from its own real stack.
-  Use during /wellforge:adopt (Stage 0 always runs the profile+gap; extraction is an opt-in
-  layer) and for the standalone /wellforge:extract-template command. Authoritative reference
-  for the .forge/stack-profile.json schema, the preset gap-check heuristic, the mandatory
+  WellForge template extraction — turn an existing project into (1) a stack profile checked
+  against the shipped presets (the gap check) and (2) an opt-in, org-internal Copier template
+  a team can scaffold its next service from. Use during /wellforge:adopt (Stage 0 always runs
+  profile+gap; extraction is opt-in) and for /wellforge:extract-template. Authoritative for
+  the .forge/stack-profile.json schema, the preset gap-check heuristic, the mandatory
   IP/secret scrub gate (skeleton-only, no domain code, no secrets), and CONTRACT-compliant
-  template generation with copier --defaults verification. This produces an ORG-INTERNAL
-  template the team owns — it never opens a PR to the WellForge repo or ships code upstream.
+  generation verified with copier --defaults. Produces an ORG-INTERNAL template the team
+  owns — it never opens a PR to the WellForge repo or ships code upstream.
 ---
 
 # Template extraction — from a real project to a reusable template

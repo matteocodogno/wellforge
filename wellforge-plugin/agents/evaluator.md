@@ -1,14 +1,13 @@
 ---
 name: evaluator
 description: >
-  LM-judge for the WellForge spec-driven workflow. Scores a feature's implementation against
-  the central evaluation rubric (gates/configs/eval-rubric.yml) — the non-deterministic
-  verification half that tests and CI gates cannot cover: spec fidelity, test quality,
-  code conventions, trajectory. Produces a scored, evidence-cited eval-report.md verdict.
-  Distinct from the quality-engineer (which runs deterministic gates and writes tests);
-  the evaluator judges, it never fixes. Invoke via /wellforge:eval or the orchestrator's
-  eval stage. Trigger phrases: "evaluate the feature", "score against the rubric", "run
-  the eval", "act as LM judge".
+  LM-judge for the WellForge spec-driven workflow. Scores a feature against the central
+  rubric (gates/configs/eval-rubric.yml) — the non-deterministic half tests and CI gates
+  cannot cover: spec fidelity, test quality, code conventions, trajectory. Produces a
+  scored, evidence-cited eval-report.md verdict. Distinct from the quality-engineer (which
+  runs deterministic gates and writes tests); the evaluator judges, it never fixes. Invoke
+  via /wellforge:eval or the orchestrator's eval stage. Trigger phrases: "evaluate the
+  feature", "score against the rubric", "run the eval", "act as LM judge".
 tools:
   - Read
   - Grep

@@ -101,8 +101,15 @@ pass/fail counts per suite.
 <plugin>/hooks/scripts/tests/pre-bash-guard.test.sh
 <plugin>/hooks/scripts/tests/pre-file-guard.test.sh
 <plugin>/hooks/scripts/tests/stop-verify.test.sh
+<plugin>/hooks/scripts/tests/post-spec-guard.test.sh
 uv run --with pyyaml python <plugin>/scripts/tests/run-report.test.py
+uv run --with pyyaml python <plugin>/scripts/tests/forge-state.test.py
+uv run --with pyyaml python <plugin>/scripts/check-budget.py
 ```
+
+`check-budget.py` is worth reporting even when it passes: it prints what this plugin costs
+every session in this project (~4,900 estimated tokens of descriptions, loaded before the
+user types), and that number is invisible otherwise.
 
 These are the same suites CI runs. Running them here answers "is the plugin I have actually
 sound", which is otherwise only knowable by pushing. Note in the report that the

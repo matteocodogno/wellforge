@@ -5,8 +5,8 @@ description: >
   to stop fixing. Use the moment anything goes red: a failing test, a failing quality gate, a
   build or CI failure, a flaky test, unexpected runtime behavior, or a bug report — in the
   main loop, in a spike, or inside a dev agent whose own task tests fail. Load it BEFORE
-  proposing or attempting a fix, not after the first one misses. Authoritative reference for
-  the root-cause-first rule, the fix-attempt counter and the architecture stop, the
+  proposing or attempting a fix, not after the first one misses. Authoritative for the
+  root-cause-first rule, the fix-attempt counter and the architecture stop, the
   never-make-the-symptom-disappear rule, and how a root cause is recorded and routed.
 ---
 

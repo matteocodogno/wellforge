@@ -89,6 +89,8 @@ Inside Claude Code:
 | `config/spec-frontmatter.schema.json` | Machine-readable mirror of the spec-driven skill's frontmatter; `check-docs.py` fails if its enums drift from the skill |
 | `scripts/run-report.py` | Summarizes `.forge/runs/` — agents, verdicts, drift, estimated cost |
 | `scripts/check-routing.py` | Verifies agent frontmatter models match the routing policy (drift guard) |
+| `scripts/check-budget.py` | Measures what the plugin injects into **every** session (all skill/command/agent descriptions) and fails when it exceeds the ratchet in `config/budget.yml` |
+| `config/budget.yml` | The session-injection ceiling, and why it moves only by decision |
 | `config/model-pricing.yml` | Per-model price table for run-report cost estimates |
 
 ### What the guards can and cannot do
