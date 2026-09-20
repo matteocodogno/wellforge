@@ -13,7 +13,13 @@
 #                   script is run from inside one)
 #   WELLFORGE_REPO  git URL/path to clone from
 #                   (default https://github.com/matteocodogno/wellforge.git)
-set -euo pipefail
+# NO `set -e`, deliberately. This is a DIAGNOSTICS tool: every external command it runs
+# (brew, git, claude, grep on a file that may not exist) can legitimately fail, and the
+# right response is to report that line and keep checking — not to abort mid-run and print
+# nothing. `set -e` did the opposite: `wellforge doctor` on a machine with no checkout died
+# silently at the plugin check with rc=2, hiding the summary and the "run: wellforge setup"
+# advice — exactly the machine that needed them. Every call below reports its own outcome.
+set -uo pipefail
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
 CONFIG_DIR="$HOME/.config/wellforge"
@@ -29,6 +35,9 @@ fi
 ok()   { printf "  %s✓%s %-18s %s\n" "$GRN" "$RST" "$1" "${2:-}"; }
 bad()  { printf "  %s✗%s %-18s %s\n" "$RED" "$RST" "$1" "${2:-}"; }
 warn() { printf "  %s!%s %-18s %s\n" "$YLW" "$RST" "$1" "${2:-}"; }
+# A check that could not run is NOT a check that passed. Silence here reads as "fine",
+# which is how a truncated report gets mistaken for a clean one.
+skip() { printf "  %s–%s %-18s %s%s%s\n" "$DIM" "$RST" "$1" "$DIM" "${2:-}" "$RST"; }
 say()  { printf "%s\n" "$*"; }
 die()  { printf "%serror:%s %s\n" "$RED" "$RST" "$*" >&2; exit 1; }
 
@@ -41,7 +50,7 @@ script_repo() {
   [ -f "$dir/.claude-plugin/marketplace.json" ] && echo "$dir"
 }
 # Resolution order: env var > enclosing checkout > saved choice > default ~/.ai
-WELLFORGE_HOME="${WELLFORGE_HOME:-$(script_repo || true)}"
+WELLFORGE_HOME="${WELLFORGE_HOME:-$(script_repo)}"
 if [ -z "$WELLFORGE_HOME" ] && [ -f "$CONFIG_FILE" ]; then
   # shellcheck source=/dev/null
   . "$CONFIG_FILE"
@@ -53,44 +62,81 @@ BREW_TOOLS=(mise uv gh jq)
 FAILURES=0
 
 check_brew() {
-  if command -v brew >/dev/null; then ok "homebrew" "$(brew --version | head -1)"; else
+  if command -v brew >/dev/null; then ok "homebrew" "$(brew --version 2>/dev/null | head -1 || echo '?')"; else
     bad "homebrew" 'install first: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
     FAILURES=$((FAILURES+1)); return 1
   fi
 }
 
+# The last line of a failed command's stderr is usually the only part that explains WHY
+# (no such formula, disk full, locked keychain). Hiding it behind >/dev/null left the user
+# with a bare "failed" and nothing to act on, so callers capture stderr and quote this.
+err_tail() { printf '%s' "${1:-}" | tail -1; }
+
 check_tool() { # name [fix]
-  local t="$1" fix="${2:-}"
+  local t="$1" fix="${2:-}" err
   if command -v "$t" >/dev/null; then
-    if [ -n "$fix" ] && brew outdated --quiet 2>/dev/null | grep -qx "$t"; then
-      say "  ${DIM}upgrading ${t}…${RST}"; brew upgrade "$t" >/dev/null
-      ok "$t" "upgraded → $("$t" --version 2>/dev/null | head -1)"
+    if [ -n "$fix" ] && command -v brew >/dev/null && brew outdated --quiet 2>/dev/null | grep -qx "$t"; then
+      say "  ${DIM}upgrading ${t}…${RST}"
+      if err=$(brew upgrade "$t" 2>&1 >/dev/null); then
+        ok "$t" "upgraded → $("$t" --version 2>/dev/null | head -1 || echo '?')"
+      else
+        # An upgrade that fails is not a missing tool: the old version still works, so
+        # this is a warning, not a counted failure.
+        warn "$t" "upgrade failed, keeping $("$t" --version 2>/dev/null | head -1 || echo 'current') — $(err_tail "$err") — retry: brew upgrade $t"
+      fi
     else
-      ok "$t" "$("$t" --version 2>/dev/null | head -1)"
+      ok "$t" "$("$t" --version 2>/dev/null | head -1 || echo '?')"
     fi
+  elif [ -n "$fix" ] && ! command -v brew >/dev/null; then
+    bad "$t" "not installed, and --fix needs Homebrew to install it — install brew first"
+    FAILURES=$((FAILURES+1))
   elif [ -n "$fix" ]; then
-    say "  ${DIM}installing ${t}…${RST}"; brew install "$t" >/dev/null
-    ok "$t" "installed"
+    say "  ${DIM}installing ${t}…${RST}"
+    if err=$(brew install "$t" 2>&1 >/dev/null); then
+      ok "$t" "installed"
+    else
+      bad "$t" "brew install $t failed: $(err_tail "$err")"
+      FAILURES=$((FAILURES+1))
+    fi
   else
     bad "$t" "brew install $t"; FAILURES=$((FAILURES+1))
   fi
 }
 
 check_claude() { # [fix]
-  if command -v claude >/dev/null; then ok "claude" "$(claude --version 2>/dev/null | head -1)"; return; fi
+  local err
+  if command -v claude >/dev/null; then
+    ok "claude" "$(claude --version 2>/dev/null | head -1 || echo '?')"; return
+  fi
   if [ -n "${1:-}" ] && command -v npm >/dev/null; then
     say "  ${DIM}installing claude code via npm…${RST}"
-    npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 && { ok "claude" "installed"; return; }
+    if err=$(npm install -g @anthropic-ai/claude-code 2>&1 >/dev/null); then
+      ok "claude" "installed"; return
+    fi
+    bad "claude" "npm install failed: $(err_tail "$err")"
+    FAILURES=$((FAILURES+1)); return
   fi
   bad "claude" "npm i -g @anthropic-ai/claude-code  (or the desktop app)"
   FAILURES=$((FAILURES+1))
 }
 
 check_node() { # [fix] — npx is needed by the plugin's MCP servers
-  if command -v npx >/dev/null; then ok "node/npx" "node $(node --version 2>/dev/null)"; return; fi
+  local err
+  if command -v npx >/dev/null; then
+    ok "node/npx" "node $(node --version 2>/dev/null || echo '?')"; return
+  fi
   if [ -n "${1:-}" ]; then
+    if ! command -v mise >/dev/null; then
+      bad "node/npx" "cannot install: mise is missing too — brew install mise, then re-run"
+      FAILURES=$((FAILURES+1)); return
+    fi
     say "  ${DIM}installing node via mise…${RST}"
-    mise use -g node@22 >/dev/null 2>&1 && { ok "node/npx" "installed via mise"; return; }
+    if err=$(mise use -g node@22 2>&1 >/dev/null); then
+      ok "node/npx" "installed via mise"; return
+    fi
+    bad "node/npx" "mise use -g node@22 failed: $(err_tail "$err")"
+    FAILURES=$((FAILURES+1)); return
   fi
   bad "node/npx" "mise use -g node@22  (MCP servers run via npx)"
   FAILURES=$((FAILURES+1))
@@ -105,7 +151,7 @@ check_docker() {
 }
 
 check_gh_auth() {
-  command -v gh >/dev/null || return 0
+  command -v gh >/dev/null || { skip "gh auth" "skipped — gh not installed"; return 0; }
   # NOTE: `gh auth status` is not a local check — it reads the token from the
   # keychain and verifies it against the GitHub API. Distinguish the failure
   # modes instead of mislabeling them all as "not logged in".
@@ -125,8 +171,8 @@ check_gh_auth() {
 }
 
 check_copier() {
-  command -v uvx >/dev/null || return 0
-  if uvx copier --version >/dev/null 2>&1; then ok "copier (uvx)" "$(uvx copier --version 2>/dev/null)"; else
+  command -v uvx >/dev/null || { skip "copier (uvx)" "skipped — uv/uvx not installed"; return 0; }
+  if uvx copier --version >/dev/null 2>&1; then ok "copier (uvx)" "$(uvx copier --version 2>/dev/null || echo '?')"; else
     warn "copier (uvx)" "uvx present but copier failed to run — check network/proxy"
   fi
 }
@@ -153,8 +199,18 @@ check_repo() {
   fi
 }
 
+# Version string from a plugin.json that may not exist. THE original bug lived here:
+# `grep … 2>/dev/null | sed …` on a missing file exits 2, pipefail propagated it, and an
+# assignment from a failing substitution was fatal under set -e — so `doctor` died right
+# after the plugin line, on exactly the machine that had no checkout yet. A missing file is
+# a NORMAL state for this tool, so it is answered with "", never with a failing pipeline.
+plugin_json_version() { # <path-to-plugin.json> → version, or "" when unreadable
+  [ -f "$1" ] || return 0
+  sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1" 2>/dev/null | head -1
+}
+
 check_plugin() {
-  command -v claude >/dev/null || return 0
+  command -v claude >/dev/null || { skip "plugin" "skipped — claude not installed"; return 0; }
   if claude plugin marketplace list 2>/dev/null | grep -q "wellforge"; then ok "marketplace" "WellForge registered"; else
     bad "marketplace" "run: claude plugin marketplace add $WELLFORGE_HOME"; FAILURES=$((FAILURES+1))
   fi
@@ -166,9 +222,9 @@ check_plugin() {
   # diverge when source moved ahead but no reinstall happened (update+reload don't refresh).
   local cache_root="$HOME/.claude/plugins/cache/wellforge/wellforge"
   local src_ver cached_ver
-  src_ver=$(grep -m1 '"version"' "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json" 2>/dev/null | sed 's/[^0-9.]//g')
+  src_ver=$(plugin_json_version "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json")
   if [ -n "$src_ver" ] && [ -d "$cache_root" ]; then
-    cached_ver=$(ls "$cache_root" 2>/dev/null | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
+    cached_ver=$(ls "$cache_root" 2>/dev/null | sort -t. -k1,1n -k2,2n -k3,3n | tail -1) || cached_ver=""
     if [ -n "$cached_ver" ] && [ "$cached_ver" != "$src_ver" ]; then
       warn "plugin cache" "loaded v$cached_ver but source is v$src_ver — run: wellforge update (reinstalls), then /reload-plugins"
     else
@@ -202,16 +258,22 @@ collision_resolve() {  # <path> <kind: agent|skill> <name> <label> <fix>
 
 check_collisions() {
   local fix="${1:-}"
-  command -v claude >/dev/null || return 0
+  command -v claude >/dev/null || { skip "collisions" "skipped — claude not installed"; return 0; }
   local plugin="$WELLFORGE_HOME/wellforge-plugin"
-  [ -d "$plugin" ] || return 0
+  # Reserved names come from the plugin itself, so with no checkout there is nothing to
+  # compare against. Say that, rather than printing nothing and letting the reader assume
+  # a clean result — this is precisely the line the truncated report used to lose.
+  [ -d "$plugin" ] || { skip "collisions" "skipped — no plugin source at $plugin"; return 0; }
   local found=0
 
+  # Each of these can come back empty on a partial checkout, and empty is a correct
+  # answer: "nothing of that kind to collide with". jq exits non-zero on a missing or
+  # malformed file, so each gets its fallback spelled out rather than inherited.
   local wf_agents wf_skills wf_mcp wf_events
-  wf_agents=$(for f in "$plugin"/agents/*.md; do [ -e "$f" ] && basename "$f" .md; done)
-  wf_skills=$(for d in "$plugin"/skills/*/; do [ -d "$d" ] && basename "$d"; done)
-  wf_mcp=$(jq -r '.mcpServers|keys[]' "$plugin/.mcp.json" 2>/dev/null)
-  wf_events=$(jq -r '.hooks|keys[]' "$plugin/hooks/hooks.json" 2>/dev/null)
+  wf_agents=$(for f in "$plugin"/agents/*.md; do [ -e "$f" ] && basename "$f" .md; done) || wf_agents=""
+  wf_skills=$(for d in "$plugin"/skills/*/; do [ -d "$d" ] && basename "$d"; done) || wf_skills=""
+  wf_mcp=$(jq -r '.mcpServers|keys[]' "$plugin/.mcp.json" 2>/dev/null) || wf_mcp=""
+  wf_events=$(jq -r '.hooks|keys[]' "$plugin/hooks/hooks.json" 2>/dev/null) || wf_events=""
 
   local scopes=("$HOME/.claude:global"); [ -d ".claude" ] && scopes+=(".claude:project")
   for sc in "${scopes[@]}"; do
@@ -228,7 +290,7 @@ check_collisions() {
     done
     local sf="$dir/settings.json"
     if [ -f "$sf" ] && [ -n "$wf_events" ]; then
-      local ue; ue=$(jq -r '(.hooks//{})|keys[]' "$sf" 2>/dev/null)
+      local ue; ue=$(jq -r '(.hooks//{})|keys[]' "$sf" 2>/dev/null) || ue=""
       for e in $ue; do
         echo "$wf_events" | grep -qx "$e" && { warn "collision" "$label hook on '$e' runs alongside WellForge's — a blocking hook could interfere (not auto-fixed: it's your config; edit settings.json if needed)"; found=1; }
       done
@@ -237,7 +299,7 @@ check_collisions() {
   # MCP: project .mcp.json + global ~/.claude.json
   for mf in ".mcp.json" "$HOME/.claude.json"; do
     [ -f "$mf" ] || continue
-    local um; um=$(jq -r '(.mcpServers//{})|keys[]' "$mf" 2>/dev/null)
+    local um; um=$(jq -r '(.mcpServers//{})|keys[]' "$mf" 2>/dev/null) || um=""
     for s in $um; do
       echo "$wf_mcp" | grep -qx "$s" && { warn "collision" "MCP server '$s' ($mf) shadows WellForge's (not auto-fixed: it's your config; rename it in $mf if needed)"; found=1; }
     done
@@ -286,7 +348,9 @@ cmd_telegram() {
     printf "Paste the bot token (input hidden): "
     read -rs token; printf "\n"
     [ -z "$token" ] && { say "  ${YLW}empty — try again (Ctrl-C to abort).${RST}"; continue; }
-    bot_user=$(tg_api "$token" getMe | jq -r 'select(.ok) .result.username // empty')
+    # curl | jq fails as a PIPELINE when the network is down. An empty answer sends the
+    # loop round again with a readable message, which is what the user can act on.
+    bot_user=$(tg_api "$token" getMe | jq -r 'select(.ok) .result.username // empty') || bot_user=""
     [ -z "$bot_user" ] && say "  ${RED}token rejected by the Telegram API${RST} — check for missing characters and retry."
   done
   ok "bot verified" "@$bot_user"
@@ -300,7 +364,7 @@ cmd_telegram() {
 
   local chat_id="" tries=0
   while [ -z "$chat_id" ] && [ $tries -lt 10 ]; do
-    chat_id=$(tg_api "$token" getUpdates | jq -r '[.result[].message.chat.id] | last // empty')
+    chat_id=$(tg_api "$token" getUpdates | jq -r '[.result[].message.chat.id] | last // empty') || chat_id=""
     [ -z "$chat_id" ] && { tries=$((tries+1)); say "  ${DIM}no message yet — retrying ($tries/10)…${RST}"; sleep 2; }
   done
   if [ -z "$chat_id" ]; then
@@ -340,9 +404,9 @@ tg_test() {
   local out
   out=$(tg_api "$TELEGRAM_BOT_TOKEN" sendMessage \
     -d "chat_id=${TELEGRAM_CHAT_ID}" \
-    -d "text=🤖 WellForge: notifications are working." | jq -r '.ok')
+    -d "text=🤖 WellForge: notifications are working." | jq -r '.ok') || out=""
   if [ "$out" = "true" ]; then ok "test message" "delivered — check Telegram"; return 0; fi
-  bad "test message" "Telegram API returned an error"; return 1
+  bad "test message" "no 'ok' from the Telegram API (network down, or token/chat id wrong)"; return 1
 }
 
 # ─── commands ────────────────────────────────────────────────────────────────
@@ -353,10 +417,11 @@ cmd_doctor() {
   say "WellForge doctor ${DIM}(home: $WELLFORGE_HOME)${RST}"
   say ""
   say "tools:"
-  check_brew || true
-  if command -v brew >/dev/null; then
-    for t in "${BREW_TOOLS[@]}"; do check_tool "$t" "$fix"; done
-  fi
+  check_brew
+  # Not gated on brew: these tools can be installed any number of ways, and `command -v`
+  # does not care which. Gating the loop meant a machine without brew got no line at all
+  # for mise/uv/gh/jq — absence of evidence printed as absence of the tool.
+  for t in "${BREW_TOOLS[@]}"; do check_tool "$t" "$fix"; done
   check_node "$fix"
   check_claude "$fix"
   check_docker
@@ -370,13 +435,26 @@ cmd_doctor() {
   if telegram_configured; then ok "telegram" "configured ($TELEGRAM_ENV_FILE)"; else
     warn "telegram" "not configured (optional) — run: wellforge telegram"
   fi
+  # ── the single exit path ──────────────────────────────────────────────────────────
+  # Every check above reports and returns; none of them ends the run. This is the only
+  # place doctor decides an exit status, which is what makes the summary unconditional:
+  # a truncated doctor report is worse than a failing one, because it looks like a crash.
   say ""
   if [ "$FAILURES" -eq 0 ]; then
     say "${GRN}environment ready.${RST}"
   else
-    say "${RED}$FAILURES check(s) failed.${RST} ${fix:+Some issues need manual action.}${fix:-Run: wellforge doctor --fix}"
-    return 1
+    if [ -n "$fix" ]; then
+      say "${RED}$FAILURES check(s) failed.${RST} Some issues need manual action."
+    else
+      say "${RED}$FAILURES check(s) failed.${RST} Run: wellforge doctor --fix"
+    fi
+    # No checkout is the common first-run case, and `doctor --fix` does not create one —
+    # only setup does. Say so, rather than sending the user round a loop that cannot help.
+    if [ ! -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
+      say "${YLW}next:${RST} no checkout at $WELLFORGE_HOME — run: wellforge setup"
+    fi
   fi
+  [ "$FAILURES" -eq 0 ]
 }
 
 cmd_setup() {
@@ -392,8 +470,9 @@ cmd_setup() {
       case "$ans" in /*) WELLFORGE_HOME="$ans" ;; *) die "use an absolute path (got: $ans)" ;; esac
     fi
   fi
-  mkdir -p "$CONFIG_DIR"
-  echo "WELLFORGE_HOME=\"$WELLFORGE_HOME\"" > "$CONFIG_FILE"
+  mkdir -p "$CONFIG_DIR" || die "cannot create $CONFIG_DIR — check permissions on $HOME/.config"
+  echo "WELLFORGE_HOME=\"$WELLFORGE_HOME\"" > "$CONFIG_FILE" \
+    || die "cannot write $CONFIG_FILE — check permissions"
   say "  ${DIM}home: $WELLFORGE_HOME (saved to $CONFIG_FILE)${RST}"
 
   # 2. repo
@@ -407,15 +486,30 @@ cmd_setup() {
       || die "clone failed — private repo? run 'gh auth setup-git' or set WELLFORGE_REPO to an SSH URL"
   fi
 
-  # 3. tools (doctor in fix mode does the installs/upgrades)
-  cmd_doctor --fix || true
+  # 3. tools (doctor in fix mode does the installs/upgrades). Its non-zero means "checks
+  # failed", not "setup cannot continue" — the remaining steps are still worth doing, and
+  # the final doctor run below is what reports the outcome.
+  cmd_doctor --fix
 
   # 4. marketplace + plugin (idempotent)
   if command -v claude >/dev/null; then
-    claude plugin marketplace list 2>/dev/null | grep -q "wellforge" \
-      || claude plugin marketplace add "$WELLFORGE_HOME"
-    claude plugin list 2>/dev/null | grep -q "wellforge" \
-      || claude plugin install wellforge@wellforge --scope user
+    local err
+    if ! claude plugin marketplace list 2>/dev/null | grep -q "wellforge"; then
+      if err=$(claude plugin marketplace add "$WELLFORGE_HOME" 2>&1 >/dev/null); then
+        ok "marketplace" "registered from $WELLFORGE_HOME"
+      else
+        bad "marketplace" "add failed: $(err_tail "$err") — retry: claude plugin marketplace add $WELLFORGE_HOME"
+      fi
+    fi
+    if ! claude plugin list 2>/dev/null | grep -q "wellforge"; then
+      if err=$(claude plugin install wellforge@wellforge --scope user 2>&1 >/dev/null); then
+        ok "plugin" "installed"
+      else
+        bad "plugin" "install failed: $(err_tail "$err") — retry: claude plugin install wellforge@wellforge --scope user"
+      fi
+    fi
+  else
+    warn "plugin" "claude not installed — skipped marketplace + plugin install"
   fi
 
   # 5. optional: Telegram notifications (interactive sessions only)
@@ -429,12 +523,22 @@ cmd_setup() {
     esac
   fi
 
+  # Setup always ends by SAYING something. Previously this was `cmd_doctor && say "done"`,
+  # so a single failing check ended the run on a bare non-zero with no closing line at all
+  # — indistinguishable from a crash.
   say ""
-  cmd_doctor && say "
+  if cmd_doctor; then
+    say "
 ${GRN}done.${RST} Open a Claude Code session and verify:
   /plugin   → wellforge installed
   /mcp      → sequential-thinking, playwright, github
 Next: docs/QUICKSTART.md — /wellforge:new for your first project."
+  else
+    say "
+${YLW}setup finished, but the checks above still report problems.${RST}
+Fix the ✗ lines (each carries its command), then re-run: wellforge doctor"
+    return 1
+  fi
 }
 
 # Remove stale plugin cache version dirs, keeping only the current (source) version.
@@ -444,7 +548,7 @@ prune_plugin_cache() {
   local cache_root="$HOME/.claude/plugins/cache/wellforge/wellforge"
   [ -d "$cache_root" ] || return 0
   local cur
-  cur=$(grep -m1 '"version"' "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json" 2>/dev/null | sed 's/[^0-9.]//g')
+  cur=$(plugin_json_version "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json")
   [ -n "$cur" ] || return 0   # can't determine active version → never prune
   local removed=0 d name
   for d in "$cache_root"/*/; do
@@ -457,7 +561,6 @@ prune_plugin_cache() {
     esac
   done
   if [ "$removed" -gt 0 ]; then ok "plugin cache" "pruned $removed stale version(s), kept v$cur"; fi
-  return 0   # never non-zero — set -e would abort the caller (bit us when removed=0)
 }
 
 # True if this script is the brew-installed CLI (vs. run from a checkout).
@@ -472,7 +575,9 @@ cmd_update() {
 
   # Refresh brew metadata up front so the tool + CLI outdated-checks below are accurate.
   if command -v brew >/dev/null; then
-    say "  ${DIM}refreshing brew metadata…${RST}"; brew update >/dev/null 2>&1 || true
+    say "  ${DIM}refreshing brew metadata…${RST}"
+    brew update >/dev/null 2>&1 \
+      || warn "brew" "metadata refresh failed (offline?) — the outdated checks below may be stale"
   fi
 
   # 1. checkout (templates, gates, plugin source)
@@ -484,20 +589,28 @@ cmd_update() {
 
   # 2. pinned dev tools
   if command -v brew >/dev/null; then
+    local err
     for t in "${BREW_TOOLS[@]}"; do
-      brew outdated --quiet 2>/dev/null | grep -qx "$t" && { brew upgrade "$t" >/dev/null; ok "$t" "upgraded"; } || true
+      brew outdated --quiet 2>/dev/null | grep -qx "$t" || continue
+      if err=$(brew upgrade "$t" 2>&1 >/dev/null); then
+        ok "$t" "upgraded"
+      else
+        warn "$t" "upgrade failed, keeping the installed version — $(err_tail "$err") — retry: brew upgrade $t"
+      fi
     done
   fi
 
   # 3. the LOADED plugin — Claude Code runs it from a version-keyed cache that neither
   # `git pull` nor /reload-plugins refreshes; only a reinstall does.
   if command -v claude >/dev/null && claude plugin list 2>/dev/null | grep -q "wellforge"; then
-    claude plugin uninstall wellforge --scope user >/dev/null 2>&1
-    if claude plugin install wellforge@wellforge --scope user >/dev/null 2>&1; then
+    claude plugin uninstall wellforge --scope user >/dev/null 2>&1 \
+      || warn "plugin" "uninstall reported an error — continuing; the install below is what matters"
+    local perr
+    if perr=$(claude plugin install wellforge@wellforge --scope user 2>&1 >/dev/null); then
       ok "plugin" "reinstalled from source (cache refreshed)"
       prune_plugin_cache   # tidy stale version dirs now that the fresh one exists
     else
-      warn "plugin" "reinstall failed — run: claude plugin install wellforge@wellforge --scope user"
+      warn "plugin" "reinstall failed: $(err_tail "$perr") — run: claude plugin install wellforge@wellforge --scope user"
     fi
   fi
   say "${DIM}plugin reloaded? run /reload-plugins (or start a new Claude Code session).${RST}"
@@ -513,7 +626,7 @@ cmd_update() {
     else
       say "  ${DIM}upgrading the wellforge CLI…${RST}"
       if brew upgrade wellforge >/dev/null 2>&1; then
-        ok "cli" "upgraded to $(brew list --versions wellforge 2>/dev/null | awk '{print $2}') — active on next run"
+        ok "cli" "upgraded to $(brew list --versions wellforge 2>/dev/null | awk '{print $2}' || echo '?') — active on next run"
       else
         warn "cli" "upgrade failed — run: brew upgrade wellforge"
       fi
@@ -529,12 +642,12 @@ cmd_version() {
   local src ver="unknown"
   # resolve symlinks: brew links /opt/homebrew/bin/wellforge -> Cellar/…
   src="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
-  src="$(cd "$(dirname "$src")" 2>/dev/null && pwd)" || true
+  src="$(cd "$(dirname "$src")" 2>/dev/null && pwd)" || src=""
   case "$src" in
     */Cellar/wellforge/*)
       ver="${src#*/Cellar/wellforge/}"; ver="${ver%%/*} (brew)" ;;
     *)
-      local repo; repo="$(script_repo || true)"
+      local repo; repo="$(script_repo)"
       [ -n "$repo" ] && ver="$(git -C "$repo" describe --tags --always 2>/dev/null || echo '?') (running from checkout)" ;;
   esac
   say "wellforge $ver"
