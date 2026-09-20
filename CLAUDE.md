@@ -136,6 +136,12 @@ wellforge/
   does not touch `tasks.md`; branches integrate by rebase + `--ff-only`, checkboxes reconcile
   centrally, and a conflict means a wrong edge (a "collision"), surfaced like drift. Set
   `worktree.baseRef: "head"`. Solo/sequential batches stay in the main tree.
+- **This repo does not version `.forge/runs/`** — a deliberate deviation from the shipped
+  default, don't "fix" it. The `observability` skill keeps the semantic `*.json` traces
+  committed and all three templates still do, because in a *generated* project they are the
+  audit trail and the evaluator's trajectory evidence. Here they are local-only: wellforge is
+  tooling, rarely evals itself, and `specs/NNN-slug/eval-report.md` already carries the
+  readable verdict. Traces stay on disk, so `/wellforge:status` and `run-report.py` work.
 - Every artifact-producing agent (and the main-loop `spec`/`plan`/`tasks` commands) runs
   **one** self-critique pass before handing over, per the **`self-critique` skill** (the
   authority; agents and commands delegate to it). It is a floor-raiser, not a gate: one pass

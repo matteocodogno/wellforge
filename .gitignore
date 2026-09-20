@@ -14,5 +14,10 @@
 __pycache__/
 .venv/
 
-# WellForge run traces: raw token events are transient (observability skill)
-.forge/runs/.events.jsonl
+# WellForge run traces. This repo deviates from the shipped default ON PURPOSE: the
+# observability skill keeps the semantic *.json traces committed (they are a GENERATED
+# project's audit trail and the evaluator's trajectory evidence), and all three templates
+# still do. Here they are local-only noise — wellforge is tooling, rarely evals itself, and
+# the human-readable verdicts already live in specs/NNN-slug/eval-report.md. The traces stay
+# on disk, so /wellforge:status and run-report.py keep working locally.
+.forge/runs/
