@@ -20,7 +20,7 @@ back what the user clicks. It's a **tool, not a mode**: enabling it makes the br
 *available*; the designer still decides, per question, whether to use it.
 
 **The artifact is unchanged.** `design.md` (flows → screens & states → component inventory →
-a11y, per the [[spec-driven]] skill) is still the deliverable. The companion only makes the
+a11y, per the [`spec-driven`](../spec-driven/SKILL.md) skill) is still the deliverable. The companion only makes the
 visual questions that feed it clearer and faster to resolve. Everything shown persists as
 **design evidence** under `.forge/design/<feature>/` and is referenced from `design.md`.
 
@@ -34,7 +34,7 @@ three hold; otherwise design proceeds text-only exactly as before.
 2. **Interactive session.** There is a user present to look at the browser. In a headless or
    **orchestrated** run (`/wellforge:orchestrate` spawns the designer directly), the
    companion is impossible — never start it. No browser, no offer.
-3. **Not the spike tier.** Per [[rigor-tiers]], `spike` skips the designer entirely; the
+3. **Not the spike tier.** Per [`rigor-tiers`](../rigor-tiers/SKILL.md), `spike` skips the designer entirely; the
    companion is for `mvp` (opt-in) and `production`. Never offer it for a spike.
 
 ## Offering it — just-in-time, its own message
@@ -144,7 +144,7 @@ Mockups are traceable design evidence, not throwaway:
 - They persist in `.forge/design/<NNN-slug>/content/` (survives restarts via `--session-name`).
 - For each settled screen, add a reference under its **Screens & states** entry in `design.md`:
   `> mockup: .forge/design/<NNN-slug>/content/checkout-layout-v2.html`
-- This gives the quality-engineer and [[observability]] evaluator a concrete visual reference
+- This gives the quality-engineer and [`observability`](../observability/SKILL.md) evaluator a concrete visual reference
   for "does the built UI match the approved design?" — cite it as trajectory evidence.
 - Ensure `.forge/design/` is git-ignored (WellForge templates ignore it; add it if missing —
   keep `.forge/manifest.json` tracked).

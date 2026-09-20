@@ -65,8 +65,8 @@ another repository, another module, another spec's implementation of the same pa
 
 - Locate the closest working example and **diff it against the broken one**. List every
   difference, including the ones that "can't matter" — that's where it usually is.
-- The stack skills are the reference implementation ([[kotlin-springboot]],
-  [[hono-ts-backend]], [[react-ts-vite]], [[pulumi-gcp-ts]]). If the bug is in a pattern they
+- The stack skills are the reference implementation ([`kotlin-springboot`](../kotlin-springboot/SKILL.md),
+  [`hono-ts-backend`](../hono-ts-backend/SKILL.md), [`react-ts-vite`](../react-ts-vite/SKILL.md), [`pulumi-gcp-ts`](../pulumi-gcp-ts/SKILL.md)). If the bug is in a pattern they
   cover, read the relevant reference **completely** before adapting it. Partial understanding
   of a pattern is how the bug got there.
 
@@ -91,7 +91,7 @@ both cheap, both before you write anything down:
 
 The common case in WellForge is a **git worktree**: it contains the tracked tree at HEAD and
 nothing else, so every gitignored env file (`.env*`, `.mise.local.toml`, credentials) is
-absent, and secret-backed variables silently resolve to empty. [[worktree-isolation]] owns the
+absent, and secret-backed variables silently resolve to empty. [`worktree-isolation`](../worktree-isolation/SKILL.md) owns the
 prevention (carry-in + verification) and carries a symptom→cause table for the rest of the
 class — shared test databases, ports, containers, migration counters. Read that table before
 concluding anything about code that fails only inside a worktree.
@@ -150,7 +150,7 @@ contaminates the evidence about what actually fixed it. Verify the target test g
 What to do at the stop, per context:
 
 - **In a spec'd feature** — this is **drift on `plan.md`**, and it routes exactly like any
-  other drift ([[spec-driven]]): stop, report it to the caller, and let the architect amend
+  other drift ([`spec-driven`](../spec-driven/SKILL.md)): stop, report it to the caller, and let the architect amend
   the plan. A fourth patch is a dev agent quietly overruling the architecture.
 - **In a spike** — this *is* the deliverable. A spike that discovers the design doesn't hold
   has answered its question; record it under `## Findings` and stop. Don't burn the spike's
@@ -193,7 +193,7 @@ assumption went unverified. Return to Phase 1.
 - A dev agent's return message states the **root cause**, not just the fix. "Fixed the failing
   test" is not a report.
 - The QE verdict's `Defects:` list already carries repro steps and failing test paths; the
-  root cause belongs there too, so the [[observability]] run trace and the evaluator's
+  root cause belongs there too, so the [`observability`](../observability/SKILL.md) run trace and the evaluator's
   trajectory evidence show *why* it broke, not only that it went green.
 - A root cause that turned out to be an architectural problem gets recorded where the
   architecture lives — an amended `plan.md`, or an ADR candidate if it constrains future work.

@@ -101,7 +101,7 @@ ignore it and stay silent.
   "the endpoint works".
 - **`touch:` that lies** — every file the task will create or modify, globs included for
   generated families (migrations, changelogs). `touch:` is a scheduling edge
-  ([[worktree-isolation]]): an incomplete list is a collision you have already scheduled.
+  ([`worktree-isolation`](../worktree-isolation/SKILL.md)): an incomplete list is a collision you have already scheduled.
 - **Wrong edge** — a missing `deps:` where one task consumes another's contract, or a false
   one that serializes work for no reason.
 - **Task too large to verify** — one `done when:` covering three outcomes. Split it.
@@ -121,7 +121,7 @@ Green tests are the floor, not the critique. Re-read your own diff before you re
   consumer is another agent's code; this is drift, not a detail.
 - **Silent corner-cut** — a default, a guard, a widened type, a swallowed `catch`, a raised
   timeout, a `.skip`/`@Disabled`, a loosened threshold added to make something pass. Either
-  it is the root-cause fix ([[systematic-debugging]]) or it is a report. Never a quiet commit.
+  it is the root-cause fix ([`systematic-debugging`](../systematic-debugging/SKILL.md)) or it is a report. Never a quiet commit.
 - **Scope leak** — files touched outside the task's `touch:` list. In a worktree that is also
   an isolation breach.
 - **Convention drift** — the neighbouring code handles errors, logs, or names things another
@@ -149,9 +149,9 @@ that is the system working, not a failure of the pass.
   evidence in a QE verdict or an eval score — an evaluator that credits the author's own
   review is being gamed by the author.
 - **Not a reason to skip a stage.** The human gates, the drift rule, QE and the eval run
-  exactly as before. Fewer stages come only from a declared rigor tier ([[rigor-tiers]]).
+  exactly as before. Fewer stages come only from a declared rigor tier ([`rigor-tiers`](../rigor-tiers/SKILL.md)).
 
-Related: [[spec-driven]] (the artifacts and their formats), [[rigor-tiers]] (the tier gating
-and the effort cue this pass sits beside), [[systematic-debugging]] (the rule the code
-checklist's corner-cut item enforces), [[frontend-design]] (its Pass 2 is this pass for
-visual direction), [[worktree-isolation]] (why `touch:` accuracy is a safety property).
+Related: [`spec-driven`](../spec-driven/SKILL.md) (the artifacts and their formats), [`rigor-tiers`](../rigor-tiers/SKILL.md) (the tier gating
+and the effort cue this pass sits beside), [`systematic-debugging`](../systematic-debugging/SKILL.md) (the rule the code
+checklist's corner-cut item enforces), [`frontend-design`](../frontend-design/SKILL.md) (its Pass 2 is this pass for
+visual direction), [`worktree-isolation`](../worktree-isolation/SKILL.md) (why `touch:` accuracy is a safety property).

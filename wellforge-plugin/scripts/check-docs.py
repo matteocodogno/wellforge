@@ -12,7 +12,7 @@ Checks:
   3. every server in .mcp.json appears there
   4. plugin.json's version == the version CLAUDE.md quotes
   5. every skill description is within the 1024-char limit the loader enforces
-  6. no [[wiki-link]] points at a skill that doesn't exist
+  6. cross-skill links are relative markdown links that resolve, not inert [[wiki-links]]
 
 Run: wellforge-plugin/scripts/check-docs.py   (needs pyyaml)
 """
@@ -58,11 +58,19 @@ for p in glob.glob(f"{PLUGIN}/skills/*/SKILL.md"):
     if n > 1024:
         fail.append(f"skill `{fm['name']}` description is {n} chars (limit 1024)")
 
-known = set(skills)
+# Cross-skill references are relative markdown links, so they resolve for a human on GitHub
+# and in an editor — not `[[wiki-links]]`, which look like links and are inert everywhere.
+# Both halves are checked: no wiki-links come back, and every relative link has a real file
+# behind it (in this layout AND in the adapters', which mirror it).
 for p in glob.glob(f"{PLUGIN}/**/*.md", recursive=True):
-    for link in re.findall(r"\[\[([a-z0-9-]+)\]\]", open(p).read()):
-        if link not in known:
-            fail.append(f"{os.path.relpath(p, ROOT)}: [[{link}]] resolves to no skill")
+    body = open(p).read()
+    for link in re.findall(r"\[\[([a-z0-9-]+)\]\]", body):
+        fail.append(f"{os.path.relpath(p, ROOT)}: [[{link}]] is an inert wiki-link — "
+                    f"use a relative markdown link instead")
+    for target in re.findall(r"\]\((\.\./[^)]*\.md)\)", body):
+        resolved = os.path.normpath(os.path.join(os.path.dirname(p), target))
+        if not os.path.exists(resolved):
+            fail.append(f"{os.path.relpath(p, ROOT)}: link -> {target} resolves to nothing")
 
 if fail:
     print("✗ docs drift:")

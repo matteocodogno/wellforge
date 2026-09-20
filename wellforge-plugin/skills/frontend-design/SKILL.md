@@ -40,7 +40,7 @@ defaults listed below.
 
 ## Rigor tiers
 
-Per [[rigor-tiers]]: `production`/`mvp` run the designer, so both passes run there. `spike`
+Per [`rigor-tiers`](../rigor-tiers/SKILL.md): `production`/`mvp` run the designer, so both passes run there. `spike`
 never spawns the designer — but the main loop may load this skill when the spike's *whole
 point* is a visual prototype. In that case run **pass 1 only**: name the tokens, skip the
 critique round and the evidence log, mark it `// SPIKE:` and move.
@@ -97,7 +97,7 @@ ones need precision in spacing and type. Then remove one accessory before you sh
 ## Where it lands
 
 The durable artifact is a section in `design.md`, between **Component inventory** and
-**Accessibility** ([[spec-driven]] format):
+**Accessibility** ([`spec-driven`](../spec-driven/SKILL.md) format):
 
 ```markdown
 ## Visual direction
@@ -120,7 +120,7 @@ Then, at implementation time:
   CSS custom properties / the Tailwind theme extension — *never* as hex literals inside
   components. A token used by exactly one component is a smell: promote it or delete it.
 - Mockups, and the directions you tried and rejected, go under `.forge/design/<feature>/`
-  alongside the [[visual-companion]] evidence. That directory is **gitignored** in the
+  alongside the [`visual-companion`](../visual-companion/SKILL.md) evidence. That directory is **gitignored** in the
   templates — it is scratch, not the record. If a rejected direction matters, it belongs in
   the `Risk:` line, not only in the scratch dir.
 
@@ -148,7 +148,7 @@ Then, at implementation time:
 ## What this skill does NOT license
 
 - No new UI library, no new CSS-in-JS runtime, no font that the project's CSP or build cannot
-  actually deliver ([[react-ts-vite]] conventions still hold).
+  actually deliver ([`react-ts-vite`](../react-ts-vite/SKILL.md) conventions still hold).
 - No rewriting existing screens because the new direction is nicer — that is a separate
   feature with its own spec (the drift rule).
 - The designer still writes no code: this produces the `## Visual direction` section, and

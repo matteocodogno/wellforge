@@ -15,7 +15,7 @@ description: >
 **This skill generates nothing.** It used to: it shipped a 741-line `scaffold.sh` that
 hand-built a whole project. That was deleted, because it broke the contract everything else
 depends on — WellForge generates projects **only** through the root `copier.yml`
-([[template-contract]]). A hand-rolled project has no `.forge/manifest.json`, so it has no
+([`template-contract`](../template-contract/SKILL.md)). A hand-rolled project has no `.forge/manifest.json`, so it has no
 recorded template version, no `copier update` path, and no wiring to the shared quality
 gates. It looks like a scaffold and is actually a dead end: pillar 5 and pillar 6 both
 bypassed, silently, at the moment a project is born.
@@ -45,11 +45,11 @@ this project's versions.
    `src/main/kotlin/<base-package>/`, `src/main/resources/`, `src/test/`.
 2. Register it in the parent `pom.xml` `<modules>`, and inherit every version from the
    parent — **never re-pin a version a parent already manages**.
-3. Add its tasks to the service's own `mise.toml`, and a root pointer task per [[mise]]
+3. Add its tasks to the service's own `mise.toml`, and a root pointer task per [`mise`](../mise/SKILL.md)
    (a root task cannot depend on a subdirectory task by name).
 4. Wire it into CI by calling the shared gate with the new `working-directory`
-   ([[quality-gates]]).
-5. Follow [[kotlin-springboot]] for the code itself — Result/DomainError, Modulith module
+   ([`quality-gates`](../quality-gates/SKILL.md)).
+5. Follow [`kotlin-springboot`](../kotlin-springboot/SKILL.md) for the code itself — Result/DomainError, Modulith module
    boundaries, jOOQ repositories, Liquibase changelogs.
 
 **An existing non-WellForge Spring project** → `/wellforge:adopt`, not a scaffold.
@@ -59,7 +59,7 @@ this project's versions.
 The shipped preset (`templates/spring-kotlin-react/template/backend/pom.xml`) is the source
 of truth for Spring Boot, Modulith, jOOQ and Liquibase versions, and a generated project's
 own parent `pom.xml` is the source of truth for that project. A version written into a skill
-is a version that goes stale silently — this skill and [[kotlin-springboot]]'s Maven
+is a version that goes stale silently — this skill and [`kotlin-springboot`](../kotlin-springboot/SKILL.md)'s Maven
 reference had drifted a whole major apart (Boot 4.0/Modulith 2.0 here, 3.4.x/1.3.x there)
 without either being wrong enough to notice.
 

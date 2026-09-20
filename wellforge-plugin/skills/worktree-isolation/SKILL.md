@@ -129,7 +129,7 @@ failure surfaces much deeper, inside application code, looking exactly like brok
 
 An agent that meets an unresolved variable reports an **environment fault** and stops. It does not
 diagnose the code, and it never reports "pre-existing breakage" on that evidence — see
-[[systematic-debugging]].
+[`systematic-debugging`](../systematic-debugging/SKILL.md).
 
 ## File overlap is a DAG edge
 
@@ -139,7 +139,7 @@ concurrently. Both are edges.
 
 **Effective batching graph = declared `deps:` ∪ overlap of `touch:`.**
 
-- Compute it *before* batching, from the `touch:` list every task carries ([[spec-driven]]).
+- Compute it *before* batching, from the `touch:` list every task carries ([`spec-driven`](../spec-driven/SKILL.md)).
 - **Glob overlap counts.** Two tasks that both touch `backend/src/db/migrations/*` collide on the
   counter (class 7) even though neither names the other's file.
 - **Report the edges you added** — "T8 and T12 both touch `db/migrations/*` → serialized" — the
@@ -220,7 +220,7 @@ worktree where it is running** (`git -C <worktree-path> rebase --abort`), **surf
 drift** — name the two tasks and the colliding files —
 and resolve by adding the missing edge (`/wellforge:tasks` re-sync) and re-running the later task
 in the now-integrated tree. Never auto-resolve code conflicts silently. Record it in
-`collision_events` ([[observability]]).
+`collision_events` ([`observability`](../observability/SKILL.md)).
 
 A collision after this skill shipped is also a signal about the *inputs*: the tasks' `touch:` lists
 did not describe what the tasks actually did. Say so when you surface it.
@@ -255,5 +255,5 @@ editing application code, and it never justifies a "pre-existing breakage" verdi
   the preflight left a class unclassified, dispatch the batch **sequentially** in the main tree,
   each agent committing and checking its own box. State which mode you used and why.
 - **Recording.** Record the isolation mode, each isolated agent's branch (`worktree`), any
-  `collision_events`, and any environment faults in the run trace per [[observability]]. A batch
+  `collision_events`, and any environment faults in the run trace per [`observability`](../observability/SKILL.md). A batch
   that fell back to sequential records *why* — the preflight line that forced it is the finding.

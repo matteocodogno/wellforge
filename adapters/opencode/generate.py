@@ -11,6 +11,7 @@ hooks are TS plugins (a separate follow-up); enforcement on OpenCode leans on CI
 Run via: uv run --with pyyaml python adapters/opencode/generate.py ...
 """
 import argparse
+import glob
 import os
 import re
 import shutil
@@ -138,7 +139,11 @@ def gen_skills(plugin, out):
         for fn in files:
             if fn.endswith(".md"):
                 p = os.path.join(root, fn)
-                open(p, "w").write(translate(open(p).read()))
+                # NOT `open(p, "w").write(translate(open(p).read()))`: Python evaluates
+                # `open(p, "w")` BEFORE the argument, truncating the file to zero, so the
+                # read returns "" and every skill was emitted EMPTY. Read first, then write.
+                content = open(p).read()
+                open(p, "w").write(translate(content))
                 n += 1
     return n
 
@@ -193,6 +198,20 @@ def gen_rubric(plugin, out, dest_rel):
     return 1
 
 
+def assert_nonempty(root, label):
+    """Fail loudly if any emitted markdown is empty.
+
+    The generators used to truncate every skill file to zero bytes (`open(p, "w")` evaluated
+    before the read) while still reporting a healthy file COUNT — 44 skills, 0 bytes each,
+    for as long as nobody opened one. Count is not content.
+    """
+    empties = [p for p in glob.glob(os.path.join(root, "**", "*.md"), recursive=True)
+               if os.path.getsize(p) == 0]
+    if empties:
+        raise SystemExit(f"FATAL: {label} emitted {len(empties)} EMPTY file(s), e.g. "
+                         f"{os.path.relpath(empties[0], root)} — refusing to ship a blank library")
+
+
 def main():
     ap = argparse.ArgumentParser()
     here = os.path.dirname(__file__)
@@ -220,6 +239,7 @@ def main():
     s = gen_skills(args.plugin, args.out)
     m = gen_mcp(args.plugin, args.out)
     p = gen_plugin(args.out)
+    assert_nonempty(os.path.join(args.out, ".opencode"), "opencode adapter")
     print(f"✓ OpenCode adapter ({args.provider}) → {args.out}/.opencode/")
     print(f"  {a} agents · {c} commands · {s} skill files · {m} MCP servers · {p} enforcement plugin")
     print("  enforcement plugin ports: bash guard, post-lint, spec-drift (session.idle).")

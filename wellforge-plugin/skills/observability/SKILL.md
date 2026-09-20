@@ -82,7 +82,7 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   ran. Keeping both is what makes a downgrade legible later: a run at `mvp` on a feature
   recorded `production` produced less verification than the spec's standard, and an
   evaluator reading trajectory evidence needs to see that rather than infer it from missing
-  agents. See [[rigor-tiers]] — the flag is allowed, unannounced use of it is not.
+  agents. See [`rigor-tiers`](../rigor-tiers/SKILL.md) — the flag is allowed, unannounced use of it is not.
 - **`agent_type` is what makes cost attributable.** Events are matched to runs by time
   window first, then by `agent_type` when several windows overlap. Time alone is not an
   identity: a parallel batch has overlapping windows by construction, so a per-window sum
@@ -102,7 +102,7 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   path (no isolation).
 - **`env_faults`** (additive) records failures traced to the environment rather than the code
   — an unresolved variable in a worktree, a shared resource another worktree mutated (see the
-  [[worktree-isolation]] enumeration for the `class` values). Record them even when they cost
+  [`worktree-isolation`](../worktree-isolation/SKILL.md) enumeration for the `class` values). Record them even when they cost
   no fix round: an env fault that surfaced as "N tests failing" is exactly the evidence the
   evaluator's trajectory review and the next preflight need, and its absence from the trace is
   how the same one gets rediagnosed next month. When a batch **fell back to sequential**,

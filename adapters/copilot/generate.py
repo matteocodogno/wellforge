@@ -271,7 +271,11 @@ def gen_instructions(plugin, out):
         for fn in files:
             if fn.endswith(".md"):
                 p = os.path.join(root, fn)
-                open(p, "w").write(translate(open(p).read()))
+                # NOT `open(p, "w").write(translate(open(p).read()))`: Python evaluates
+                # `open(p, "w")` BEFORE the argument, truncating the file to zero, so the
+                # read returns "" and every skill was emitted EMPTY. Read first, then write.
+                content = open(p).read()
+                open(p, "w").write(translate(content))
                 n_lib += 1
 
     # 2. glob-scoped instruction pointers for path-mappable skills
@@ -376,6 +380,20 @@ def gen_rubric(plugin, out, dest_rel):
     return 1
 
 
+def assert_nonempty(root, label):
+    """Fail loudly if any emitted markdown is empty.
+
+    The generators used to truncate every skill file to zero bytes (`open(p, "w")` evaluated
+    before the read) while still reporting a healthy file COUNT — 44 skills, 0 bytes each,
+    for as long as nobody opened one. Count is not content.
+    """
+    empties = [p for p in glob.glob(os.path.join(root, "**", "*.md"), recursive=True)
+               if os.path.getsize(p) == 0]
+    if empties:
+        raise SystemExit(f"FATAL: {label} emitted {len(empties)} EMPTY file(s), e.g. "
+                         f"{os.path.relpath(empties[0], root)} — refusing to ship a blank library")
+
+
 def main():
     ap = argparse.ArgumentParser()
     here = os.path.dirname(__file__)
@@ -405,6 +423,7 @@ def main():
     gen_rubric(args.plugin, args.out, os.path.join(".github", "wf-skills", "eval-rubric.yml"))
     m = gen_mcp(args.plugin, args.out)
     g = gen_githooks(args.out)
+    assert_nonempty(os.path.join(args.out, ".github"), "copilot adapter")
     print(f"✓ Copilot adapter ({args.provider}) → {args.out}/.github/")
     print(f"  {p} prompts · {cm} chat modes · {i} instruction files · {m} MCP servers · {g} githook config")
     print("  NOT ported: token-trace observability (no Copilot event) and parallel subagent")

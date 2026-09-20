@@ -75,7 +75,7 @@ Target spec: $ARGUMENTS
      will serialize the batch.
 
    Report the overlaps found and what you did about each — this is the check that stops a
-   collision at merge time. See [[worktree-isolation]].
+   collision at merge time. See [`worktree-isolation`](../skills/worktree-isolation/SKILL.md).
 
 5. **Re-sync mode.** If tasks.md already exists: preserve checked tasks and their IDs,
    diff the new derivation against them, and present what's added/changed/obsolete

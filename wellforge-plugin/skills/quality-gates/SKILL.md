@@ -13,7 +13,7 @@ description: >
 # Quality gates — objective, central, and not yours to lower
 
 Gates are the deterministic half of verification (the LM-judge eval is the other half —
-[[rigor-tiers]]). Their defining property is that **no individual decides whether their own
+[`rigor-tiers`](../rigor-tiers/SKILL.md)). Their defining property is that **no individual decides whether their own
 code passes**: thresholds live centrally, in the gate workflows' `env` blocks under
 `gates/`, and change only by PR to that directory.
 
@@ -24,10 +24,10 @@ code passes**: thresholds live centrally, in the gate workflows' `env` blocks un
 | `quality-node.yml` | Node/TS: install, lint, typecheck, test + coverage, SAST, dependency audit |
 | `quality-jvm.yml` | JVM: compile, ktlint, test, JaCoCo coverage, SAST, dependency audit |
 | `security-floor.yml` | Secret scan (gitleaks), hardcoded credentials, CRITICAL-CVE audit |
-| `commit-lint.yml` | Conventional Commits over the PR range ([[git-policy]]) |
-| `linear-history.yml` | No merge commits in the PR range ([[git-policy]]) |
+| `commit-lint.yml` | Conventional Commits over the PR range ([`git-policy`](../git-policy/SKILL.md)) |
+| `linear-history.yml` | No merge commits in the PR range ([`git-policy`](../git-policy/SKILL.md)) |
 | `quality-eval.yml` | Opt-in LM-judge against the central rubric; needs `ANTHROPIC_API_KEY` |
-| `heartbeat-report.yml` | Deduplicated tracking issue for scheduled runs ([[heartbeat]]) |
+| `heartbeat-report.yml` | Deduplicated tracking issue for scheduled runs ([`heartbeat`](../heartbeat/SKILL.md)) |
 
 Supporting configs: `gates/configs/semgrep/wellforge.yml` (SAST rules),
 `gates/configs/gitleaks.toml`, `gates/configs/eval-rubric.yml` (the rubric — mirrored into
@@ -59,7 +59,7 @@ is a recorded copier answer). `/wellforge:upgrade` raises it as an explicit, rai
 
 ## Tier behaviour — what blocks, and what only reports
 
-From [[rigor-tiers]]; repeated here because this is where people look when a gate is red:
+From [`rigor-tiers`](../rigor-tiers/SKILL.md); repeated here because this is where people look when a gate is red:
 
 | Tier | Blocking | Advisory |
 |---|---|---|

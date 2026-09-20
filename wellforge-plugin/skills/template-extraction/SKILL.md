@@ -220,4 +220,4 @@ if you can't, say the verification stopped at render.
 `/wellforge:adopt` runs **Part 1 in Stage 0** (always — cheap) and offers **Part 2 as an opt-in
 layer**; when chosen it records `template-extraction` in `.forge/adoption.json`'s `layers`. The
 standalone `/wellforge:extract-template` command runs either part on any project without a full
-adoption. See [[spec-driven]] for the workflow context and the adopt command for the layer model.
+adoption. See [`spec-driven`](../spec-driven/SKILL.md) for the workflow context and the adopt command for the layer model.

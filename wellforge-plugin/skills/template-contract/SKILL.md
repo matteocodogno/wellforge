@@ -61,11 +61,11 @@ date lives in git history, where it already was.
 - `AGENTS.md` (with `CLAUDE.md` importing it) — the project's own conventions, so an agent
   arriving later reads the project rather than guessing.
 - `mise.toml` — pinned toolchain plus `install`/`build`/`test`/`lint` tasks. In a monorepo,
-  a root task **cannot** depend on a subdirectory task by name; see [[mise]] for the
+  a root task **cannot** depend on a subdirectory task by name; see [`mise`](../mise/SKILL.md) for the
   addressing rule and the pointer-task pattern.
 - CI that **calls** the shared gate workflows pinned to a `gates-v*` tag, passing
-  `gates-repo` and `gates-ref` explicitly ([[quality-gates]]).
-- A `specs/` directory, so the spec-driven flow has somewhere to land ([[spec-driven]]).
+  `gates-repo` and `gates-ref` explicitly ([`quality-gates`](../quality-gates/SKILL.md)).
+- A `specs/` directory, so the spec-driven flow has somewhere to land ([`spec-driven`](../spec-driven/SKILL.md)).
 
 ## Two version series, deliberately independent
 
@@ -87,5 +87,5 @@ series on one commit.
 - Depend on a tool it does not pin in `mise.toml`.
 - Reference a file it does not generate (the shipped presets once called `./mvnw` with no
   wrapper in the tree — every backend task failed at the first run).
-- Carry domain code from the project it was extracted from ([[template-extraction]] has the
+- Carry domain code from the project it was extracted from ([`template-extraction`](../template-extraction/SKILL.md) has the
   mandatory scrub).

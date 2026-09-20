@@ -215,14 +215,14 @@ concurrently. So:
   real footprint isn't knowable yet, say so (`touch: unknown — <why>`) and it will be
   scheduled alone rather than guessed at.
 
-See [[worktree-isolation]] for how the effective graph is computed and enforced at dispatch.
+See [`worktree-isolation`](../worktree-isolation/SKILL.md) for how the effective graph is computed and enforced at dispatch.
 
 ## Workflow gates
 
 - `/wellforge:plan` MUST refuse to run if spec.md status is not `approved`.
 - `/wellforge:tasks` MUST refuse to run if the tier's upstream artifact is not `approved`:
   `plan.md` at `production`, **`spec.md` at `mvp`** (that tier has no plan.md by design —
-  see [[rigor-tiers]]). `/wellforge:implement` gates the same way. Gating an mvp feature on
+  see [`rigor-tiers`](../rigor-tiers/SKILL.md)). `/wellforge:implement` gates the same way. Gating an mvp feature on
   an approved plan dead-ends it permanently: nothing in the flow ever produces one.
 - Never skip a stage "because it's small" — for trivial changes the spec is 10 lines, not
   absent. The ONLY sanctioned way to run fewer stages is a **declared lower rigor tier**
@@ -233,7 +233,7 @@ See [[worktree-isolation]] for how the effective graph is computed and enforced 
 
 Whoever writes an artifact runs **one** bounded self-critique pass over it before handing it
 to the gate that follows (spec → the human gate, plan → the human gate, tasks → dispatch,
-code → QE). See [[self-critique]] for the per-artifact checklists and the one-pass rule. It
+code → QE). See [`self-critique`](../self-critique/SKILL.md) for the per-artifact checklists and the one-pass rule. It
 changes content only: it never sets `status:`, never checks a box, and never replaces the
 gate, QE or the evaluator — those stay independent, which is the whole point of them.
 

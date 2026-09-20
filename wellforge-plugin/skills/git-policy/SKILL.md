@@ -58,7 +58,7 @@ git switch main && git merge --ff-only <branch>
 rebase again and retry. That refusal is the policy working; reaching for a flag that forces
 the merge through is the one response that is always wrong.
 
-For a parallel batch integrating several worktree branches, [[worktree-isolation]] owns the
+For a parallel batch integrating several worktree branches, [`worktree-isolation`](../worktree-isolation/SKILL.md) owns the
 protocol (the rebase runs **inside** each worktree — the main tree cannot rebase a branch
 that is checked out elsewhere).
 

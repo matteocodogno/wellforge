@@ -877,6 +877,20 @@ in the run trace) and **surfaced** by `run-report.py`, so a cheap run stays legi
 the transcript scrolls away; recording without surfacing would have been archival, not
 useful. Defined once in `rigor-tiers`, so implement and orchestrate inherit it.
 
+**Cosmetic cleanup that wasn't** (plugin `2.35.1`, 2026-09-20): converting 52 inert
+`[[wiki-links]]` into relative markdown links that actually resolve required checking they
+survive the adapters — which is how the **adapter generators were found emitting all 44
+skill files EMPTY**, in both OpenCode and Copilot, for as long as that code has existed.
+Cause: `open(p, "w").write(translate(open(p).read()))` — Python evaluates `open(p, "w")`
+before the argument, truncating the file to zero, so the read returns `""`. The generators
+reported "44 skill files" throughout, because they counted files, not bytes. Fixed in both,
+with an `assert_nonempty()` that refuses to finish a generation containing a zero-byte file.
+The skill library those two tools ship has never actually contained anything until now.
+Pricing was also re-verified against the **live** page rather than the `claude-api` skill's
+cached table (a cache checking a cache): every base rate matched, six older/retired models
+were added so an old id in a trace is not priced at a fifth of its cost, and the
+not-modelled multipliers are now named with their sizes.
+
 ## Phase 19 — Remove the second scaffolding path (added 2026-09-20)
 
 `springboot-scaffold` hand-generated a whole Spring project from a 741-line `scaffold.sh`,
