@@ -415,6 +415,22 @@ and a fleet-drift triage agent that notices when a project falls behind the late
 The article's automations component; drafted below as **Phase 14** (starts after the Phase 7
 pilot proves the core loop).
 
+**Follow-up fix** (plugin `2.27.7`, 2026-09-20): `stop-verify.sh`, the mechanical half of the
+drift rule, had been blind since it was written. It used a bare `git diff --name-only`, which
+reports **unstaged changes only** — and every dev agent's standing instruction is to commit on
+completion, so the moment an agent finished, its work left the hook's field of view. The drift
+check and both compile checks then passed by seeing nothing, which is indistinguishable from
+passing. Three more defects in the same file: `./mvnw clean compile` on every Stop with no
+`timeout` in `hooks.json` (the default budget is 60s — a mid-size reactor blows through it, the
+hook is killed, and a killed hook exits non-2 and silently never blocks: the expensive check was
+also the least likely to run); `${CHANGED_KOTLIN}${CHANGED_POM}` concatenated without a
+separator, so the "first changed file" could be `Foo.ktpom.xml`; and only the Maven root holding
+that first file was ever compiled, leaving a second reactor unchecked. Now: changed set =
+merge-base ∪ staged ∪ unstaged ∪ untracked, `clean` dropped, a per-root wall-clock budget that
+**reports** `NOT verified (advisory)` instead of dying quietly, `timeout: 300` in `hooks.json`,
+and every Maven root compiled. Backed by `tests/stop-verify.test.sh` (13 cases, wired into
+ci.yml) — verified meaningful by running it against the pre-fix hook, which fails 6 of them.
+
 ## Phase 14 — Loop engineering: heartbeat automations (drafted + shipped 2026-07-06 ☑)
 
 Goal: close the last of the five "loop engineering" components — **automations (the heartbeat)**:
