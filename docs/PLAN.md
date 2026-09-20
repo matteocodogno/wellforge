@@ -223,7 +223,7 @@ exception; Effect's removed generator adapter (`yield* _(x)`) in 14 places; `nod
 "React 18+" → React 19; and the `pulumi-gcp-ts` skill description was 1043 chars against a
 1024 limit (every skill now measured).
 
-☐ **Open — the dependency majors.** Verified against the registry 2026-09-20: zod ^3.24→4.6,
+☐ **Open — the dependency majors** (tracked: `specs/003-ts-stack-migration`). Verified against the registry 2026-09-20: zod ^3.24→4.6,
 @hono/zod-openapi ^0.18→1.6, Biome ^1.9→2.5, Vitest ^2.1→5.0, TypeScript ^5.7→7.0, Tailwind
 ^3.4→4.x. Deliberately NOT bumped here: each is a migration, not a pin edit (zod 4 moves
 `.uuid()`→`z.uuid()` and `error.errors`→`error.issues`; `@hono/zod-openapi` 1.x *requires*

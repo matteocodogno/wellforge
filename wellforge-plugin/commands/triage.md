@@ -1,5 +1,5 @@
 ---
-description: Spec-health heartbeat — surface features that are rotting (stale in-progress, unresolved drift, passed QE but never eval'd). Read-only digest, runnable manually or on a schedule.
+description: Spec-health heartbeat — surface features that are rotting (stale in-progress, unresolved drift, passed QE but never eval'd, parked before it started). Read-only digest, runnable manually or on a schedule.
 argument-hint: [--stale-days N] — staleness threshold for in-progress features (default 14)
 ---
 
@@ -27,7 +27,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json
 ```
 Read each run's `feature`, `verdicts` (qe / eval), and `drift_open` (unresolved drift events).
 
-## The three signals — deterministic rules
+## The four signals — deterministic rules
 
 Evaluate every feature; a feature can appear under more than one signal.
 
@@ -50,6 +50,19 @@ Evaluate every feature; a feature can appear under more than one signal.
    `status != done`. → "QE-green but unjudged — run `/wellforge:eval NNN-slug`". The eval is the
    bar, not the QE demo (rigor-tiers); a feature stuck here looks done but isn't.
 
+4. **Parked before it started.** `status: draft` or `approved`, no `tasks.md` (or a
+   `tasks.md` with zero boxes checked), AND the newest edit to `spec.md`/`plan.md` is older
+   than the stale-days threshold. → "approved Nd ago, never started — start it
+   (`/wellforge:tasks`), or retire it (`/wellforge:done <slug> --archive "<why>"`)".
+
+   This is the signal for **deliberately deferred work**, and it is the one that makes
+   deferral safe: a decision to not-do-something-yet is only honest if the not-doing stays
+   visible. Without it a spec written to record a deferral rots in exactly the way the
+   deferral was meant to avoid — signals 1–3 all require work to have started, so an
+   approved spec with no tasks is invisible to every one of them. A draft nobody approved
+   counts too: the most common form of this is a spec someone wrote, nobody rejected, and
+   nobody picked up.
+
 Also fold in the **lower-tier debt** signal `/wellforge:status` already computes (a `spike`/`mvp`
 feature older than ~30 days → promote or archive) — restate it here so the digest is the single
 "what needs attention" view. Don't re-derive the per-feature next step (that's `/wellforge:status`).
@@ -67,6 +80,9 @@ WellForge · spec-health triage        (stale-days: 14)
 
 ⚠ Unresolved drift
   005-pricing       production   plan drift never reconciled → route to architect, re-sync tasks
+
+💤 Parked before it started
+  003-ts-migration  production   draft 31d, no tasks → start it, or archive with a reason
 
 🧪 Passed QE, never eval'd
   004-billing       production   tasks 8/8, QE PASS, no eval → /wellforge:eval 004-billing
