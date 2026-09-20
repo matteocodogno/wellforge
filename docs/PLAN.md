@@ -601,6 +601,21 @@ a human running the command by hand. That cut is also the right moment to answer
 this phase deliberately left open: **is the dev database reachable from a worktree at all?**
 The skill forbids it by default until a project says otherwise.
 
+**Follow-up fix** (plugin `2.27.6`, 2026-09-20): the integration recipe did not run. Step 3
+said `git rebase <feature-branch> <worktree-branch>` from the main tree, and git refuses that
+outright — `fatal: '<branch>' is already used by worktree at '<path>'`, exit 128 — because the
+branch is checked out in the worktree. Reproduced in a scratch repo, then fixed and re-run
+end to end on a two-track batch: the rebase belongs **inside** the worktree
+(`git -C <worktree-path> rebase <feature-branch>`), after which `merge --ff-only` from the
+main tree works fine while the worktree still exists. Consequence: integration needs the
+worktree **path**, not just its branch, so step 2 now asks the agent for `WORKTREE-PATH:` and
+step 3 carries a `git worktree list --porcelain` derivation as the fallback. The same section
+also contradicted itself — "never a merge commit" three lines above a parenthetical blessing a
+`--no-edit` merge-back — so that is replaced by what a refusal actually means: `fatal: Not
+possible to fast-forward` says the branch was not rebased onto the current tip, and the answer
+is to rebase again, never a flag that forces the merge through. The strongest evidence yet for
+this phase's own honest status below: a recipe nobody had executed.
+
 Honest status: prompt-authored, not yet exercised through a real parallel batch — same caveat
 Phase 13 carried, and the reason this phase exists. Validation is the next pilot batch, which is
 also the only thing that can tell us whether the preflight's sequential fallback fires too often

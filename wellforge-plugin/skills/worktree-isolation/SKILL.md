@@ -163,24 +163,48 @@ merge check remains the backstop for overlap the `touch:` lists failed to declar
    guaranteed conflict); *stay inside your worktree — the allowances for this batch are `<the
    preflight lines>`, and anything outside them is an environment fault to report, not to work
    around*; and *end your report with `WORKTREE-BRANCH: <git branch --show-current>` and
-   `COMMITS: <n>`*. The dispatch result usually also surfaces the agent's worktree branch in its
-   metadata; the self-reported line is the portable fallback — use whichever you get.
+   `COMMITS: <n>`, and `WORKTREE-PATH: <git rev-parse --show-toplevel>`*. The dispatch result
+   usually also surfaces the agent's worktree branch and path in its metadata; the self-reported
+   lines are the portable fallback — use whichever you get. **The path is not optional**:
+   integration (step 3) rebases inside the worktree, which git will not let you do from the
+   main tree.
 3. **Integrate — rebase + fast-forward, never a merge commit.** WellForge repos keep a **linear
    history** (`gates/README.md` → "Linear history gate"), so integrate each branch into the feature
    branch one at a time, in a deterministic order:
 
    ```bash
-   git rebase <feature-branch> <worktree-branch>   # replay the task's commits on top
+   # 1. Rebase INSIDE the worktree. Running `git rebase <feature> <wt-branch>` from the main
+   #    tree fails — the branch is checked out in the worktree, and git refuses:
+   #      fatal: '<wt-branch>' is already used by worktree at '<path>'
+   git -C <worktree-path> rebase <feature-branch>
+
+   # 2. Fast-forward the feature branch from the main tree. Safe while the worktree still
+   #    exists: this advances <feature-branch>, which is not the branch checked out there.
    git switch <feature-branch>
    git merge --ff-only <worktree-branch>           # pointer move — no merge commit
    ```
 
-   `git merge --no-ff` is **forbidden**: the repo sets `merge.ff = only`, a `pre-merge-commit` hook
-   refuses merge commits, and the `linear-history` CI gate fails the PR. The task's own
-   `feat(<scope>): … (T<n>, specs/NNN)` commits carry the history — no integration commit is
-   needed, and none may be created. (Merge-back that *does* need a message must use git's default
-   via `--no-edit`; the Conventional-Commits `commit-msg` hook rejects a hand-written merge
-   subject.)
+   **You need the worktree's PATH, not just its branch.** Take it from the agent's
+   `WORKTREE-PATH:` line (step 2) or derive it:
+
+   ```bash
+   git worktree list --porcelain \
+     | awk -v b="refs/heads/<worktree-branch>" '/^worktree /{p=$2} $0=="branch "b{print p}'
+   ```
+
+   If the worktree is already gone (pruned early), the rebase can run in the main tree —
+   `git rebase <feature-branch> <worktree-branch>` only fails while the branch is checked out
+   somewhere. Integrate first, prune after (step 5); that order also keeps the agent's
+   environment available if the rebase conflicts.
+
+   **`--ff-only` refusing is information, not an obstacle.** `fatal: Not possible to
+   fast-forward` means the branch was never rebased onto the *current* tip of
+   `<feature-branch>` — usually because an earlier track integrated meanwhile. Rebase it again
+   in its worktree and retry. Do **not** reach for `--no-ff`, `--no-edit`, or any other flag
+   that gets the merge through: that is exactly the merge commit the repo forbids
+   (`merge.ff = only`, the `pre-merge-commit` hook, and the `linear-history` CI gate), and the
+   refusal is what protects it. The task's own `feat(<scope>): … (T<n>, specs/NNN)` commits
+   carry the history — no integration commit is needed, and none may be created.
 4. **Reconcile the checkboxes centrally.** Once every track is integrated, check the boxes for all
    completed tasks in `tasks.md` in **one** commit on the feature branch.
 5. **Prune.** Remove the merged worktrees and their branches (`git worktree remove`,
@@ -191,8 +215,9 @@ merge check remains the backstop for overlap the `touch:` lists failed to declar
 ### Collisions
 
 A conflict during step 3 is a **collision**, not a routine merge: two tasks the DAG called
-independent touched the same file, so they were never independent. Abort the rebase
-(`git rebase --abort`), **surface it like drift** — name the two tasks and the colliding files —
+independent touched the same file, so they were never independent. Abort the rebase **in the
+worktree where it is running** (`git -C <worktree-path> rebase --abort`), **surface it like
+drift** — name the two tasks and the colliding files —
 and resolve by adding the missing edge (`/wellforge:tasks` re-sync) and re-running the later task
 in the now-integrated tree. Never auto-resolve code conflicts silently. Record it in
 `collision_events` ([[observability]]).
