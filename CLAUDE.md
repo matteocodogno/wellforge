@@ -81,7 +81,7 @@ wellforge/
 └── scripts/fleet-status.sh   # org-wide table: project template versions vs latest tag
 ```
 
-## Current state (2026-06)
+## Current state (2026-09)
 
 - **All 6 pillars built** (Phases 0–6 ☑ — per-phase detail and honest deviations in
   `docs/PLAN.md`). Lifecycle E2E-tested: scaffold v0.1.0 → template change → `copier
@@ -90,7 +90,9 @@ wellforge/
   across plugin, gates and templates.
 - Latest tags: `v0.9.0` (template series, PEP440 — what copier resolves), `gates-v11` (gate
   workflow pin series — separate, invisible to copier); plugin `2.27.0`. A self-CI workflow
-  (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets.
+  (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets;
+  it runs on `origin` (`github.com/matteocodogno/wellforge`, public) and has been green on
+  `main` since 2026-08-17.
   The two series move independently: a `vX.Y.Z` release does NOT carry a `gates_ref` bump to
   existing projects (recorded answer + `--skip-answered`) — `/wellforge:upgrade` bumps it as
   an explicit, raise-only step. Read `docs/VERSIONING.md` before cutting any release: it
@@ -100,8 +102,14 @@ wellforge/
   the `worktree-isolation` skill, environment faults, `touch:`-overlap edges, ADR failure
   shapes (plugin `2.26.0`). Its template half — per-worktree test databases and a dev-database
   guard in the presets — is deliberately deferred to its own `vX.Y.Z` cut.
-- **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated
-  project, CI-green on GitHub (repo has no remote yet), threshold calibration, v1.0.0 cut.
+- **Phase 17** (`docs/PLAN.md`) adds the reflexive pattern the plugin lacked: the
+  `self-critique` skill — one bounded pass over your own artifact before the gate that
+  follows, checklist-driven, never a loop, never self-approving, and explicitly not evidence
+  the evaluator may credit (plugin `2.27.0`).
+- **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
+  and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
+  is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),
+  threshold calibration, v1.0.0 cut.
 
 ## Conventions
 
