@@ -163,4 +163,9 @@ wellforge/
   CI gates (`commit-lint.yml`, `linear-history.yml` — called at *every* rigor tier), and branch
   protection (`required_linear_history`, `allow_merge_commit=false`). Run
   `./scripts/setup-git-policy.sh` once per clone (generated projects: `mise run git-policy`).
+- **Architecture decisions live in `docs/adr/`, indexed one line each in `AGENTS.md`.** The
+  `adr-writer` agent appends that line itself. Read the index before changing something an
+  ADR constrains; read the ADR before overturning it. (In generated projects `CLAUDE.md`
+  imports `AGENTS.md`; here they sit side by side — this file stays the authority for
+  conventions, `AGENTS.md` is the decision log.)
 - All text/docs in English; this is internal WellForge tooling.
