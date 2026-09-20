@@ -100,8 +100,10 @@ If the project has run traces, append a short **Runs** section from the report s
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json [--feature <slug>]
 ```
 
-Per run it returns `command`, `result`, `agents`, `verdicts`, `input_tokens`,
-`output_tokens`, `est_cost_usd`, `drift_open`, `terse`. Render each run as: the agent
+It returns `{"runs": [...], "unattributed_events": N, "cost_estimated": bool}`; each entry
+in `runs` has `command`, `result`, `agents`, `verdicts`, `input_tokens`, `output_tokens`,
+`est_cost_usd`, `drift_open`, `terse`. When `cost_estimated` is false the pricing table
+could not be read — show tokens without a cost rather than a zero. Render each run as: the agent
 trajectory (`a → b → c`), the verdicts, and any open drift. **These are exact.**
 
 **Terse savings.** When a run's JSON has `terse: true` AND it also

@@ -129,6 +129,10 @@ producer's).
 
 ## Consumers
 
+- **`--json` envelope**: `{"runs": [...], "unattributed_events": N, "cost_estimated": bool}`.
+  It is an object, not a bare list, because the two honesty signals have to travel with the
+  data: how many token events could not be attributed to one run, and whether costs were
+  priced at all. Consumers read `runs`.
 - **`run-report.py`** (`${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py`) — summarizes
   `.forge/runs/`: per run the agents/verdicts/drift, and tokens × `config/model-pricing.yml`
   → estimated cost (events joined by the run's `[started, finished]` window).

@@ -25,7 +25,10 @@ From `.forge/runs/` (if present), via the report script:
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json
 ```
-Read each run's `feature`, `verdicts` (qe / eval), and `drift_open` (unresolved drift events).
+It returns `{"runs": [...], "unattributed_events": N, "cost_estimated": bool}`. Read each
+run in `runs` for `feature`, `verdicts` (qe / eval) and `drift_open` (unresolved drift
+events). A non-zero `unattributed_events` means some token events could not be tied to a
+single run — mention it once in the digest footer rather than per feature.
 
 ## The four signals — deterministic rules
 

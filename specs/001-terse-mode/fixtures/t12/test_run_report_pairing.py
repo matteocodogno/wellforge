@@ -86,7 +86,17 @@ def main():
         print(proc.stdout, file=sys.stderr)
         return 1
 
-    by_id = {entry.get("run_id"): entry for entry in report}
+    # --json returns an OBJECT since the cost-attribution fix (2026-09-20):
+    #   {"runs": [...], "unattributed_events": N, "cost_estimated": bool}
+    # The envelope carries the honesty signals that a bare list had nowhere to put.
+    check("--json returns the documented envelope", isinstance(report, dict) and "runs" in report)
+    if not isinstance(report, dict) or "runs" not in report:
+        print("FATAL: --json shape is not {runs: [...]} — contract changed", file=sys.stderr)
+        return 1
+    for key in ("unattributed_events", "cost_estimated"):
+        check(f"envelope carries `{key}`", key in report)
+
+    by_id = {entry.get("run_id"): entry for entry in report["runs"]}
 
     check("report contains control-run entry", CONTROL_RUN_ID in by_id)
     check("report contains terse-run entry", TERSE_RUN_ID in by_id)
