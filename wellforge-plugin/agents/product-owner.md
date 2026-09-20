@@ -36,6 +36,7 @@ Write `specs/NNN-slug/spec.md` (next sequential NNN, short kebab-case slug):
 id: NNN
 slug: <slug>
 status: draft
+rigor: <production | mvp>      # the tier the caller stated; production when unstated
 created: <today>
 ---
 
@@ -56,6 +57,14 @@ As a <role>, I want <capability>, so that <benefit>.
 ## Open questions
 - [ ] <question> — owner: <who>
 ```
+
+**`rigor:` is yours to write and nobody else's.** The caller states the tier when it spawns
+you (`/wellforge:orchestrate --mode mvp` says so explicitly); write that value. With no tier
+stated, write `production` — the safe default, and the one every downstream gate assumes.
+Never omit the field: `/wellforge:tasks` and `/wellforge:implement` read it to decide which
+gate applies, and a missing tier silently becomes `production`, which is right by accident
+rather than by record. (A `spike` never reaches you — that tier writes a `brief.md` and runs
+no agents.)
 
 Quality bar:
 - Every AC must be objectively verifiable — if a QE couldn't turn it into a test without

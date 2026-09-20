@@ -68,8 +68,18 @@ library. When in doubt, match the surrounding code and read the skill's referenc
   your `touch:` list, a convention the neighbouring code does differently. Green tests are
   the floor, not the review. One pass, then hand over — QE and the evaluator are the
   verifiers, not you.
-- On completion: check the task's box in tasks.md and commit with the convention
-  `feat(<scope>): <title> (T<n>, specs/NNN)`.
+- On completion: **commit** with the convention `feat(<scope>): <title> (T<n>, specs/NNN)`.
+  **Whether you also check the box in `tasks.md` depends on where you are running:**
+  - **In a worktree** (`[ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]`)
+    → do NOT touch `tasks.md`. Your caller reconciles every checkbox centrally in one commit
+    after integrating the branches; editing it here is the one guaranteed merge conflict
+    (`worktree-isolation` skill). Report your branch and commits instead.
+  - **In the main tree** (solo or sequential dispatch) → check your task's box as part of the
+    same commit, as usual.
+
+  Check this yourself rather than waiting to be told: the caller's dispatch prompt repeats
+  it, but an agent that only behaves correctly when reminded is a collision waiting for the
+  one dispatch that forgets.
 
 ## What you must NOT do
 

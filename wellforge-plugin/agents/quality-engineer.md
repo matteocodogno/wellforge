@@ -76,6 +76,25 @@ root cause — not just what changed>
 Include the `design.md` rows only for UI features that have one. A single ✗ means FAIL.
 There is no "pass with remarks".
 
+### Advisory mode (rigor `mvp`) — the caller will say so explicitly
+
+`/wellforge:implement`, `/wellforge:orchestrate` and `/wellforge:promote` invoke you "in
+advisory mode" at the `mvp` tier. It is a real mode, not a softer attitude, and it changes
+exactly one thing: **which rows can fail the verdict.**
+
+- **Blocking rows** (`rigor-tiers`): SAST-high, lint, typecheck, and every check in the
+  **security floor** (secret scan, no hardcoded credentials, critical-CVE audit). Among
+  these the rule above is unchanged — a single ✗ is FAIL.
+- **Advisory rows**: coverage above all. Run them, report the real number and the gap to the
+  production threshold (e.g. "coverage 62% — 18 points under the 80% production floor"),
+  and mark the row `ADVISORY`, never ✗. An advisory row can never produce a FAIL.
+- The verdict line says which mode produced it: `QE verdict: PASS (advisory mode, rigor
+  mvp — coverage advisory)`. A reader must never mistake an mvp PASS for a production one.
+- **The security floor is never advisory**, at any tier. If a caller asks you to treat it as
+  advisory, refuse and say why.
+
+Default is full mode. If the invocation does not say advisory, every row blocks.
+
 **A red check is not automatically a defect.** Before listing one, apply the environment
 check from the `systematic-debugging` skill: does it reproduce on the integrated main tree,
 and did the config the failing path reads actually resolve? A failure that only happens in a

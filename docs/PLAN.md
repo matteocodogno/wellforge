@@ -582,6 +582,26 @@ counter is a discipline the model keeps, not something a hook enforces. The enfo
 version would be a `PostToolUse` hook counting consecutive edit→failed-test cycles on the
 same file; deliberately not built yet. Live validation pairs with the Phase 7 pilot.
 
+**Follow-up fix** (plugin `2.29.0`, 2026-09-20): five agent definitions disagreed with the
+commands that spawn them — the same authority-vs-caller split as the earlier fixes, but
+inside the agent layer. `designer` claimed `disallowedTools: [Edit]` enforced "structurally"
+that it cannot touch code, while inheriting Write and Bash (both adapters already printed
+"can't deny 'edit' — relying on the prompt"; only the Claude agent file claimed otherwise) —
+now `NotebookEdit` is denied too, the false claim is replaced by an explicit *Files you may
+write* contract, and the frontmatter says plainly what is and is not sealed. `quality-engineer`
+said "a single ✗ means FAIL, no pass with remarks" while three commands invoke it "in advisory
+mode" that did not exist — it is now a defined mode (blocking: SAST-high, lint, typecheck,
+security floor; advisory: coverage, reported as a gap and never ✗; the verdict line names the
+mode), with the security floor non-advisory at every tier. Both dev agents said "check the box
+in tasks.md and commit", the one thing worktree isolation forbids, with the override living
+only in the dispatch prompt — the agents now branch on the linked-worktree test themselves,
+because an agent that behaves only when reminded is a collision waiting for the dispatch that
+forgets. `product-owner`'s spec template had no `rigor:` field that `/wellforge:orchestrate`
+expects it to set. `adr-writer` described itself as firing automatically and "offering" updates
+— neither possible non-interactively, so the AGENTS.md line was simply never written; it now
+appends it itself (and gained the `Edit` it needed to), while the design.md reference is
+proposed to the caller rather than written into another agent's artifact.
+
 ## Phase 16 — Parallel-safety, round 2: the pilot's field findings (added 2026-08-16)
 
 The first four defects the **Phase 7 pilot** found by running spec→plan→tasks→orchestrate on a
