@@ -13,6 +13,9 @@ Checks:
   4. plugin.json's version == the version CLAUDE.md quotes
   5. every skill description is within the 1024-char limit the loader enforces
   6. cross-skill links are relative markdown links that resolve, not inert [[wiki-links]]
+  7. the status/rigor enums in config/spec-frontmatter.schema.json match the spec-driven
+     and rigor-tiers skills — the skills stay the human-readable authority, the schema is
+     the machine-readable mirror, and a mirror that drifts is worse than no mirror
 
 Run: wellforge-plugin/scripts/check-docs.py   (needs pyyaml)
 """
@@ -71,6 +74,36 @@ for p in glob.glob(f"{PLUGIN}/**/*.md", recursive=True):
         resolved = os.path.normpath(os.path.join(os.path.dirname(p), target))
         if not os.path.exists(resolved):
             fail.append(f"{os.path.relpath(p, ROOT)}: link -> {target} resolves to nothing")
+
+# ── 7. schema mirrors the skills ────────────────────────────────────────────────
+# The skill is the authority; the schema must say the same thing. Edited apart, the machine
+# would accept a status the documentation forbids (or refuse one it blesses), and every
+# consumer of forge-state.py would inherit the discrepancy silently.
+schema_path = f"{PLUGIN}/config/spec-frontmatter.schema.json"
+if os.path.exists(schema_path):
+    schema = json.load(open(schema_path))
+    sd = open(f"{PLUGIN}/skills/spec-driven/SKILL.md").read()
+    rt = open(f"{PLUGIN}/skills/rigor-tiers/SKILL.md").read()
+
+    statuses = schema["$defs"]["status"]["enum"]
+    # The lifecycle diagram in spec-driven is the source: every status must appear in it.
+    # Pick the fenced block BY CONTENT — the first fence in the file is not the diagram,
+    # and an index-based grab silently checks the wrong text.
+    fences = sd.split("```")[1::2]
+    diagram = next((f for f in fences if "draft" in f and "in-progress" in f), sd)
+    for s in statuses:
+        if s not in diagram:
+            fail.append(f"schema status `{s}` is absent from the spec-driven lifecycle diagram")
+    for s in ("draft", "approved", "in-progress", "done", "superseded", "archived"):
+        if s not in statuses:
+            fail.append(f"spec-driven documents status `{s}` but the schema's enum omits it")
+
+    tiers = schema["$defs"]["rigor"]["enum"]
+    for t in ("spike", "mvp", "production"):
+        if t not in tiers:
+            fail.append(f"rigor-tiers documents tier `{t}` but the schema's enum omits it")
+        if f"`{t}`" not in rt:
+            fail.append(f"schema tier `{t}` is not documented in the rigor-tiers skill")
 
 if fail:
     print("✗ docs drift:")

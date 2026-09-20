@@ -32,11 +32,30 @@ human decides. A heartbeat that "fixes" things silently is a bug, not a feature.
 | **Gate** (14a) | deterministic | GitHub Actions `on: schedule` | CVEs newly disclosed vs merged deps, SAST-rule drift, coverage |
 | **Template-drift** (14b) | deterministic | GitHub Actions `on: schedule` | project N `vX.Y.Z` releases behind its template → `/wellforge:upgrade` |
 | **Fleet** (14b) | agentic | Claude Code routine (scheduled) | org-wide: which projects drifted / have failing gates → one rolling report |
-| **Spec-health** (14b) | agentic | Claude Code routine + manual `/wellforge:triage` | stale `in-progress`, unresolved drift, passed-QE-never-eval'd |
+| **Spec-health** (14b) | **deterministic discovery + agentic digest** | `forge-state.py` then a Claude Code routine / manual `/wellforge:triage` | stale `in-progress`, unresolved drift, passed-QE-never-eval'd, parked-before-started, invalid frontmatter |
 
 Deterministic heartbeats are **GitHub Actions** — cheap, no tokens, no auth surprises; they
 reuse the reusable gate workflows (`gates-v*`) rather than duplicating logic. Agentic heartbeats
 need **judgment** (triage, summarize, prioritize) so they run as scheduled Claude Code agents.
+
+**The split runs through a heartbeat, not just between them.** Spec-health used to be listed
+as wholly agentic, which meant the model re-read every spec's frontmatter, recounted every
+checkbox and re-joined every verdict on each run — discovery work, priced as judgment. It is
+now **`forge-state.py` + a fixed rendering**: the script produces the `forge-state/v1`
+envelope (statuses, tiers, task counts, drift, verdicts, done gates, schema violations), the
+signal rules are filters over that envelope, and the model is needed only for the **digest
+prose** — what to say about the findings and in what order a human should care.
+
+Three things follow, and they are the reason to prefer this shape wherever a heartbeat can
+take it:
+
+- **It is testable.** `scripts/tests/forge-state.test.py` pins every status, tier, drift
+  case and verdict kind. A prompt that recounts checkboxes cannot be tested at all.
+- **It catches what prose cannot.** `status: doen` is a typo a model reads as
+  approximately-`done` and a schema rejects outright. That became a triage signal only once
+  discovery was deterministic.
+- **It is stable across runs.** Same inputs, same envelope — so a digest that changes means
+  the repository changed, not that the model read it differently this morning.
 
 ## Rules every heartbeat follows
 

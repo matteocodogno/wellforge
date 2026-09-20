@@ -74,16 +74,39 @@ Everything below (the gate, the tiers) applies only WITHOUT this flag.
 
 ## Step 1 — Resolve the feature + tier
 
-Resolve the feature from the argument (number / slug / full name), or infer the one ready to
-close — an `in-progress` spec with all tasks checked; if ambiguous, list and ask. State which
-feature you resolved. Read its `spec.md`/`brief.md`, `tasks.md`, and `eval-report.md`. Resolve
-the **rigor tier** (feature `rigor:` frontmatter > project default in `.forge/manifest.json` /
-`.forge/adoption.json` > `production`).
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/forge-state.py --json [--feature <token>]
+```
+
+Resolve the feature from the argument (number / slug / full name) against `features[].slug`,
+or infer the one ready to close — `status == in-progress` with `tasks.checked ==
+tasks.total`; if ambiguous, list and ask. State which feature you resolved, its `rigor` and
+its `rigor_from` (the tier and where it came from, per the rigor-tiers precedence — the
+script applies it, you report it).
+
+Do not open the spec directory to work any of this out. The gate below is a field in this
+envelope, computed the same way for `/wellforge:status`, `/wellforge:triage` and
+`/wellforge:promote` — four commands agreeing because they read one answer, rather than
+four implementations that agree until one of them drifts.
 
 ## Step 2 — The done gate (tier-aware) — REFUSE if any condition is unmet
 
-Check the conditions for the resolved tier. On any miss: STOP, name the exact missing
-condition and the command that fixes it, and do NOT set done.
+**The gate is `done_gate.passes` for this feature.** Do not re-check its parts.
+
+- `passes == true` → proceed to Step 3.
+- `passes == false` → **STOP.** Print every entry of `done_gate.failing` **verbatim**, each
+  on its own line, then the command that fixes the first one. They are written to be read
+  by a human ("3 of 12 tasks unchecked", "QE verdict is FAIL (needs PASS)", "drift: newer
+  than tasks.md: spec.md — re-sync with /wellforge:tasks"); paraphrasing them loses the
+  numbers, which are the only part that tells someone how far from done they are.
+- `passes == null` → the tier is `spike`, whose gate is prose in `brief.md` and not
+  machine-checkable. Read `## Findings` yourself and apply the spike rule below.
+
+Also surface any `problems[]` for the feature before closing: a spec whose frontmatter does
+not validate should not acquire a `done` on top of a `status: doen`.
+
+The conditions `done_gate` encodes, for reference — this is documentation of what the
+script checks, not a second implementation to run:
 
 - **`production`**
   1. every task in `tasks.md` checked (no `- [ ]` remaining)
@@ -94,8 +117,9 @@ condition and the command that fixes it, and do NOT set done.
   1. every task checked
   2. QE-light passed (SAST-high / lint / typecheck / security-floor green; coverage is advisory)
   — no eval; mvp's bar is QE, not the LM-judge
-- **`spike`** — a spike closes through its `brief.md`, not tasks/QE/eval: the condition is
-  that `## Findings` is filled and the spike's question answered. (Step 3 does the write, on
+- **`spike`** — `done_gate.passes` is `null` here by design: a spike closes through its
+  `brief.md`, not tasks/QE/eval, and no script can read whether a finding answers a
+  question. The condition is that `## Findings` is filled and the spike's question answered. (Step 3 does the write, on
   the brief rather than a spec.) If it proved out and should become real, suggest
   `/wellforge:promote` alongside the close.
 

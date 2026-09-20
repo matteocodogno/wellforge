@@ -8,56 +8,80 @@ run. Read-only — never modifies anything. Conventions: the **spec-driven** ski
 
 Target: $ARGUMENTS  (a feature token → detail view for that one; empty → all features)
 
-## Gather (read-only)
+## Gather — one command, no re-derivation
 
-For every `specs/NNN-slug/` directory (or just the named one):
-- **Rigor tier** — `rigor:` from `spec.md` or `brief.md` frontmatter (default `production`
-  if absent). A `brief.md` with no `spec.md` is a **spike** feature (load the **rigor-tiers**
-  skill). Note the feature's `created:`/`status:` for the staleness check below.
-- `spec.md` frontmatter `status` (draft / approved / in-progress / done) and any
-  unchecked `## Open questions`.
-- `plan.md` present? its frontmatter `status` (draft / approved).
-- `design.md` present? (informational only — not a gate.)
-- `tasks.md` present? count `- [x]` vs total `- [ ]`/`- [x]` task lines; note the first
-  unchecked task whose `deps:` are all checked ("next ready").
-- `eval-report.md` present? its frontmatter `verdict` (PASS / FAIL) and `score`.
-- **The latest QE verdict** — it is NOT in the spec directory. QE writes no artifact; its
-  verdict survives only in the run traces, so read it the way `/wellforge:triage` does:
-  `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json --feature <slug>` and take
-  `verdicts.qe` from that feature's most recent run that has one (see the Observability
-  section below — same call, don't run it twice). Record **PASS / FAIL / unknown**;
-  `unknown` when `.forge/runs/` is absent, the tool can't run, or no run carries a qe
-  verdict. Without this the `mvp` row below cannot be decided, which is the gap this
-  bullet closes — the table asked for something the gather step never collected.
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/forge-state.py --json [--feature <slug>]
+```
+
+That is the whole gather step. `forge-state.py` walks `specs/`, validates every frontmatter
+against `config/spec-frontmatter.schema.json`, counts tasks, computes drift from git history,
+joins the latest QE and eval verdicts out of `.forge/runs/`, resolves each feature's tier by
+the precedence rule, and evaluates the tier's done gate. **Do not re-derive any of it.**
+Reading six files per feature and counting checkboxes is work a loop does faster, more
+cheaply and — unlike a model — identically every time. It also rejects `status: doen`, which
+a model reads as "done-ish".
+
+The envelope (`forge-state/v1`):
+
+```jsonc
+{ "version": "forge-state/v1", "generated": "...", "runs_available": true,
+  "features": [{
+    "slug": "001-x", "kind": "feature|spike", "status": "in-progress",
+    "rigor": "production", "rigor_from": "frontmatter|.forge/manifest.json|default",
+    "terminal": false,
+    "artifacts": { "spec": true, "brief": false, "plan": true, "plan_status": "approved",
+                   "design": false, "tasks": true, "eval_report": false },
+    "tasks":    { "total": 12, "checked": 9 },
+    "drift":    { "drifted": true, "reason": "newer than tasks.md: spec.md", "sources": [...] },
+    "verdicts": { "qe":   { "verdict": "PASS", "at": "...", "run_id": "..." },
+                  "eval": { "verdict": null, "at": null, "run_id": null, "score": null } },
+    "done_gate":{ "tier": "production", "passes": false, "failing": ["3 of 12 tasks unchecked"] },
+    "superseded_by": null, "archive_reason": null, "created": "...", "last_activity": "...",
+    "problems": [] }] }
+```
+
+Two values that are **not** `false`: `verdicts.*.verdict: null` means *no verdict on record*
+— never a FAIL — and `done_gate.passes: null` means the gate is not machine-checkable (the
+spike tier closes on prose in `brief.md`). Render them as "unknown" and "n/a", not as
+failures. When `runs_available` is false, say verdicts are unavailable rather than absent.
+
+Anything the envelope does not carry is still yours: the feature's *next ready task* (the
+first unchecked task whose `deps:` are all checked) needs `tasks.md`, so read it only for a
+single-feature detail view, and only then.
 
 ## Phase + next step — deterministic table
 
-Evaluate top-down; first matching row wins. `NNN-slug` below is the feature's folder.
+Evaluate top-down; first matching row wins. Every condition below reads a field the
+envelope already carries — the column names the field, so this table documents what
+`forge-state.py` computed rather than telling you to compute it again. `NNN-slug` is
+`feature.slug`.
 
-| Condition | Phase | Next step |
+| Condition (envelope field) | Phase | Next step |
 |---|---|---|
-| `brief.md`, no `spec.md`, status ≠ `done` | **spike** | `/wellforge:spike NNN-slug` (build) |
-| `brief.md`, no `spec.md`, status `done` | **spike ✓** | graduate: `/wellforge:promote NNN-slug --to mvp`, or stop here: `/wellforge:done NNN-slug --archive "<why>"` |
-| no `spec.md` (and no `brief.md`) | (not a feature) | skip |
-| spec `draft` | **spec** | review & approve the spec — refine with `/wellforge:spec NNN-slug` |
-| spec `approved`, no `plan.md` (rigor `production`) | **plan** | `/wellforge:plan NNN-slug` |
-| spec `approved`, no `tasks.md` (rigor `mvp`) | **tasks** | `/wellforge:tasks NNN-slug` |
-| `plan.md` `draft` | **plan** | review & approve the plan |
-| plan `approved`, no `tasks.md` | **tasks** | `/wellforge:tasks NNN-slug` |
-| `tasks.md`, 0 checked | **implement** | `/wellforge:implement NNN-slug next` |
-| `tasks.md`, some unchecked | **implement** | `/wellforge:implement NNN-slug next` |
-| all tasks checked, rigor `mvp`, QE **PASS** | **verify** | `/wellforge:done NNN-slug` (mvp — no eval); or `/wellforge:promote NNN-slug --to production` |
-| all tasks checked, rigor `mvp`, QE **FAIL** | **implement** | fix the defects, then re-run QE: `/wellforge:implement NNN-slug <tasks>` |
-| all tasks checked, rigor `mvp`, QE **unknown** | **verify** | no QE verdict on record — run it: `/wellforge:implement NNN-slug` (its QE step), then `/wellforge:done NNN-slug`. Don't assume a missing verdict is a pass. |
-| all tasks checked, rigor `production`, no/stale `eval-report.md` | **eval** | `/wellforge:eval NNN-slug` (LM-judge scored verdict) |
-| `eval-report.md` `verdict: FAIL` | **eval** | fix the failing dimensions, then `/wellforge:eval NNN-slug` |
-| `eval-report.md` `verdict: PASS`, spec ≠ `done` | **verify** | `/wellforge:done NNN-slug` |
-| spec `done` | **done** | — complete |
-| spec `superseded` | **retired** | — replaced by `superseded_by:`; nothing to do (flag it only if that feature doesn't exist) |
-| spec `archived` | **retired** | — stopped on purpose (`archive_reason:`); nothing to do |
+| `kind == spike`, `status != done` | **spike** | `/wellforge:spike NNN-slug` (build) |
+| `kind == spike`, `status == done` | **spike ✓** | graduate: `/wellforge:promote NNN-slug --to mvp`, or stop here: `/wellforge:done NNN-slug --archive "<why>"` |
+| (not in `features[]` at all) | (not a feature) | the script skips these silently |
+| `status == draft` | **spec** | review & approve the spec — refine with `/wellforge:spec NNN-slug` |
+| `status == approved`, `!artifacts.plan`, `rigor == production` | **plan** | `/wellforge:plan NNN-slug` |
+| `status == approved`, `!artifacts.tasks`, `rigor == mvp` | **tasks** | `/wellforge:tasks NNN-slug` |
+| `artifacts.plan_status == draft` | **plan** | review & approve the plan |
+| `artifacts.plan_status == approved`, `!artifacts.tasks` | **tasks** | `/wellforge:tasks NNN-slug` |
+| `tasks.checked == 0 < tasks.total` | **implement** | `/wellforge:implement NNN-slug next` |
+| `0 < tasks.checked < tasks.total` | **implement** | `/wellforge:implement NNN-slug next` |
+| `tasks.checked == tasks.total`, `rigor == mvp`, `verdicts.qe.verdict == PASS` | **verify** | `/wellforge:done NNN-slug` (mvp — no eval); or `/wellforge:promote NNN-slug --to production` |
+| same, `verdicts.qe.verdict == FAIL` | **implement** | fix the defects, then re-run QE: `/wellforge:implement NNN-slug <tasks>` |
+| same, `verdicts.qe.verdict == null` | **verify** | no QE verdict on record — run it: `/wellforge:implement NNN-slug` (its QE step), then `/wellforge:done NNN-slug`. Don't assume a missing verdict is a pass. |
+| `tasks` complete, `rigor == production`, `!artifacts.eval_report` | **eval** | `/wellforge:eval NNN-slug` (LM-judge scored verdict) |
+| `verdicts.eval.verdict == FAIL` | **eval** | fix the failing dimensions, then `/wellforge:eval NNN-slug` |
+| `verdicts.eval.verdict == PASS`, `status != done` | **verify** | `/wellforge:done NNN-slug` |
+| `status == done` | **done** | — complete |
+| `status == superseded` | **retired** | — replaced by `superseded_by:`; nothing to do (flag it only if that feature doesn't exist) |
+| `status == archived` | **retired** | — stopped on purpose (`archive_reason:`); nothing to do |
 
-If spec is `draft` with open questions, append "(N open questions block approval)".
-If `tasks.md` is older than `spec.md`/`plan.md` (drift), flag "⚠ tasks may be stale —
+Open questions are not in the envelope (they are prose) — read them from `spec.md` only for
+a single-feature detail view, and append "(N open questions block approval)".
+If `drift.drifted`, flag "⚠ tasks may be stale —
 re-run `/wellforge:tasks NNN-slug`" regardless of the row.
 
 **Staleness nag (lower tiers are debt).** For a feature at `rigor: spike` or `mvp` whose
@@ -93,6 +117,11 @@ End with a one-line summary: counts per phase (e.g. "1 done · 1 implementing ·
 · 1 drafting") so the overall project state is visible at a glance.
 
 ## Observability (when `.forge/runs/` exists)
+
+Two scripts, two questions — keep them apart. `forge-state.py` answers *what state is each
+feature in* (the section above); `run-report.py` answers *what happened in each run*:
+trajectory, tokens, cost, agent-reported drift. Neither subsumes the other, and merging them
+would put per-run cost into a per-feature envelope.
 
 If the project has run traces, append a short **Runs** section from the report script:
 

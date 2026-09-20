@@ -298,6 +298,10 @@ jobs:
       # its own — a wrong cost estimate still prints a number.
       - uses: astral-sh/setup-uv@v7
       - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/run-report.test.py
+      # forge-state is what status/triage/done/promote read instead of re-deriving feature
+      # state with the model. It is the one place that state is computed, so it is the one
+      # place it can regress — every status, tier, drift case and verdict kind is pinned.
+      - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/forge-state.test.py
 
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
   # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.

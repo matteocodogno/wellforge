@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wellforge.dev/schemas/spec-frontmatter.schema.json",
+  "title": "WellForge spec-directory frontmatter",
+  "description": "Machine-readable form of the frontmatter the spec-driven skill defines. The SKILL is the human-readable authority; this file must mirror it exactly. check-docs.py fails the build if the status/rigor enums here and in skills/spec-driven/SKILL.md diverge, so neither can be edited alone.",
+  "version": "forge-frontmatter/v1",
+
+  "$defs": {
+    "status": {
+      "description": "Spec lifecycle. Three terminal states: done (shipped and met its gate), superseded (another spec took the work over), archived (deliberately stopped, no successor). All three are written only by /wellforge:done.",
+      "enum": ["draft", "approved", "in-progress", "done", "superseded", "archived"]
+    },
+    "rigor": {
+      "description": "Rigor tier. Absent means production — the safe default every downstream gate assumes.",
+      "enum": ["spike", "mvp", "production"]
+    },
+    "gatedStatus": {
+      "description": "plan.md and design.md carry their own status, limited to these two.",
+      "enum": ["draft", "approved"]
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "ISO date. Written as an unquoted YAML date; the loader normalises it to a string."
+    },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "featureRef": {
+      "type": "string",
+      "pattern": "^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "A full NNN-slug feature directory name, as superseded_by must be."
+    }
+  },
+
+  "artifacts": {
+    "spec.md": {
+      "type": "object",
+      "required": ["id", "slug", "status"],
+      "properties": {
+        "id": { "type": ["string", "integer"], "description": "Sequential NNN; YAML may load 003 as an int." },
+        "slug": { "$ref": "#/$defs/slug" },
+        "status": { "$ref": "#/$defs/status" },
+        "rigor": { "$ref": "#/$defs/rigor" },
+        "created": { "$ref": "#/$defs/date" },
+        "approved": { "$ref": "#/$defs/date" },
+        "done": { "$ref": "#/$defs/date" },
+        "superseded": { "$ref": "#/$defs/date" },
+        "superseded_by": { "$ref": "#/$defs/featureRef" },
+        "archived": { "$ref": "#/$defs/date" },
+        "archive_reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "description": "superseded requires the pointer; the status exists to name the successor.",
+          "if": { "properties": { "status": { "const": "superseded" } }, "required": ["status"] },
+          "then": { "required": ["superseded_by"] }
+        },
+        {
+          "description": "archived requires a reason — without one it is indistinguishable from an abandoned spec.",
+          "if": { "properties": { "status": { "const": "archived" } }, "required": ["status"] },
+          "then": { "required": ["archive_reason"] }
+        },
+        {
+          "description": "done records the date it closed.",
+          "if": { "properties": { "status": { "const": "done" } }, "required": ["status"] },
+          "then": { "required": ["done"] }
+        }
+      ]
+    },
+
+    "brief.md": {
+      "description": "The spike tier's only artifact. Same identity fields as a spec; rigor is always spike.",
+      "type": "object",
+      "required": ["id", "slug", "status"],
+      "properties": {
+        "id": { "type": ["string", "integer"] },
+        "slug": { "$ref": "#/$defs/slug" },
+        "status": { "$ref": "#/$defs/status" },
+        "rigor": { "const": "spike" },
+        "created": { "$ref": "#/$defs/date" },
+        "done": { "$ref": "#/$defs/date" },
+        "archived": { "$ref": "#/$defs/date" },
+        "archive_reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+
+    "plan.md": {
+      "type": "object",
+      "required": ["spec", "status"],
+      "properties": {
+        "spec": { "type": ["string", "integer"] },
+        "status": { "$ref": "#/$defs/gatedStatus" }
+      },
+      "additionalProperties": true
+    },
+
+    "design.md": {
+      "type": "object",
+      "required": ["spec", "status"],
+      "properties": {
+        "spec": { "type": ["string", "integer"] },
+        "status": { "$ref": "#/$defs/gatedStatus" }
+      },
+      "additionalProperties": true
+    },
+
+    "tasks.md": {
+      "type": "object",
+      "required": ["spec"],
+      "properties": {
+        "spec": { "type": ["string", "integer"] },
+        "generated": { "$ref": "#/$defs/date" },
+        "synced": { "$ref": "#/$defs/date", "description": "Last re-sync against the spec. Stamped even when the re-sync changes nothing — that stamp is what clears the Stop hook's drift block." }
+      },
+      "additionalProperties": true
+    },
+
+    "eval-report.md": {
+      "type": "object",
+      "required": ["spec", "verdict"],
+      "properties": {
+        "spec": { "type": ["string", "integer"] },
+        "evaluated": { "$ref": "#/$defs/date" },
+        "rubric": { "type": "string" },
+        "score": { "type": ["number", "integer"], "minimum": 0, "maximum": 100 },
+        "verdict": { "enum": ["PASS", "FAIL"] }
+      },
+      "additionalProperties": true
+    }
+  }
+}

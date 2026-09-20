@@ -11,51 +11,62 @@ them).
 
 Argument: $ARGUMENTS  (`--stale-days N` overrides the in-progress staleness threshold; default 14)
 
-## Gather (read-only)
+## Gather — one command
 
-For every `specs/NNN-slug/` directory:
-- `spec.md` / `brief.md` frontmatter: `status`, `rigor` (default `production`), `created:`,
-  `approved:`, `done:`.
-- `tasks.md` present? checked vs total task lines.
-- `eval-report.md` present? its `verdict` (PASS / FAIL) and `score`.
-- The file mtimes of `spec.md` / `plan.md` / `tasks.md` (for the staleness clock — most recent
-  edit to any of them).
-
-From `.forge/runs/` (if present), via the report script:
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/forge-state.py --json
 ```
+
+One call, everything below. It returns the `forge-state/v1` envelope documented in
+`/wellforge:status`: per feature the `status`, `kind`, `rigor`, `tasks {total, checked}`,
+`drift {drifted, reason, sources}`, `verdicts {qe, eval}` joined from `.forge/runs/`,
+`done_gate`, `last_activity`, and `problems` (frontmatter that violates the schema).
+
+**Do not open a single spec file to compute a signal.** This command runs on a schedule; a
+heartbeat that re-reads six files per feature to recount what a script already counted is
+paying tokens for a loop. The **heartbeat** skill draws exactly this line — discovery
+deterministic, judgment agentic — and here the only judgment is the digest's prose.
+
+For unresolved drift the envelope's `drift` is *artifact staleness*; the **drift events**
+recorded by agents during a run are separate and still come from the run traces:
+
+```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json
 ```
-It returns `{"runs": [...], "unattributed_events": N, "cost_estimated": bool}`. Read each
-run in `runs` for `feature`, `verdicts` (qe / eval) and `drift_open` (unresolved drift
-events). A non-zero `unattributed_events` means some token events could not be tied to a
-single run — mention it once in the digest footer rather than per feature.
+
+Read `drift_open` per run from that. (forge-state answers "is tasks.md behind the spec";
+run-report answers "did an agent report drift and was it reconciled". Both are real, and
+they are not the same question.)
 
 ## The four signals — deterministic rules
 
 Evaluate every feature; a feature can appear under more than one signal.
 
-0. **Terminal statuses are skipped entirely.** `done`, `superseded` and `archived` are all
+Each signal below is a filter over `features[]`. The envelope field is named in brackets so
+the rule is checkable, not recalled.
+
+0. **Terminal statuses are skipped entirely** [`terminal == true`]. `done`, `superseded` and `archived` are all
    exits from the lifecycle (spec-driven skill): they will never move again, and reporting
    them as rot trains people to ignore the digest. Skip them in every signal below — with
    one exception: if a superseded spec's `superseded_by:` names a feature that does not
    exist, say so once under a **broken pointer** line. That is a real defect, not staleness.
 
-1. **Stale in-progress.** `status: in-progress` AND the most recent edit to `spec.md`/`plan.md`/
-   `tasks.md` is older than the stale-days threshold (default 14). → "idle Nd — pick it back up,
+1. **Stale in-progress** [`status == in-progress` AND `last_activity` older than the
+   threshold]. Default 14 days. → "idle Nd — pick it back up,
    park it, or retire it with `/wellforge:done <slug> --superseded-by <other>` if another spec
    took over". A long-lived in-progress is invisible debt.
 2. **Unresolved drift.** Any run trace for the feature has a `drift_events` entry with
    `resolved: false` (surfaced as `drift_open` by the report script). → "drift never reconciled —
    route to the owner (PO for spec, architect for plan), re-sync `/wellforge:tasks`". A spec the
    code silently worked around is the most dangerous rot.
-3. **Passed QE, never eval'd (production only).** `rigor: production` AND all tasks checked AND
-   the latest QE verdict is PASS AND (`eval-report.md` absent OR its `verdict` is not PASS) AND
-   `status != done`. → "QE-green but unjudged — run `/wellforge:eval NNN-slug`". The eval is the
+3. **Passed QE, never eval'd (production only)** [`rigor == production` AND
+   `tasks.checked == tasks.total` AND `verdicts.qe.verdict == PASS` AND
+   `verdicts.eval.verdict != PASS` AND `status != done`]. → "QE-green but unjudged — run `/wellforge:eval NNN-slug`". The eval is the
    bar, not the QE demo (rigor-tiers); a feature stuck here looks done but isn't.
 
-4. **Parked before it started.** `status: draft` or `approved`, no `tasks.md` (or a
-   `tasks.md` with zero boxes checked), AND the newest edit to `spec.md`/`plan.md` is older
-   than the stale-days threshold. → "approved Nd ago, never started — start it
+4. **Parked before it started** [`status` in (`draft`, `approved`) AND
+   (`!artifacts.tasks` OR `tasks.checked == 0`) AND `last_activity` older than the
+   threshold]. → "approved Nd ago, never started — start it
    (`/wellforge:tasks`), or retire it (`/wellforge:done <slug> --archive "<why>"`)".
 
    This is the signal for **deliberately deferred work**, and it is the one that makes
@@ -65,6 +76,13 @@ Evaluate every feature; a feature can appear under more than one signal.
    approved spec with no tasks is invisible to every one of them. A draft nobody approved
    counts too: the most common form of this is a spec someone wrote, nobody rejected, and
    nobody picked up.
+
+5. **Frontmatter that does not validate** [`problems` non-empty]. A `status: doen` is not a
+   status; a `superseded` with no `superseded_by` points nowhere. These used to be invisible
+   — the model read them as approximately-right — and now they are a line in the digest with
+   the schema violation quoted verbatim. This signal exists *because* discovery became
+   deterministic: a script can tell that a value is not in an enum, and a reader skimming
+   prose cannot.
 
 Also fold in the **lower-tier debt** signal `/wellforge:status` already computes (a `spike`/`mvp`
 feature older than ~30 days → promote or archive) — restate it here so the digest is the single

@@ -38,10 +38,26 @@ spawn is the deliverable.
 
 ## Pre-flight (all must pass)
 
+0. **Read the state once**, and take every fact below from it rather than from the files:
+
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/forge-state.py --json --feature <token>
+   ```
+
+   It gives the feature's current `rigor` (and `rigor_from`), `status`, `tasks`,
+   `verdicts.qe` / `verdicts.eval`, `artifacts` (which of plan/design/tasks/eval-report
+   exist — i.e. exactly the debt this promotion has to pay), `done_gate` and `problems`.
+   The `→ production` step below ends by calling `/wellforge:done`, which reads the same
+   envelope: the promotion and the close agree because they are looking at one answer.
+
+   Refuse on a non-empty `problems[]` — promoting a feature whose frontmatter does not
+   validate writes a higher tier on top of a broken record.
+
 1. `git status` clean — require commit/stash first. Promotion must be ONE reviewable,
    revertable commit (no exceptions).
-2. Compute the **debt** = the gap between current and target (which artifacts/gates/eval
-   the lower tier skipped — see the rigor-tiers levers table). One tier at a time: a
+2. Compute the **debt** = the gap between current and target. `artifacts` names it
+   concretely (no `plan` for an mvp feature going to production, no `eval_report`, and so
+   on); the rigor-tiers levers table says what each gap costs to close. One tier at a time: a
    `spike → production` jump runs `spike → mvp` then `mvp → production` in sequence.
 3. **Plan of record** — present exactly what will be done for this transition (the steps
    below that apply), and that it ends in one commit. Ask the user to confirm.

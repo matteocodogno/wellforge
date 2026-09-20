@@ -891,6 +891,41 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 20 — Deterministic feature state (added 2026-09-20)
+
+`/wellforge:status`, `:triage`, `:done` and `:promote` each had the model read every spec's
+frontmatter, count `tasks.md` checkboxes and call `run-report.py` for verdicts — **four
+re-derivations of one state**, on every heartbeat. Slow, priced as judgment though it is
+discovery, untestable, and unable to reject `status: doen` (which a model reads as
+approximately-`done`). The heartbeat skill already drew the line; this phase implements it.
+
+- ☑ **`config/spec-frontmatter.schema.json`** — machine-readable mirror of the spec-driven
+  skill's frontmatter for spec/brief/plan/design/tasks/eval-report, including the three
+  conditionals the lifecycle implies (`superseded` needs `superseded_by`, `archived` needs
+  `archive_reason`, `done` needs `done:`). The **skill stays the authority**; `check-docs.py`
+  fails if the status/rigor enums drift between them, so neither can be edited alone.
+- ☑ **`scripts/forge-state.py`** → the `forge-state/v1` envelope: per feature the status,
+  kind, tier (+ where it came from), artifacts, task counts, drift, QE/eval verdicts joined
+  from `.forge/runs/`, the tier's `done_gate {passes, failing}`, and `problems[]`. Run-trace
+  loading is imported from `run-report.py`, not duplicated. Drift uses **commit order**, not
+  commit dates — dates are second-granular, so two commits in the same second tie, and a tie
+  reads as "not drifted", which is the wrong way to be wrong.
+- ☑ The four commands now **render** that envelope. Their decision tables name the field each
+  row reads, so they document what the script computed instead of instructing a recompute;
+  `done`'s gate is `done_gate.passes` with `failing` printed verbatim on refusal.
+- ☑ Two deliberate nulls: `verdicts.*.verdict: null` is *no verdict on record*, never FAIL;
+  `done_gate.passes: null` is *not machine-checkable* (spike closes on prose).
+- ☑ `scripts/tests/forge-state.test.py` — 68 cases: every status, every tier and the
+  precedence, drift present/absent, five schema violations, a missing `.forge/runs/`, both
+  verdict kinds, the gate per tier, and the CLI end to end. Wired into ci.yml.
+- ☑ Triage gains a signal only determinism makes possible: **frontmatter that does not
+  validate**. The heartbeat skill now describes spec-health as "`forge-state.py` + a fixed
+  rendering", with the model needed only for the digest prose.
+
+`run-report.py` is untouched and still owns per-run questions (trajectory, tokens, cost,
+agent-reported drift events). Two scripts, two questions; merging them would put per-run
+cost into a per-feature envelope.
+
 ## Phase 19 — Remove the second scaffolding path (added 2026-09-20)
 
 `springboot-scaffold` hand-generated a whole Spring project from a 741-line `scaffold.sh`,

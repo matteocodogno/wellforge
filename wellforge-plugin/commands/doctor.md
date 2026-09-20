@@ -64,6 +64,18 @@ uv run --with pyyaml python <plugin>/scripts/check-routing.py --tool claude
 uv run --with pyyaml python <plugin>/scripts/check-docs.py
 ```
 
+**Feature state** — run `forge-state.py` against this project and report two things: that it
+runs at all (it is what `/wellforge:status`, `:triage`, `:done` and `:promote` all read, so a
+failure here breaks four commands at once), and the count of `problems[]` across features.
+
+```bash
+python3 <plugin>/scripts/forge-state.py --json | python3 -c "import json,sys; e=json.load(sys.stdin); print(len(e['features']), 'features,', sum(len(f['problems']) for f in e['features']), 'schema problems')"
+```
+
+A non-zero problem count is a **FAIL** with the offending frontmatter quoted: it means a
+spec's `status:` or `rigor:` is not a value the lifecycle defines, which every consumer of
+that state will then mis-read.
+
 **Project shape** — in the current project: is it a git repo; is there a `specs/`; a
 `.forge/manifest.json` (scaffolded — report template + version) or `.forge/adoption.json`
 (adopted); what rigor tier is the project default; does `.mise.local.toml` exist where the

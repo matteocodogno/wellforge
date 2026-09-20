@@ -84,6 +84,8 @@ Inside Claude Code:
 | `hooks/scripts/stop-verify.sh` | Blocks on spec drift + type/compile errors before Claude stops — over the branch's whole change set (merge base ∪ working tree), not just unstaged files. **Surprise to know about:** a cosmetic `spec.md` edit committed earlier on the branch blocks *every* Stop until `/wellforge:tasks` re-syncs (which stamps `synced:` even when nothing else changes). That is the drift rule working; it does not feel like it. |
 | `hooks/scripts/pre-compact-backup.sh` | Snapshots session state before compaction |
 | `hooks/scripts/trace-subagent.sh` | SubagentStop → best-effort token events to `.forge/runs/.events.jsonl` (observability) |
+| `scripts/forge-state.py` | **Feature lifecycle state, deterministically** — walks `specs/`, validates frontmatter against the schema, counts tasks, computes drift from git order, joins QE/eval verdicts, resolves the tier, evaluates the done gate. `--json` emits `forge-state/v1`; status, triage, done and promote all read it instead of re-deriving |
+| `config/spec-frontmatter.schema.json` | Machine-readable mirror of the spec-driven skill's frontmatter; `check-docs.py` fails if its enums drift from the skill |
 | `scripts/run-report.py` | Summarizes `.forge/runs/` — agents, verdicts, drift, estimated cost |
 | `scripts/check-routing.py` | Verifies agent frontmatter models match the routing policy (drift guard) |
 | `config/model-pricing.yml` | Per-model price table for run-report cost estimates |
