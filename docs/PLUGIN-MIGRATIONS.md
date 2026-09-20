@@ -26,6 +26,17 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.43.1 — the notify hook documents where its token comes from
+
+**Action: none.** A comment-only change to `hooks/scripts/notify.sh`, recorded because the
+comment was asserting something that had become false: it said the Telegram env file is
+"also sourced from ~/.zshrc". `wellforge` 1.3.0 removed that wiring — sourcing the file
+from a shell exported `TELEGRAM_BOT_TOKEN` into every process the user starts, Claude
+Code's children included, while this hook was already reading the file itself.
+
+Nothing in a project changes. If your shell still has the old `source` line, `wellforge
+telegram` offers to remove it.
+
 ## 2.43 — the preflight trusts the template for database isolation
 
 **Action: none in the project — but the plugin now behaves differently, and it is worth

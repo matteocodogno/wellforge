@@ -1,7 +1,10 @@
 #!/bin/bash
 # Notification hook — macOS banner + optional Telegram DM.
 # Telegram is optional. Configure with the guided wizard:  wellforge telegram
-# (writes ~/.config/wellforge/telegram.env; also sourced from ~/.zshrc)
+# (writes ~/.config/wellforge/telegram.env, mode 600). THIS hook reads that file directly,
+# which is the whole point: nothing sources it from a shell rc, so TELEGRAM_BOT_TOKEN never
+# enters the environment of every process the user starts — Claude Code's children
+# included, where one `env` in a transcript would leak a live bot token.
 #
 # TWO INJECTION SURFACES, both closed here — the message text is NOT ours. It comes from
 # the harness and can contain anything a prompt, a path or an error string contains:
