@@ -119,6 +119,34 @@ fi
 # 13. `clean` must not come back — it is the cost regression this hook was fixed for
 grep -qE '\./mvnw\s+clean' "$HOOK" && { FAIL=$((FAIL+1)); echo "  FAIL: hook runs 'mvnw clean' again"; } || PASS=$((PASS+1))
 
+# 14. The escape must actually clear the block. A cosmetic spec edit committed earlier on
+#     the branch blocks every Stop; /wellforge:tasks re-sync stamps `synced:` even when it
+#     changes nothing else, and THAT is what unblocks. Without the stamp the hook tells the
+#     user to run a command that cannot help — the trap this case exists to prevent.
+new_repo
+git switch -qc feat/typo
+printf -- 'typo fixed\n' >> specs/001-x/spec.md
+git commit -qam "docs: fix a typo in the spec"
+echo "unrelated" > other.txt && git add -A && git commit -qm "feat: unrelated work"
+run 2 "cosmetic spec edit earlier on the branch still blocks"
+# the documented escape
+printf -- '\nsynced: 2026-09-20\n' >> specs/001-x/tasks.md
+git commit -qam "chore(specs): re-sync tasks"
+run 0 "re-sync stamp clears the block"
+
+# 15. The hint must name the fix and the branch-wide scope — a message that only says
+#     "not re-synced" leaves the user hunting for an edit they made three commits ago.
+new_repo
+git switch -qc feat/hint
+printf -- 'x\n' >> specs/001-x/spec.md
+git commit -qam "docs: amend spec"
+out=$(echo '{}' | CLAUDE_PROJECT_DIR="$REPO" bash "$HOOK" 2>&1)
+if echo "$out" | grep -q '/wellforge:tasks' && echo "$out" | grep -qi 'branch' && echo "$out" | grep -q 'synced'; then
+  PASS=$((PASS+1))
+else
+  FAIL=$((FAIL+1)); echo "  FAIL: hint must name /wellforge:tasks, the branch scope and the synced stamp"; echo "$out" | sed 's/^/        /'
+fi
+
 echo
 echo "stop-verify: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

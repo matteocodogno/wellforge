@@ -170,6 +170,7 @@ data). YES schedules an owasp-reviewer pass in parallel with QE — see the arch
 ---
 spec: 002
 generated: 2026-06-04
+synced: 2026-06-11        # last re-sync against the spec (see the drift rule)
 ---
 
 # Tasks: CSV export for reports
@@ -246,6 +247,21 @@ The spec is the source of truth. If implementation reveals the spec/plan is wron
 
 Enforced mechanically: the Stop hook (`stop-verify.sh`) blocks finishing a session where
 `spec.md`/`plan.md` changed but `tasks.md` did not.
+
+**Know the scope, because the failure mode is surprising.** The check covers every change on
+the branch **since its merge base**, not just uncommitted edits — it has to, since dev agents
+commit their work and a check that only saw unstaged files saw nothing at all. The
+consequence: a one-line typo fix in `spec.md`, committed three commits ago, blocks *every*
+Stop for the rest of the branch until `tasks.md` is touched. "I fixed a typo and now Claude
+can't stop" is the same rule working, but it does not feel like it.
+
+The escape is `/wellforge:tasks <slug>` (re-sync mode), which preserves checked tasks and
+**always stamps `synced:`** even when nothing else changes — without that stamp the escape
+would not clear the block, which is the trap this rule had until 2026-09-20. If you are
+certain a spec edit is purely cosmetic, the re-sync is still the right move: it costs one
+command and records that the task list was re-checked. Do not reach for `--no-verify` or
+edit `tasks.md` by hand to satisfy the hook; that is the drift rule defeated rather than
+followed.
 
 ## Implementing tasks
 

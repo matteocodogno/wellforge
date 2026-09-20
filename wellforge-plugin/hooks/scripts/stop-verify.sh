@@ -62,7 +62,20 @@ if [ -n "$SPECS_CHANGED" ] && [ -z "$TASKS_CHANGED" ]; then
   for f in $SPECS_CHANGED; do
     SPEC_DIR=$(dirname "$f")
     if [ -f "$PROJECT_DIR/$SPEC_DIR/tasks.md" ]; then
-      echo "$f changed but $SPEC_DIR/tasks.md not re-synced. Run /wellforge:tasks to sync (drift rule)." >&2
+      SLUG=$(basename "$SPEC_DIR")
+      echo "Drift: $f changed but $SPEC_DIR/tasks.md was not re-synced." >&2
+      echo "  Fix:      /wellforge:tasks $SLUG   (re-sync mode — preserves checked tasks)" >&2
+      # The surprise this message exists to defuse: the check spans the BRANCH, not just
+      # uncommitted work, so the spec edit may be several commits back and feel unrelated
+      # to the turn being blocked.
+      if [ -n "$BASE" ]; then
+        echo "  Why now:  the drift check covers every change on this branch since ${BASE:0:8}," >&2
+        echo "            not just uncommitted edits — this may be an earlier commit." >&2
+      fi
+      echo "  Note:     a re-sync that finds nothing to change still stamps \`synced:\` in" >&2
+      echo "            tasks.md, which is what clears this. A cosmetic spec edit is still" >&2
+      echo "            a spec edit: the rule is that the task list was RE-CHECKED, not" >&2
+      echo "            that it had to change." >&2
       exit 2
     fi
   done

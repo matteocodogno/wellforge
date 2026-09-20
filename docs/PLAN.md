@@ -853,6 +853,18 @@ Not defects — five gaps where the plugin promised or implied something it didn
 `check-docs.py`, added hours earlier, caught the new command and all three skills missing
 from the README before this was committed. That is the intended failure mode.
 
+**Follow-up to the stop-verify fix** (plugin `2.34.1`, 2026-09-20): making the drift check
+branch-wide gave it a surprising failure mode — a one-line typo fix in `spec.md`, committed
+several commits back, blocks *every* Stop for the rest of the branch. That is the rule
+working, but "I fixed a typo and now Claude can't stop" doesn't feel like a rule working.
+Worse, testing it showed **the prescribed escape did not work**: `/wellforge:tasks` re-sync
+on a cosmetic edit correctly changes nothing, `tasks.md` stays out of the change set, and
+the hook keeps blocking while telling the user to run the command they just ran. Fixed by
+making re-sync **always stamp `synced: <date>`** — which is also the honest record (the task
+list was re-checked against the spec; it did not have to change) — and by rewriting the hint
+to name the fix, the branch-wide scope, and why an old commit is implicated. Documented in
+the drift rule and the hook table; two regression cases pin both halves.
+
 ## Phase 19 — Remove the second scaffolding path (added 2026-09-20)
 
 `springboot-scaffold` hand-generated a whole Spring project from a 741-line `scaffold.sh`,

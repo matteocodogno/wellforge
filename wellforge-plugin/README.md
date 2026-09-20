@@ -81,7 +81,7 @@ Inside Claude Code:
 | `hooks/scripts/pre-file-guard.sh` | The same protected files for the Read/Write/Edit/Grep tools — it reads the path parameter, so no text guessing |
 | `hooks/scripts/post-lint.sh` | ts/tsx → Prettier+ESLint · kt/kts → ktlintFormat |
 | `hooks/scripts/notify.sh` | macOS notification + Telegram DM |
-| `hooks/scripts/stop-verify.sh` | Blocks on spec drift + type/compile errors before Claude stops — over the branch's whole change set (merge base ∪ working tree), not just unstaged files |
+| `hooks/scripts/stop-verify.sh` | Blocks on spec drift + type/compile errors before Claude stops — over the branch's whole change set (merge base ∪ working tree), not just unstaged files. **Surprise to know about:** a cosmetic `spec.md` edit committed earlier on the branch blocks *every* Stop until `/wellforge:tasks` re-syncs (which stamps `synced:` even when nothing else changes). That is the drift rule working; it does not feel like it. |
 | `hooks/scripts/pre-compact-backup.sh` | Snapshots session state before compaction |
 | `hooks/scripts/trace-subagent.sh` | SubagentStop → best-effort token events to `.forge/runs/.events.jsonl` (observability) |
 | `scripts/run-report.py` | Summarizes `.forge/runs/` — agents, verdicts, drift, estimated cost |

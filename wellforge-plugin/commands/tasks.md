@@ -81,6 +81,14 @@ Target spec: $ARGUMENTS
    diff the new derivation against them, and present what's added/changed/obsolete
    instead of regenerating blindly. Never un-check a completed task.
 
+   **Always stamp `synced: <today>` in the frontmatter — including when the re-sync
+   changes nothing else.** This is not bookkeeping: the Stop hook's drift check clears
+   only when `tasks.md` is part of the branch's change set, so a re-sync that (correctly)
+   found nothing to change would otherwise leave the session blocked forever, with the
+   hook telling the user to run the command they just ran. The stamp is also the honest
+   record — it says the task list was *re-checked against this spec*, which is exactly
+   what the drift rule asks for, rather than pretending the list had to change.
+
 6. **Self-critique — one pass** (`self-critique` skill, tasks.md checklist). The overlap
    check above covers the `touch:` *collisions*; this covers the rest: a `done when:` nobody
    could run, a `touch:` list that lies by omission, a missing or invented `deps:` edge, a
