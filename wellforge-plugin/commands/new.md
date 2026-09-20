@@ -12,7 +12,10 @@ Product: $ARGUMENTS
 ## Stage 1 — Understand the product
 
 Interview with AskUserQuestion (batch, max 2 rounds). You need:
-- Product type: internal tool / customer-facing app / API-only service / prototype.
+- Product type: internal tool / customer-facing app / API-only service / prototype — or
+  **infrastructure** (the cloud resources an app runs on, rather than the app). Ask this
+  explicitly: an IaC project is a first-class preset here, and a user who says "set up our
+  GCP environment" will otherwise be pushed toward an application stack they didn't ask for.
 - Scale & lifetime: throwaway experiment vs long-lived product; expected load.
 - Domain complexity: rich domain logic and transactions vs thin CRUD/aggregation.
 - Team & ecosystem constraints: who maintains it, existing systems it must talk to.
@@ -30,23 +33,39 @@ can be raised later with `/wellforge:promote`.
 
 ## Stage 2 — Recommend a stack
 
-Available presets (the only two — do not invent others):
+**The preset list is the root `copier.yml`'s `preset:` choices — read it, don't trust this
+table's age.** Never invent a preset that isn't in that list; if the two disagree,
+`copier.yml` wins and this table is the bug. As of writing, three:
 
 | Preset | Sweet spot |
 |---|---|
 | `spring-kotlin-react` | rich domain logic, transactions, long-lived products, JVM ecosystem integration, Spring Modulith boundaries |
 | `hono-react` | lightweight APIs, fast iteration, prototypes→small products, all-TypeScript team, edge/container deploys |
+| `pulumi-gcp-ts` | **infrastructure, not an application** — Pulumi IaC in TypeScript on GCP: stacks, ComponentResources, CrossGuard policy, mock tests |
 
-Recommend ONE with a 3-5 line rationale tied to the interview answers (and say why not
-the other). If the product genuinely fits neither (mobile, ML pipeline, desktop), say so
-and stop — don't force a preset. User confirms or overrides; their choice wins.
+The first two are alternatives to each other; `pulumi-gcp-ts` is **orthogonal** to both — it
+answers "what runs this", not "what is this". So:
+
+- Application project → recommend ONE of the two app presets with a 3-5 line rationale tied
+  to the interview answers, and say why not the other.
+- Infrastructure project → `pulumi-gcp-ts`. Do not "fall back" to an app preset.
+- Both needed (an app *and* its infra) → they are two projects, and this command does one per
+  invocation (hard rules). Scaffold the one they need first, and tell them the exact second
+  command to run for the other.
+- Genuinely fits none (mobile, ML pipeline, desktop) → say so and stop; don't force a preset.
+  "Fits none" now means none of **three**, and an infra project is no longer one of them.
+
+User confirms or overrides; their choice wins.
 
 ## Stage 3 — Generate
 
 1. Locate the wellforge repo (checkout path or git URL — ask once, remember for the
    session). The template source is the REPO ROOT: one `copier.yml` serves all presets.
-2. Collect the answers (read the root `copier.yml` for the full list): preset,
-   project_name, project_slug, description, base_package (JVM preset), db, ci, rigor.
+2. Collect the answers (read the root `copier.yml` for the full list — questions are
+   preset-conditional, so let the file tell you which apply): always `preset`,
+   `project_name`, `project_slug`, `description`, `ci`, `rigor`; plus `base_package` for
+   `spring-kotlin-react`, `db` for the two app presets, and `gcp_project` + `gcp_region` for
+   `pulumi-gcp-ts` (which has no `db`).
 3. Run, from the target parent directory:
    ```bash
    uvx copier copy --trust <wellforge repo/URL> <project_slug> \
@@ -84,4 +103,7 @@ the natural next step is `/wellforge:spec <first feature>` (or `/wellforge:orche
   wrong, that's a template bug to report (the upgrade path depends on projects staying
   template-shaped).
 - Never edit `.forge/manifest.json` or `.copier-answers.yml`.
+- The root `copier.yml`'s `preset:` choices are the authoritative preset list. Read it before
+  recommending; a preset that exists there but not in Stage 2's table is reachable and this
+  file is out of date — say so rather than steering the user away from it.
 - One project per invocation.

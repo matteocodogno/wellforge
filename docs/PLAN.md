@@ -328,6 +328,18 @@ brownfield repo (pairs with the Phase 7 pilot). Shipped on the plugin v2.19.x li
 was not bumped in those two commits — the version caught up at the Phase 14 release (`2.22.0`),
 so both are carried by every plugin version since.
 
+**Follow-up fix** (plugin `2.27.3`, 2026-09-20): `pulumi-gcp-ts` shipped as a template but was
+never wired into the front door. `/wellforge:new` hard-coded "the only two — do not invent
+others", and its "fits neither → stop, don't force a preset" rule meant an infra request was
+actively refused rather than routed to the preset built for it; `template-extraction`'s
+gap-check had the same two-preset assumption plus a backend/frontend-shaped heuristic that
+lands an IaC repo on "novel" because both halves are *missing*. Fixed: three-preset table
+with `pulumi-gcp-ts` framed as orthogonal (it answers "what runs this"), an infrastructure
+option in the Stage 1 interview so the path is discoverable at all, the preset-conditional
+answer set (`gcp_project`/`gcp_region`, no `db`), and an is-it-an-application-at-all branch
+in the gap check. The durable half: both files now name the root `copier.yml`'s `preset:`
+choices as the authoritative list, so a fourth preset strands nothing.
+
 ## Phase 13 — Loop engineering: parallel worktree isolation (added 2026-07-06)
 
 Motivated by O'Reilly's "loop engineering" (five components: automations, worktrees, skills,

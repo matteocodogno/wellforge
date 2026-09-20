@@ -66,7 +66,7 @@ assumptions. Write this schema (omit keys you genuinely can't determine; don't g
   "container": "docker-compose | dockerfile | none",
   "gap": {
     "verdict": "covered | partial | novel",
-    "closest_preset": "spring-kotlin-react | hono-react | null",
+    "closest_preset": "spring-kotlin-react | hono-react | pulumi-gcp-ts | null",
     "matched": ["frontend: react-ts-vite"],
     "unmatched": ["backend: fastapi (no preset)"],
     "recommendation": "<one line>"
@@ -79,13 +79,24 @@ Chakra / Ant / shadcn / Mantine / Tailwind-only) — the designer and frontend-d
 
 ### The gap-check heuristic
 
-Compare each service against the two shipped presets (source of truth for what they contain):
+Compare each service against the shipped presets (the root `copier.yml`'s `preset:` choices
+are the authoritative list; these are their contents):
 
 - **`spring-kotlin-react`** — backend: Spring Boot + Kotlin + jOOQ + Liquibase + Maven +
   Spring Modulith; frontend: React + TypeScript + Vite + Mantine + Tailwind + TanStack.
 - **`hono-react`** — backend: Hono + TypeScript + Drizzle + pnpm; frontend: same React TS Vite.
+- **`pulumi-gcp-ts`** — **infrastructure, not an application**: Pulumi IaC in TypeScript on
+  GCP (stacks, typed config, `ComponentResource` abstractions, CrossGuard policy, mock tests).
 
-Classify the whole project by how its **backend** and **frontend** halves land (DB choice and
+**First, is it an application at all?** A project whose deliverable is cloud resources — a
+Pulumi/Terraform/CDK program, no serving backend and no frontend — has no halves to classify.
+Compare it against `pulumi-gcp-ts` instead: Pulumi + TypeScript + GCP is **covered**; Pulumi
+on another cloud, or Terraform/CDK in any language, is **novel** (and a good extraction
+candidate). Running the backend/frontend table below on an IaC repo lands on "novel" for the
+wrong reason — that both halves are missing, not that the stack is new — and hides a preset
+that already fits.
+
+Otherwise classify by how the **backend** and **frontend** halves land (DB choice and
 minor deps don't change the verdict):
 
 | Verdict | Condition | Recommendation |
