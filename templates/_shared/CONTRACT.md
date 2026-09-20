@@ -70,12 +70,16 @@ Every scaffolded project therefore carries:
 ```json
 { "template": "hono-react", "version": "0.9.0",
   "answers": { "…": "…" },
-  "plugin": { "version": "2.38.0", "set_by": "new", "at": "2026-09-20" } }
+  "plugin": { "version": "2.42.0", "set_by": "new", "at": "2026-09-20",
+              "marketplace": "wellforge@wellforge" } }
 ```
 
-`set_by` is `new` | `adopt` | `upgrade`. Adopted projects carry the same object in
-`.forge/adoption.json` (which previously held `plugin` as a bare version string — readers
-must accept both and writers must emit the object).
+`set_by` is `new` | `adopt` | `upgrade`. `marketplace` is where the plugin came from —
+`wellforge@wellforge` for a marketplace install, or `local` when it was run from a checkout
+with `--plugin-dir`. Absent means "recorded before 2.42, unknown": readers report unknown,
+they do not assume. Adopted projects carry the same object in `.forge/adoption.json` (which
+previously held `plugin` as a bare version string — readers must accept both and writers
+must emit the object).
 
 **It is NOT a copier question, and the templates must not render it.** Two reasons, and the
 second is the one that bites:
@@ -102,6 +106,35 @@ an upgrade runs against a git-hosted template.
 
 The same rule in one line: **anything whose value depends on *when the command ran* rather
 than *what the user answered* is written after generation, not asked by copier.**
+
+
+## `.claude/settings.json` — the project declares its plugin
+
+Every scaffold's `.claude/settings.json` carries, alongside its `permissions.allow` list:
+
+```json
+{ "extraKnownMarketplaces": {
+    "wellforge": { "source": { "source": "github", "repo": "matteocodogno/wellforge" } } },
+  "enabledPlugins": { "wellforge@wellforge": true } }
+```
+
+This is the project half of the distribution story: the repo itself says which marketplace
+and which plugin it expects, so a teammate cloning it does not have to be told out of band.
+The key shapes are the observed ones — they are exactly what Claude Code writes into
+`~/.claude/plugins/known_marketplaces.json` and `settings.json` for an already-installed
+marketplace, not an invention of this contract.
+
+**Two honest limits**, because the difference matters when it does not work:
+
+1. **The version is not pinned here, on purpose.** `enabledPlugins` names a plugin, not a
+   version, and pinning one in a *rendered* file would replay the scaffold-time version
+   forever — the same trap as the `plugin` object above. The version a project expects lives
+   in `.forge/manifest.json`, where `/wellforge:upgrade` can keep it current.
+2. **Whether this installs the plugin, prompts for it, or only enables it once installed is
+   not documented, and is therefore not claimed.** What it reliably does is *declare* the
+   dependency where a human and `/wellforge:doctor` can both read it. If a teammate opens a
+   generated project and the commands are missing, the install is two commands
+   (`wellforge-plugin/README.md` § Install) and doctor names them.
 
 ## Versioning & lifecycle
 
