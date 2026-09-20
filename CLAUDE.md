@@ -56,7 +56,8 @@ wellforge/
 │                             # _subdirectory (required for copier update; repo-wide vX.Y.Z tags)
 ├── .github/workflows/        # reusable gates: quality-node.yml, quality-jvm.yml
 │                             # (must live here — GitHub only resolves workflow_call from this path)
-├── wellforge-plugin/         # Claude Code plugin, v2.27.x (local marketplace install)
+├── wellforge-plugin/         # Claude Code plugin, v2.42.x (installed from the git
+│                         # marketplace, pinned to a plugin-v* tag)
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, done,
 │   │                         # status, triage, doctor, new, upgrade, adopt, extract-template,
@@ -91,15 +92,19 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.9.0` (template series, PEP440 — what copier resolves), `gates-v11` (gate
-  workflow pin series — separate, invisible to copier); plugin `2.41.0`. A self-CI workflow
+  workflow pin series) and `plugin-v2.42.0` (plugin series) — three series, the last two
+  invisible to copier by design; plugin `2.42.0`. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets;
   it runs on `origin` (`github.com/matteocodogno/wellforge`, public) and has been green on
   `main` since 2026-08-17.
   The two series move independently: a `vX.Y.Z` release does NOT carry a `gates_ref` bump to
   existing projects (recorded answer + `--skip-answered`) — `/wellforge:upgrade` bumps it as
   an explicit, raise-only step. Read `docs/VERSIONING.md` before cutting any release: it
-  covers which series to bump, why they are separate, and the never-tag-both-on-one-commit
-  rule.
+  covers which series to bump, why they are separate, and the never-tag-two-series-on-one-
+  commit rule. The plugin's version lives in four places that must agree (`plugin.json`,
+  `marketplace.json`'s `version` and `source.ref`, CLAUDE.md) — `check-docs.py` fails CI
+  otherwise, because a teammate silently installing a different plugin than this repo
+  describes is not a failure anything else would report.
 - **Phase 16** (`docs/PLAN.md`) hardens parallel execution from the pilot's field findings —
   the `worktree-isolation` skill, environment faults, `touch:`-overlap edges, ADR failure
   shapes (plugin `2.26.0`). Its template half — per-worktree test databases and a dev-database

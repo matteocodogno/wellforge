@@ -88,8 +88,12 @@ new layers.** Only run steps 1–3 on a first-time adoption.
    - Existing `AGENTS.md`? Extend, never overwrite — append missing sections only.
 2. `specs/README.md` — pointer to the spec-driven workflow (same as scaffolds get).
 3. `.claude/settings.json` — pre-allow the project's routine commands (its actual
-   build/test/lint invocations). Merge into an existing file, never clobber.
-4. `.forge/adoption.json` — `{ "adopted": "<date>", "plugin": { "version": "<version>", "set_by": "adopt", "at": "<date>" }, "rigor": "<tier>", "layers": [...] }`.
+   build/test/lint invocations). Merge into an existing file, never clobber. Add the plugin
+   declaration a scaffold gets (templates/_shared/CONTRACT.md § `.claude/settings.json`):
+   `extraKnownMarketplaces.wellforge` + `enabledPlugins["wellforge@wellforge"]`, so the
+   adopted repo states its dependency the same way a generated one does. Merge those two
+   keys in; leave any marketplace or plugin the project already declares untouched.
+4. `.forge/adoption.json` — `{ "adopted": "<date>", "plugin": { "version": "<version>", "set_by": "adopt", "at": "<date>", "marketplace": "<wellforge@wellforge | local>" }, "rigor": "<tier>", "layers": [...] }`.
    Records that this is an ADOPTED project: `/wellforge:upgrade` stays unavailable
    (no template ancestry) and fleet tooling can distinguish adopted from scaffolded.
    - **`rigor`** — the project's default tier (from the Stage 1 interview; `production` if not
@@ -97,10 +101,13 @@ new layers.** Only run steps 1–3 on a first-time adoption.
      resolve when a feature has no `rigor:` frontmatter and no `--mode` (rigor-tiers
      precedence). This is the brownfield equivalent of a scaffold's `manifest.json` `rigor` —
      without it, every feature falls back to `production`.
-   - **`plugin`** — an OBJECT (`version` / `set_by` / `at`), read from the installed
-     plugin's `.claude-plugin/plugin.json`. Earlier adoptions wrote a bare version string
-     here; when you find one, replace it with the object rather than leaving the shape
-     mixed. Readers accept both, writers emit the object.
+   - **`plugin`** — an OBJECT (`version` / `set_by` / `at` / `marketplace`), read from the
+     installed plugin's `.claude-plugin/plugin.json`. `marketplace` is the key under
+     `.plugins` in `~/.claude/plugins/installed_plugins.json` starting `wellforge@`, or
+     `local` when the plugin is running from a checkout (`--plugin-dir`) — provenance a
+     teammate can or cannot reproduce. Earlier adoptions wrote a bare version string here;
+     when you find one, replace it with the object rather than leaving the shape mixed.
+     Readers accept both, writers emit the object.
    - **Add-layers mode: MERGE, never overwrite** — keep the original `adopted` date and
      `rigor` (unless the user re-chooses it), append the newly added layers to `layers`
      (dedupe), and add `"updated": "<date>"`. Refresh `plugin` to the running version with

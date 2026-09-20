@@ -10,7 +10,8 @@ Checks:
   1. every commands/*.md appears in wellforge-plugin/README.md
   2. every skills/*/SKILL.md appears there too
   3. every server in .mcp.json appears there
-  4. plugin.json's version == the version CLAUDE.md quotes
+  4. plugin.json's version == the version CLAUDE.md quotes, the version the marketplace
+     entry publishes, AND the plugin tag its `ref` pins — three files naming one release
   5. every skill description is within the 1024-char limit the loader enforces
   6. cross-skill links are relative markdown links that resolve, not inert [[wiki-links]]
   7. the status/rigor enums in config/spec-frontmatter.schema.json match the spec-driven
@@ -54,6 +55,31 @@ if not quoted:
     fail.append("CLAUDE.md no longer quotes a plugin version — the sync check cannot run")
 elif quoted.group(1) != pj:
     fail.append(f"plugin.json is {pj} but CLAUDE.md says {quoted.group(1)} — bump both in one commit")
+
+# The marketplace entry is what a NEW teammate installs. It carries the version twice (an
+# explicit `version`, and the `ref` tag its git-subdir source is pinned to), so there are two
+# more ways for one release to disagree with itself — and the symptom is a teammate silently
+# installing a different plugin than the repo describes.
+mkt = json.load(open(f"{ROOT}/.claude-plugin/marketplace.json"))
+entry = next((e for e in mkt["plugins"] if e["name"] == "wellforge"), None)
+if entry is None:
+    fail.append("marketplace.json has no `wellforge` plugin entry")
+else:
+    if entry.get("version") != pj:
+        fail.append(f"marketplace.json publishes version {entry.get('version')} but "
+                    f"plugin.json is {pj} — bump both in one commit")
+    src = entry.get("source")
+    if not isinstance(src, dict):
+        fail.append(f"marketplace.json source is {src!r}, not a git source — a local path "
+                    f"installs for nobody but the machine holding it")
+    else:
+        want_ref = f"plugin-v{pj}"
+        if src.get("ref") != want_ref:
+            fail.append(f"marketplace.json pins ref {src.get('ref')!r} but plugin.json is "
+                        f"{pj} — the release commit must pin {want_ref!r}")
+        if src.get("path") != "wellforge-plugin":
+            fail.append(f"marketplace.json source path is {src.get('path')!r}, expected "
+                        f"'wellforge-plugin'")
 
 for p in glob.glob(f"{PLUGIN}/skills/*/SKILL.md"):
     fm = yaml.safe_load(open(p).read().split("---\n", 2)[1])
@@ -111,4 +137,5 @@ if fail:
         print(f"    {f}")
     sys.exit(1)
 print(f"✓ docs consistent — {len(cmds)} commands, {len(skills)} skills, "
-      f"{len(mcp.get('mcpServers', mcp))} MCP servers listed; version {pj} in sync")
+      f"{len(mcp.get('mcpServers', mcp))} MCP servers listed; version {pj} in sync "
+      f"(plugin.json = CLAUDE.md = marketplace.json = ref plugin-v{pj})")

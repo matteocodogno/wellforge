@@ -26,7 +26,10 @@ python3 -c "import json,os;p=json.load(open(os.path.expanduser('~/.claude/plugin
 ```
 
 If that fails, the plugin is not installed at user scope — say so and skip the checks that
-need it (they are marked ⟨plugin⟩ below) rather than reporting them as failures.
+need it (they are marked ⟨plugin⟩ below) rather than reporting them as failures. Note that
+a session launched with `claude --plugin-dir <checkout>/wellforge-plugin` is exactly this
+case: nothing is installed, and that is normal for a contributor. Say which of the two it
+is, instead of reporting a healthy checkout as a broken install.
 
 ## Step 2 — Checks
 
@@ -88,6 +91,47 @@ project expects secrets. For a scaffolded project also compare the manifest's
 `template_version` against the newest `vX.Y.Z` tag of the template source
 (`git ls-remote --tags`) and, if behind, point at `/wellforge:upgrade`.
 
+**Install source** ⟨plugin⟩ — where this plugin came from, which decides whether anyone
+else can reproduce it. Read the install record and the marketplace it came from:
+
+```bash
+python3 - <<'PYEOF'
+import json, os
+d = json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins']
+for k, v in d.items():
+    if k.startswith('wellforge@'):
+        i = v[0]
+        print(k, i.get('version'), i.get('scope'), i.get('gitCommitSha', '')[:8], i['installPath'])
+PYEOF
+jq -r '.wellforge.source' ~/.claude/plugins/known_marketplaces.json 2>/dev/null
+```
+
+Report one of three, and never guess between them:
+
+| What you find | Report |
+|---|---|
+| an install record **and** a marketplace source of `github` / `git-subdir` | `installed from the wellforge marketplace, <version> (<sha>)` — reproducible: a teammate runs the two install commands and gets the same plugin |
+| an install record but a marketplace source of `directory` | **WARN** — `installed from a local checkout at <path>. That marketplace exists only on this machine, so a teammate cannot install what you are running.` Fix: `claude plugin marketplace add matteocodogno/wellforge` |
+| no install record (running via `--plugin-dir`) | `running from a checkout, not an install — edits take effect on relaunch and no version is pinned. Expected for a contributor, unexpected for a user.` |
+
+**Is there a newer plugin release?** The plugin series is tagged `plugin-vX.Y.Z`
+(`docs/VERSIONING.md`). Compare the running version against the newest tag on the remote:
+
+```bash
+git ls-remote --tags https://github.com/matteocodogno/wellforge.git 'plugin-v*' \
+  | sed 's|.*refs/tags/||; s|\^{}||' | sort -V | tail -1
+```
+
+Behind → **WARN** with both update commands (`claude plugin marketplace update wellforge`,
+then `claude plugin update wellforge@wellforge`) and the note that the marketplace refresh
+is what teaches Claude Code about the new tag. Network unreachable → report **unknown**,
+never "up to date": those are different answers and only one of them is reassuring.
+
+Do **not** report an update as done on the strength of having printed the commands. What
+`claude plugin update` resolves to is undocumented (`docs/VERSIONING.md` says so), so the
+version recorded in `installed_plugins.json` afterwards is the only evidence — tell the user
+to re-run `/wellforge:doctor` to confirm.
+
 **Plugin version vs. the project** — the project records which plugin set it up
 (`plugin.version` in `.forge/manifest.json`, or `.forge/adoption.json` for an adopted
 project). Compare it against the running plugin's `.claude-plugin/plugin.json` and report
@@ -108,6 +152,18 @@ alarm.
 An adopted project's `plugin` may be a bare version **string** rather than an object (the
 shape before 2.38). Accept both; report the string form as recorded-but-old-shape, which
 `/wellforge:adopt` or `/wellforge:upgrade` will normalise.
+
+The object's **`marketplace`** field (2.42+) records provenance: `wellforge@wellforge` or
+`local`. Compare it with the install source above and call out the mismatch that matters —
+a project stamped `local` was set up by someone running a checkout, so its recorded plugin
+version names no published release and cannot be reinstalled from it. An absent field means
+recorded before 2.42, i.e. unknown, and is reported as unknown.
+
+**Project declares the plugin** — a scaffolded or adopted project's `.claude/settings.json`
+should carry `extraKnownMarketplaces.wellforge` and `enabledPlugins["wellforge@wellforge"]`
+(`templates/_shared/CONTRACT.md`). Missing → **WARN**: the project works for anyone who
+already has the plugin and does nothing at all for anyone who does not, with no error either
+way. Fix: `/wellforge:upgrade` (scaffolded) or re-run `/wellforge:adopt` (adopted).
 
 **Git policy** — `git config merge.ff` (want `only`), `pull.rebase` (want `true`), and
 whether `gates/hooks/commit-msg` is installed in `.git/hooks/`. On FAIL:

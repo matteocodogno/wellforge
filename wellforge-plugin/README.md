@@ -4,38 +4,58 @@ Full-stack development plugin for Spring Boot Kotlin + React TypeScript monorepo
 
 ## Install
 
-There are two ways to use a local plugin. Pick one:
+### For a teammate — from the git marketplace (the normal path)
 
-### Option A — one-shot (no setup, use for testing)
+Nothing to clone. The **wellforge repo root** is a plugin marketplace
+(`.claude-plugin/marketplace.json`), and its entry points at a `git-subdir` source pinned to
+a `plugin-v*` tag — so what you install is a named release, not whatever `main` happened to
+be that morning.
 
-Pass the plugin directory every time you launch:
+```bash
+claude plugin marketplace add matteocodogno/wellforge
+claude plugin install wellforge@wellforge --scope user
+```
+
+(or interactively: `/plugin` → `wellforge` → install → scope: user)
+
+Later, to move to a newer release:
+
+```bash
+claude plugin marketplace update wellforge   # re-read the manifest (it names the new tag)
+claude plugin update wellforge@wellforge
+```
+
+> **What "update" resolves to is not documented.** The manifest pins a tag and Claude Code
+> records the installed `version` + `gitCommitSha` in
+> `~/.claude/plugins/installed_plugins.json`, but whether `plugin update` follows the tag in
+> the refreshed manifest, the default branch, or the `version` field is not stated in the
+> plugin-marketplace docs. Treat the pair of commands above as the reliable sequence, and
+> check the recorded version afterwards:
+> `jq -r '.plugins["wellforge@wellforge"][0].version' ~/.claude/plugins/installed_plugins.json`.
+> `/wellforge:doctor` reports it for you, alongside where the plugin came from.
+
+### For a contributor — from your own checkout
+
+Marketplace installs deliberately fetch the tagged release from git, so a local clone
+registered as a marketplace still gives you the *published* plugin, not your edits. To run
+the code you are editing, bypass the marketplace:
 
 ```bash
 claude --plugin-dir <wellforge-checkout>/wellforge-plugin
 ```
 
-### Option B — permanent via local marketplace (recommended)
-
-The **wellforge repo root** is a plugin marketplace (`.claude-plugin/marketplace.json`
-with a relative plugin source — nothing to edit). Set up once, works across all projects:
-
-```bash
-# 1. Register the marketplace (repo root, not this directory)
-claude plugin marketplace add <wellforge-checkout>
-
-# 2. Install
-claude plugin install wellforge@wellforge --scope user
-```
-
-(or interactively: `/plugin` → wellforge → install → scope: user)
+That is per-launch and affects nothing else — which is what you want while iterating, since
+an in-place edit to an installed plugin is cached by version and would not take effect
+anyway until the version is bumped.
 
 ### Verify
 
 Inside Claude Code:
 ```
-/plugin   → wellforge listed under Installed
-/mcp      → sequential-thinking, playwright, github, context-hub connected
-/hooks    → 7 hooks listed
+/plugin              → wellforge listed under Installed
+/mcp                 → sequential-thinking, playwright, github, context-hub connected
+/hooks               → 7 hooks listed
+/wellforge:doctor    → full health report, install source, and the command index
 ```
 
 ---

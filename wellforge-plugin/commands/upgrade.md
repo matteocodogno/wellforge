@@ -126,8 +126,15 @@ project — where `/wellforge:upgrade` does not re-template but the plugin migra
 apply):
 
 ```jsonc
-"plugin": { "version": "<the running plugin version>", "set_by": "upgrade", "at": "<today>" }
+"plugin": { "version": "<the running plugin version>", "set_by": "upgrade", "at": "<today>",
+            "marketplace": "<wellforge@wellforge | local>" }
 ```
+
+Refresh `marketplace` as well as `version`: a project first scaffolded from a local checkout
+and later upgraded by a marketplace install has changed provenance, and the field is only
+useful if it describes the last plugin that actually touched the project. Resolve it the way
+`/wellforge:new` does — the key under `.plugins` in `~/.claude/plugins/installed_plugins.json`
+starting `wellforge@`, or `local` when there is none.
 
 Write it even when the template version did not move: the point of the field is to record
 which plugin last touched the project, and a plugin-only upgrade is exactly the case that

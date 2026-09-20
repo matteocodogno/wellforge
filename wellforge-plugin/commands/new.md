@@ -80,12 +80,25 @@ User confirms or overrides; their choice wins.
 
    ```jsonc
    // added to the generated manifest, alongside template/version/answers
-   "plugin": { "version": "<this plugin's version>", "set_by": "new", "at": "<today>" }
+   "plugin": { "version": "<this plugin's version>", "set_by": "new", "at": "<today>",
+               "marketplace": "<where the plugin came from>" }
    ```
 
    Read the version from the installed plugin's own `.claude-plugin/plugin.json` — never
    from memory, and never a copier answer (a persisted answer would replay the scaffold-time
    version forever; see the template-contract skill for why).
+
+   Record **where the plugin came from** too, in the same object:
+
+   ```bash
+   # marketplace install → "wellforge@wellforge"; nothing here → "local" (--plugin-dir)
+   jq -r '.plugins | keys[] | select(startswith("wellforge@"))' \
+     ~/.claude/plugins/installed_plugins.json 2>/dev/null | head -1
+   ```
+
+   A project set up by a checkout and a project set up by a published release are different
+   provenance, and only one of them can be reproduced by a teammate. `/wellforge:doctor`
+   reports it; if it is `local`, doctor says so rather than implying the release is pinned.
 
 5. Initialize: `git init -b main && git add -A && git commit -m "chore: scaffold from <template> v<version>"`.
    The scaffold commit must be pristine — no manual edits before it, and the manifest

@@ -9,7 +9,13 @@
   "plugins": [
     {
       "name": "wellforge",
-      "source": "./wellforge-plugin",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/matteocodogno/wellforge.git",
+        "path": "wellforge-plugin",
+        "ref": "plugin-v2.42.0"
+      },
+      "version": "2.42.0",
       "description": "Full-stack AI-assisted development: spec-driven workflow, role-based agent team, orchestrator, scaffolder, lifecycle upgrades, quality-gate and eval enforcement."
     }
   ]

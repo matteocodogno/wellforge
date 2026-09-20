@@ -891,6 +891,54 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 26 — A real distribution path, and adapters that cannot ship broken (added 2026-09-20)
+
+Two problems with the same shape: something that *looked* shipped and was installable or
+readable by nobody. `.claude-plugin/marketplace.json` read `"source": "./wellforge-plugin"`
+— an install that works on exactly one machine, the one holding the clone. And both adapter
+generators printed a healthy file **count** whether or not the files had content, links that
+resolved, or model names that matched the routing policy.
+
+- ☑ **The marketplace installs from git** — `git-subdir` source (`url` + `path` +
+  `ref`), pinned to a `plugin-vX.Y.Z` tag. Format verified against the current plugin-
+  marketplace docs rather than recalled; the observed shapes in
+  `~/.claude/plugins/known_marketplaces.json` corroborate it.
+- ☑ **The plugin became the third tag series.** A `ref` has to name something immutable, so
+  `plugin-vX.Y.Z` joins `vX.Y.Z` and `gates-vN` in `docs/VERSIONING.md` — with the
+  never-tag-two-series-on-one-commit rule restated for three, and the `plugin-v` prefix
+  keeping it PEP440-unparseable so copier never offers the plugin as a template upgrade.
+- ☑ **One release, four places, one guard.** `check-docs.py` now fails when `plugin.json`,
+  `marketplace.json`'s `version`, its `source.ref` and CLAUDE.md disagree. It caught its own
+  introduction (manifest at 2.42.0, plugin.json still 2.41.0).
+- ☑ **`/wellforge:release` grew a WellForge branch.** It previously disclaimed the plugin
+  release outright, which left the procedure nowhere. Step 0 now routes by repo.
+- ☑ **Generated projects declare their plugin** — `extraKnownMarketplaces` +
+  `enabledPlugins` in `.claude/settings.json`, and `plugin.marketplace` in the manifest
+  (`wellforge@wellforge` vs `local`: provenance a teammate can or cannot reproduce).
+- ☑ **`/wellforge:doctor` reports the install source** — marketplace vs local-directory
+  marketplace vs `--plugin-dir`, and whether a newer `plugin-v*` tag exists.
+- ☑ **`adapters/smoke-test.py` + a CI matrix job** — generates each adapter and asserts
+  (a) no empty file, (b) every relative link resolves, (c) every command/agent/skill has a
+  counterpart or is declared absent in a machine-read block in the adapter README,
+  (d) generated model names match `config/model-tiers.yml` (via `check-routing.py`, which
+  gained `--glob`/`--name-re` so it can read namespaced generated filenames).
+- ☑ **It found real defects on its first run**: two Copilot links that resolved in the
+  plugin tree and pointed at nothing in the generated one (fixed with a `relink()` pass —
+  the breakage was *relocation*, not a bad source link), a README status line that had
+  drifted to 17 prompts / 13 skills / 3 MCP servers against an actual 20 / 21 / 4, and two
+  stray `</content>` lines left in committed markdown.
+- ☑ **Each assertion was mutation-tested** before being trusted: truncate a file, inject a
+  broken link, delete a counterpart, stale the declared-absent list, corrupt a model name —
+  all five caught, on both adapters. Four green checks that never go red are worse than no
+  checks.
+
+**Undocumented, so not claimed.** What `claude plugin update` resolves to — the refreshed
+manifest's `ref`, the default branch, or the `version` field — is not specified in the
+published docs. `VERSIONING.md`, the plugin README and `doctor.md` all say so and point at
+the one observable fact: the version recorded in `installed_plugins.json` afterwards. The
+same applies to project-scope `enabledPlugins` — it declares, and no claim is made that it
+installs.
+
 ## Phase 25 — Make the cost numbers actionable (added 2026-09-20)
 
 `.forge/runs/` carried tokens and an estimated cost, and `model-routing.yml` said to move

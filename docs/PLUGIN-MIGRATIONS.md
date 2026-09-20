@@ -26,6 +26,43 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.42 — the plugin is installable, and projects declare it
+
+**Action: automatic, one field + one settings block.**
+
+Three things changed that a project can absorb:
+
+1. **`.forge/manifest.json` → `plugin.marketplace`.** The `plugin` object gains a field
+   recording where the plugin came from: `wellforge@wellforge` (a marketplace install,
+   reproducible by a teammate) or `local` (a `--plugin-dir` checkout, reproducible by
+   nobody). `/wellforge:upgrade` writes it; **absent means "recorded before 2.42, unknown"**
+   and is reported as unknown, never as a mismatch.
+
+2. **`.claude/settings.json` → the plugin declaration.** New scaffolds carry
+   `extraKnownMarketplaces.wellforge` and `enabledPlugins["wellforge@wellforge"]`, so a
+   clone states which plugin it expects instead of relying on onboarding lore. Existing
+   projects: `/wellforge:upgrade` re-renders the file (**merge** — never drop a project's
+   own `permissions.allow` entries or its other marketplaces). `/wellforge:doctor` WARNs
+   when it is missing.
+
+   What this does **not** do is install anything. Whether Claude Code installs, prompts, or
+   merely enables-once-present from a project-scope setting is undocumented, so treat the
+   block as a declaration a human and doctor can read, not as automation.
+
+3. **The plugin is now installed from git, not a path.** `.claude-plugin/marketplace.json`
+   points at a `git-subdir` source pinned to a `plugin-vX.Y.Z` tag. **If you installed
+   WellForge by registering a local checkout as a marketplace, that install is
+   machine-local** — `/wellforge:doctor` now says so. Re-point it once:
+
+   ```bash
+   claude plugin marketplace add matteocodogno/wellforge
+   claude plugin install wellforge@wellforge --scope user
+   ```
+
+**Worth knowing:** the plugin cache is keyed by version
+(`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), so an edit to an installed
+plugin without a version bump takes effect for nobody, including the person who made it.
+
 ## 2.38 — session-injection budget
 
 **Action: none.** `config/budget.yml` and `check-budget.py` govern the plugin's own
