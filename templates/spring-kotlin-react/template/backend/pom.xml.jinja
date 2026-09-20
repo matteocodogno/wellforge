@@ -35,7 +35,13 @@
         <mockk.version>1.13.14</mockk.version>
         <kotest.version>5.9.1</kotest.version>
         <spring-modulith.version>2.0.0</spring-modulith.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
+        <!-- 1.20.4 could not find a Docker environment under OrbStack: its
+             DockerDesktopClientProviderStrategy NPEs on getSocketPath() and no later
+             strategy is tried, so every integration test failed with "Could not find a
+             valid Docker environment" on a machine where `docker ps` works fine. 1.21.4
+             detects it. Do NOT jump to 2.x without a migration: it restructured the BOM,
+             and `org.testcontainers:postgresql`/`junit-jupiter` stop resolving. -->
+        <testcontainers.version>1.21.4</testcontainers.version>
 {%- if db == 'postgres' %}
         <h2.version>2.3.232</h2.version>
 {%- endif %}
@@ -109,9 +115,15 @@
             <artifactId>spring-modulith-starter-core</artifactId>
         </dependency>
 {%- if db == 'postgres' %}
+        <!-- JDBC, not jOOQ: this starter backs the event publication registry, and
+             `spring-modulith-starter-jooq` has never existed — Spring Modulith 2.0.0
+             publishes core/insight/jdbc/jpa/mongodb/neo4j/test and nothing else, so the
+             BOM did not manage it and every generated build failed at POM parse with
+             "'dependencies.dependency.version' ... is missing". The app's own data access
+             stays jOOQ; only the registry's storage is JDBC. -->
         <dependency>
             <groupId>org.springframework.modulith</groupId>
-            <artifactId>spring-modulith-starter-jooq</artifactId>
+            <artifactId>spring-modulith-starter-jdbc</artifactId>
         </dependency>
 {%- endif %}
 
