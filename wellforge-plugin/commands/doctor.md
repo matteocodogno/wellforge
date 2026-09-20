@@ -55,7 +55,12 @@ actual connection state — do not guess or imply you checked.
 
 **Hooks** ⟨plugin⟩ — read `hooks/hooks.json` and confirm each referenced script exists and
 is executable. A hook whose script is missing fails open: it never blocks and never says so.
-Report the event → script map so the user can see what is meant to be firing.
+Report the event → script map so the user can see what is meant to be firing — **7 events,
+8 scripts** (PostToolUse runs two: `post-lint.sh` and `post-spec-guard.sh`).
+
+Call out `post-spec-guard.sh` specifically if it is missing or not executable: it is the
+only mechanical enforcement of the `status: done` gate and the raise-only `rigor:` rule.
+Without it both revert to prompt promises, and nothing in a session will say so.
 
 **Guards** ⟨plugin⟩ — run the two drift guards and report their output verbatim:
 

@@ -282,7 +282,7 @@ jobs:
   # innocent text until people route around it (a workaround for one of its false positives
   # is what turned this very workflow red). The matrix pins both directions.
   hook-fixtures:
-    name: plugin hooks (bash-guard + file-guard + stop-verify matrices)
+    name: plugin hooks (bash-guard + file-guard + stop-verify + spec-guard matrices)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -293,6 +293,10 @@ jobs:
       # just stops blocking. Ubuntu has coreutils `timeout`, so the budget case runs here
       # even though it skips on a bare macOS.
       - run: wellforge-plugin/hooks/scripts/tests/stop-verify.test.sh
+      # The lifecycle rules as mechanism: only a met gate writes `status: done`, rigor never
+      # goes down, a closed feature does not reopen by edit. Prompt promises until they had
+      # a hook and a matrix.
+      - run: wellforge-plugin/hooks/scripts/tests/post-spec-guard.test.sh
       # Cost attribution: parallel runs used to count each other's tokens, and the pricing
       # table had drifted stale behind a "keep in sync" comment. Neither fails loudly on
       # its own — a wrong cost estimate still prints a number.

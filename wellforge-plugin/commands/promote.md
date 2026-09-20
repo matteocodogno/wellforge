@@ -35,6 +35,12 @@ spawn is the deliverable.
 - Target tier = the `--to` value. Tiers are ordered `spike < mvp < production`.
 - **Refuse** if target ≤ current (promotion only RAISES — never lower a tier, ever) or if
   already at target. State current → target and the scope before continuing.
+- **`post-spec-guard.sh` enforces the raise-only rule mechanically** (PostToolUse on
+  Write/Edit/MultiEdit): any edit that moves a spec's `rigor:` down is blocked with the
+  three legitimate alternatives — `--mode` for one cheaper run, a new feature at the lower
+  tier, or nothing. If it fires while you are promoting, you are writing the tier in the
+  wrong direction; revert and re-read the transition. The hook runs after the write, so its
+  message names the revert rather than preventing the edit.
 
 ## Pre-flight (all must pass)
 

@@ -891,6 +891,36 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 21 — The lifecycle rules as mechanism (added 2026-09-20)
+
+Two rules the commands were rewritten around — **only `/wellforge:done` writes
+`status: done`**, and **`rigor:` only ever rises** — were enforced by nothing. Any `Edit` to
+a spec's frontmatter flipped either field, and "the single guarded place" stops being single
+the first time anyone takes the shortcut. `stop-verify.sh` had already shown the move for the
+drift rule; this is the same for the other two.
+
+- ☑ **`hooks/scripts/post-spec-guard.sh`** (PostToolUse on Write/Edit/MultiEdit, scoped to
+  `specs/*/spec.md|brief.md` inside a WellForge project). Diffs the frontmatter against
+  `git show HEAD:<path>` and refuses: `status: done` unless `forge-state.py` reports
+  `done_gate.passes` for the resolved tier (the `failing` list quoted verbatim), any downward
+  `rigor:` move, reopening a closed feature by edit (`superseded`/`archived` excepted), and
+  any status or tier outside the enum.
+- ☑ **Honest about what it is.** PostToolUse runs *after* the write, so it cannot prevent the
+  edit — it blocks the turn and names the revert. A PreToolUse version would have to parse
+  proposed content out of three different tool shapes and reason about a patch it cannot
+  apply: more ways to be wrong, on a rule whose violation is cheap to undo.
+- ☑ **Two carve-outs, both deliberate.** A `spike` closes on prose in `brief.md`, so
+  `done_gate.passes` is `null` and the hook allows it, saying so. And a spec that is *created*
+  already `done` is a record of prior work (the brownfield adopt shape), not a transition —
+  allowed, loudly, because no gate about tasks and QE runs can be satisfied by work that
+  predates the spec.
+- ☑ **Fails open, deliberately.** No `jq`, no `pyyaml`-capable python and no `uv`, or
+  `forge-state.py` missing → advisory warning, exit 0. A guard that blocks when it cannot
+  evaluate is a guard people switch off. (It resolves `uv run --with pyyaml` when the system
+  python lacks yaml, which is most machines — otherwise the guard would fall open almost
+  everywhere.)
+- ☑ `hooks/scripts/tests/post-spec-guard.test.sh`, 18 cases, wired into ci.yml.
+
 ## Phase 20 — Deterministic feature state (added 2026-09-20)
 
 `/wellforge:status`, `:triage`, `:done` and `:promote` each had the model read every spec's

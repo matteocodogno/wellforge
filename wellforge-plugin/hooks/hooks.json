@@ -8,7 +8,10 @@
       { "matcher": "Read|Write|Edit|MultiEdit|NotebookEdit|Grep", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-file-guard.sh" }] }
     ],
     "PostToolUse": [
-      { "matcher": "Write|Edit|MultiEdit", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-lint.sh" }] }
+      { "matcher": "Write|Edit|MultiEdit", "hooks": [
+        { "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-lint.sh" },
+        { "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-spec-guard.sh" }
+      ] }
     ],
     "Notification": [
       { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/notify.sh" }] }

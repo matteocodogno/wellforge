@@ -147,6 +147,13 @@ verdict, eval score/date), and that status is now `done`. If a spike proved out,
 - **A promoted feature is gated at its NEW tier.** `mvp → production` does not inherit the
   mvp close: the production branch runs in full, so an eval PASS and a fresh QE are required
   even though the feature was already `done` as an mvp.
+- **A hook enforces this now, not just this document.** `post-spec-guard.sh` (PostToolUse
+  on Write/Edit/MultiEdit) re-checks any edit to a spec's or brief's frontmatter: writing
+  `status: done` without `forge-state.py` reporting `done_gate.passes` is refused, and so is
+  lowering `rigor:` or reopening a closed feature by edit. It runs *after* the write, so it
+  cannot prevent the edit — it blocks the turn and names the revert. **If it fires during
+  your run, you did something this command exists to prevent**: revert the frontmatter, run
+  the gate properly, and do not re-apply the edit to get past it.
 - No other command may write `status: done`, **`status: superseded` or `status: archived`**.
   If you find one that does, that is the bug — this is the single guarded place those transitions live, and
   it is only true while that stays literally true.
