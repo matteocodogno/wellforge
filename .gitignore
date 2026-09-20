@@ -13,3 +13,6 @@
 # Python (copier tooling)
 __pycache__/
 .venv/
+
+# WellForge run traces: raw token events are transient (observability skill)
+.forge/runs/.events.jsonl

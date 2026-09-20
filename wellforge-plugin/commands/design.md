@@ -47,7 +47,8 @@ Target spec: $ARGUMENTS
    nothing about it — the designer stays text-only. Tell the user up front that `--visual`
    trades tokens for a richer UI outcome so the choice is theirs.
 
-5. **Relay.** Present the designer's summary: flow count, the reuse/NEW component ratio,
+5. **Relay.** Present the designer's summary: its one-line self-critique result
+   (`self-critique` skill — the designer runs the pass itself), flow count, the reuse/NEW component ratio,
    a11y hotspots, and any gaps it found in the spec or plan.
 
 6. **Approval — opt-in (`--gate`).** By **default there is no gate**: design.md stays

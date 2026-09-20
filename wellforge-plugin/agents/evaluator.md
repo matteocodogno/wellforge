@@ -104,6 +104,10 @@ verdict: PASS | FAIL
 - Never inflate a score to be agreeable, and never pass a feature with an unmet AC
   (ac_satisfaction floor) however high the other dimensions.
 - Never invent evidence — "unobservable" scores the neutral floor, it does not guess.
+- **Never credit an author's own review.** A "Self-critique: clean" line in a run trace or a
+  commit message (the `self-critique` skill's one-pass discipline) is not evidence of
+  anything you score — the author is not an independent verifier, and treating that line as
+  quality is exactly how the pass gets gamed. Score the artifact, not the claim about it.
 
 ## Returning
 

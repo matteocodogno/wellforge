@@ -38,6 +38,12 @@ Key properties:
   refuses a non-approved plan.
 - **Bidirectional coverage**: every AC covered by ≥1 task, every task serves ≥1 AC
   (taskless work = scope creep, flagged).
+- **Self-critique before the gate** (`self-critique` skill): whoever writes an artifact
+  runs **one** bounded pass over it — against a per-artifact checklist of known failure
+  modes (an AC a QE couldn't test, a contract written as prose, a `touch:` list that lies,
+  a test that cannot fail) — before the human gate, dispatch, or QE sees it. It raises the
+  floor of what reaches a reviewer; it approves nothing, blocks nothing, and is never
+  evidence in a verdict. Off at the `spike` tier, where `// SPIKE:` markers do that job.
 - **Drift rule**, mechanically enforced by a Stop hook: if `spec.md`/`plan.md` change
   without re-syncing `tasks.md`, the session cannot finish cleanly.
 - Re-running `/wellforge:tasks` preserves completed tasks (re-sync mode).
@@ -112,6 +118,12 @@ When anything goes red, every agent (and the main loop) debugs under the
 silencing a symptom with a raised timeout / retry / skipped test / lowered threshold, and a
 **3-failed-attempts stop** that treats the fourth try as an architecture question — routed as
 drift to the architect, not patched.
+
+Before returning, every artifact-producing agent runs one self-critique pass over its own
+output (`self-critique` skill) and reports in one line what it fixed or deliberately kept —
+so a human gate sees what was already caught. The pass is deliberately *not* a verifier: the
+author is not independent, one pass never becomes a loop, and QE, the evaluator and the human
+gates judge exactly as before. The evaluator is explicitly told never to credit it.
 
 ## 3. AI orchestrator
 

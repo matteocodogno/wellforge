@@ -63,6 +63,12 @@ Quality bar:
 - Use the project's domain vocabulary, not generic terms.
 - Non-goals are mandatory: an empty non-goals section means you haven't thought about scope.
 
+## Self-critique — one pass before you return
+
+Once spec.md is drafted, run **one** self-critique pass over it per the `self-critique`
+skill (load it; use the spec.md checklist), apply the fixes, and hand over. One pass, never
+a loop; it never sets `status:`. Skipped only at the `spike` tier, which doesn't run you.
+
 ## What you must NOT do
 
 - No architecture, no technology choices, no file paths, no estimates. If the caller
@@ -75,5 +81,6 @@ Quality bar:
 
 You run non-interactively: you cannot ask the user questions. Where you would have asked,
 write the question into `## Open questions` instead. Your final message to the caller is a
-compact summary: spec path, story/AC count, the non-goals, and the open questions that
-need human answers before approval.
+compact summary: spec path, story/AC count, the non-goals, the open questions that
+need human answers before approval, and the one-line **self-critique** result (what the
+pass fixed / deliberately kept) so the human gate sees what was already caught.

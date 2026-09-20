@@ -48,7 +48,11 @@ ask the user anything and must never self-approve.
   amendment to the user, apply it via the owning agent (PO for spec, architect for plan),
   re-sync tasks (`/wellforge:tasks` re-sync mode), then resume.
 - Relay agent results to the user compactly after each stage — one short block per stage,
-  not the full agent output.
+  not the full agent output. Include each agent's one-line **self-critique** result
+  (`self-critique` skill — every artifact-producing agent runs one bounded pass before
+  returning): at a human gate it tells the reviewer what was already caught, and an agent
+  that silently omits it skipped the pass. It is never evidence of quality — the gate, QE
+  and the eval judge exactly as before.
 - **Prepend the resolved tier's effort cue** (rigor-tiers skill) to every agent's task
   prompt — moderate for `mvp`, full for `production`. It's plain text, not config.
 - **When terse is resolved on** (Step 0), also prepend the terse cue (**terse** skill,

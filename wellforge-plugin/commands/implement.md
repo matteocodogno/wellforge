@@ -80,7 +80,10 @@ The argument is `[feature] [tasks]` — both optional, feature first.
   completion and commits `feat(<scope>): <title> (T<n>, specs/NNN)`, exactly as before.
 - A batch of **two or more** agents runs with **worktree isolation** (below) so their edits
   cannot collide.
-- Relay each agent's result compactly (files touched, test/lint output — actual numbers).
+- Relay each agent's result compactly (files touched, test/lint output — actual numbers,
+  and its one-line **self-critique** result: every dev agent runs one bounded pass over its
+  own diff before returning (`self-critique` skill). An agent that omits the line skipped
+  the pass; the line is never a substitute for the QE step below.)
 - **Drift / blocker** from any agent pauses that track: surface the proposed amendment,
   route it to the owning agent (PO for spec, architect for plan), re-sync via
   `/wellforge:tasks`, then resume. Never let an agent silently work around a wrong spec.

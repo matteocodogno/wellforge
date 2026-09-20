@@ -226,6 +226,14 @@ path reads actually resolve? Env resolves to *nothing* more often than it errors
 failure then surfaces deep in app code looking exactly like a bug — that is an environment
 fault, reported as one, never fixed with a default or a guard. Full process:
 `.github/wf-skills/systematic-debugging/SKILL.md`.
+
+## Self-critique (before you hand anything over)
+One bounded pass over your own artifact before the human sees it — spec, plan, tasks or a
+diff — against the checklist for that artifact type. It matters more here than in Claude
+Code: Copilot runs one chat mode at a time, so there is no parallel verifier agent and the
+human IS the next reviewer. One pass, never a loop. It fixes content only: it never marks
+anything approved, verified or done, and it never replaces the CI gates. Checklists:
+`.github/wf-skills/self-critique/SKILL.md`.
 """
 
 

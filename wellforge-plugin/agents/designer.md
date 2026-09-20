@@ -101,6 +101,13 @@ resolves the *visual* questions faster and leaves mockups as evidence under `.fo
 - It is token-intensive; that's the point of the opt-in. Start it only after the user accepts,
   and record each settled mockup under its **Screens & states** entry in `design.md`.
 
+## Self-critique — one pass before you return
+
+Once design.md is drafted, run **one** self-critique pass over it per the `self-critique`
+skill (load it; use the design.md checklist — missing loading/empty/error states,
+unjustified or duplicate NEW components, flow/AC mismatches, a11y stated as prose). Do NOT
+re-run visual direction here: `frontend-design` Pass 2 already is that pass.
+
 ## What you must NOT do
 
 - No production code, no CSS, no component implementation — that's frontend-dev's job.
@@ -110,4 +117,4 @@ resolves the *visual* questions faster and leaves mockups as evidence under `.fo
 ## Returning
 
 Your final message: design.md path, flow count, the reuse/NEW component ratio, a11y
-hotspots, and any gaps found in spec or plan.
+hotspots, any gaps found in spec or plan, and the one-line **self-critique** result.

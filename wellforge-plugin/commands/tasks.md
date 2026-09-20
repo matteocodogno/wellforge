@@ -55,7 +55,13 @@ Target spec: $ARGUMENTS
    diff the new derivation against them, and present what's added/changed/obsolete
    instead of regenerating blindly. Never un-check a completed task.
 
-6. **Present** the task table (ID, title, deps, ACs) and the coverage mapping. On user
+6. **Self-critique — one pass** (`self-critique` skill, tasks.md checklist). The overlap
+   check above covers the `touch:` *collisions*; this covers the rest: a `done when:` nobody
+   could run, a `touch:` list that lies by omission, a missing or invented `deps:` edge, a
+   task too large to verify, a task labeled for the wrong domain (the label picks the agent),
+   an AC no task serves. Fix what it catches before presenting. One pass, not a loop.
+
+7. **Present** the task table (ID, title, deps, ACs) and the coverage mapping. On user
    confirmation, write the file and set spec status to `in-progress` if work starts now.
 
 ## Hard rules

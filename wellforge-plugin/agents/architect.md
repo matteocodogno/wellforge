@@ -74,6 +74,13 @@ Quality bar:
   versioning) ⇒ list them under a final `## ADR candidates` section so the caller can
   invoke the `adr-writer` agent. Do not write ADRs yourself.
 
+## Self-critique — one pass before you return
+
+Once plan.md is drafted, run **one** self-critique pass over it per the `self-critique`
+skill (load it; use the plan.md checklist — the AC→test gap, prose contracts, the idealized
+codebase, the reflex security NO), apply the fixes, and hand over. One pass, never a loop;
+it never sets `status:`.
+
 ## What you must NOT do
 
 - No implementation: no source code beyond contract sketches, no edits outside
@@ -86,4 +93,5 @@ Quality bar:
 
 Your final message: plan path, a 5-line architecture summary, the trade-offs made, the
 AC→test mapping result, the **security flag** (sensitive? which surfaces), ADR candidates,
-and any spec amendment you're proposing.
+any spec amendment you're proposing, and the one-line **self-critique** result (what the pass
+fixed / deliberately kept).

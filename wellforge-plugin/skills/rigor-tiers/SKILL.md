@@ -39,6 +39,7 @@ real. The failure mode this design exists to prevent: a spike silently becoming 
 | Quality gates | lint + typecheck + build, **advisory** | + smoke tests + SAST-high **blocking**; coverage advisory | full 80% coverage + SAST + eval |
 | Eval (LM-judge) | off | off | on — the gate into `done` |
 | Effort cue | minimal (bias to speed) | moderate (pragmatic) | full (deliberate) — see below |
+| Self-critique pass | off (`// SPIKE:` markers instead) | on (checklist) | on (full) — see [[self-critique]] |
 
 `mvp` gets cheaper not by re-tiering agents (frontmatter `model:` is fixed per agent) but by
 **composition** — it simply never spawns the frontier agents (architect, evaluator). See
@@ -68,6 +69,14 @@ applies it to itself):
 This is a nudge, not a hard budget — honest about the seam. Where a tool exposes a real
 thinking-budget parameter, a future `model-tiers.yml`-style mapping could bind these levels to
 it; until then the directive is the mechanism.
+
+## Self-critique — cheap at every tier that runs an agent
+
+One bounded pass over your own artifact before handing it over ([[self-critique]]). It sits
+beside the effort cue and is *not* a gate: it never approves, never blocks, and never counts
+as evidence in a QE or eval verdict — it only stops known, checklist-shaped defects from
+consuming a reviewer's round. `spike` skips it (no agents, shortest path — the `// SPIKE:`
+marker records the cut instead); `mvp` and `production` run it, once.
 
 ## Security floor — non-negotiable, ALL tiers (incl. spike)
 

@@ -27,10 +27,16 @@ Feature request: $ARGUMENTS
    - Non-goals: anything a reasonable reader might assume is included but isn't.
    - Open questions: what you still don't know, each with an owner.
 
-4. **Review with the user.** Present a compact summary (stories + ACs + non-goals, not the
-   whole file). Iterate until they're satisfied.
+4. **Self-critique — one pass** (`self-critique` skill, spec.md checklist). Re-read the
+   draft against the checklist and fix what it catches (unverifiable ACs, hidden ANDs,
+   solutioning that crept into the WHAT, orphan stories, empty non-goals, an assumption
+   phrased as a fact) *before* spending the user's review round on it. One pass, not a loop;
+   it never sets `status:`. Skip at the `spike` tier.
 
-5. **Approval gate.** Ask explicitly whether to mark the spec `approved`. Only on an
+5. **Review with the user.** Present a compact summary (stories + ACs + non-goals, not the
+   whole file) plus the one-line self-critique result. Iterate until they're satisfied.
+
+6. **Approval gate.** Ask explicitly whether to mark the spec `approved`. Only on an
    explicit yes: set `status: approved` and add `approved: <date>` to the frontmatter.
    If open questions remain, approval requires the user to accept them as risk —
    record that in the spec.

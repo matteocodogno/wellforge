@@ -543,6 +543,46 @@ Phase 13 carried, and the reason this phase exists. Validation is the next pilot
 also the only thing that can tell us whether the preflight's sequential fallback fires too often
 to be tolerable.
 
+## Phase 17 — Reflexive pass: self-critique before the verifier (added 2026-09-20)
+
+Goal: close the one AI-agent design pattern WellForge had no answer for. Mapped against the
+five standard patterns, the plugin covers single-shot (`status`, `triage`), iterative ReAct
+(`spike`, dev agents' verify loop), planner-executor (`orchestrate` — the core design) and
+verifier-gated (QE deterministic + evaluator adversarial, doubled). **Reflexive** —
+generate → self-critique → refine — existed only inside `frontend-design` Pass 2. Everywhere
+else an artifact went straight from its author to an expensive reviewer, so a vague AC or a
+test that asserts a mock cost a full human-gate, QE or eval round to discover.
+
+- ☑ **`self-critique` skill** (plugin `2.27.0`) — the authority; agents and commands delegate.
+  Three rules: **one pass, never a loop** (unbounded self-refinement drifts toward the
+  author's taste and burns tokens), **against a checklist, not vibes** ("looks good" on every
+  item means the pass didn't happen), and **never self-approve**. Five per-artifact checklists
+  of failure modes observed to survive an author's own read — spec.md (unverifiable AC, hidden
+  AND, solutioning in the WHAT, assumption smuggled in as fact), plan.md (AC→test gap, prose
+  contract, idealized codebase, reflex `Security: NO`), design.md (missing loading/empty/error
+  state, unjustified NEW), tasks.md (`done when:` nobody can run, a `touch:` list that lies —
+  a scheduling edge, so an omission is a pre-scheduled collision), and code (a test that cannot
+  fail, shape drift from plan.md, a corner cut to make something pass).
+- ☑ **Wired** into product-owner, architect, designer, frontend-dev, backend-dev and devops
+  (one section + a one-line result in each agent's return), and into the main-loop commands
+  that write artifacts themselves — `/wellforge:spec` (new step 4), `/wellforge:plan` (step 5),
+  `/wellforge:tasks` (step 6); `/wellforge:design` relays the designer's line. `orchestrate`
+  and `implement` relay the line so a human gate sees what was already caught. Tier-gated in
+  `rigor-tiers`: **off at `spike`** (no agents, and `// SPIKE:` already records the cut), on at
+  `mvp`/`production`.
+- ☑ **Anti-gaming**, the part that makes this safe to add: the evaluator is explicitly
+  forbidden from crediting an author's own review — a "Self-critique: clean" line is a claim
+  about an artifact, not evidence about it. The pass gates nothing and blocks nothing;
+  independent verification stays the authority. Copilot gets the rule repo-wide in
+  `copilot-instructions.md` (it runs one chat mode at a time, so the human *is* the next
+  reviewer there); OpenCode picks the skill up through the generic skill copy.
+
+Honest status: prompt-authored, verified by re-running both adapter generators and the
+model-routing guard. No runtime teeth and deliberately none — a hook cannot tell a real
+critique pass from a line of text claiming one, which is precisely why the evaluator is told
+to ignore the claim. What would falsify the phase: human-gate iterate-rounds per spec, and
+QE/eval first-round FAIL rates, before vs. after. Both need the Phase 7 pilot.
+
 ## Order & dependencies
 
 ```

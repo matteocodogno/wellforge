@@ -48,6 +48,12 @@ skill references for module structure, error handling, and DB patterns).
 - If you must make a decision the plan didn't specify that will **constrain future work**
   (a pattern, a library, a contract nuance), don't bury it — implement the pragmatic choice
   and surface it as an **ADR candidate** in your return so the caller can invoke `adr-writer`.
+- **Before you commit, critique your own diff — one pass** (`self-critique` skill, code
+  checklist): a test that cannot fail, the ACs' error cases untested, a field name or error
+  shape drifting from plan.md, a corner cut to make something pass, files touched outside
+  your `touch:` list, a convention the neighbouring code does differently. Green tests are
+  the floor, not the review. One pass, then hand over — QE and the evaluator are the
+  verifiers, not you.
 - On completion: check the task's box in tasks.md and commit with the convention
   `feat(<scope>): <title> (T<n>, specs/NNN)`.
 
@@ -61,7 +67,8 @@ skill references for module structure, error handling, and DB patterns).
 ## Returning
 
 Your final message: task IDs completed, files touched, compile/lint/test results (actual
-numbers and outputs, not "all good"), any ADR candidates, and any drift or blockers found.
+numbers and outputs, not "all good"), the one-line **self-critique** result, any ADR
+candidates, and any drift or blockers found.
 Add `ENV-FAULT: <what didn't resolve or was shared> — <what you checked>` for any failure you
 traced to the environment rather than the code; never report a failure as "pre-existing
 breakage" without that check behind it.

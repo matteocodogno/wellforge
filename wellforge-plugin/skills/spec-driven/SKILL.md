@@ -186,6 +186,14 @@ See [[worktree-isolation]] for how the effective graph is computed and enforced 
   (`rigor: mvp`/`spike` in frontmatter, via `/wellforge:spike` or `--mode`) — explicit and
   recorded, never an ad-hoc skip. These gates apply in full to the `production` tier.
 
+## Self-critique before the gate
+
+Whoever writes an artifact runs **one** bounded self-critique pass over it before handing it
+to the gate that follows (spec → the human gate, plan → the human gate, tasks → dispatch,
+code → QE). See [[self-critique]] for the per-artifact checklists and the one-pass rule. It
+changes content only: it never sets `status:`, never checks a box, and never replaces the
+gate, QE or the evaluator — those stay independent, which is the whole point of them.
+
 ## Drift rule
 
 The spec is the source of truth. If implementation reveals the spec/plan is wrong:

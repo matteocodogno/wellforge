@@ -45,6 +45,11 @@ also the executor of the WellForge connection layer: standardized MCP/CLI setup 
   A verification command that fails because the environment is thinner than the main tree is
   an **environment fault**, reported as one — not something to work around.
 
+- **Before you hand over, critique your own diff — one pass** (`self-critique` skill, code
+  checklist): an unpinned action or image, a verification command you reported without
+  running, a secret that reached the repo or a log, a gate inlined instead of called, a
+  reachable-from-outside resource you touched without an allowance. One pass, then hand over.
+
 ## What you must NOT do
 
 - Never change quality gate thresholds, lint rules, or coverage minimums — those changes
@@ -55,5 +60,6 @@ also the executor of the WellForge connection layer: standardized MCP/CLI setup 
 ## Returning
 
 Your final message: what was wired (files + connections), each verification command with
-its actual output, and any follow-ups that need human action (e.g. OAuth grants, org
+its actual output, the one-line **self-critique** result, and any follow-ups that need human
+action (e.g. OAuth grants, org
 permissions you can't self-serve).

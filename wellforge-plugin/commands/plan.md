@@ -32,10 +32,16 @@ Target spec: $ARGUMENTS
    - Security: flag whether the feature is security-sensitive (auth, PII, upload, external
      calls, payments, regulated data) — YES schedules an owasp pass in parallel with QE.
 
-5. **Review with the user.** Present the architecture and the trade-offs you made (what
-   you chose AND what you rejected). Iterate.
+5. **Self-critique — one pass** (`self-critique` skill, plan.md checklist). Re-read the
+   draft against the checklist and fix what it catches (an AC with no test row or a row that
+   wouldn't prove it, a contract written as prose, a component you never opened a real path
+   for, a reflex `Security: NO`, a risk with no early check, a buried ADR candidate) *before*
+   the user's review round. One pass, not a loop; it never sets `status:`.
 
-6. **Approval gate.** Ask explicitly whether to mark the plan `approved`. Only on an
+6. **Review with the user.** Present the architecture and the trade-offs you made (what
+   you chose AND what you rejected), plus the one-line self-critique result. Iterate.
+
+7. **Approval gate.** Ask explicitly whether to mark the plan `approved`. Only on an
    explicit yes, set `status: approved`. Then suggest the next step **by feature type**:
    - **UI feature** → recommend `/wellforge:design NNN-slug` first (flows/screens/component
      reuse so frontend tasks derive from a real inventory), *then* `/wellforge:tasks`.
