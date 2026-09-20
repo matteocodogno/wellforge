@@ -288,6 +288,34 @@ Generated projects are not snapshots — they follow the template:
 The whole loop is E2E-tested: scaffold at v0.1.0 → template evolves → `copier update`
 → project at v0.1.1 with zero conflicts.
 
+- **`--dry-run`** on `upgrade`, `promote`, `adopt` and `release`: the plan of record —
+  every file that would change, the exact commands, what is **irreversible**, and what the
+  preview honestly **cannot** predict (copier's `--pretend` doesn't resolve conflicts; a
+  promotion can't know whether the eval will pass). It writes nothing and spawns no agents.
+- **Three terminal statuses, one guarded command.** `/wellforge:done` closes a feature that
+  met its gate; `--superseded-by <NNN-slug>` retires one another spec took over;
+  `--archive "<reason>"` retires one that was deliberately stopped (reason required). No
+  other command may write a terminal status, so the gate cannot be routed around.
+
+## 7. Operability
+
+- **`/wellforge:doctor`** — the health check: toolchain, declared MCP servers, hooks whose
+  scripts exist and are executable, both drift guards, project shape and template drift,
+  git policy config. Every FAIL carries its fix command; `--tests` additionally runs the
+  plugin's own regression matrices (guards, Stop hook, cost attribution). Read-only by
+  rule, and it never reports a check it couldn't make — live MCP connections are shown as
+  *declared*, with `/mcp` named as what actually proves them. It closes with the command
+  index, so it doubles as `help`.
+- **Drift guards in CI** — `check-routing.py` (agent models match the routing policy),
+  `check-docs.py` (the README lists every command, skill and MCP server; CLAUDE.md's quoted
+  version matches `plugin.json`; skill descriptions stay under the loader's limit; no
+  dangling `[[wiki-link]]`), and `rubric-sync` (the plugin's eval-rubric mirror is
+  byte-identical to the central one). Each exists because the corresponding failure is
+  silent — a command nobody can find, a cost estimate that still prints a number.
+- **Portable conventions** — `git-policy`, `quality-gates` and `template-contract` ship as
+  skills, not just repo files, so an agent working inside a *generated* project can load
+  the rules it is being held to.
+
 ---
 
 ## See also

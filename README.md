@@ -17,7 +17,7 @@
 ```
 
 ![template](https://img.shields.io/badge/template-v0.9.0-1f6feb)
-![plugin](https://img.shields.io/badge/plugin-v2.23.1-8957e5)
+![plugin](https://img.shields.io/badge/plugin-v2.32.0-8957e5)
 ![gates](https://img.shields.io/badge/gates-gates--v11-2da44e)
 ![works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode%20%2B%20Copilot-111)
 ![license](https://img.shields.io/badge/license-MIT-green)
@@ -91,7 +91,15 @@ In a hurry? **`/wellforge:spike <idea>`** gets a working prototype in minutes.
 /wellforge:adopt        onboard an existing (brownfield) repo — incrementally
 /wellforge:upgrade      re-template a project to a newer release, AI-resolved conflicts
 /wellforge:status       where every feature stands + the exact next command to run
+/wellforge:triage       spec-health digest — what's rotting (stale, drifted, never eval'd)
+/wellforge:doctor       health check: tools, MCP, hooks, guards — and the command index
 ```
+
+`--dry-run` on `upgrade`, `promote`, `adopt` and `release` shows the plan of record —
+files, commands, what's irreversible, and what it honestly cannot predict — and changes
+nothing. A feature that stops without shipping gets a real exit, not a hand-edit:
+`/wellforge:done <feature> --archive "<reason>"`, or `--superseded-by <other>` when another
+spec took the work over.
 
 ## Rigor tiers — as fast or as careful as the work deserves
 

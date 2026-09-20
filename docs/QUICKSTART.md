@@ -3,6 +3,18 @@
 From product idea to a building, CI-gated, spec-driven repo — target: **under 30 minutes**.
 Assumes [installation](INSTALLATION.md) is done.
 
+## 0. Check the install (10 seconds)
+
+```
+/wellforge:doctor
+```
+
+One table: tools, MCP servers, hooks, drift guards, project shape — with a fix command for
+anything red, and the command index at the end if you just want to see what's available.
+Worth running before your first scaffold, because the failures it catches are the silent
+ones (no `jq` → every hook quietly does nothing; no `uv` → `new` fails inside copier with a
+confusing error).
+
 ## 1. Scaffold
 
 Open Claude Code in the directory where the project should live and run:
