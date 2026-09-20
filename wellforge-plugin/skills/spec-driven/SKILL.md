@@ -156,6 +156,21 @@ generated: 2026-06-04
 - [ ] T2: ... — deps: T1
 ```
 
+At **rigor `mvp`** the file additionally opens with the folded-away plan — the architect
+never ran, so the contracts have to live somewhere a dev agent will read:
+
+```markdown
+## Architecture notes        <!-- mvp ONLY: no plan.md exists. Omit at production. -->
+- Components: <what is touched or added>
+- Contracts: <per task — concrete request/response shapes incl. error cases>
+- Data model: <schema change + migration>
+- Deferred: <what this tier is knowingly not doing>
+```
+
+A contract written there binds the dev agents exactly as a plan.md contract does; drift
+against it is drift, routed to the PO (mvp has no architect). At `production` the section
+must be absent — plan.md is the contract, and a second copy drifts from it.
+
 Rules: every task references at least one AC; every AC is covered by at least one task;
 `deps:` must form a DAG (tasks with no mutual deps may run in parallel).
 
@@ -180,7 +195,10 @@ See [[worktree-isolation]] for how the effective graph is computed and enforced 
 ## Workflow gates
 
 - `/wellforge:plan` MUST refuse to run if spec.md status is not `approved`.
-- `/wellforge:tasks` MUST refuse to run if plan.md status is not `approved`.
+- `/wellforge:tasks` MUST refuse to run if the tier's upstream artifact is not `approved`:
+  `plan.md` at `production`, **`spec.md` at `mvp`** (that tier has no plan.md by design —
+  see [[rigor-tiers]]). `/wellforge:implement` gates the same way. Gating an mvp feature on
+  an approved plan dead-ends it permanently: nothing in the flow ever produces one.
 - Never skip a stage "because it's small" — for trivial changes the spec is 10 lines, not
   absent. The ONLY sanctioned way to run fewer stages is a **declared lower rigor tier**
   (`rigor: mvp`/`spike` in frontmatter, via `/wellforge:spike` or `--mode`) — explicit and

@@ -37,8 +37,14 @@ The argument is `[feature] [tasks]` — both optional, feature first.
      in-progress), list them and ask which feature.
    - State which feature you resolved before doing anything. Read its spec.md, plan.md,
      and tasks.md fully.
-2. **Gate check.** That feature's `tasks.md` must exist and its plan be `approved`.
-   Otherwise STOP and point at `/wellforge:tasks` (or `/wellforge:plan`) for this feature.
+2. **Gate check — tier-aware** (Step 0 already resolved the tier). `tasks.md` must exist;
+   what must be approved upstream depends on the tier, because an `mvp` feature has **no
+   plan.md by design** (rigor-tiers: "plan folded into tasks") and gating it on one would
+   dead-end it:
+   - **`production`** → `plan.md` must be `approved`.
+   - **`mvp`** → `spec.md` must be `approved`; the contracts live in tasks.md's
+     `## Architecture notes`. Read that section as the plan and pass it to the dev agents.
+   Otherwise STOP and point at `/wellforge:tasks` (or, at `production`, `/wellforge:plan`).
 3. **Selection** — the remaining tokens (everything after the feature) choose tasks
    WITHIN that feature:
    - explicit IDs / comma list / `Tn-Tm` range → those tasks

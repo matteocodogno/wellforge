@@ -260,6 +260,18 @@ through full production rigor. **Full plan + per-phase detail: [PLAN-rigor-tiers
 Defer-don't-lower: a lower tier is tracked debt, raised only via promote, production only on
 an eval PASS. Self-CI (`.github/workflows/ci.yml`) added alongside.
 
+**Follow-up fix** (plugin `2.27.2`, 2026-09-20): the `mvp` tier was defined but its path was
+blocked. `/wellforge:tasks` and `/wellforge:implement` both gated on an **approved plan.md**
+with no tier exception, while `orchestrate`'s mvp pipeline, `promote --to mvp` and
+`/wellforge:status` all route mvp features — which have no plan.md *by design* — into exactly
+those commands. Followed literally, every mvp feature dead-ended, and nothing in the flow
+would ever produce the plan they were waiting for. Both gates are now tier-aware (plan at
+`production`, spec at `mvp`, `spike` redirected), the spec-driven skill's absolute "MUST
+refuse unless plan.md is approved" bullet is qualified, and the folded-away plan has a
+defined home: a `## Architecture notes` section in tasks.md that `orchestrate` already
+assumed existed but no format defined. The lesson is the same one Phase 9's rubric fix
+taught: a tier that is never exercised end-to-end is a tier that is only *written*.
+
 ## Phase 11 — SDLC extension & hardening (added 2026-06-29)
 
 Goal: close outer-loop gaps and harden the agent system, off the back of an "is this all of
