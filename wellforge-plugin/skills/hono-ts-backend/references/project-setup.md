@@ -75,7 +75,24 @@ pnpm add jose               # JWT utilities
 
 ---
 
+> **Version pins below are from 2025-01 and are a major behind on several packages**
+> (checked against the registry 2026-09-20: zod 3→4, @hono/zod-openapi 0.18→1.x, Biome
+> 1.9→2.x, Vitest 2→5, TypeScript 5→7). They are left as-is deliberately: each is a
+> migration with code changes — zod 4 alone moves `.uuid()` to `z.uuid()` and
+> `error.errors` to `error.issues`, and `@hono/zod-openapi` 1.x requires zod 4 — and this
+> file's examples use the v3 idioms throughout. Bumping the numbers without migrating the
+> examples would ship code that doesn't compile. See the open item in `docs/PLAN.md`
+> (Phase 7): do it as one coordinated change, verified against a generated project that
+> builds and tests green.
+
 ## Package.json Scripts
+
+> **`build` is two steps, and must stay two steps.** With `"type": "module"`, `tsc` emits
+> import specifiers verbatim — extensionless (`./app`) and unresolved (`@/routes`) — while
+> Node ESM requires a real path with an extension. So `tsc` succeeds, and
+> `node dist/index.js` dies at the first relative import with `ERR_MODULE_NOT_FOUND`: the
+> build is green and the Docker image never starts. `tsc-alias -f` rewrites both forms.
+> Reproduced and fixed on a generated project 2026-09-20.
 
 ```json
 {
@@ -84,7 +101,7 @@ pnpm add jose               # JWT utilities
   "type": "module",
   "scripts": {
     "dev": "tsx watch --clear-screen=false src/index.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias -f",
     "start": "node dist/index.js",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
@@ -118,6 +135,7 @@ pnpm add jose               # JWT utilities
     "@vitest/coverage-v8": "^2.1.8",
     "drizzle-kit": "^0.28.1",
     "testcontainers": "^10.17.0",
+    "tsc-alias": "^1.8.10",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
@@ -538,7 +556,7 @@ coverage/
 **Dockerfile:**
 
 ```dockerfile
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -558,7 +576,7 @@ COPY . .
 RUN pnpm build
 
 # Production image
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001

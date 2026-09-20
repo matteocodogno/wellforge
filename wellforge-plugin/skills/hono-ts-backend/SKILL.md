@@ -399,25 +399,25 @@ export const createUserService = (repo: UserRepository) => ({
     ),
 
   create: (input: CreateUserInput): Effect.Effect<User, ValidationError | DatabaseError> =>
-    Effect.gen(function* (_) {
+    Effect.gen(function* () {
       // Check if email exists
-      const existing = yield* _(repo.findByEmail(input.email))
+      const existing = yield* repo.findByEmail(input.email)
 
       if (existing) {
-        return yield* _(Effect.fail(
+        return yield* Effect.fail(
           new ValidationError({ message: 'Email already exists', field: 'email' })
-        ))
+        )
       }
 
       // Hash password
-      const passwordHash = yield* _(hashPassword(input.password))
+      const passwordHash = yield* hashPassword(input.password)
 
       // Create user
-      return yield* _(repo.create({
+      return yield* repo.create({
         email: input.email,
         name: input.name,
         passwordHash
-      }))
+      })
     })
 })
 
@@ -533,14 +533,14 @@ describe('UserService', () => {
 Multi-stage build with health checks:
 
 ```dockerfile
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
-FROM node:20-alpine
+FROM node:22-alpine
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 WORKDIR /app
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist

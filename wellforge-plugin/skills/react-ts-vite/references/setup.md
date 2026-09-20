@@ -38,14 +38,20 @@ Create `src/vite-env.d.ts` (extends Vite's default triple-slash reference):
 ```typescript
 /// <reference types="vite/client" />
 
-type ImportMetaEnv = {
+// INTERFACE, not `type` — these two names are DECLARATION MERGES, the one place this
+// codebase's "prefer type aliases" rule must not apply. `vite/client` already declares
+// `interface ImportMetaEnv`, and TypeScript's own lib.es5 declares `interface ImportMeta`;
+// a type alias cannot merge with either, so `type ImportMeta = {...}` fails with
+// `TS2300: Duplicate identifier 'ImportMeta'` against the standard lib — with or without
+// vite installed. Augmenting means extending what is already there.
+interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string
   readonly VITE_APP_NAME: string
   readonly VITE_FEATURE_FLAG_NEW_DASHBOARD: 'true' | 'false'
   // add every VITE_ var used in the codebase here
 }
 
-type ImportMeta = {
+interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 ```

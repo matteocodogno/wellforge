@@ -8,10 +8,9 @@ description: >
   Covers project + stack layout, typed config, `ComponentResource` abstractions, CrossGuard
   policy-as-code, unit testing with Pulumi mocks, the keyless credential model (ADC + Workload
   Identity Federation), and state backends. Trigger for any Pulumi TS task — even "add a bucket",
-  "create a component", "write a policy", or "add a stack". FIRST confirm the target: this is
-  **infrastructure** (Pulumi), not an application backend — for a Hono API use `hono-ts-backend`,
-  for Spring use `springboot-scaffold`. This skill is the source of truth for the `pulumi-gcp-ts`
-  Copier preset (`templates/pulumi-gcp-ts/`); pinned versions here and in the template must match.
+  "create a component", "write a policy", or "add a stack". This is **infrastructure**, not an
+  application backend — for a Hono API use `hono-ts-backend`, for Spring `springboot-scaffold`.
+  Source of truth for the `pulumi-gcp-ts` Copier preset; versions here and there must match.
 ---
 
 # Pulumi + TypeScript on GCP — Best Practices

@@ -49,7 +49,7 @@ invokes, so the gate works on the `infra` working-directory with no special-casi
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "lib": ["ES2020"],
     "strict": true,
     "noUncheckedIndexedAccess": true,

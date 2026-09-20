@@ -279,28 +279,25 @@ import { Effect } from 'effect'
 const createUser = (
   input: CreateUserInput
 ): Effect.Effect<User, ValidationError | DuplicateError | DatabaseError> => {
-  return Effect.gen(function* (_) {
+  return Effect.gen(function* () {
     // Check if email exists
-    const existingUser = yield* _(findUserByEmail(input.email))
+    const existingUser = yield* findUserByEmail(input.email)
 
     if (existingUser) {
-      return yield* _(
-        Effect.fail(
-          new DuplicateError({
-            resource: 'User',
-            field: 'email',
-            value: input.email,
-          })
-        )
+      return yield* Effect.fail(
+        new DuplicateError({
+          resource: 'User',
+          field: 'email',
+          value: input.email,
+        })
       )
     }
 
     // Hash password
-    const passwordHash = yield* _(hashPassword(input.password))
+    const passwordHash = yield* hashPassword(input.password)
 
     // Create user
-    const user = yield* _(
-      Effect.tryPromise({
+    const user = yield* Effect.tryPromise({
         try: async () => {
           const [newUser] = await db
             .insert(users)
@@ -315,7 +312,7 @@ const createUser = (
         },
         catch: error => new DatabaseError({ message: 'Insert failed', cause: error }),
       })
-    )
+    
 
     return user
   })

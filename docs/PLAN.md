@@ -211,6 +211,27 @@ three times over.** Running the outstanding pilot item instead of reasoning abou
 The pattern of the whole day, in its purest form: four defects in the one path nobody had
 executed, each hidden behind the one before it.
 
+**Same day, the stack pins.** Fixed and verified: the Hono backend's `dist/` was never
+runnable (`"type": "module"` + bare `tsc` emits extensionless, alias-unresolved specifiers →
+`node dist/index.js` dies with `ERR_MODULE_NOT_FOUND`, so the Docker image never started;
+`tsc && tsc-alias -f` fixes it, reproduced and re-verified on a fresh scaffold);
+`vite-env.d.ts` declared `ImportMetaEnv`/`ImportMeta` as **type aliases** in both templates
+and the skill, which cannot merge with `vite/client`'s and lib.es5's interfaces (`TS2300`,
+reproduced with plain tsc) — a casualty of the prefer-type-aliases rule, now the documented
+exception; Effect's removed generator adapter (`yield* _(x)`) in 14 places; `node:20-alpine`
+(EOL 2026-04) → `node:22-alpine`; pulumi's legacy `moduleResolution: "node"` → `node16`;
+"React 18+" → React 19; and the `pulumi-gcp-ts` skill description was 1043 chars against a
+1024 limit (every skill now measured).
+
+☐ **Open — the dependency majors.** Verified against the registry 2026-09-20: zod ^3.24→4.6,
+@hono/zod-openapi ^0.18→1.6, Biome ^1.9→2.5, Vitest ^2.1→5.0, TypeScript ^5.7→7.0, Tailwind
+^3.4→4.x. Deliberately NOT bumped here: each is a migration, not a pin edit (zod 4 moves
+`.uuid()`→`z.uuid()` and `error.errors`→`error.issues`; `@hono/zod-openapi` 1.x *requires*
+zod 4; Tailwind 4 is CSS-first with no JS config), the skills' examples use the v3 idioms
+throughout, and bumping numbers without migrating examples ships code that doesn't compile.
+It needs one coordinated change verified against a preset that builds and tests green —
+which the spring preset currently cannot do (Modulith, above). That ordering is the point.
+
 
 - ☐ Use WellForge end-to-end on the next real project start; time-box and measure
   (setup time, gate violations caught, friction notes).

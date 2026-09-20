@@ -379,11 +379,11 @@ export const authenticate: MiddlewareHandler<AppContext> = async (c, next) => {
 
   const token = authHeader.slice(7)
 
-  return await Effect.gen(function* (_) {
+  return await Effect.gen(function* () {
     const authService = c.get('authService')
-    const user = yield* _(authService.verifyToken(token))
+    const user = yield* authService.verifyToken(token)
     c.set('user', user)
-    return yield* _(Effect.promise(() => next()))
+    return yield* Effect.promise(() => next())
   }).pipe(
     Effect.catchAll(err =>
       Effect.succeed(c.json({ error: 'Invalid or expired token' }, 401))

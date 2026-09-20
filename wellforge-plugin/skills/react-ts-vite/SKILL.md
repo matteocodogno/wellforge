@@ -21,7 +21,7 @@ Production-grade React development with a clear, opinionated architecture. Every
 |---|---|
 | Bundler | Vite |
 | Language | TypeScript (strict) |
-| UI | React 18+ |
+| UI | React 19 |
 | Component Library | Mantine UI |
 | Routing | TanStack Router |
 | Data Fetching | TanStack Query |
