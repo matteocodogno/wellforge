@@ -891,6 +891,49 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 29 — The CLI gets its own release series (added 2026-09-20)
+
+`Formula/wellforge.rb` pinned the **template** tag, so the CLI could only ship when the
+template shipped — and the release rules require a template release to carry a template
+change. The result was not a slow channel, it was no channel: `scripts/wellforge` sat
+**179 insertions / 64 deletions** past `v0.9.0` with nothing to ride on, while
+`wellforge doctor` called every brew user's checkout current.
+
+- ☑ **`cli-vX.Y.Z`, the fourth series** in `docs/VERSIONING.md`, with the same rules as the
+  other three and one extra: semver by *user-visible CLI behaviour*, where major means a
+  removed subcommand, a renamed flag or a changed exit-status contract — scripts depend on
+  those.
+- ☑ **`WELLFORGE_CLI_VERSION` is the single source.** `wellforge version` prints it, the
+  Formula's `test` block asserts it, CI asserts it equals the newest `cli-v*` tag. The
+  Cellar-path derivation that used to *be* the version is kept only as a cross-check.
+- ☑ **`check_cli`** — the brew CLI and the checkout's copy are two different files, and
+  `wellforge update` pulls the checkout *before* upgrading brew, so the fix you just pulled
+  is not the one running. Doctor names both versions; `update` reports the constant it
+  moved from and to, read out of the file brew installed (the running process is still the
+  old CLI and cannot report the new version by looking at itself).
+- ☑ **`scripts/release-cli.sh`**, plan-only by default, with a `--formula-only` recovery
+  mode.
+
+**Why a CLI release is two commits, measured rather than assumed.** The Formula pins the
+sha256 of GitHub's generated tarball, which does not exist until the tag is pushed — and is
+not reproducible locally. For the existing `v0.9.0` tag: GitHub `b61eafcb…` (what the
+formula pins) vs a local `git archive` of the same tree, `746cc34f…`. So the tag comes
+first and the sha second, always.
+
+**Starting at 1.0.0, not 0.1.0**, because the formula already resolved `0.9.0` from the
+template tag: a lower number makes `brew upgrade` a silent no-op for everyone who already
+installed it. `version` is now explicit in the formula rather than parsed from the url.
+
+**Found while verifying:** `brew audit --strict` rejects `license "UNLICENSED"` as a
+non-standard SPDX identifier (now `:cannot_represent`). That finding also **corrected last
+phase's claim** that audit can only run after publication — it refuses a *path*, but runs
+in ~1.4s against a tapped repo, which is how the finding surfaced.
+
+**Left undone, and it needs a push:** the Formula still names the `v0.9.0` tarball. It can
+only move once `cli-v1.0.0` is pushed and its sha can be fetched —
+`scripts/release-cli.sh 1.0.0 --formula-only --execute` finishes it. The suite carries that
+as an xfail so the gap is visible rather than assumed away.
+
 ## Phase 28 — The CLI gets a regression matrix, and CI gets both halves (added 2026-09-20)
 
 `scripts/wellforge` is the first thing a teammate runs and was the only untested code in
