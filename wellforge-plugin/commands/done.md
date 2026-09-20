@@ -111,6 +111,12 @@ script checks, not a second implementation to run:
 - **`production`**
   1. every task in `tasks.md` checked (no `- [ ]` remaining)
   2. QE passed (latest verdict PASS — if stale/absent, run `/wellforge:implement` / QE)
+  2b. **security reviewed** — `verdicts.security` is PASS in the feature's run traces.
+     `production` reviews every batch (`config/security-triggers.yml` `always_at_tier`), so
+     at this tier a missing security verdict means the review never ran, not that it was
+     unnecessary. Absent → run `/wellforge:implement` (its Step 3b dispatches the reviewer);
+     FAIL → fix the findings first. A feature can pass every test and still ship an
+     unreviewed auth change, which is the gap this condition closes.
   3. `eval-report.md` exists, `verdict: PASS`, and is **not stale** (newer than the last code
      change to the feature) — otherwise point at `/wellforge:eval`
 - **`mvp`**

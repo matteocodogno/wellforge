@@ -98,9 +98,24 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
    - If an agent surfaces an **ADR candidate** (a decision it had to make that constrains
      future work and the plan didn't cover), collect it; after implementation, offer to spawn
      `wellforge:adr-writer` for it — same as the architect's ADR candidates at gate 2.
-9. **QE** → spawn `wellforge:quality-engineer` with the spec dir. Spawn `wellforge:owasp-reviewer`
-   **in parallel** when the plan flagged the feature security-sensitive (its `## Security`
-   note) — not only when QE recommends it; treat owasp findings ≥ medium as defects.
+9. **Security review, then QE.** Before QE, run the trigger check — the dispatch comes from
+   the task graph, not from anyone remembering:
+
+   ```bash
+   uv run --with pyyaml python ${CLAUDE_PLUGIN_ROOT}/scripts/security-triggers.py \
+     --tier <resolved tier> --diff-base <feature branch base> \
+     --touch '<each touch: glob in this batch>' --json
+   ```
+
+   It matches the union of declared `touch:` globs and the real `git diff --name-only`
+   against `config/security-triggers.yml`; `production` reviews every batch. On
+   `dispatch: true`, spawn `wellforge:owasp-reviewer` scoped to `scope[]` — **in parallel
+   with QE**, since neither waits on the other. The plan's `## Security` YES still forces a
+   pass, and so does a QE recommendation; the trigger check means none of the three is the
+   only thing standing between an auth change and a review. Findings ≥ medium are defects.
+   Record `verdicts.security` in the run trace with the matched rules.
+
+   Then spawn `wellforge:quality-engineer` with the spec dir.
    On any FAIL, follow the **rigor-tiers** skill's *"Routing a QE FAIL — triage before you
    loop"* section: the owner-per-defect table, the **2-round cap**, and its composition with
    `systematic-debugging`'s 3-attempt stop. It is defined there, once, for this command,

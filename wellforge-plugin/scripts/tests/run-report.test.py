@@ -100,8 +100,10 @@ check("downgrade is only flagged when the tiers differ",
 # 8c. BOTH trace schemas are read. v2 added plugin_version; v1 traces predate it and must
 #     still load — a reader that drops old traces on a schema bump turns the archive it
 #     exists to preserve into a silent gap.
-check("v1 and v2 are both accepted", sorted(rr.ACCEPTED_SCHEMAS),
-      ["wellforge-run/v1", "wellforge-run/v2"])
+# An exact list on purpose: a new schema version must be added here deliberately, which is
+# the moment to ask whether the old ones still load. They must.
+check("v1, v2 and v3 are all accepted", sorted(rr.ACCEPTED_SCHEMAS),
+      ["wellforge-run/v1", "wellforge-run/v2", "wellforge-run/v3"])
 import tempfile as _tf, os as _os, json as _json
 _d = _tf.mkdtemp(); _os.makedirs(_os.path.join(_d, "runs"))
 for _rid, _schema in (("old", "wellforge-run/v1"), ("new", "wellforge-run/v2")):

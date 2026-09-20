@@ -34,11 +34,11 @@ Every multi-agent run leaves an auditable trace. Two layers:
 `.forge/runs/` is created on first run. The semantic `*.json` files are the audit trail —
 keep them committed unless the team chooses otherwise. `.events.jsonl` is gitignored.
 
-## Semantic run trace — schema `wellforge-run/v2`
+## Semantic run trace — schema `wellforge-run/v3`
 
 ```json
 {
-  "schema": "wellforge-run/v2",
+  "schema": "wellforge-run/v3",
   "plugin_version": "2.39.0",
   "run_id": "<UTC ts, ':'→'-'>-<command>-<feature>",
   "command": "implement | orchestrate | eval | spike | promote | triage",
@@ -61,7 +61,7 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   "env_faults": [
     { "agent": "frontend-dev", "class": "secret env", "detail": "VITE_API_BASE_URL empty in worktree, set in main tree", "resolved_by": "carried .mise.local.toml in, re-ran" }
   ],
-  "verdicts": { "qe": "PASS", "eval": "PASS" },
+  "verdicts": { "qe": "PASS", "security": "PASS", "eval": "PASS" },
   "result": "completed | escalated | partial",
   "tokens": null,
   "cost_usd": null,
@@ -83,10 +83,15 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   with the plugin, so a trace read a year later needs to say which rules it was produced
   under. It is also the only way to tell "this project ran an old plugin" from "this run
   behaved oddly".
-- **`wellforge-run/v1` traces remain valid and are read unchanged.** v2 only adds
-  `plugin_version`; every v1 field means what it meant. Consumers accept both and treat a
-  missing `plugin_version` as unknown — never as an error, and never as a reason to skip a
-  run. A schema bump that orphans the history it exists to preserve is a bad trade.
+- **`verdicts.security`** is the owasp-reviewer's outcome: `PASS`, `FAIL`, or **absent when
+  no review was dispatched**. Absent and PASS must never read alike — at `production` every
+  batch is reviewed (`config/security-triggers.yml`), so an absent verdict there means the
+  review did not run, which is a failing done-gate condition rather than a silent pass.
+  Record the matched rules alongside it so a later reader can see *why* it ran.
+- **Every earlier schema stays readable.** v2 added `plugin_version`, v3 added
+  `verdicts.security`; no field ever changed meaning. Consumers accept v1, v2 and v3 and
+  treat a missing field as unknown — never as an error, never as a reason to skip a run.
+  A schema bump that orphans the history it exists to preserve is a bad trade.
 - **`rigor_recorded`** is the feature's own `rigor:` when a `--mode` flag ran this pass at a
   DIFFERENT tier; `null` when they agree (the normal case). `rigor` is always what actually
   ran. Keeping both is what makes a downgrade legible later: a run at `mvp` on a feature

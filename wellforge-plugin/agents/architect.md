@@ -73,6 +73,13 @@ Quality bar:
 - Decisions that constrain future work (library choice, pattern adoption, contract
   versioning) ⇒ list them under a final `## ADR candidates` section so the caller can
   invoke the `adr-writer` agent. Do not write ADRs yourself.
+- **Make each candidate dispatchable, not just noted.** One entry per decision, and every
+  entry states the alternative it rejected — that is what makes it an ADR rather than a
+  note, and it is what the caller keys on: at `production` it spawns `adr-writer`
+  automatically for each entry, at `mvp` it offers. An entry without a rejected alternative
+  will be (correctly) skipped, so if the decision really was forced, say what forced it.
+  Predict the path too — `docs/adr/NNNN-slug.md` — and reference it from the Architecture
+  section, so the plan and the ADR point at each other.
 
 ## Self-critique — one pass before you return
 

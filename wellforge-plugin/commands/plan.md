@@ -22,8 +22,8 @@ Target spec: $ARGUMENTS
    idealized one. Delegate broad exploration to an Explore agent if the surface is large.
 
 4. **Write `specs/NNN-slug/plan.md`** with `status: draft`:
-   - Architecture: components touched/added and why this shape; reference existing ADRs,
-     and flag any decision that deserves a NEW ADR (offer to invoke the adr-writer agent).
+   - Architecture: components touched/added and why this shape; reference existing ADRs
+     by number.
    - Data model: concrete schema changes + migration approach.
    - API contracts: concrete request/response shapes, error cases included.
    - Test strategy: map every AC in the spec to a test level (unit/integration/e2e).
@@ -41,7 +41,28 @@ Target spec: $ARGUMENTS
 6. **Review with the user.** Present the architecture and the trade-offs you made (what
    you chose AND what you rejected), plus the one-line self-critique result. Iterate.
 
-7. **Approval gate.** Ask explicitly whether to mark the plan `approved`. Only on an
+7. **ADR dispatch — from the plan's own text, not from remembering.** A decision that
+   names **an alternative it rejected** is an ADR by definition: it constrains future work
+   and its reasoning is exactly what a later reader will lack. Scan the written plan for
+   them — the `## ADR candidates` section if you wrote one, and any Architecture or Data
+   model paragraph of the shape *"chose X over Y because Z"*.
+
+   For each, by tier (rigor-tiers precedence):
+   - **`production`** → spawn `wellforge:adr-writer` automatically, one per decision. Not
+     "offer": a decision whose alternatives are recorded only in a chat transcript is a
+     decision nobody can revisit, and the transcript is gone by the next session.
+   - **`mvp`** → list them and offer. The tier trades ceremony for speed, and this is
+     ceremony with a real cost.
+
+   The ADR path is **predictable**: `docs/adr/NNNN-slug.md`, NNNN being the next free
+   4-digit number. Reference it back from the plan's Architecture section by that path in
+   the same pass, so plan and ADR point at each other rather than the ADR being a file
+   nobody finds.
+
+   A decision with **no rejected alternative** is not an ADR — it is a note. Writing one for
+   it trains people to skim ADRs, which costs more than the missing record would.
+
+8. **Approval gate.** Ask explicitly whether to mark the plan `approved`. Only on an
    explicit yes, set `status: approved`. Then suggest the next step **by feature type**:
    - **UI feature** → recommend `/wellforge:design NNN-slug` first (flows/screens/component
      reuse so frontend tasks derive from a real inventory), *then* `/wellforge:tasks`.

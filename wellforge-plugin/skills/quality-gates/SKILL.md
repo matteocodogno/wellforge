@@ -29,6 +29,28 @@ code passes**: thresholds live centrally, in the gate workflows' `env` blocks un
 | `quality-eval.yml` | Opt-in LM-judge against the central rubric; needs `ANTHROPIC_API_KEY` |
 | `heartbeat-report.yml` | Deduplicated tracking issue for scheduled runs ([`heartbeat`](../heartbeat/SKILL.md)) |
 
+### When the owasp-reviewer runs — `config/security-triggers.yml`
+
+The security floor blocks at every tier, but the floor is *automated* checks (secret scan,
+hardcoded credentials, critical CVEs). The **specialist review** — OWASP Top 10 against the
+actual diff — used to run only when someone thought to ask for it, which is not a gate.
+
+`wellforge-plugin/config/security-triggers.yml` makes the dispatch a property of the task
+graph: path globs (`**/auth/**`, `**/routes/**`, `**/migrations/**`, `**/*Controller*.kt`,
+`**/*.sql`, …) plus substrings that imply a sensitive surface (`upload`, `payment`, `token`,
+`session`, `password`, `secret`, `credential`), and `always_at_tier: [production]`.
+
+`scripts/security-triggers.py` evaluates it against the **union** of the batch's declared
+`touch:` globs and the real `git diff --name-only` — intent and reality, because a file
+nobody declared is exactly the one worth reviewing. `/wellforge:implement` (Step 3b) and
+`/wellforge:orchestrate` call it after integration and before QE; the outcome is recorded as
+`verdicts.security` in the run trace, and at `production` a missing verdict is a failing
+done-gate condition (absent ≠ passed).
+
+Changing the trigger list is like changing a threshold: a PR, with the reason. Widening it
+costs one mid-tier agent per matched batch; narrowing it removes a review nobody will notice
+is missing.
+
 Supporting configs: `gates/configs/semgrep/wellforge.yml` (SAST rules),
 `gates/configs/gitleaks.toml`, `gates/configs/eval-rubric.yml` (the rubric — mirrored into
 the plugin so an in-session eval can resolve it), `gates/scripts/check-jacoco.py`,

@@ -1,0 +1,57 @@
+# Security-review triggers — when the owasp-reviewer stops being optional.
+#
+# The security floor is called non-negotiable in the rigor-tiers skill, but the specialist
+# that checks the code behind it ran only when someone thought of it. A rule enforced by
+# remembering is not enforced. These patterns turn "someone should look at this" into a
+# property of the task graph: if a batch touches any of them, the review is dispatched.
+#
+# Matched against the UNION of (a) every `touch:` glob declared by the tasks in the batch
+# and (b) the actual `git diff --name-only` against the feature branch base. Both halves
+# matter: `touch:` catches intent before the code exists, the diff catches the file nobody
+# declared. A match on either is a match.
+#
+# Read by scripts/security-triggers.py (which is what implement/orchestrate call) and
+# documented in the quality-gates skill.
+version: security-triggers-v1
+
+# Path globs. Case-insensitive, matched against the repo-relative path.
+patterns:
+  # Authentication and authorisation — the surface A01/A07 live on.
+  - "auth/**"
+  - "**/auth/**"
+  - "**/security/**"
+
+  # Request entry points: where untrusted input first becomes a value.
+  - "**/*Controller*.kt"
+  - "**/*Controller*.java"
+  - "**/routes/**"
+  - "**/middleware/**"
+  - "**/handlers/**"
+
+  # Anything that reaches the database as syntax, or changes its shape.
+  - "**/db/changelog/**"
+  - "**/migrations/**"
+  - "**/*.sql"
+
+# Substrings in a path that imply a sensitive surface regardless of directory. Matched
+# case-insensitively anywhere in the path, because these are named after what they handle
+# and the naming is the signal.
+path_contains:
+  - upload      # A04 — file handling
+  - payment     # money; regulated in most jurisdictions
+  - token       # credential material
+  - session     # A07 — session fixation/rotation
+  - password    # A02 — storage, comparison, reset flows
+  - secret
+  - credential
+
+# Tiers where the review runs for EVERY batch, matched or not. production only: at that tier
+# the eval is the bar and an unreviewed security surface is the gap the eval cannot see.
+# `mvp` and `spike` review only on a pattern match — that is the tier difference, and it is
+# the deliberate one.
+always_at_tier:
+  - production
+
+# Not modelled here, on purpose: severity thresholds (the agent owns those — findings
+# >= medium are defects), and which findings block (the routing table in rigor-tiers owns
+# that). This file answers exactly one question: does this batch need the reviewer?

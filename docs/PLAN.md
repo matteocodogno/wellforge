@@ -891,6 +891,34 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 24 — Dispatch the specialists from data, not memory (added 2026-09-20)
+
+The security floor is called non-negotiable, and the specialist that reviews the code behind
+it ran when someone thought of it. Same for ADRs: the architect listed candidates and
+whether one became a record depended on the orchestrator remembering to ask.
+
+- ☑ **`config/security-triggers.yml`** + **`scripts/security-triggers.py`** — path globs
+  and sensitive-surface substrings, evaluated against the **union** of the batch's declared
+  `touch:` globs and the real `git diff --name-only`. Intent and reality both count: `touch:`
+  catches the surface before the code exists, the diff catches the file nobody declared.
+  `always_at_tier: [production]`.
+- ☑ **`/wellforge:implement` Step 3b and `/wellforge:orchestrate` step 9** run it after
+  integration, before QE. Findings ≥ medium route through the same owner table and 2-round
+  cap as QE failures, so the two loops cannot drift apart. Missing script → dispatch anyway:
+  one extra mid-tier agent beats an unreviewed auth change.
+- ☑ **`verdicts.security`** joins qe and eval in the trace (schema **v3**; v1 and v2 still
+  read). Absent ≠ PASS — at `production` every batch is reviewed, so a missing verdict means
+  the review never ran, and `forge-state.py` makes that a failing done-gate condition.
+  `/wellforge:done` inherits it automatically, since it reads that gate.
+- ☑ **ADRs dispatch from the plan's own text**: a decision that names a rejected alternative
+  is an ADR by definition. Automatic at `production`, offered at `mvp`, path predictable
+  (`docs/adr/NNNN-slug.md`) and cross-referenced from the plan. A decision with no rejected
+  alternative is explicitly *not* an ADR — writing one for it trains people to skim ADRs.
+- ☑ **51-case glob matrix**, which caught the trap it was written for: a naive `**/`
+  pattern misses top-level `migrations/001.sql`.
+
+Cost: one extra mid-tier agent per matched batch, and every production batch matches.
+
 ## Phase 23 — Which plugin set this project up (added 2026-09-20)
 
 `.forge/manifest.json` recorded the **template** version, which is what makes `copier

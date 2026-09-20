@@ -186,7 +186,7 @@ check("...and says the verdict is absent",
 r = repo()
 feature(r, "001-prod", {"id": "001", "slug": "prod", "status": "in-progress", "rigor": "production"},
         tasks=[True, True], eval_fm={"spec": "001", "verdict": "PASS", "score": 88})
-trace(r, "001-prod", verdicts={"qe": "PASS", "eval": "PASS"},
+trace(r, "001-prod", verdicts={"qe": "PASS", "security": "PASS", "eval": "PASS"},
       agents=[{"agent": "evaluator", "outcome": "PASS", "score": 88}])
 feature(r, "002-mvp", {"id": "002", "slug": "mvp", "status": "in-progress", "rigor": "mvp"}, tasks=[True])
 trace(r, "002-mvp", run_id="r-mvp", verdicts={"qe": "PASS"})
@@ -204,6 +204,30 @@ check("mvp gate does not ask for an eval",
       any("eval" in f for f in one(env, "002-mvp")["done_gate"]["failing"]), False)
 check("QE FAIL blocks the gate", one(env, "003-qefail")["done_gate"]["passes"], False)
 
+check("security verdict joined from the trace",
+      one(env, "001-prod")["verdicts"]["security"]["verdict"], "PASS")
+
+# Security review at production: every batch is reviewed, so ABSENT means it never ran.
+# An unreviewed auth change passes every test — that is the gap this condition closes.
+feature(r, "005-nosec", {"id": "005", "slug": "nosec", "status": "in-progress", "rigor": "production"},
+        tasks=[True], eval_fm={"spec": "005", "verdict": "PASS"})
+trace(r, "005-nosec", run_id="r-nosec", verdicts={"qe": "PASS", "eval": "PASS"})
+commit(r, "chore: add nosec fixture")
+env = state(r)
+check("production without a security verdict is blocked",
+      any("security review is absent" in f for f in one(env, "005-nosec")["done_gate"]["failing"]), True)
+check("...and mvp is not asked for one",
+      any("security" in f for f in one(env, "002-mvp")["done_gate"]["failing"]), False)
+
+feature(r, "006-secfail", {"id": "006", "slug": "secfail", "status": "in-progress", "rigor": "production"},
+        tasks=[True], eval_fm={"spec": "006", "verdict": "PASS"})
+trace(r, "006-secfail", run_id="r-secfail",
+      verdicts={"qe": "PASS", "security": "FAIL", "eval": "PASS"})
+commit(r, "chore: add secfail fixture")
+env = state(r)
+check("a FAIL security verdict blocks too",
+      any("security review is FAIL" in f for f in one(env, "006-secfail")["done_gate"]["failing"]), True)
+
 # production with QE PASS but no eval → blocked on the eval specifically
 feature(r, "004-noeval", {"id": "004", "slug": "noeval", "status": "in-progress", "rigor": "production"},
         tasks=[True])
@@ -217,6 +241,8 @@ check("production without an eval is blocked",
 check("envelope version", env["version"], "forge-state/v1")
 for key in ("generated", "features", "runs_available", "specs_dir", "runs_dir"):
     check(f"envelope carries `{key}`", key in env, True)
+check("verdicts carry all three kinds",
+      sorted(one(env, "001-prod")["verdicts"]), ["eval", "qe", "security"])
 for key in ("slug", "kind", "status", "rigor", "artifacts", "tasks", "drift", "verdicts",
             "done_gate", "problems"):
     check(f"feature carries `{key}`", key in one(env, "001-prod"), True)

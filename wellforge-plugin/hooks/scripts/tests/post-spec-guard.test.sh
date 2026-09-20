@@ -35,7 +35,7 @@ qe_pass() {
   cat > "$REPO/.forge/runs/r1.json" <<JSON
 {"schema":"wellforge-run/v1","run_id":"r1","command":"implement","feature":"001-x",
  "rigor":"production","started":"2026-09-01T10:00:00Z","finished":"2026-09-01T10:30:00Z",
- "agents":[],"drift_events":[],"verdicts":{"qe":"PASS","eval":"PASS"}}
+ "agents":[],"drift_events":[],"verdicts":{"qe":"PASS","security":"PASS","eval":"PASS"}}
 JSON
   printf -- '---\nspec: 001\nverdict: PASS\nscore: 90\n---\n' > "$REPO/specs/001-x/eval-report.md"
 }
@@ -67,6 +67,17 @@ run 0 "in-progress → done with a passing gate is allowed"
 # 4. in-progress → done with the gate FAILING (unchecked tasks, no QE)
 new_project; spec in-progress; tasks 1 3; commit_all; spec done
 run 2 "in-progress → done with a failing gate is blocked"
+
+# 4b. Production reviews every batch, so an ABSENT security verdict is a failing gate —
+#     a feature can pass every test and still ship an unreviewed auth change.
+new_project; spec in-progress; tasks 2 2; qe_pass
+python3 - "$REPO" <<'PYFIX'
+import json, sys, glob, os
+for p in glob.glob(os.path.join(sys.argv[1], ".forge", "runs", "*.json")):
+    r = json.load(open(p)); r["verdicts"].pop("security", None); json.dump(r, open(p, "w"))
+PYFIX
+commit_all; spec done
+run 2 "in-progress → done without a security verdict is blocked at production"
 
 # 5. rigor lowered
 new_project; spec in-progress production; commit_all; spec in-progress mvp

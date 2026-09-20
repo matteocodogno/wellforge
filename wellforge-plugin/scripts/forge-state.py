@@ -229,12 +229,15 @@ def compute_drift(d, repo):
 def latest_verdicts(runs, rr):
     """Newest QE and eval verdict for a feature, from its run traces."""
     out = {"qe": {"verdict": None, "at": None, "run_id": None},
+           "security": {"verdict": None, "at": None, "run_id": None},
            "eval": {"verdict": None, "at": None, "run_id": None, "score": None}}
     for r in sorted(runs, key=lambda r: r.get("finished") or r.get("started") or ""):
         v = r.get("verdicts") or {}
         when = r.get("finished") or r.get("started")
         if v.get("qe"):
             out["qe"] = {"verdict": v["qe"], "at": when, "run_id": r.get("run_id")}
+        if v.get("security"):
+            out["security"] = {"verdict": v["security"], "at": when, "run_id": r.get("run_id")}
         if v.get("eval"):
             score = next((a.get("score") for a in r.get("agents", []) if a.get("score") is not None), None)
             out["eval"] = {"verdict": v["eval"], "at": when, "run_id": r.get("run_id"), "score": score}
@@ -279,6 +282,12 @@ def done_gate(kind, tier, tasks, verdicts, has_eval_report, eval_fm, drift):
     if verdicts["qe"]["verdict"] != "PASS":
         failing.append(f"QE verdict is {verdicts['qe']['verdict'] or 'absent'} (needs PASS)")
     if tier == "production":
+        # Every production batch is reviewed (config/security-triggers.yml always_at_tier),
+        # so an ABSENT security verdict here means the review never ran — not that it was
+        # unnecessary. A feature can pass every test and still ship an unreviewed auth change.
+        if verdicts["security"]["verdict"] != "PASS":
+            failing.append(f"security review is "
+                           f"{verdicts['security']['verdict'] or 'absent'} (needs PASS at production)")
         if not has_eval_report:
             failing.append("no eval-report.md (needs a PASS)")
         elif (eval_fm or {}).get("verdict") != "PASS":

@@ -312,6 +312,9 @@ jobs:
       # state with the model. It is the one place that state is computed, so it is the one
       # place it can regress — every status, tier, drift case and verdict kind is pinned.
       - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/forge-state.test.py
+      # Which paths pull in a security review. Glob matching looks right and silently
+      # misses `migrations/001.sql` when the pattern says `**/` — a miss nobody sees.
+      - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/security-triggers.test.py
 
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
   # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.

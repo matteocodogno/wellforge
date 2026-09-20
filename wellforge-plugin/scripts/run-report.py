@@ -4,7 +4,7 @@
   run-report.py [--runs-dir .forge/runs] [--feature NNN-slug] [--pricing <model-pricing.yml>]
                 [--json]
 
-Reads the semantic run traces (wellforge-run/v1 and /v2) the workflow commands write, joins the
+Reads the semantic run traces (wellforge-run/v1..v3) the workflow commands write, joins the
 best-effort token events (.events.jsonl) by each run's [started, finished] window, and
 prints per-run agents/verdicts/drift + an estimated cost. Token/cost are ESTIMATES (see
 skills/observability "Honest limits"); the who/what/verdict/drift parts are exact.
@@ -20,7 +20,7 @@ from datetime import datetime
 
 # Every trace schema this tool understands. Add, never replace: a reader that stops
 # accepting an old version turns an archive into a gap.
-ACCEPTED_SCHEMAS = ("wellforge-run/v1", "wellforge-run/v2")
+ACCEPTED_SCHEMAS = ("wellforge-run/v1", "wellforge-run/v2", "wellforge-run/v3")
 
 
 # There is exactly ONE pricing table: config/model-pricing.yml. This script used to carry

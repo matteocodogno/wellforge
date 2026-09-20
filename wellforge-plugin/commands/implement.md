@@ -123,6 +123,39 @@ rejected), or the preflight left a class unclassified, fall back to the main-tre
 dispatch the batch **sequentially** (not in parallel), each agent committing + checking its
 own box. State which mode you used and, if the preflight forced it, which class.
 
+## Step 3b — Security review, dispatched from the task graph
+
+After integration, **before** QE. The security floor is non-negotiable (rigor-tiers), but
+the specialist that reviews the code behind it used to run only when someone thought of it.
+This step removes the remembering:
+
+```bash
+uv run --with pyyaml python ${CLAUDE_PLUGIN_ROOT}/scripts/security-triggers.py \
+  --tier <resolved tier> --diff-base <the branch base> \
+  --touch '<each touch: glob of the tasks in this batch>' --json
+```
+
+It reads `config/security-triggers.yml` and matches the **union** of the batch's declared
+`touch:` globs and the actual `git diff --name-only` against the base. Both halves matter:
+`touch:` catches the intent before the code exists, the diff catches the file nobody
+declared. `production` reviews every batch; `mvp` and `spike` review on a match — that tier
+difference is deliberate.
+
+- `dispatch: false` → say so in one line and go to QE.
+- `dispatch: true` → spawn **`wellforge:owasp-reviewer`** scoped to `scope[]` (the matched
+  paths, or the whole changed set when the tier forced it). Give it the paths and nothing
+  else; it reads the code itself.
+- **Findings ≥ medium are defects** and route exactly like QE failures — the owner table and
+  the **2-round cap** in the rigor-tiers skill's *"Routing a QE FAIL"* section, shared so the
+  two loops cannot drift apart. A security finding that is really a wrong AC goes to the PO,
+  not to a dev.
+- Record the outcome as `verdicts.security` in the run trace (PASS / FAIL / null when not
+  dispatched), with the matched rules. A review that happened and a review that was never
+  needed must not read the same afterwards.
+
+If the script is unavailable, **dispatch anyway and say why**: one extra mid-tier agent is
+the cost of being wrong in that direction; an unreviewed auth change is the cost of the other.
+
 ## Step 4 — Verify
 
 - Spawn `wellforge:quality-engineer` scoped to the tasks just implemented: it runs the gates and
@@ -135,8 +168,9 @@ own box. State which mode you used and, if the preflight forced it, which class.
   one copy is the point.
 - The **security floor** (secret scan, no hardcoded creds, critical-CVE audit) blocks in BOTH
   tiers — never waived.
-- If QE recommends a security pass, spawn `wellforge:owasp-reviewer`; treat findings ≥ medium as
-  defects (same loop).
+- QE may still recommend a security pass beyond what Step 3b matched (it reads the code, the
+  triggers read paths) — spawn `wellforge:owasp-reviewer` for it and treat findings ≥ medium
+  as defects, same loop. That is now the *exception* path; Step 3b is the rule.
 
 ## Step 5 — Report
 
