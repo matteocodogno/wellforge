@@ -116,6 +116,28 @@ Same reasoning as `gates-v*`: copier resolves "latest version" from PEP440-parse
 and `plugin-v2.42.0` is not parseable. Naming the series `2.42.0` — bare semver — would put
 it straight into the template's version list and offer the plugin as a template upgrade.
 
+**Invisible when *resolving* a version is not the same as invisible to `git describe`**, and
+the difference is measurable. Scaffolding from a commit that carries `plugin-v2.42.0`, with
+an explicit `--vcs-ref HEAD`:
+
+```
+.copier-answers.yml   _commit: plugin-v2.42.0     ← the plugin tag, recorded as the template ref
+.forge/manifest.json  "version": "0.9.0"          ← still the template version
+```
+
+The manifest — what `/wellforge:upgrade` and `fleet-status.sh` read — is correct, because it
+comes from the `template_version` answer rather than from `git describe`. But `_commit` is
+polluted, and `_commit` is what a future `copier update` diffs from.
+
+This does **not** affect a normal scaffold: with no `--vcs-ref`, copier resolves the newest
+PEP440 tag and records `_commit: v0.9.0` regardless of what else is tagged. The exposure is
+scaffolding from a *branch* — which the CI self-test now deliberately does, so it tests the
+branch rather than the last release. That is a throwaway `/tmp` project, so a polluted
+`_commit` costs nothing there; the job asserts the manifest version is still template-shaped
+so the pollution cannot spread to the field anyone reads.
+
+The rule that follows: **cut user-facing scaffolds from a `vX.Y.Z` tag, never from HEAD.**
+
 ### What `plugin update` actually resolves to is undocumented
 
 Honest gap, stated here so nobody reads more into the tag than it carries. The published

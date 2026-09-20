@@ -232,6 +232,20 @@ jobs:
           sys.exit(fail)
           PY
 
+      # Scaffolding at HEAD means `git describe` can hand copier a NON-template tag: a
+      # project cut from a plugin-tagged commit records `_commit: plugin-v2.42.0`. Measured,
+      # not theoretical. It does not reach the manifest (that comes from the
+      # template_version answer), and the manifest is what /wellforge:upgrade and
+      # fleet-status.sh read — so pin exactly that, and let `_commit` be noisy in /tmp.
+      - name: Manifest still records a TEMPLATE version
+        run: |
+          v=$(python3 -c "import json;print(json.load(open('/tmp/out/.forge/manifest.json'))['version'])")
+          echo "manifest version: $v"
+          case "$v" in
+            *[!0-9.]*|"") echo "::error::manifest version '$v' is not a template version — a non-template tag leaked into the scaffold"; exit 1 ;;
+            *) echo "OK — template-shaped" ;;
+          esac
+
       - name: Assert required generated files (templates/_shared/CONTRACT.md)
         run: |
           fail=0
