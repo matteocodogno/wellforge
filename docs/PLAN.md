@@ -891,6 +891,46 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 28 — The CLI gets a regression matrix, and CI gets both halves (added 2026-09-20)
+
+`scripts/wellforge` is the first thing a teammate runs and was the only untested code in
+this repo — the hook matrices, run-report, forge-state and the adapters all had a suite. CI
+never touched `scripts/` or `Formula/` at all.
+
+- ☑ **`scripts/tests/wellforge.test.sh`** — 17 cases, same contract as the hook matrices:
+  drives the REAL script against a temp `HOME`, a temp `PATH` of recording shims
+  (brew/claude/gh/docker/mise/uvx/npm/curl/open) and **real git fixtures with a real bare
+  upstream**, because "N commits behind" is worth measuring rather than mocking. Shims log
+  their calls, which is the only way to assert a behaviour that produces no output — "update
+  must not reinstall a plugin that is already current".
+- ☑ **An `xfail` marker with teeth.** Four cases describe behaviour later work introduces;
+  they do not fail the suite, but an **XPASS does** — a marker that has quietly become true
+  is a lying test. Each was verified to fail for its stated reason, not incidentally.
+- ☑ **A watchdog per case.** Not a nicety: `wellforge telegram` with an exhausted stdin
+  spins forever (read fails → empty token → `continue`). Without the watchdog one such
+  regression hangs CI to the job limit instead of failing in seconds. `timeout(1)` is absent
+  on a bare macOS, so it polls a background job.
+- ☑ **`cli` job in ci.yml** — `shellcheck -s bash --severity=warning` over
+  `scripts/wellforge`, `scripts/*.sh` and the plugin's hook scripts, then the matrix.
+- ☑ **Mutation-tested, twice.** Flipping `set -uo` back to `set -euo` reddens 2 cases;
+  additionally restoring the original `grep | sed` version read reproduces the Phase-27
+  defect exactly — `expected rc=1, got rc=2`, missing collisions/telegram/summary. A suite
+  that cannot reproduce the bug it was written for is decoration.
+
+**Found by the new checks, on their first run:** a dead `TOTAL=0` in `fleet-cost.sh`
+(SC2034), and `FormulaAudit/Desc` in `Formula/wellforge.rb` (a description starting with the
+formula name). Both fixed. Also found while building the suite: the telegram wizard's
+infinite spin above, now pinned as an xfail.
+
+**`brew audit` stays a manual pre-release step, with evidence.** It refuses a path outright
+("Calling `brew audit [path ...]` is disabled"), so it can only run against the published
+tap — which does not exist until after the release. A CI job could run at most half the
+check, on a `macos-latest` runner billed at 10×, for a file that changes once per release.
+`brew style` (1.5s, path-based) is in `docs/VERSIONING.md` as the pre-tag step instead.
+
+**Known gap, stated in `scripts/README.md`:** the suite runs on `ubuntu-latest` while the
+CLI targets macOS, so BSD-vs-GNU differences are not covered by CI.
+
 ## Phase 27 — The deferred half: per-worktree databases (added 2026-09-20)
 
 Phase 16 shipped the parallel-execution discipline and deferred its template half. Until now

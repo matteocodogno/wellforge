@@ -42,7 +42,6 @@ fi
 
 printf "%-38s %9s %12s %10s  %s\n" "PROJECT" "FEATURES" "SPEND(${DAYS}d)" "REWORK" "TOP REWORK AGENT"
 
-TOTAL=0
 while IFS= read -r repo; do
   # One API call for the whole runs directory listing, then one per trace. A repo with many
   # traces is the expensive case; --days bounds it by filtering on the filename timestamp,

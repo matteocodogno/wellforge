@@ -389,6 +389,8 @@ cmd_telegram() {
     printf "\n# WellForge Telegram notifications\n%s\n" "$src_line" >> "$rc"
     ok "shell wired" "source line appended to ~/.zshrc"
   else
+    # The tilde here is prose for the reader, not a path this code expands.
+    # shellcheck disable=SC2088
     ok "shell wired" "~/.zshrc already sources it"
   fi
 

@@ -1,4 +1,42 @@
-# Org-ops scripts
+# Scripts — the CLI, its tests, and the org-ops tooling
+
+## `wellforge` — the CLI
+
+`scripts/wellforge` is the setup/diagnostics tool a teammate installs with Homebrew
+(`Formula/wellforge.rb` installs exactly this file). It is the one script here that is NOT
+fleet tooling, and the one with a regression suite.
+
+### Tests
+
+```bash
+scripts/tests/wellforge.test.sh          # ~60s; needs bash, git, jq
+```
+
+It drives the **real** script against a temp `HOME`, a temp `PATH` of shim executables
+(`brew`, `claude`, `gh`, `docker`, `mise`, `curl`, …) and real git fixtures with a real bare
+upstream — same contract as `wellforge-plugin/hooks/scripts/tests/*.test.sh`: no re-stating
+of the script's logic, so a rule cannot pass its test and fail in practice. Shims record
+their calls, which is how "update must not reinstall a plugin that is already current" can
+be asserted at all — that behaviour produces no output, only calls.
+
+**`xfail` cases are deliberate.** They describe behaviour a later change introduces; the
+suite does not fail on them, but it DOES fail if one starts passing, because then the marker
+is lying. Today: `update` reinstalling an up-to-date plugin, an unknown subcommand exiting 0,
+`telegram` picking a group chat over a private one, and `telegram` spinning forever on an
+exhausted stdin.
+
+**It is CI-only, and deliberately not wired into `/wellforge:doctor --tests`.** That command
+runs from the installed plugin, whose root is `wellforge-plugin/` — it has no `scripts/`, and
+a *generated project* has neither. Running it would mean shipping the suite inside the plugin
+to test a CLI the plugin does not contain. The suite belongs to this repo and runs in this
+repo's CI (`cli` job in `.github/workflows/ci.yml`), alongside
+`shellcheck -s bash --severity=warning`.
+
+**Known coverage gap:** CI runs the suite on `ubuntu-latest`, while the CLI targets macOS.
+Logic regressions are caught; BSD-vs-GNU behaviour differences (`readlink -f`, `sed -i`) are
+not. Run it locally on a Mac before a release — it is the same one command.
+
+## Org-ops scripts
 
 Fleet-level tooling — run from a checkout of this repo (they read its `vX.Y.Z` tags to know the
 latest template release). Both need an authenticated `gh` CLI and `jq`.

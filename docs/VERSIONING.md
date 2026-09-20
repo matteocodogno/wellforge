@@ -196,6 +196,25 @@ main ──●───────────────●──────
   Every minor also gets an entry in [`PLUGIN-MIGRATIONS.md`](PLUGIN-MIGRATIONS.md), even if
   it is "no project-side action" — `/wellforge:upgrade` reads that file, and silence there
   is ambiguous between "nothing to do" and "nobody checked".
+- **The Homebrew formula is checked by hand, before the tag.** `Formula/wellforge.rb` is
+  what a teammate installs, and it is the one file in this repo with no CI gate — for a
+  measured reason rather than an oversight:
+
+  ```bash
+  brew style Formula/wellforge.rb                       # works on a path; ~1.5s warm
+  brew audit --strict matteocodogno/wellforge/wellforge # needs the formula TAPPED, not a path
+  ```
+
+  `brew audit` refuses a path outright (*"Calling `brew audit [path ...]` is disabled"*), so
+  it can only run against the published tap — which by definition does not exist until after
+  the release. A CI job could therefore run at most half the check, and only on a
+  `macos-latest` runner billed at 10× for a file that changes once per release. `brew style`
+  is worth the 1.5 seconds every time you touch the formula: it caught
+  `FormulaAudit/Desc` (a description starting with the formula name) the first time it ran
+  here.
+
+  Run `brew style` before tagging; run `brew audit --strict` once after the tap is updated.
+
 - Pushing a `vX.Y.Z` tag triggers [`release.yml`](../.github/workflows/release.yml): it
   publishes the GitHub Release with notes from the Conventional Commits, then pushes a
   Homebrew formula bump branch (the formula follows the **template** series, since that tag

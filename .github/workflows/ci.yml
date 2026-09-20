@@ -464,6 +464,40 @@ jobs:
       # adapters/<name>/SMOKE-TEST.md is the human pass this is the mechanical half of.
       - run: uv run --with pyyaml python adapters/smoke-test.py --adapter ${{ matrix.adapter }}
 
+  # The CLI. `scripts/wellforge` is the first thing a teammate runs and was, until now, the
+  # only untested code in this repo — the hook matrices, run-report, forge-state and the
+  # adapters all had one. It is unusually testable precisely because every external
+  # dependency is a command on PATH, so the suite replaces brew/claude/gh/docker/curl with
+  # recording shims and drives the real script.
+  #
+  # Both halves matter and catch different things: shellcheck finds the quoting and
+  # expansion faults that only fire on an unusual input (it caught a dead variable and a
+  # broken ${fix:-…} here), while the matrix finds behaviour — a doctor run that aborts
+  # mid-report still passes every static check.
+  cli:
+    name: CLI (shellcheck + regression matrix)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+
+      # --severity=warning is the gate: info and style are advisory here (SC2016 and SC2012
+      # in particular are deliberate in these scripts — single-quoted jq programs, and `ls`
+      # used on a directory of version-shaped names). A genuine warning-level false positive
+      # gets an inline `# shellcheck disable=SCxxxx` with the reason on the line above it,
+      # never a blanket exclusion — there is exactly one today, on prose containing a tilde.
+      - name: shellcheck
+        run: shellcheck -s bash --severity=warning scripts/wellforge scripts/*.sh
+                        wellforge-plugin/hooks/scripts/*.sh
+
+      # Drives the real CLI against shim executables and real git fixtures. Cases marked
+      # xfail describe behaviour a later change introduces; the suite fails if one of them
+      # starts PASSING, because that means the marker is now lying.
+      - name: wellforge CLI matrix
+        run: scripts/tests/wellforge.test.sh
+
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
   # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.
   terse-mode-fixtures:
