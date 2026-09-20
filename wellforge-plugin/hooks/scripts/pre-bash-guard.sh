@@ -14,6 +14,13 @@ fi
 if echo "$COMMAND" | grep -qE '(curl|wget)[^|]+\|\s*(ba|z)?sh([[:space:]]|$|;)'; then
   echo "BLOCKED: piping remote scripts into shell not allowed" >&2; exit 2
 fi
+# METADATA-ONLY QUERIES may name a protected file: they reveal nothing of its contents.
+# Without this carve-out the connections skill's own secrets-hygiene check —
+# `git check-ignore .mise.local.toml .env.local` — is refused, which is how a guard teaches people
+# to work around it.
+if echo "$COMMAND" | grep -qE '^[[:space:]]*(git[[:space:]]+check-(ignore|attr)|ls|stat|test|\[)[[:space:]]'; then
+  exit 0
+fi
 # Protected files. This rule reads the COMMAND TEXT, not the files a command opens, so it
 # can only ever approximate "touches a secret" — keep it tight in both directions.
 #
@@ -55,5 +62,12 @@ fi
 # worktree-isolation prune step depends on it.
 if echo "$COMMAND" | grep -qE 'git\s+branch\s+(-[a-zA-Z]*D[a-zA-Z]*|--delete\s+--force|--force\s+--delete)\b'; then
   echo "BLOCKED: force-deleting a branch requires manual confirmation (-d deletes merged branches)" >&2; exit 2
+fi
+
+# .mise.local.toml is WellForge's sanctioned secret store: the setup flow WRITES it, so a blanket
+# block would break the documented path. Mirror pre-file-guard.sh instead — deny the read,
+# allow the write. Reported 2026-09-20: `Read` was blocked while `cat` sailed through.
+if echo "$COMMAND" | grep -qE '(^|[|;&[:space:]])(cat|bat|less|more|head|tail|nl|od|xxd|strings|view|vi|vim|nano|open|pbcopy|base64)([[:space:]]+-[^[:space:]]+)*[[:space:]]+[^|;&]*\.mise\.local\.toml'; then
+  echo "BLOCKED: reading .mise.local.toml would pull secret values into the transcript (write is allowed; run 'mise env' yourself to inspect)" >&2; exit 2
 fi
 exit 0

@@ -18,20 +18,21 @@ export const WellForge = async ({ $, client }) => {
       const args = (output && output.args) || {}
 
       // File tools: judge the PATH PARAMETER, not text. Mirrors pre-file-guard.sh.
-      if (["read", "write", "edit", "patch", "multiedit"].includes(input.tool)) {
+      if (["read", "write", "edit", "patch", "multiedit", "grep"].includes(input.tool)) {
         const p = args.filePath || args.file_path || args.path || ""
         const base = String(p).split("/").pop() || ""
         if (!base) return
         if (/\.(example|sample|template|jinja|dist)$|\.(example|sample|template)\./.test(base)) return
         if (/^\.env($|\.)|^\.envrc$|\.(pem|key|p12|pfx)$|^secrets\.ya?ml$|^id_(rsa|ed25519|dsa|ecdsa)$/.test(base))
           deny(`${base} is a protected secret file — secrets belong in .mise.local.toml`)
-        if (input.tool === "read" && /^\.mise\.local\.toml$|^credentials\.json$/.test(base))
+        if (["read", "grep"].includes(input.tool) && /^\.mise\.local\.toml$|^credentials\.json$/.test(base))
           deny(`reading ${base} would pull secret values into the transcript — run 'mise env' yourself`)
         return
       }
 
       if (input.tool !== "bash") return
       const cmd = args.command || ""
+      if (/^\s*(git\s+check-(ignore|attr)|ls|stat|test|\[)\s/.test(cmd)) return   // metadata only
       if (/rm(\s+-[a-zA-Z-]+)+\s+(\/|\/\*|~|~\/\*?|\*)(\s|[;"')]|$)/.test(cmd))
         deny("blocked recursive deletion from root/home")
       if (/DROP\s+DATABASE|DROP\s+TABLE\s+[`"']?\w|TRUNCATE\s+TABLE/i.test(cmd))
@@ -41,6 +42,8 @@ export const WellForge = async ({ $, client }) => {
       const scrubbed = cmd.replace(/\.env\.example/g, "").replace(/\.env\.jinja/g, "")
       if (/\.(env|pem|key|p12|pfx)([^A-Za-z0-9_]|$)|\.envrc([^A-Za-z0-9_]|$)|secrets\.ya?ml/.test(scrubbed))
         deny("touches a protected file (dotenv / pem / key / secrets.yml)")
+      if (/(^|[|;&\s])(cat|bat|less|more|head|tail|nl|od|xxd|strings|open|pbcopy|base64)(\s+-\S+)*\s+[^|;&]*\.mise\.local\.toml/.test(cmd))
+        deny("reading .mise.local.toml would pull secret values into the transcript (write is allowed)")
       if (/git\s+push\b/.test(cmd) && !/--force-with-lease/.test(cmd) &&
           /(--force([^-]|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s\+[A-Za-z0-9_./@-]+(:|\s|$))/.test(cmd))
         deny("force push requires manual confirmation (use --force-with-lease if you mean it)")

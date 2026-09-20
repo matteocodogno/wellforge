@@ -78,7 +78,7 @@ Inside Claude Code:
 | `hooks/hooks.json` | 7 lifecycle hooks |
 | `hooks/scripts/session-start.sh` | Injects git state + domain glossary at session start |
 | `hooks/scripts/pre-bash-guard.sh` | Blocks recursive deletion from root/home, SQL nukes, pipe-to-shell, force push / `reset --hard` / force branch delete, and commands naming a secret file |
-| `hooks/scripts/pre-file-guard.sh` | The same protected files for the Read/Write/Edit tools — it reads the `file_path` parameter, so no text guessing |
+| `hooks/scripts/pre-file-guard.sh` | The same protected files for the Read/Write/Edit/Grep tools — it reads the path parameter, so no text guessing |
 | `hooks/scripts/post-lint.sh` | ts/tsx → Prettier+ESLint · kt/kts → ktlintFormat |
 | `hooks/scripts/notify.sh` | macOS notification + Telegram DM |
 | `hooks/scripts/stop-verify.sh` | Blocks on spec drift + type/compile errors before Claude stops — over the branch's whole change set (merge base ∪ working tree), not just unstaged files |
@@ -92,8 +92,16 @@ Inside Claude Code:
 
 Two hooks protect secrets and destructive operations, and they work differently on purpose:
 
-- **`pre-file-guard.sh`** reads the tool's `file_path` **parameter** (Read/Write/Edit/
-  MultiEdit/NotebookEdit). It is exact: a path is protected or it isn't.
+- **`pre-file-guard.sh`** reads the tool's path **parameter** (Read/Write/Edit/MultiEdit/
+  NotebookEdit, and Grep — which sends `path` and, in content mode, prints matching lines).
+  It is exact about the file it is given: a path is protected or it isn't.
+- **The two guards must agree.** They protect the same files by different means, so a file
+  one blocks and the other waves through is a hole, not a nuance — `Read` of
+  `.mise.local.toml` was blocked while `cat` sailed past until 2026-09-20. The asymmetry
+  that IS deliberate: `.mise.local.toml` is read-denied and **write-allowed** in both, because
+  it is the sanctioned secret store the setup flow creates. Metadata-only commands
+  (`ls`, `stat`, `test`, `git check-ignore`) may name a protected file — they reveal nothing,
+  and refusing them is what taught people to route around the guard.
 - **`pre-bash-guard.sh`** can only match the **text of a command**, because that is all a
   shell invocation gives it. Two consequences worth knowing before you file a bug:
   1. **False positives.** A command that merely *mentions* a protected name is blocked even
@@ -102,7 +110,11 @@ Two hooks protect secrets and destructive operations, and they work differently 
      `*.jinja` and `--force-with-lease` are scrubbed because they came up constantly, and
      more exceptions get added the same way. Work around it by not naming the file, or run
      the command yourself.
-  2. **It is a seatbelt, not a sandbox.** Text matching is evadable by anyone trying —
+  2. **A directory-wide content grep is not coverable.** `Grep` *at* a protected file is
+     blocked; `Grep` at a directory whose pattern happens to match a line inside one is not,
+     because no path check can see that. Same for `cat dir/*`. If a secret must never reach
+     a transcript, the file being unreadable is the guarantee — the guard is not.
+  3. **It is a seatbelt, not a sandbox.** Text matching is evadable by anyone trying —
      variable indirection, base64, an unusual spelling. It is there to stop an accident, not
      an adversary. Real enforcement lives where it cannot be talked around: the gitleaks
      pre-commit hook, the security-floor CI gate, and branch protection.

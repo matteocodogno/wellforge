@@ -43,8 +43,12 @@ git diff --cached --name-only | grep -E '\.(env|local\.toml)$' && echo "STOP: se
 git check-ignore .mise.local.toml .env.local 2>/dev/null
 ```
 
-The plugin's `pre-bash-guard.sh` blocks `.env` writes in sessions — work with it: put
-secrets in `.mise.local.toml`, not `.env`.
+The plugin's guards block commands that read or write a secret file — work with them: put
+secrets in `.mise.local.toml`, not a dotenv file. The `git check-ignore` line above is
+deliberately a **metadata** query, which the guards allow precisely because it reveals
+nothing of the contents; a read of the same paths is refused, including
+`.mise.local.toml` itself (write it, don't read it back — `mise env` shows the resolved
+values).
 
 ## Common failures
 

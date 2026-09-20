@@ -48,6 +48,16 @@ check 0 Write "src/main.ts"
 check 0 Read  "package.json"
 check 0 Edit  "docs/PLAN.md"
 
+# ── Grep, reported 2026-09-20: it sends `path`, not `file_path`, and content mode PRINTS
+# matching lines — a read by another name. It was outside the matcher entirely.
+check 2 Grep "backend/.env"
+check 2 Grep "backend/.env.local"
+check 2 Grep "certs/server.pem"
+check 2 Grep ".mise.local.toml"          # read-denied like Read, unlike Write
+check 0 Grep "backend/.env.example"      # manifests stay greppable
+check 0 Grep "src/"                      # a directory grep is not coverable — see README
+check 0 Grep "package.json"
+
 # No path in the payload → nothing to judge
 out=$(printf '{"tool_name":"Read","tool_input":{}}' | bash "$HOOK" 2>&1); rc=$?
 [ "$rc" = 0 ] && PASS=$((PASS+1)) || { FAIL=$((FAIL+1)); echo "  FAIL: empty payload should pass (got $rc)"; }

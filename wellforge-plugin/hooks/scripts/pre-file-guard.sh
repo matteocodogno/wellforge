@@ -18,9 +18,15 @@
 # Allowed everywhere: *.example, *.sample, *.template and *.jinja variants. They are
 # committed manifests of which variables exist, and the templates in this repo are made of
 # them.
+#
+# Grep sends its target as `path`, not `file_path`, and in content mode it PRINTS matching
+# lines — so a grep straight at a protected file is a read by another name. It is covered
+# here. What is NOT coverable: a grep at a DIRECTORY whose pattern happens to match a line
+# inside a protected file. No path check can see that, and the README says so rather than
+# implying the pair is airtight.
 INPUT=$(cat)
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.notebook_path // empty')
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.notebook_path // .tool_input.path // empty')
 [ -z "$FILE" ] && exit 0
 
 BASE=$(basename -- "$FILE")
@@ -49,7 +55,9 @@ fi
 # ── Read denied, write allowed ─────────────────────────────────────────────────
 # Creating it during setup is the documented flow; reading its values back into the
 # conversation is the leak.
-if [ "$TOOL" = "Read" ] && echo "$BASE" | grep -qE '^\.mise\.local\.toml$|^credentials\.json$'; then
+# Grep in content mode prints matching lines, so it reads just as surely as Read does.
+if { [ "$TOOL" = "Read" ] || [ "$TOOL" = "Grep" ]; } \
+   && echo "$BASE" | grep -qE '^\.mise\.local\.toml$|^credentials\.json$'; then
   echo "BLOCKED: reading $BASE would pull secret values into the transcript." >&2
   echo "  Write to it if setup needs it; to inspect values, run 'mise env' yourself." >&2
   exit 2

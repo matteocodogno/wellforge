@@ -95,6 +95,23 @@ run_case ALLOW 'grep -n "createTable" migrations/V1.sql'
 run_case BLOCK 'cat .envrc'
 run_case BLOCK 'source .envrc'
 run_case ALLOW 'cat .env.example'
+# ── guard asymmetry, reported 2026-09-20 ────────────────────────────────────────
+# Read of .mise.local.toml was blocked by the FILE guard while `cat` sailed past this one.
+run_case BLOCK 'cat .mise.local.toml'
+run_case BLOCK 'head -20 .mise.local.toml'
+run_case BLOCK 'strings .mise.local.toml'
+run_case BLOCK 'base64 .mise.local.toml'
+# ...but writing it is the documented setup flow, and metadata queries reveal nothing.
+run_case ALLOW 'echo "FOO=bar" >> .mise.local.toml'
+run_case ALLOW 'git check-ignore .mise.local.toml .env.local'
+run_case ALLOW 'ls -la .mise.local.toml'
+run_case ALLOW 'test -f .mise.local.toml'
+run_case ALLOW 'mise env'
+# The metadata carve-out must not become a bypass for the real secret files.
+run_case ALLOW 'ls -la .env'
+run_case BLOCK 'cat .env'
+run_case BLOCK 'cp .env /tmp/x'
+
 
 printf '\npre-bash-guard: %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

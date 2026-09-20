@@ -5,7 +5,7 @@
     ],
     "PreToolUse": [
       { "matcher": "Bash", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-bash-guard.sh" }] },
-      { "matcher": "Read|Write|Edit|MultiEdit|NotebookEdit", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-file-guard.sh" }] }
+      { "matcher": "Read|Write|Edit|MultiEdit|NotebookEdit|Grep", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-file-guard.sh" }] }
     ],
     "PostToolUse": [
       { "matcher": "Write|Edit|MultiEdit", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-lint.sh" }] }
