@@ -185,6 +185,33 @@ on upgrade is wired into upgrade.md and lands with the Phase 7 pilot.
 
 ## Phase 7 — Pilot & rollout (1 week calendar, low effort)
 
+**2026-09-20 — the first real `mise run install` on a generated project, and it failed
+three times over.** Running the outstanding pilot item instead of reasoning about it:
+
+- ☑ **Aggregate tasks never resolved.** Both app presets declared
+  `depends = ["backend:install", …]`, but mise merges config walking UP from the cwd, so the
+  root never sees `backend/mise.toml`'s tasks — `mise ERROR task not found: backend:install`
+  on mise 2026.9.0. `//` addressing and `experimental_monorepo_root` do not exist in that
+  version (the setting warns `unknown field` and is ignored, which is why the presets' own
+  `experimental = true` looked like it was doing something). Fixed with root pointer tasks
+  (`dir = "backend"`, `run = "mise run install"`), which keeps one definition per task.
+- ☑ **`./mvnw` in every backend task, and no wrapper is shipped** — the next error after the
+  first fix was `./mvnw: No such file or directory`. mise provides `maven 3.9.9`, so the
+  command is `mvn`. Eight tasks corrected.
+- ☑ **`ktlintCheck`/`ktlintFormat` are Gradle task names** in `scaffold.sh` and the `mise`
+  skill (the shipped template already had the Maven goal right, so this hit hand-scaffolded
+  services and anyone following the skill).
+- ☑ **`jooq.version` pinned to 3.19.18, which was never published** (jooq-bom → HTTP 404).
+  3.19.38 is the current 3.19.x and resolves.
+- ☐ **Still failing**: `spring-modulith-starter-jooq` has no managed version under Spring
+  Boot 4.0.0 (`'dependencies.dependency.version' … is missing`). Needs a Modulith BOM import
+  or an explicit pin — a version-matrix decision, deliberately left for the pilot rather than
+  guessed at here.
+
+The pattern of the whole day, in its purest form: four defects in the one path nobody had
+executed, each hidden behind the one before it.
+
+
 - ☐ Use WellForge end-to-end on the next real project start; time-box and measure
   (setup time, gate violations caught, friction notes).
 - ☐ Fix the top friction points; cut `v1.0.0` of plugin + templates + gates.

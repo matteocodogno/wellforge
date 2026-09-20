@@ -703,12 +703,12 @@ run         = "./mvnw spring-boot:run"
 
 [tasks.lint]
 description = "ktlint check"
-run         = "./mvnw ktlintCheck -q"
+run         = "mvn com.github.gantsign.maven:ktlint-maven-plugin:check -q"
 sources     = ["src/**/*.kt"]
 
 [tasks."lint:fix"]
 description = "ktlint format"
-run         = "./mvnw ktlintFormat -q"
+run         = "mvn com.github.gantsign.maven:ktlint-maven-plugin:format -q"
 sources     = ["src/**/*.kt"]
 
 [tasks.generate]

@@ -9,8 +9,6 @@ pnpm = "10"
 # Project-level non-sensitive env vars only — secrets go in .mise.local.toml
 # _.file = ".env"   ← uncomment to load .env automatically
 
-[settings]
-experimental = true    # required for monorepo task features
 
 [tasks.install]
 description = "Install all dependencies (backend + frontend)"
@@ -44,3 +42,64 @@ git config pull.rebase true       # git pull rebases instead of merging origin b
 git config rebase.autoStash true  # rebasing with a dirty tree stashes/restores
 echo 'git policy applied: linear history (no merge commits). CI enforces it on every PR.'
 """
+
+# ── Per-service delegation ─────────────────────────────────────────────────────
+# Why these exist: mise merges config walking UP from the cwd, so the ROOT config does not
+# see `backend/mise.toml`'s tasks. `depends = ["backend:install"]` alone fails with
+# `task not found: backend:install` — verified on mise 2026.9.0, and it was every generated
+# project's `mise run install/build/test/lint/dev`.
+# `//backend:install` addressing and an `experimental_monorepo_root` setting do NOT exist in
+# this mise (the latter warns "unknown field"), so the portable fix is a root task that sets
+# `dir` and re-enters mise there: with cwd inside the service, that service's own mise.toml
+# shadows the root's same-named task, so there is exactly ONE definition of each task — in
+# the service file — and no recursion.
+
+[tasks."backend:install"]
+description = "install (backend)"
+dir         = "backend"
+run         = "mise run install"
+
+[tasks."frontend:install"]
+description = "install (frontend)"
+dir         = "frontend"
+run         = "mise run install"
+
+[tasks."backend:build"]
+description = "build (backend)"
+dir         = "backend"
+run         = "mise run build"
+
+[tasks."frontend:build"]
+description = "build (frontend)"
+dir         = "frontend"
+run         = "mise run build"
+
+[tasks."backend:test"]
+description = "test (backend)"
+dir         = "backend"
+run         = "mise run test"
+
+[tasks."frontend:test"]
+description = "test (frontend)"
+dir         = "frontend"
+run         = "mise run test"
+
+[tasks."backend:lint"]
+description = "lint (backend)"
+dir         = "backend"
+run         = "mise run lint"
+
+[tasks."frontend:lint"]
+description = "lint (frontend)"
+dir         = "frontend"
+run         = "mise run lint"
+
+[tasks."backend:dev"]
+description = "dev (backend)"
+dir         = "backend"
+run         = "mise run dev"
+
+[tasks."frontend:dev"]
+description = "dev (frontend)"
+dir         = "frontend"
+run         = "mise run dev"

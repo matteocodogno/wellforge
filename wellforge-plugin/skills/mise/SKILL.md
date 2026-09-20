@@ -51,6 +51,40 @@ project/
     └── mise.toml        ← frontend-specific tasks (dev, build, lint, e2e)
 ```
 
+### A root task cannot depend on a subdirectory task by name
+
+mise merges config walking **upward** from the cwd, so the root config never sees
+`backend/mise.toml`'s tasks. A root aggregate written the obvious way —
+
+```toml
+[tasks.install]
+depends = ["backend:install", "frontend:install"]   # ✗ task not found: backend:install
+```
+
+— fails at run time. Verified on mise 2026.9.0, and it shipped in both WellForge presets:
+`mise run install/build/test/lint/dev` was broken in **every generated project** until
+2026-09-20, which is exactly what "full `mise run install` on a generated project" being
+an outstanding pilot item had been hiding. `//backend:install` addressing and an
+`experimental_monorepo_root` setting do not exist in that version either — the latter warns
+`unknown field` and is otherwise ignored, so it looks like it worked.
+
+The portable pattern, and what the presets now ship: declare the per-service task **at the
+root** with `dir`, and let it re-enter mise there.
+
+```toml
+[tasks.install]                                     # the aggregate
+depends     = ["backend:install", "frontend:install"]
+
+[tasks."backend:install"]                           # the pointer
+dir         = "backend"
+run         = "mise run install"    # cwd is backend/ → backend/mise.toml's `install` wins
+```
+
+Each task keeps exactly ONE definition, in its service's file; the root entries are
+pointers. This relies on a subdirectory task shadowing a same-named root task when cwd is
+inside that subdirectory — confirm with `mise task info install` from `backend/` (the
+`Source:` line must be the service's own file), and re-confirm after a mise upgrade.
+
 mise walks up the directory tree and merges configurations hierarchically — the root `mise.toml` sets the tool versions used everywhere; service-level files add tasks without re-declaring tools.
 
 ---
@@ -128,12 +162,12 @@ run         = "./mvnw spring-boot:run"
 
 [tasks.lint]
 description = "Run ktlint check"
-run         = "./mvnw ktlintCheck -q"
+run         = "mvn com.github.gantsign.maven:ktlint-maven-plugin:check -q"
 sources     = ["src/**/*.kt"]
 
 [tasks."lint:fix"]
 description = "Run ktlint format"
-run         = "./mvnw ktlintFormat -q"
+run         = "mvn com.github.gantsign.maven:ktlint-maven-plugin:format -q"
 sources     = ["src/**/*.kt"]
 
 [tasks.generate]
