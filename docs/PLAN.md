@@ -99,7 +99,8 @@ Goal: product description in → running repo with connections out, in <30 min.
 - ☑ `templates/_shared/CONTRACT.md` — binding contract: common copier questions
   (incl. hidden `generated`/`template_version`), required generated files, versioning.
 - ☑ `templates/spring-kotlin-react/` v0.1.0 — extracted from
-  `skills/springboot-scaffold/scripts/scaffold.sh` + react-ts-vite setup + mise skill.
+  `skills/springboot-scaffold/scripts/scaffold.sh` (deleted 2026-09-20 — see Phase 19) +
+  react-ts-vite setup + mise skill.
   Questions: base_package, db (postgres/none), ci. Nested Java package dirs via hidden
   derived `package_path` answer (literal `/` in a templated dirname doesn't work).
 - ☑ `templates/hono-react/` v0.1.0 — Hono + Drizzle (postgres/none) + react frontend.
@@ -851,6 +852,33 @@ Not defects — five gaps where the plugin promised or implied something it didn
 
 `check-docs.py`, added hours earlier, caught the new command and all three skills missing
 from the README before this was committed. That is the intended failure mode.
+
+## Phase 19 — Remove the second scaffolding path (added 2026-09-20)
+
+`springboot-scaffold` hand-generated a whole Spring project from a 741-line `scaffold.sh`,
+in direct contradiction of the contract everything else depends on: generation goes through
+the root `copier.yml`, never anywhere else. The output had no `.forge/manifest.json`, so a
+project born that way had no recorded template version, no `copier update` path and no
+wiring to the shared gates — **pillars 5 and 6 bypassed at the moment of creation**, which
+is the worst possible moment, and silently.
+
+It was also dead-wired and broken, which is why nobody had noticed: no command or agent ever
+referenced it (only two sibling skills pointed at it for JVM-vs-TS disambiguation), it
+`cp`'d its output to a `/mnt/user-data/outputs/` sandbox path under `set -euo pipefail` — so
+on any real machine it exited non-zero *after* generating — and it instructed the model to
+deliver the result with `present_files`, a tool Claude Code does not have. Its pins (Boot
+4.0 / Modulith 2.0) had also drifted a full major from `kotlin-springboot`'s Maven reference
+(3.4.x / 1.3.x), and that reference's pins were literal `x` placeholders that Maven cannot
+resolve — a broken pom for anyone who copied it.
+
+Resolution: **delete the generator, keep the routing.** A thin copier wrapper was the other
+option and does not fit — copier produces a whole project, while the real use case the skill
+named is a *second service inside an existing monorepo*, which no generator covers. The
+skill is now routing plus module conventions: `/wellforge:new` for a new project,
+`/wellforge:adopt` for an existing one, and a by-hand procedure (inherit parent versions,
+root pointer task, wire the gate with a new `working-directory`) for the monorepo case. The
+Maven reference's fake pins became `${property}` references with a note naming the shipped
+preset as the source of truth — read the pin, don't recall it.
 
 ## Order & dependencies
 

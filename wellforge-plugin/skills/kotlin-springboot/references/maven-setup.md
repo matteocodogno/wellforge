@@ -10,7 +10,7 @@ Complete POM skeleton for a WellForge Spring Boot Kotlin service.
 <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.4.x</version>
+    <version>${spring-boot.version}</version>   <!-- see the version note below -->
 </parent>
 
 <properties>
@@ -109,13 +109,13 @@ Complete POM skeleton for a WellForge Spring Boot Kotlin service.
     <dependency>
         <groupId>io.mockk</groupId>
         <artifactId>mockk</artifactId>
-        <version>1.13.x</version>
+        <version>${mockk.version}</version>
         <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>io.kotest</groupId>
         <artifactId>kotest-assertions-core-jvm</artifactId>
-        <version>5.9.x</version>
+        <version>${kotest.version}</version>
         <scope>test</scope>
     </dependency>
     <dependency>
@@ -128,6 +128,19 @@ Complete POM skeleton for a WellForge Spring Boot Kotlin service.
 
 ---
 
+> **Versions here are properties, not literals — deliberately.** This reference used to
+> print pins like `3.4.x` and `1.13.x`, which are not versions: Maven cannot resolve an `x`,
+> so anyone copying this pom got a build that failed at dependency resolution. They had also
+> drifted a full major from what WellForge actually ships (`springboot-scaffold` said Boot
+> 4.0 / Modulith 2.0 while this file said 3.4.x / 1.3.x), and neither was wrong enough for
+> anyone to notice.
+>
+> **The source of truth is the pom you are editing**, and for a new project that is
+> `templates/spring-kotlin-react/template/backend/pom.xml` — which today pins Spring Boot
+> `4.0.0`, Modulith `2.0.0`, Testcontainers `1.20.4`, MockK `1.13.14`, Kotest `5.9.1` in
+> `<properties>` and references them everywhere else. Read the pin from there; do not recall
+> it from here, and do not copy a number out of this file into a project.
+
 ## Dependency Management (BOM)
 
 ```xml
@@ -136,14 +149,14 @@ Complete POM skeleton for a WellForge Spring Boot Kotlin service.
         <dependency>
             <groupId>org.springframework.modulith</groupId>
             <artifactId>spring-modulith-bom</artifactId>
-            <version>1.3.x</version>
+            <version>${spring-modulith.version}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-bom</artifactId>
-            <version>1.20.x</version>
+            <version>${testcontainers.version}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>

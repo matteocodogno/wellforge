@@ -139,7 +139,7 @@ something a guard once got wrong — add yours there rather than only widening a
 | `skills/rigor-tiers/` | spike / mvp / production — how much pipeline runs, the security floor, the effort cue |
 | `skills/self-critique/` | the one bounded pass over your own artifact before the gate that follows |
 | `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
-| `skills/springboot-scaffold/` | Scaffolds a new full-stack service |
+| `skills/springboot-scaffold/` | JVM routing + module conventions — which generator applies, and how to add a service to an existing monorepo by hand |
 | `skills/systematic-debugging/` | root cause before the fix, the 3-attempt architecture stop, never silence a symptom |
 | `skills/template-extraction/` | stack profile, preset gap-check, org-internal template extraction with an IP/secret scrub |
 | `skills/terse/` | token-efficient conversational output — byte-identical invariant, artifact exemption |
