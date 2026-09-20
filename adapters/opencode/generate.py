@@ -176,6 +176,23 @@ def gen_plugin(out):
     return 1
 
 
+def gen_rubric(plugin, out, dest_rel):
+    """Copy the plugin's bundled eval rubric into the adapter output.
+
+    The evaluator resolves the rubric by a documented order whose last stop is the
+    tool-bundled copy. Claude Code gets it from the installed plugin; here there is no
+    plugin, so the generator has to emit it or /wellforge:eval has no rubric at all in a
+    scaffolded project (gates/ is referenced by CI, never copied into the project).
+    """
+    src = os.path.join(plugin, "config", "eval-rubric.yml")
+    if not os.path.exists(src):
+        return 0
+    dst = os.path.join(out, dest_rel)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    shutil.copyfile(src, dst)
+    return 1
+
+
 def main():
     ap = argparse.ArgumentParser()
     here = os.path.dirname(__file__)
@@ -197,6 +214,7 @@ def main():
     _AGENT_NAMES[:] = [os.path.splitext(os.path.basename(f))[0]
                        for f in __import__("glob").glob(os.path.join(args.plugin, "agents", "*.md"))]
 
+    gen_rubric(args.plugin, args.out, os.path.join(".opencode", "eval-rubric.yml"))
     a = gen_agents(args.plugin, args.out, models)
     c = gen_commands(args.plugin, args.out)
     s = gen_skills(args.plugin, args.out)

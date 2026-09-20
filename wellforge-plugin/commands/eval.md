@@ -28,8 +28,13 @@ resolved. Read spec.md, plan.md, tasks.md.
 
 ## Step 3 — Evaluate
 
-Spawn the `wellforge:evaluator` agent with: the spec dir path, the central rubric
-(`gates/configs/eval-rubric.yml`), and any `specs/NNN-slug/eval.md` override. It scores
+Spawn the `wellforge:evaluator` agent with: the spec dir path, the central rubric, and any
+`specs/NNN-slug/eval.md` override. The agent resolves the rubric itself, in the order its
+prompt defines — project `gates/configs/eval-rubric.yml`, then CI's `.wellforge-gates/`
+checkout, then the tool-bundled copy (`<plugin root>/config/eval-rubric.yml` for Claude
+Code). **A scaffolded project has no `gates/` directory** — gates are referenced by CI, never
+copied — so there the bundled copy is the one that resolves. If the agent reports it found no
+rubric, that is a plugin-install problem, not a feature problem: stop and say so. It scores
 each rubric dimension 1–5 with cited evidence, computes the weighted total, and writes
 `specs/NNN-slug/eval-report.md` with a PASS/FAIL verdict (PASS = total ≥ pass_score AND
 every dimension ≥ floor).
@@ -57,6 +62,8 @@ orchestrate.
 - Read-only on code/specs — this command only produces `eval-report.md` (via the
   evaluator) and, on the user's confirmation, the spec `done` status.
 - Never lower a rubric floor or override a FAIL. The rubric is central
-  (`gates/configs/eval-rubric.yml`); changing it is a PR to `gates/`.
+  (`gates/configs/eval-rubric.yml`); changing it is a PR to `gates/`, which also refreshes
+  the plugin's byte-identical mirror (`wellforge-plugin/config/eval-rubric.yml`) — CI's
+  `rubric-sync` job fails if the two drift.
 - An unmet AC fails the eval regardless of the other dimensions (ac_satisfaction floor).
 - For a feature with no implementation yet, this is the wrong command — implement first.

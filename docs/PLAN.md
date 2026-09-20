@@ -223,6 +223,18 @@ LM-judge), so WellForge verifies *how good*, not just *does it pass*.
   implement, orchestrate all wired).
 - ☑ Opt-in CI: `quality-eval.yml@gates-v2` + `run-eval.py` (tested offline:
   pass/fail-by-total/fail-by-floor).
+- ☑ **Rubric reachable from a scaffolded project** (plugin `2.27.1`, fixed 2026-09-20). The
+  whole eval half was wellforge-only and nobody noticed, because it was only ever exercised
+  *here*: the evaluator, `/wellforge:eval` and `orchestrate` all read
+  `gates/configs/eval-rubric.yml` relative to the project, and a scaffolded project has no
+  `gates/` — gates are called by CI, never copied. So `/wellforge:eval` could not run in any
+  generated project, and since `production`'s done gate requires an eval PASS, no production
+  feature could close. Fixed by a byte-identical mirror in the plugin
+  (`config/eval-rubric.yml`, emitted by both adapters too) plus a documented resolution order
+  in the evaluator — project `gates/` → CI's `.wellforge-gates/` checkout → tool-bundled copy
+  — and a `rubric-sync` CI job that fails if the mirror drifts from the central rubric. No
+  template cut: the fix ships with the plugin, so it reaches existing projects on upgrade.
+  A reminder that "☑ wired" means wired *in this repo* until the pilot proves otherwise.
 - ☑ P2 observability (plugin v2.2.0): `.forge/runs/` run traces (schema wellforge-run/v1)
   written by implement/orchestrate/eval; SubagentStop token-event hook + run-report.py
   cost estimates (central `config/model-pricing.yml`); drift telemetry in traces;

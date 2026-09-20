@@ -119,8 +119,9 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 
    Then re-run QE. Max **2 fix rounds** — still failing after that, stop and escalate with
    the verdict table.
-10. **Eval** → spawn `wellforge:evaluator` with the spec dir (LM-judge against
-    `gates/configs/eval-rubric.yml`). This is the non-deterministic verification half QE
+10. **Eval** → spawn `wellforge:evaluator` with the spec dir (LM-judge against the central
+    rubric, which the agent resolves itself — a scaffolded project has no `gates/`, so it
+    falls back to the plugin's bundled copy). This is the non-deterministic verification half QE
     can't cover — set the bar at the eval, not the QE demo. FAIL → **triage each failing
     dimension to its owner** (as in step 9: code → dev, spec → PO, plan → architect, design →
     designer), same bounded 2-round loop, re-eval.

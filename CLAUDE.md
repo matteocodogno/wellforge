@@ -89,7 +89,7 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.9.0` (template series, PEP440 — what copier resolves), `gates-v11` (gate
-  workflow pin series — separate, invisible to copier); plugin `2.27.0`. A self-CI workflow
+  workflow pin series — separate, invisible to copier); plugin `2.27.1`. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets;
   it runs on `origin` (`github.com/matteocodogno/wellforge`, public) and has been green on
   `main` since 2026-08-17.
@@ -124,6 +124,13 @@ wellforge/
   release commit.
 - Quality thresholds live in the gate workflows' `env` blocks — changed only via PR to
   `gates/`/`.github/workflows/`; templates call them pinned to `gates-v*`.
+- Gates are referenced, never copied — with **one guarded exception**: the eval rubric. A
+  scaffolded project has no `gates/` on disk, so the in-session evaluator had no rubric to
+  read and `/wellforge:eval` failed there (which also blocked `done` for every `production`
+  feature). The plugin ships a byte-identical mirror at
+  `wellforge-plugin/config/eval-rubric.yml`; `gates/configs/eval-rubric.yml` stays the source
+  of truth, and CI's `rubric-sync` job fails if they drift. Change the central one, then
+  `cp` it across in the same commit.
 - Parallel implementation is worktree-isolated, per the **`worktree-isolation` skill** (the
   authority; `implement`/`orchestrate` delegate to it). Its rule: **a worktree touches nothing
   outside itself except by explicit allowance** — a worktree isolates the *checkout*, not the

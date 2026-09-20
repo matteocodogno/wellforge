@@ -89,6 +89,27 @@ jobs:
         working-directory: wellforge-plugin
         run: uv run --with pyyaml python scripts/check-routing.py --tool claude
 
+  # Eval-rubric mirror guard. The rubric is central in gates/configs/, but a SCAFFOLDED
+  # project has no gates/ on disk (gates are referenced by CI, never copied), so the plugin
+  # ships a byte-identical mirror that /wellforge:eval falls back to. Two copies means drift,
+  # and silent drift here means two projects scored against different standards — so this
+  # job is the discretion point's enforcement, same idea as the model-routing guard above.
+  rubric-sync:
+    name: eval-rubric mirror in sync with gates/
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: gates/configs/eval-rubric.yml == wellforge-plugin/config/eval-rubric.yml
+        run: |
+          if ! cmp -s gates/configs/eval-rubric.yml wellforge-plugin/config/eval-rubric.yml; then
+            echo "::error::eval-rubric mirror drifted from the central rubric."
+            echo "The central copy is gates/configs/eval-rubric.yml. Refresh the mirror with:"
+            echo "  cp gates/configs/eval-rubric.yml wellforge-plugin/config/eval-rubric.yml"
+            diff -u gates/configs/eval-rubric.yml wellforge-plugin/config/eval-rubric.yml || true
+            exit 1
+          fi
+          echo "OK — rubric mirror is byte-identical"
+
   # Gate-callable self-test: call a reusable gate with NO gates-ref and prove the fallback
   # (github.job_workflow_sha) resolves to a real commit and its configs are found. A caller
   # omitting gates-ref used to silently get `gates-v0` — 2026-06 configs, where the semgrep

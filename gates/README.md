@@ -57,7 +57,18 @@ LM-judge — "set the bar at the eval, not the demo."
 - Same governance as thresholds: the rubric changes only via PR to `gates/`. Per-feature
   `eval.md` overrides may add dimensions or raise floors, never lower them.
 - In-session, `/wellforge:eval` + the `evaluator` agent use the same rubric, writing
-  `specs/NNN-slug/eval-report.md`. CI and in-session share `configs/eval-rubric.yml`.
+  `specs/NNN-slug/eval-report.md`. CI reads `configs/eval-rubric.yml` from the gates
+  checkout, so CI and in-session score against the same standard.
+- **The rubric is the one gate config that is mirrored, not just referenced.** A scaffolded
+  project has no `gates/` on disk (gates are *called* by CI, never copied), so an in-session
+  eval there had nothing to read and `/wellforge:eval` could not run at all — which also
+  blocked `done` for every `production` feature, since that gate requires an eval PASS. The
+  plugin therefore ships a byte-identical copy at `wellforge-plugin/config/eval-rubric.yml`
+  (and the adapters emit it at `.github/wf-skills/eval-rubric.yml` / `.opencode/eval-rubric.yml`),
+  which the evaluator falls back to. This file stays the single source of truth: change it
+  here by PR as usual, refresh the mirror with
+  `cp gates/configs/eval-rubric.yml wellforge-plugin/config/eval-rubric.yml`, and CI's
+  `rubric-sync` job fails the build if the two ever drift.
 
 ## Conventional Commits gate
 

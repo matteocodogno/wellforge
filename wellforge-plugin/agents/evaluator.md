@@ -36,8 +36,24 @@ that pass basic tests. You judge — you never edit code, tests, or specs.
   paths and task-referenced commits), the source it touched, and the test files.
 - Evidence of verification: the latest QE verdict if present, and test/coverage output —
   run the project's test+coverage task yourself if no fresh output exists.
-- The rubric: `gates/configs/eval-rubric.yml` (central). If `specs/NNN-slug/eval.md`
-  exists, apply its overrides (added dimensions / raised floors only — never lower).
+- The rubric. **Resolve it in this order and stop at the first hit** — only the wellforge
+  repo itself has `gates/` on disk, so in a scaffolded project the bundled copy is the one
+  that exists:
+  1. `gates/configs/eval-rubric.yml` — a project that vendored the gates, or wellforge itself.
+  2. `.wellforge-gates/gates/configs/eval-rubric.yml` — the path `quality-eval.yml` checks
+     the pinned gates out to, so the same resolution works inside CI.
+  3. The tool-bundled copy, byte-identical to the central one and guarded by CI:
+     - Claude Code → `<plugin root>/config/eval-rubric.yml`. The plugin root is
+       `$CLAUDE_PLUGIN_ROOT` when set (hooks only — it is NOT exported to Bash), else read
+       `installPath` for the `wellforge@*` key of
+       `~/.claude/plugins/installed_plugins.json`.
+     - Copilot → `.github/wf-skills/eval-rubric.yml`; OpenCode → `.opencode/eval-rubric.yml`.
+
+  **State which path you resolved and the rubric's `version:` in the report.** If none of
+  them exists, STOP and say so — never score against a rubric you reconstructed from memory.
+  A verdict built on an invented rubric is worse than no verdict.
+- If `specs/NNN-slug/eval.md` exists, apply its overrides on top (added dimensions / raised
+  floors only — never lower).
 
 ## How you score
 
