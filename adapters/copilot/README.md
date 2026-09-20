@@ -64,11 +64,36 @@ spawn/parallelise subagents. `/wf-orchestrate` and `/wf-implement` degrade to a 
 Copilot's cloud coding agent is the closest autonomous path. Pillars 2–3 lose execution
 fidelity here — the structure, specs, conventions, gates, and eval are fully portable.
 
+
+## Coverage (machine-checked)
+
+`adapters/smoke-test.py` asserts every plugin command, agent and skill has a counterpart
+here. A deliberate gap is legitimate — an **undeclared** one is the bug, so the exceptions
+live in this block and nowhere else. Empty lists below mean full parity today.
+
+```yaml wellforge-adapter-coverage
+intentionally_absent:
+  commands: []
+  agents: []
+  skills: []
+```
+
+Hooks are the exception this block does not cover: they have no counterpart artifact to
+count, so the per-hook table above is their record. See [`SMOKE-TEST.md`](SMOKE-TEST.md)
+for the human pass this script is the mechanical half of.
+
 ## Status
 
-Generator complete: 17 prompts · 10 chat modes · 9 scoped instructions + skill library (13
-skills, refs translated) · 3 MCP servers · git-hook enforcement fallback. Provider swap
-working; all generated frontmatter validated as YAML; ref translation clean (0 leftover
-`/wellforge:`). Next: manual VS Code smoke test (prompts / chat modes / MCP load), then
-`wellforge install --tool copilot` wiring to lay this down automatically.
-</content>
+Generator complete: **20 prompts · 10 chat modes · 9 scoped instructions + the full skill
+library (21 skills, refs translated) · 4 MCP servers · git-hook enforcement fallback.**
+Provider swap working; all generated frontmatter validated as YAML; ref translation clean
+(0 leftover `/wellforge:`).
+
+Those counts are not maintained by hand any more, and they were wrong (17 / 13 / 3) before
+`adapters/smoke-test.py` existed — which is the whole argument for it. CI now regenerates
+this adapter on every push and asserts the output is non-empty, that its links resolve,
+that coverage is complete, and that its model names match `config/model-tiers.yml`.
+
+Next: `wellforge install --tool copilot` wiring to lay this down automatically. The manual
+VS Code pass ([`SMOKE-TEST.md`](SMOKE-TEST.md)) stays the check for what no script can see —
+whether Copilot actually loads and honours these files.

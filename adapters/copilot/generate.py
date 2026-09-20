@@ -87,6 +87,39 @@ def translate(s):
     return s
 
 
+_SKILL_NAMES = []   # set in main(); skill directory names
+
+_LINK = re.compile(r"\]\((?!https?://|mailto:|#)([^)\s]+)\)")
+
+
+def relink(s, skill=None):
+    """Re-point relative links that break because the file is RELOCATED.
+
+    The plugin's links are correct *in the plugin tree*. Copilot's layout is a different
+    tree: skills land in `.github/wf-skills/<name>/`, while prompts, chat modes and
+    instruction pointers all land one level under `.github/`. So `../skills/x/SKILL.md`
+    (correct from `commands/`) resolves to `.github/skills/x/SKILL.md` — nothing.
+
+    `skill` names the source skill when the text was lifted OUT of `skills/<skill>/`
+    (the instruction pointers), whose sibling and own-subdir links move too.
+
+    Two such links shipped broken until adapters/smoke-test.py (assertion b) found them.
+    """
+    def fix(m):
+        t = m.group(1)
+        if t.startswith("../skills/"):
+            return "](../wf-skills/" + t[len("../skills/"):] + ")"
+        if skill:
+            for other in _SKILL_NAMES:
+                if t.startswith(f"../{other}/"):
+                    return f"](../wf-skills/{other}/" + t[len(f"../{other}/"):] + ")"
+            for own in ("references/", "scripts/", "./references/", "./scripts/"):
+                if t.startswith(own):
+                    return f"](../wf-skills/{skill}/" + t.lstrip("./") + ")"
+        return m.group(0)
+    return _LINK.sub(fix, s)
+
+
 # ── emit stage (Copilot-native) ─────────────────────────────────────────────────────────
 # Implemented incrementally per docs/PLAN-copilot-adapter.md build order. Each returns a
 # count for the summary line. Stubs below are filled in by the noted step.
@@ -118,7 +151,7 @@ def gen_prompts(plugin, out):
         # placeholder text runs to the closing `}`; strip braces so it can't break the var
         hint = " ".join(hm.group(1).split()).replace("{", "").replace("}", "") if hm else ""
         arg_var = f"${{input:args:{hint}}}" if hint else "${input:args}"
-        body = translate(body).replace("$ARGUMENTS", arg_var)
+        body = relink(translate(body)).replace("$ARGUMENTS", arg_var)
         fm = yaml.safe_dump({"mode": "agent", "description": desc},
                             sort_keys=False, allow_unicode=True, width=4096).strip()
         with open(os.path.join(d, f"wf-{name}.prompt.md"), "w") as f:
@@ -181,7 +214,7 @@ def gen_chatmodes(plugin, out, models):
                    "tools": tools_for(fm.get("tools"), fm.get("disallowedTools"))}
         with open(os.path.join(d, f"wf-{name}.chatmode.md"), "w") as f:
             f.write("---\n" + yaml.safe_dump(mode_fm, sort_keys=False, allow_unicode=True,
-                                             width=4096).strip() + "\n---\n" + translate(body))
+                                             width=4096).strip() + "\n---\n" + relink(translate(body)))
         n += 1
     return n
 
@@ -290,7 +323,7 @@ def gen_instructions(plugin, out):
             continue
         fm, body = split_frontmatter(open(skill_md).read())
         desc = translate(" ".join((fm.get("description") or name).split()))
-        essence = translate(_essence(body))
+        essence = relink(translate(_essence(body)), skill=name)
         head = yaml.safe_dump({"applyTo": apply_to, "description": desc},
                               sort_keys=False, allow_unicode=True, width=4096).strip()
         pointer = (f"\n\n**Full reference:** follow `.github/wf-skills/{name}/SKILL.md` and "
@@ -414,6 +447,9 @@ def main():
     # agent ids (== filenames) → drive the wf- ref translation in bodies/prompts
     _AGENT_NAMES[:] = [os.path.splitext(os.path.basename(f))[0]
                        for f in __import__("glob").glob(os.path.join(args.plugin, "agents", "*.md"))]
+    _SKILL_NAMES[:] = sorted(
+        os.path.basename(os.path.dirname(f))
+        for f in glob.glob(os.path.join(args.plugin, "skills", "*", "SKILL.md")))
 
     p = gen_prompts(args.plugin, args.out)
     cm = gen_chatmodes(args.plugin, args.out, models)

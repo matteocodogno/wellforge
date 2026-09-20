@@ -47,8 +47,35 @@ Remaining gaps vs. Claude Code, honestly:
 - **Orchestration** uses OpenCode subagents (`@agent` / task); parallel-dispatch fidelity
   depends on OpenCode's runtime.
 
+
+## Coverage (machine-checked)
+
+`adapters/smoke-test.py` asserts every plugin command, agent and skill has a counterpart
+here. A deliberate gap is legitimate — an **undeclared** one is the bug, so the exceptions
+live in this block and nowhere else. Empty lists below mean full parity today.
+
+```yaml wellforge-adapter-coverage
+intentionally_absent:
+  commands: []
+  agents: []
+  skills: []
+```
+
+Hooks are the exception this block does not cover: they have no counterpart artifact to
+count, so the per-hook table above is their record. See [`SMOKE-TEST.md`](SMOKE-TEST.md)
+for the human pass this script is the mechanical half of.
+
 ## Status
 
-Validated: 10 agents · 10 commands · skills · 3 MCP servers · enforcement plugin (valid
-ESM, guard parity 13/13), provider swap working. Next: `wellforge setup/migrate` wiring
-(tool + provider choice) to lay this down automatically.
+Validated: **10 agents · 20 commands · 21 skills · 4 MCP servers · enforcement plugin**
+(valid ESM, guard parity 13/13), provider swap working.
+
+CI regenerates this adapter on every push and asserts four things about the output —
+non-empty files, resolving links, complete coverage, and model names matching
+`config/model-tiers.yml` (`adapters/smoke-test.py`). The counts above came from that run,
+not from memory; the Copilot adapter's equivalent line had drifted by 3 commands and 8
+skills before the check existed.
+
+Next: `wellforge setup/migrate` wiring (tool + provider choice) to lay this down
+automatically, and the manual OpenCode pass in [`SMOKE-TEST.md`](SMOKE-TEST.md) for what a
+script cannot see — whether OpenCode loads and honours these files.

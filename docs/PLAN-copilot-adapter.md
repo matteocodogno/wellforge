@@ -112,5 +112,4 @@ at today), not a copier-emitted layer. Later, wire tool choice into `wellforge s
 automatically. First milestone = **prompts + chat modes + instructions + MCP** — the workflow,
 agents, and skills, i.e. the bulk of WellForge; enforcement fallback and the orchestration
 honesty note follow.
-</content>
 </invoke>

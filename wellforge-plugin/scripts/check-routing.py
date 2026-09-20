@@ -3,10 +3,15 @@
 
   check-routing.py [--tool claude] [--routing config/model-routing.yml]
                    [--tiers config/model-tiers.yml] [--agents agents/]
+                   [--glob '*.md'] [--name-re '(?P<name>.+)']
 
 routing.yml assigns each agent a TIER (tool-neutral); tiers.yml resolves tier → model per
 tool. Expected model for an agent = tiers[tool][routing.agents[agent].tier]. Exits non-zero
 on any mismatch — run after editing routing/tiers or an agent, and in the repo's checks.
+
+--glob/--name-re point it at an ADAPTER's generated agents, whose filenames are namespaced
+(`wf-architect.chatmode.md`): the same policy, checked against what actually shipped rather
+than against the plugin files the generator read. adapters/smoke-test.py is the caller.
 """
 import argparse
 import glob
@@ -40,7 +45,24 @@ def main():
     ap.add_argument("--routing", default=os.path.join(HERE, "..", "config", "model-routing.yml"))
     ap.add_argument("--tiers", default=os.path.join(HERE, "..", "config", "model-tiers.yml"))
     ap.add_argument("--agents", default=os.path.join(HERE, "..", "agents"))
+    ap.add_argument("--glob", default="*.md", help="filename pattern inside --agents")
+    ap.add_argument("--name-re", default=r"(?P<name>.+)",
+                    help="regex with a 'name' group mapping a filename (sans .md) to an agent id")
     args = ap.parse_args()
+
+    try:
+        name_rx = re.compile(args.name_re + "$")
+    except re.error as e:
+        sys.exit(f"--name-re is not a valid regex: {e}")
+    if "name" not in (name_rx.groupindex or {}):
+        sys.exit("--name-re must contain a (?P<name>...) group")
+
+    def agent_id(path):
+        """Filename → the agent id the routing policy knows. None = not an agent file."""
+        m = name_rx.match(os.path.splitext(os.path.basename(path))[0])
+        return m.group("name") if m else None
+
+    files = sorted(glob.glob(os.path.join(args.agents, args.glob)))
 
     routing = yaml.safe_load(open(args.routing))
     tier_map = yaml.safe_load(open(args.tiers))["tools"]
@@ -54,8 +76,10 @@ def main():
 
     problems = []
     checked = 0
-    for fp in sorted(glob.glob(os.path.join(args.agents, "*.md"))):
-        name = os.path.splitext(os.path.basename(fp))[0]
+    for fp in files:
+        name = agent_id(fp)
+        if name is None:
+            continue
         actual = frontmatter_model(fp)
         if name not in expected:
             # specialists may legitimately be unlisted only if they set no model; flag if they do
@@ -67,7 +91,7 @@ def main():
         if actual != want:
             problems.append(f"{name}: frontmatter model '{actual}' != policy tier model '{want}'")
 
-    listed = set(expected) - {os.path.splitext(os.path.basename(f))[0] for f in glob.glob(os.path.join(args.agents, '*.md'))}
+    listed = set(expected) - {n for n in (agent_id(f) for f in files) if n}
     for missing in sorted(listed):
         problems.append(f"{missing}: in policy but no agent file found")
 

@@ -4,6 +4,28 @@ Step 8 of `docs/PLAN-copilot-adapter.md`: a hands-on pass in a real VS Code + Co
 Ordered so each artifact type is verified independently, with explicit pass criteria and the
 two known gaps called out so they aren't flagged as bugs.
 
+## What is mechanical now, and what still needs you
+
+`adapters/smoke-test.py` runs in CI on every push (`adapter-smoke` in `.github/workflows/ci.yml`)
+and asserts the four things that used to be checked by eye here, badly:
+
+```bash
+uv run --with pyyaml python adapters/smoke-test.py --adapter copilot
+uv run --with pyyaml python adapters/smoke-test.py --adapter copilot --keep /tmp/wf-copilot-test
+```
+
+| Assertion | Was caught here by | Now |
+|---|---|---|
+| a. no generated file is empty | nobody — 44 zero-byte skill files shipped while the summary read "44 skill files" | CI |
+| b. every relative link resolves | nobody — two links pointed at nothing in the generated tree | CI |
+| c. every command/agent/skill has a counterpart | the count line in the README, which had drifted to 17/13/3 | CI |
+| d. model names match `config/model-tiers.yml` | step 4, by reading the picker | CI |
+
+So run the script **first** (`--keep` generates into the folder you then open in VS Code),
+and use the steps below for what it structurally cannot answer: whether Copilot *loads*
+these files, whether the glob scoping fires, and whether a chat mode behaves as its persona.
+A green script means the artifacts are well-formed, not that the tool accepts them.
+
 ## 0. Prerequisites
 - [x] VS Code (latest) with the **GitHub Copilot** + **GitHub Copilot Chat** extensions,
       signed in on a plan that exposes the model picker.
@@ -91,4 +113,3 @@ two known gaps called out so they aren't flagged as bugs.
 - [x] Record pass/fail per section. Any failure in **3, 4, 5, or 7** is a real adapter bug →
       capture the VS Code version, the exact file, and the error, and fix `generate.py`.
       Sections 8–9 failing on missing toolchains/network is environmental, not an adapter bug.
-</content>

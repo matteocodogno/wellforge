@@ -321,6 +321,28 @@ jobs:
       # misses `migrations/001.sql` when the pattern says `**/` — a miss nobody sees.
       - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/security-triggers.test.py
 
+  # Adapter outputs. Both generators print a healthy summary whether or not what they wrote
+  # is usable — they count files, and every failure in this class is invisible in a count:
+  # 44 zero-byte skill files reported as "44 skill files", two links that resolved in the
+  # plugin tree and nowhere in Copilot's, a model name that no longer matches the routing
+  # policy. The adapters are how WellForge reaches teams not on Claude Code, and nobody here
+  # opens their output, so CI is the only reader they get.
+  adapter-smoke:
+    name: adapter smoke test (${{ matrix.adapter }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter: [copilot, opencode]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      # Asserts, on freshly generated output: (a) no empty file, (b) every relative link
+      # resolves, (c) every plugin command/agent/skill has a counterpart or is declared
+      # absent in the adapter README, (d) generated model names == config/model-tiers.yml.
+      # adapters/<name>/SMOKE-TEST.md is the human pass this is the mechanical half of.
+      - run: uv run --with pyyaml python adapters/smoke-test.py --adapter ${{ matrix.adapter }}
+
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
   # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.
   terse-mode-fixtures:
