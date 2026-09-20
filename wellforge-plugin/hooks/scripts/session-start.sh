@@ -1,5 +1,12 @@
 #!/bin/bash
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+
+# Scope: only WellForge-managed projects (has specs/ or .forge/), else no-op. Enabled at
+# user scope the plugin's hooks fire in EVERY repo, and a WellForge hook has no business
+# writing files or printing WellForge context into someone's unrelated checkout.
+# trace-subagent.sh has always done this; these two did not.
+{ [ -d "$PROJECT_DIR/specs" ] || [ -d "$PROJECT_DIR/.forge" ]; } || exit 0
+
 echo "=== SESSION CONTEXT ==="
 echo "## Git status"
 git -C "$PROJECT_DIR" status --short 2>/dev/null || echo "(not a git repo)"

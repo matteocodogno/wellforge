@@ -796,6 +796,27 @@ while the observability schema's enum listed five values not including it — th
 six. Small, but it is the schema half of a trace that an evaluator reads as trajectory
 evidence.
 
+**Follow-up fix** (plugin `2.31.0`, 2026-09-20): the packaging and prose layer. The plugin
+README listed **13 of 19 commands and 7 of 18 skills** and omitted the `context-hub` MCP
+server — a command nobody can find is a command that does not exist — and `plugin.json` had
+drifted a patch ahead of the version CLAUDE.md quoted. Both are now enforced by
+`scripts/check-docs.py` (README covers every command/skill/MCP server, version in sync,
+every skill description within the loader's 1024-char limit, no dangling `[[wiki-link]]`),
+wired into ci.yml beside the routing guard. `notify.sh` had two injection surfaces: the
+message text was interpolated into an AppleScript string (a `"` ends it and the rest runs)
+and sent to Telegram with `parse_mode=Markdown` and no escaping, so an unpaired `_` or `*`
+— `snake_case_name` — returned a 400 the user never saw, because the call is backgrounded
+with output discarded; now argv-passed and plain-text, with `--data-urlencode` (`-d` does
+not encode, so an `&` truncated the field). `pre-compact-backup.sh` and `session-start.sh`
+ran in **every** repo where the plugin is enabled at user scope, the former writing
+`.claude/transcripts/` into unrelated projects; both now carry the same
+`specs/`-or-`.forge/` scope test `trace-subagent.sh` always had. Roadmap leakage
+(`Phase 7 pilot`, `US-3 / AC-3.1`, a `docs/PLAN.md` pointer) is gone from shipped skill and
+command prose — those identifiers resolve to nothing in a user's project. And the tier/terse
+Step 0 and the QE-FAIL triage table, duplicated verbatim across implement / orchestrate /
+promote, are now defined once in `rigor-tiers` with each command citing it and stating only
+its own deviation.
+
 ## Order & dependencies
 
 ```

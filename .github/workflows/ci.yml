@@ -88,6 +88,11 @@ jobs:
       - name: check-routing.py (claude)
         working-directory: wellforge-plugin
         run: uv run --with pyyaml python scripts/check-routing.py --tool claude
+      # Docs drift: a command nobody can find in the README, a skill description over the
+      # loader's limit, or CLAUDE.md quoting a stale plugin version. All silent failures.
+      - name: check-docs.py
+        working-directory: wellforge-plugin
+        run: uv run --with pyyaml python scripts/check-docs.py
 
   # Eval-rubric mirror guard. The rubric is central in gates/configs/, but a SCAFFOLDED
   # project has no gates/ on disk (gates are referenced by CI, never copied), so the plugin

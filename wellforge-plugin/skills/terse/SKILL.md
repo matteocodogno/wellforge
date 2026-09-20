@@ -65,7 +65,7 @@ active for the surrounding conversation. The commands that write them (`spec`, `
 takes precedence — terse is a conversational-output cue, not a document-generation mode, and
 must not leak into a contracted artifact. This is backstopped by the existing drift/format
 checks and by the evaluator, which would surface any fidelity regression in these files as a
-score drop (US-3, AC-3.1/AC-3.2).
+score drop.
 
 ## Activation matrix
 

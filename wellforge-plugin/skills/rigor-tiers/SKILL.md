@@ -70,6 +70,55 @@ This is a nudge, not a hard budget — honest about the seam. Where a tool expos
 thinking-budget parameter, a future `model-tiers.yml`-style mapping could bind these levels to
 it; until then the directive is the mechanism.
 
+## Resolving the tier and terse at dispatch — the Step 0 every command runs
+
+`/wellforge:implement`, `/wellforge:orchestrate` and `/wellforge:promote` open with the same
+resolution. It is defined **here**; each command cites this section and states only its own
+deviation (below).
+
+1. **Tier precedence**, highest first: the `--mode` flag > the feature's `rigor:` frontmatter
+   > the project default (`.forge/manifest.json` `rigor` if scaffolded, else
+   `.forge/adoption.json` `rigor` if adopted) > `production`.
+2. **Strip the matched `--mode` token** from the arguments before parsing the rest.
+3. **State the resolved tier and where it came from, before doing anything.** A tier nobody
+   announced is a tier nobody can question.
+4. **Terse is an orthogonal axis**, not a property of a tier: read a `--terse` / `--no-terse`
+   token (terse skill), strip it too, and **state the resolved boolean**. Default **OFF**
+   everywhere except `/wellforge:spike`, which defaults it **ON**.
+
+Per-command deviations, and nothing else:
+
+| Command | `spike` resolves to |
+|---|---|
+| `/wellforge:implement` | treated as `mvp` — a spike has no `tasks.md` to implement |
+| `/wellforge:orchestrate` | hand off to the `/wellforge:spike` procedure and stop, forwarding any terse token unchanged |
+| `/wellforge:promote` | n/a — the tier is the *source*; agents work at the **target** tier's effort cue |
+
+## Routing a QE FAIL — triage before you loop
+
+Also defined once here, because all three commands loop on a QE verdict and a copy of this
+table is a copy that drifts. On FAIL, route **each defect to its true owner** — never
+everything to a dev:
+
+| Defect | Owner | Why |
+|---|---|---|
+| **Environment fault** | nobody — it is not a defect | Fix the isolation or the env carry-in and re-run ([[worktree-isolation]]). Never spend a fix round on it. |
+| Code defect | the owning dev agent | Include the failing test path. |
+| AC wrong / missing / untestable | `wellforge:product-owner` | Drift: amend the spec, re-approve if scope changed, re-sync `/wellforge:tasks`. |
+| Wrong contract / architecture / data model | `wellforge:architect` | Drift: amend the plan, re-sync tasks. (At `mvp` there is no architect — route to the PO.) |
+| Missing designed state or a11y requirement | `wellforge:designer` | Only when a `design.md` exists. |
+
+Then re-run QE. **Maximum 2 fix rounds**, then stop and escalate with the verdict table.
+
+This cap **composes** with the `systematic-debugging` skill's **3-attempts-on-one-symptom**
+stop — whichever trips first, stop. An agent reporting three failed attempts is an
+architecture signal: route it to the architect, don't spend the second round re-dispatching
+the same fix.
+
+At `mvp`, QE runs in **advisory** mode (quality-engineer agent): only SAST-high, lint,
+typecheck and the security floor block; coverage is reported as a gap, never as a ✗. The
+triage above applies to the blocking rows only.
+
 ## Self-critique — cheap at every tier that runs an agent
 
 One bounded pass over your own artifact before handing it over ([[self-critique]]). It sits

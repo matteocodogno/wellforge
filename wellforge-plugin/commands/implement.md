@@ -11,19 +11,14 @@ Arguments: $ARGUMENTS
 
 ## Step 0 — Resolve the rigor tier and terse mode
 
-Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > the feature's
-`rigor:` frontmatter > project default [`.forge/manifest.json` `rigor` if scaffolded, else
-`.forge/adoption.json` `rigor` if adopted] > `production`) and strip the flag from the args.
-State it. `spike` is not an implement tier (spikes have no `tasks.md`) — if asked
-for `--mode spike`, treat it as `mvp`. The tier changes only **Step 4 (verify)** and the
-closing suggestion; dispatch is identical.
+Load the **rigor-tiers** skill and run its *"Resolving the tier and terse at dispatch"*
+section verbatim — precedence, strip the flags, state both. Load the **terse** skill for the
+cue itself.
 
-Separately, load the **terse** skill and resolve terse mode — an **orthogonal axis from
-`--mode`**, not tied to any tier: read a `--terse` / `--no-terse` token from the args, default
-**OFF** (terse is off by default in both `mvp` and `production` for this command; only
-`/wellforge:spike` defaults it on, and spike has no `tasks.md` to implement). Strip the
-matched token from the args before resolving `[feature] [tasks]` from what remains. **State
-the resolved terse boolean.**
+This command's only deviation (also in that table): **`--mode spike` is treated as `mvp`**,
+because a spike has no `tasks.md` to implement. The tier changes only **Step 4 (verify)** and
+the closing suggestion; dispatch is identical. Resolve `[feature] [tasks]` from the args that
+remain after the flags are stripped.
 
 ## Step 1 — Resolve the feature, then the selection
 
@@ -132,20 +127,12 @@ own box. State which mode you used and, if the preflight forced it, which class.
 
 - Spawn `wellforge:quality-engineer` scoped to the tasks just implemented: it runs the gates and
   checks the ACs those tasks serve, and returns a verdict table.
-- **`production`** — every gate blocks. FAIL → **triage each defect to its true owner** before
-  looping (don't route everything to a dev): an **environment fault** → nobody, it is not a
-  defect (worktree-isolation skill — fix the isolation or the carry-in and re-run; never spend
-  a fix round on it); a code defect → the owning dev agent (failing
-  test path included); a wrong/missing/untestable AC → `wellforge:product-owner`; a wrong
-  contract/architecture → `wellforge:architect`; a missing designed state/a11y →
-  `wellforge:designer` (each a drift amendment + `/wellforge:tasks` re-sync). Re-run QE. **Max
-  2 fix rounds**, then stop and escalate. Dev agents debug per the `systematic-debugging`
-  skill; its **3-attempts-on-one-symptom** stop composes with this 2-round cap — whichever
-  trips first, stop. An agent reporting three failed attempts is an architecture signal:
-  route it to the architect, don't spend the second round re-dispatching the same fix.
-- **`mvp`** — QE runs in **advisory** mode (rigor-tiers): only SAST-high, lint, typecheck, and
-  the security floor block; coverage is reported as gap-to-80%, not enforced. Same 2-round loop
-  for blocking defects only.
+- **`production`** — every gate blocks. **`mvp`** — QE runs in advisory mode: only SAST-high,
+  lint, typecheck and the security floor block, coverage is reported as a gap.
+- On FAIL, follow the **rigor-tiers** skill's *"Routing a QE FAIL — triage before you loop"*
+  section: the owner-per-defect table (an environment fault owns nobody), the **2-round cap**,
+  and how it composes with `systematic-debugging`'s 3-attempt stop. Do not restate it here —
+  one copy is the point.
 - The **security floor** (secret scan, no hardcoded creds, critical-CVE audit) blocks in BOTH
   tiers — never waived.
 - If QE recommends a security pass, spawn `wellforge:owasp-reviewer`; treat findings ≥ medium as

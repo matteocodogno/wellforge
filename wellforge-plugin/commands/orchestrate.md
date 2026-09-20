@@ -10,25 +10,18 @@ Goal: $ARGUMENTS
 
 ## Step 0 — Resolve the rigor tier and terse mode
 
-Load the **rigor-tiers** skill. Resolve the tier (precedence: `--mode` flag > the feature's
-`rigor:` frontmatter > project default [`.forge/manifest.json` `rigor` if scaffolded, else
-`.forge/adoption.json` `rigor` if adopted] > `production`). **State the resolved tier and
-where it came from before doing anything.** Strip the `--mode` token from the goal.
+Load the **rigor-tiers** skill and run its *"Resolving the tier and terse at dispatch"*
+section verbatim — precedence, strip the flags, state both. Load the **terse** skill for the
+cue itself. Then pick the pipeline:
 
 - **`spike`** → do NOT run the pipeline below. Hand off to the `/wellforge:spike` procedure
-  (main loop, brief.md, no agents, advisory gates). Forward any `--terse`/`--no-terse` token
-  unchanged in that hand-off — spike resolves its own terse default itself. Run that and stop.
-- **`mvp`** → run the **mvp** pipeline (one gate, mid agents only, no architect/designer/eval).
-- **`production`** (default) → run the full **feature** pipeline as written.
+  (main loop, brief.md, no agents, advisory gates), forwarding any `--terse`/`--no-terse`
+  token unchanged — spike resolves its own terse default. Run that and stop.
+- **`mvp`** → the **mvp** pipeline (one gate, mid agents only, no architect/designer/eval).
+- **`production`** (default) → the full **feature** pipeline as written.
 
 bugfix / refactor / infra flows below are tier-independent (always production-shaped) — a
 spike doesn't need orchestration, and infra/refactor carry their own gate by nature.
-
-Separately, load the **terse** skill and resolve terse mode — an **orthogonal axis from
-`--mode`**, not tied to any tier: read a `--terse` / `--no-terse` token from the goal, default
-**OFF** for the `mvp`/`production` pipelines below (terse is default-on only in the `spike`
-tier, handled by the hand-off above, not by this command). Strip the matched token from the
-goal before using the remainder. **State the resolved terse boolean** alongside the tier.
 
 ## Your role
 
@@ -108,17 +101,10 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 9. **QE** → spawn `wellforge:quality-engineer` with the spec dir. Spawn `wellforge:owasp-reviewer`
    **in parallel** when the plan flagged the feature security-sensitive (its `## Security`
    note) — not only when QE recommends it; treat owasp findings ≥ medium as defects.
-   On any FAIL, **triage each defect to its true owner before looping** — do NOT route
-   everything to a dev:
-   - a code defect → the owning dev agent (failing test path included)
-   - an AC that's wrong / missing / untestable → `wellforge:product-owner` (drift: amend spec,
-     re-approve if scope changed, re-sync `/wellforge:tasks`)
-   - a wrong contract / architecture / data model → `wellforge:architect` (drift: amend plan,
-     re-sync tasks)
-   - a missing designed state or a11y requirement (design.md) → `wellforge:designer`
-
-   Then re-run QE. Max **2 fix rounds** — still failing after that, stop and escalate with
-   the verdict table.
+   On any FAIL, follow the **rigor-tiers** skill's *"Routing a QE FAIL — triage before you
+   loop"* section: the owner-per-defect table, the **2-round cap**, and its composition with
+   `systematic-debugging`'s 3-attempt stop. It is defined there, once, for this command,
+   `/wellforge:implement` and `/wellforge:promote` alike.
 10. **Eval** → spawn `wellforge:evaluator` with the spec dir (LM-judge against the central
     rubric, which the agent resolves itself — a scaffolded project has no `gates/`, so it
     falls back to the plugin's bundled copy). This is the non-deterministic verification half QE

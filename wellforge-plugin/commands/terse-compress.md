@@ -39,7 +39,7 @@ the specific reason and take no other action:
    Anything else is refused, with the specific reason surfaced:
    - A **spec-driven or governance artifact** (`spec.md`, `plan.md`, `tasks.md`,
      `design.md`, an ADR, `eval.md`/`eval-report.md`) — refuse: these are explicitly
-     **exempt** from all terse handling (US-3 / terse skill's artifact-exemption list),
+     **exempt** from all terse handling (the terse skill's artifact-exemption list),
      even though WellForge authored them. Point at that exemption; do not compress.
    - A **third-party MCP server's tool description** — refuse: those live inside the
      server's own process/config, not a file in this repo we can rewrite. WellForge has no
@@ -115,7 +115,7 @@ This is the one and only write. State plainly that the transform is one-way and 
 `git diff` / `git checkout -- <path>` against the prior commit is the recovery path if the
 result turns out wrong later — there is no command-level undo.
 
-## Step 6 — Post-write sanity check (AC-4.2)
+## Step 6 — Post-write sanity check
 
 Because Step 3's gate guarantees every original fact is still recoverable, a later session
 consuming the compressed file has the same facts available as it would from the original —

@@ -43,9 +43,9 @@ raising rigor, so agents work at the destination tier's effort, not the source's
 2. **Tasks** — run the `/wellforge:tasks` procedure against the spec; mark tasks already
    satisfied by the spike code as done (verify each `done when:` actually holds — don't
    check boxes on faith).
-3. **QE (light)** — spawn `wellforge:quality-engineer` in advisory mode: SAST-high, lint,
-   typecheck and the **security floor** block; coverage reported as gap-to-80%, not enforced.
-   Bounded 2-round fix loop for blocking defects only.
+3. **QE (light)** — spawn `wellforge:quality-engineer` in advisory mode (SAST-high, lint,
+   typecheck and the **security floor** block; coverage reported as a gap). On FAIL, route
+   per the **rigor-tiers** skill's *"Routing a QE FAIL"* section — blocking rows only.
 
 ### → production  (from mvp)
 1. **plan.md** — spawn `wellforge:architect` with the spec + the existing code: write the
@@ -54,8 +54,8 @@ raising rigor, so agents work at the destination tier's effort, not the source's
    spawn `wellforge:designer` for `design.md`.
 2. **Re-sync tasks** to the plan (`/wellforge:tasks` re-sync — preserves checked tasks).
 3. **QE (full)** — backfill tests to the **enforced** floors: 80% line coverage, SAST,
-   dependency audit, lint, typecheck — all **blocking** now. Route defects to the owning
-   dev agent; bounded 2-round loop, then escalate with the verdict table.
+   dependency audit, lint, typecheck — all **blocking** now. On FAIL, route per the
+   **rigor-tiers** skill's *"Routing a QE FAIL"* section (owner table, 2-round cap).
 4. **Eval** — run the `/wellforge:eval` procedure (LM-judge). **A PASS is the gate into
    `done`** — QE alone is not enough. FAIL → route failing dimensions to the dev agents
    (same bounded loop), re-eval.

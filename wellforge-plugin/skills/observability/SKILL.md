@@ -112,7 +112,7 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
     run where terse never applied (including runs from before this field existed — an absent
     `terse` reads as `false`).
   - `control_run_id: string | null` — optional: the `run_id` of the non-terse control run
-    this run is compared against for the terse-vs-control token measurement (US-5). Left
+    this run is compared against for the terse-vs-control token measurement. Left
     `null` by the producers above; pairing a terse run to its control is a later concern
     (`run-report.py`), not something the producer command computes at write time.
 

@@ -103,7 +103,7 @@ Per run it returns `command`, `result`, `agents`, `verdicts`, `input_tokens`,
 `output_tokens`, `est_cost_usd`, `drift_open`, `terse`. Render each run as: the agent
 trajectory (`a → b → c`), the verdicts, and any open drift. **These are exact.**
 
-**Terse savings (US-5 / AC-5.1, AC-5.2).** When a run's JSON has `terse: true` AND it also
+**Terse savings.** When a run's JSON has `terse: true` AND it also
 carries `output_tokens_saved` / `pct_saved` / `control_run_id` (run-report.py only adds these
 three when it found a comparable non-terse control run — see its `find_control` pairing
 heuristic), append one line for that run:

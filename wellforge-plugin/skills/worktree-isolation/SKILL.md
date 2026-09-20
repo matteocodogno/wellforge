@@ -31,7 +31,7 @@ standing in — a database name, a port number, a compose project, a cache path,
 migration counter. Two worktrees resolve those names identically and land on the same object.
 
 Every failure of this class has the same shape: **two checkouts, one name, one object.** That is
-why the instances are not worth patching individually — the two found in the Phase 7 pilot (a
+why the instances are not worth patching individually — the two found in a real pilot batch (a
 shared test database dropped mid-run by a sibling; a migration applied to the shared dev database
 from a branch that was later discarded) were discovered separately, days apart, and are the same
 defect. Fixing those two leaves the class intact.
@@ -148,7 +148,7 @@ concurrently. Both are edges.
   series as a single unit), the right answer is one task, not two ordered ones. That's a
   `/wellforge:tasks` re-sync.
 
-This *prevents* the collision that Phase 13's merge-conflict detection *catches*. Keep both: the
+This *prevents* the collision that merge-conflict detection *catches*. Keep both: the
 merge check remains the backstop for overlap the `touch:` lists failed to declare.
 
 ## The protocol

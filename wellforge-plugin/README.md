@@ -34,7 +34,7 @@ claude plugin install wellforge@wellforge --scope user
 Inside Claude Code:
 ```
 /plugin   → wellforge listed under Installed
-/mcp      → sequential-thinking, playwright, github connected
+/mcp      → sequential-thinking, playwright, github, context-hub connected
 /hooks    → 7 hooks listed
 ```
 
@@ -44,18 +44,26 @@ Inside Claude Code:
 
 | Path | What |
 |---|---|
-| `.mcp.json` | sequential-thinking, playwright, github MCP servers |
+| `.mcp.json` | sequential-thinking, playwright, github, context-hub MCP servers |
 | `commands/spec.md` | `/wellforge:spec` — interview → feature spec (step 1 of 3) |
 | `commands/plan.md` | `/wellforge:plan` — approved spec → technical plan (step 2 of 3) |
+| `commands/design.md` | `/wellforge:design` — UX flows, screens & states, component reuse, a11y (UI features) |
 | `commands/tasks.md` | `/wellforge:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
 | `commands/implement.md` | `/wellforge:implement` — implement chosen tasks (IDs/range/next/all), parallel by DAG, QE-verified |
+| `commands/orchestrate.md` | `/wellforge:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
+| `commands/eval.md` | `/wellforge:eval` — LM-judge scores the feature against the central rubric (gate into `done`) |
+| `commands/done.md` | `/wellforge:done` — verify the tier-aware done gate, then record `status: done` (or retire as superseded) |
 | `commands/status.md` | `/wellforge:status` — recap every feature's phase + the next command to run (read-only) |
 | `commands/triage.md` | `/wellforge:triage` — spec-health heartbeat: stale in-progress, unresolved drift, passed-QE-never-eval'd (read-only digest) |
-| `commands/orchestrate.md` | `/wellforge:orchestrate` — full team pipeline: classify → spec → plan → tasks → parallel devs → QE verdict, 2 human gates |
 | `commands/new.md` | `/wellforge:new` — interview → stack recommendation → Copier scaffold → build verify → connections |
 | `commands/upgrade.md` | `/wellforge:upgrade` — copier update to a newer template version + AI conflict resolution + gates |
 | `commands/adopt.md` | `/wellforge:adopt` — brownfield onboarding: AI-readiness, spec workflow, gates with measured baseline |
-| `commands/eval.md` | `/wellforge:eval` — LM-judge scores the feature against the central rubric (gate into `done`) |
+| `commands/extract-template.md` | `/wellforge:extract-template` — profile a project's stack, gap-check it, optionally extract an org-internal Copier template |
+| `commands/spike.md` | `/wellforge:spike` — main-loop build from a one-paragraph brief, advisory gates, no agents (rigor: spike) |
+| `commands/promote.md` | `/wellforge:promote` — graduate a feature (or the project) up a rigor tier, paying the deferred debt |
+| `commands/release.md` | `/wellforge:release` — version bump + CHANGELOG from Conventional Commits, tag, GitHub release |
+| `commands/terse.md` | `/wellforge:terse` — toggle terse conversational output for this run |
+| `commands/terse-compress.md` | `/wellforge:terse-compress` — one-way compression of a WellForge-owned file, behind a fact-preservation gate |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
 | `agents/architect.md` | Architect — plan.md: architecture, contracts, AC→test mapping |
 | `agents/designer.md` | Designer — design.md: flows, screens, component reuse, a11y |
@@ -103,13 +111,24 @@ something a guard once got wrong — add yours there rather than only widening a
 
 | `config/model-routing.yml` | Tool-neutral: agent → tier (frontier/mid/cheap) — the portable routing policy |
 | `config/model-tiers.yml` | Per-tool: tier → concrete model (claude aliases, opencode provider/model) |
-| `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
-| `skills/observability/` | Run-trace (`.forge/runs/`) format conventions — producers and consumers |
-| `skills/heartbeat/` | Scheduled-automation conventions — surface-never-ship, dedup, deterministic-vs-agentic, cost bound |
 | `skills/connections/` | Standardized tool-connection checklists (GitHub, MCP, environments) — each ends with a verification command |
-| `skills/react-ts-vite/` | React + TypeScript + Vite + Mantine + TanStack |
+| `skills/frontend-design/` | visual direction for NEW product surfaces — the surface-class gate and two-pass token system |
+| `skills/heartbeat/` | Scheduled-automation conventions — surface-never-ship, dedup, deterministic-vs-agentic, cost bound |
+| `skills/hono-ts-backend/` | Hono + TypeScript + Drizzle + Effect — best practices and scaffolding |
 | `skills/kotlin-springboot/` | Spring Boot + Kotlin + jOOQ + Liquibase + Modulith |
+| `skills/mise/` | dev-tool version manager — tools, tasks, and the monorepo addressing rule |
+| `skills/observability/` | Run-trace (`.forge/runs/`) format conventions — producers and consumers |
+| `skills/pulumi-gcp-ts/` | Pulumi IaC in TypeScript on GCP — stacks, ComponentResources, CrossGuard, mock tests |
+| `skills/react-ts-vite/` | React + TypeScript + Vite + Mantine + TanStack |
+| `skills/rigor-tiers/` | spike / mvp / production — how much pipeline runs, the security floor, the effort cue |
+| `skills/self-critique/` | the one bounded pass over your own artifact before the gate that follows |
+| `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
 | `skills/springboot-scaffold/` | Scaffolds a new full-stack service |
+| `skills/systematic-debugging/` | root cause before the fix, the 3-attempt architecture stop, never silence a symptom |
+| `skills/template-extraction/` | stack profile, preset gap-check, org-internal template extraction with an IP/secret scrub |
+| `skills/terse/` | token-efficient conversational output — byte-identical invariant, artifact exemption |
+| `skills/visual-companion/` | browser tool the designer uses to show mockups instead of describing them (opt-in, interactive only) |
+| `skills/worktree-isolation/` | what a worktree does and does NOT isolate; the shared-state preflight and integration protocol |
 
 ## MCP servers
 
@@ -118,6 +137,7 @@ something a guard once got wrong — add yours there rather than only widening a
 | `sequential-thinking` | stdio | none |
 | `playwright` | stdio | none |
 | `github` | HTTP | OAuth via `/mcp` on first use |
+| `context-hub` | stdio | none |
 
 `telegram` is managed by `telegram@claude-plugins-official` — install separately via `/plugin`.
 

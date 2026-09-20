@@ -81,9 +81,8 @@ pnpm add jose               # JWT utilities
 > migration with code changes — zod 4 alone moves `.uuid()` to `z.uuid()` and
 > `error.errors` to `error.issues`, and `@hono/zod-openapi` 1.x requires zod 4 — and this
 > file's examples use the v3 idioms throughout. Bumping the numbers without migrating the
-> examples would ship code that doesn't compile. See the open item in `docs/PLAN.md`
-> (Phase 7): do it as one coordinated change, verified against a generated project that
-> builds and tests green.
+> examples would ship code that doesn't compile: do it as one coordinated change, verified
+> against a project that builds and tests green.
 
 ## Package.json Scripts
 
