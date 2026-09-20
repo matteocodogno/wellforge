@@ -67,6 +67,14 @@ draft ──► approved ──► in-progress ──► done
 
 - Only the **user** moves a spec from `draft` to `approved` — never set it yourself.
   Record approval as `approved: 2026-06-04` in the frontmatter when the user says so.
+- **`superseded`** is the lifecycle's other exit: another spec took the work over, so this one
+  stops without being delivered. Set it with `/wellforge:done <feature> --superseded-by
+  <NNN-slug>` — the same guarded command, since it is the same kind of transition; it records
+  `superseded_by:` and `superseded:` and runs no done gate (there is nothing to verify when
+  nothing was claimed). Never hand-edit it, never use it to retire work that merely failed its
+  gate, and never apply it to a `done` feature. `/wellforge:status` shows it as retired and
+  `/wellforge:triage` skips it — the reason the status exists is so an abandoned spec stops
+  being reported as rot.
 - `in-progress` is set when the first task starts. Reaching `done` goes through the guarded
   **`/wellforge:done`** procedure and nowhere else — never a hand-edit, never an agent, and
   never a second copy of the gate. `/wellforge:orchestrate` (both pipelines),

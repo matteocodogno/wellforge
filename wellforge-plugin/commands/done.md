@@ -1,6 +1,6 @@
 ---
-description: Mark a feature done — verifies the tier-aware done gate (tasks + QE + eval), then sets status: done
-argument-hint: [feature] — NNN-slug / slug / NNN; omit to infer the in-progress feature ready to close
+description: Close a feature — verifies the tier-aware done gate (tasks + QE + eval) then sets status: done, or retires it as superseded
+argument-hint: [feature] [--superseded-by <NNN-slug>] — NNN-slug / slug / NNN; omit to infer the in-progress feature ready to close
 ---
 
 Close a feature: verify it has genuinely met its **done gate**, then set `status: done`.
@@ -26,6 +26,26 @@ A caller that just ran the gate's inputs still re-verifies them here. That is th
 gate is checked against the **artifacts on disk**, never against a caller's recollection of
 having passed it. Four copies of this transition is how one of them ends up not checking that
 the tasks are all ticked.
+
+## Step 0b — `--superseded-by <NNN-slug>`: the other terminal status
+
+`superseded` is the spec lifecycle's second exit (spec-driven skill): work that stopped
+because another spec replaced it, not because it finished. It is NOT `done` — nothing was
+delivered — and leaving such a spec `in-progress` forever is what makes
+`/wellforge:triage` report rot that no one can clear.
+
+When the flag is present, skip the done gate entirely (there is nothing to verify — the
+work was abandoned, not completed) and instead:
+
+1. Resolve BOTH features. The successor must exist and must not be the same feature; if it
+   doesn't resolve, STOP — a `superseded_by` pointing nowhere is worse than no pointer.
+2. Refuse if the feature is already `done`: a delivered feature is not superseded, it is
+   replaced by later work, and rewriting its history hides that it shipped.
+3. Set on the superseded spec: `status: superseded`, `superseded_by: <NNN-slug>`,
+   `superseded: <today>`. Change nothing else — no tasks, no successor edits.
+4. Report both features and say plainly that no work was verified, because none was claimed.
+
+Everything below (the gate, the tiers) applies only WITHOUT this flag.
 
 ## Step 1 — Resolve the feature + tier
 
@@ -78,6 +98,8 @@ verdict, eval score/date), and that status is now `done`. If a spike proved out,
 - **A promoted feature is gated at its NEW tier.** `mvp → production` does not inherit the
   mvp close: the production branch runs in full, so an eval PASS and a fresh QE are required
   even though the feature was already `done` as an mvp.
-- No other command may write `status: done`. If you find one that does, that is the bug —
-  this is the single guarded place the transition lives, and it is only true while that
-  stays literally true.
+- No other command may write `status: done` **or `status: superseded`**. If you find one
+  that does, that is the bug — this is the single guarded place those transitions live, and
+  it is only true while that stays literally true.
+- `superseded` is never a way around a failing gate. If the work was finished but can't pass,
+  that is a defect to fix, not a spec to retire; the flag is for work another spec replaced.

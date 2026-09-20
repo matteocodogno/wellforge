@@ -40,7 +40,7 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
 {
   "schema": "wellforge-run/v1",
   "run_id": "<UTC ts, ':'→'-'>-<command>-<feature>",
-  "command": "implement | orchestrate | eval | spike | promote",
+  "command": "implement | orchestrate | eval | spike | promote | triage",
   "feature": "001-user-auth",
   "rigor": "production | mvp | spike",
   "started": "2026-06-24T10:44:00Z",

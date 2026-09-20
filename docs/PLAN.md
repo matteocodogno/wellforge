@@ -731,6 +731,23 @@ critique pass from a line of text claiming one, which is precisely why the evalu
 to ignore the claim. What would falsify the phase: human-gate iterate-rounds per spec, and
 QE/eval first-round FAIL rates, before vs. after. Both need the Phase 7 pilot.
 
+**Follow-up fix** (plugin `2.30.0`, 2026-09-20): three gaps where a command's inputs didn't
+match its outputs. `/wellforge:status`'s phase table needed "QE passed" to route an `mvp`
+feature, but its Gather step never collected a QE verdict — QE writes no artifact, so the
+verdict exists only in `.forge/runs/`, which `/wellforge:triage` reads correctly and status
+did not. Status now reads it the same way, and the table distinguishes PASS / FAIL /
+**unknown** rather than treating a missing verdict as a pass. `superseded` was defined in the
+spec-driven lifecycle diagram and implemented nowhere: no command set it, none read it, so an
+abandoned spec stayed `in-progress` forever and `/wellforge:triage` reported it as rot with no
+way to clear it. It now belongs to `/wellforge:done --superseded-by <NNN-slug>` — the same
+guarded place every other status transition lives, with no done gate (nothing was claimed, so
+there is nothing to verify), a refusal on an already-`done` feature, and a required successor
+that must resolve. `status` shows it as retired, `triage` skips it but flags a dangling
+`superseded_by:` as a broken pointer. Third, `triage` wrote `command: triage` into run traces
+while the observability schema's enum listed five values not including it — the enum now has
+six. Small, but it is the schema half of a trace that an evaluator reads as trajectory
+evidence.
+
 ## Order & dependencies
 
 ```

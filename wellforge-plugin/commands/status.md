@@ -21,6 +21,14 @@ For every `specs/NNN-slug/` directory (or just the named one):
 - `tasks.md` present? count `- [x]` vs total `- [ ]`/`- [x]` task lines; note the first
   unchecked task whose `deps:` are all checked ("next ready").
 - `eval-report.md` present? its frontmatter `verdict` (PASS / FAIL) and `score`.
+- **The latest QE verdict** — it is NOT in the spec directory. QE writes no artifact; its
+  verdict survives only in the run traces, so read it the way `/wellforge:triage` does:
+  `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json --feature <slug>` and take
+  `verdicts.qe` from that feature's most recent run that has one (see the Observability
+  section below — same call, don't run it twice). Record **PASS / FAIL / unknown**;
+  `unknown` when `.forge/runs/` is absent, the tool can't run, or no run carries a qe
+  verdict. Without this the `mvp` row below cannot be decided, which is the gap this
+  bullet closes — the table asked for something the gather step never collected.
 
 ## Phase + next step — deterministic table
 
@@ -38,11 +46,14 @@ Evaluate top-down; first matching row wins. `NNN-slug` below is the feature's fo
 | plan `approved`, no `tasks.md` | **tasks** | `/wellforge:tasks NNN-slug` |
 | `tasks.md`, 0 checked | **implement** | `/wellforge:implement NNN-slug next` |
 | `tasks.md`, some unchecked | **implement** | `/wellforge:implement NNN-slug next` |
-| all tasks checked, rigor `mvp`, QE passed | **verify** | `/wellforge:done NNN-slug` (mvp — no eval); or `/wellforge:promote NNN-slug --to production` |
+| all tasks checked, rigor `mvp`, QE **PASS** | **verify** | `/wellforge:done NNN-slug` (mvp — no eval); or `/wellforge:promote NNN-slug --to production` |
+| all tasks checked, rigor `mvp`, QE **FAIL** | **implement** | fix the defects, then re-run QE: `/wellforge:implement NNN-slug <tasks>` |
+| all tasks checked, rigor `mvp`, QE **unknown** | **verify** | no QE verdict on record — run it: `/wellforge:implement NNN-slug` (its QE step), then `/wellforge:done NNN-slug`. Don't assume a missing verdict is a pass. |
 | all tasks checked, rigor `production`, no/stale `eval-report.md` | **eval** | `/wellforge:eval NNN-slug` (LM-judge scored verdict) |
 | `eval-report.md` `verdict: FAIL` | **eval** | fix the failing dimensions, then `/wellforge:eval NNN-slug` |
 | `eval-report.md` `verdict: PASS`, spec ≠ `done` | **verify** | `/wellforge:done NNN-slug` |
 | spec `done` | **done** | — complete |
+| spec `superseded` | **retired** | — replaced by `superseded_by:`; nothing to do (flag it only if that feature doesn't exist) |
 
 If spec is `draft` with open questions, append "(N open questions block approval)".
 If `tasks.md` is older than `spec.md`/`plan.md` (drift), flag "⚠ tasks may be stale —
