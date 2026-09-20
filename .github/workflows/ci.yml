@@ -493,15 +493,20 @@ jobs:
       # used on a directory of version-shaped names). A genuine warning-level false positive
       # gets an inline `# shellcheck disable=SCxxxx` with the reason on the line above it,
       # never a blanket exclusion — there is exactly one today, on prose containing a tilde.
-      # LC_ALL matters: these scripts are full of em dashes, and shellcheck CRASHES writing
-      # a finding that contains one under a non-UTF-8 locale
-      # ("commitBuffer: invalid argument (cannot encode character '\8212')") — a crash that
-      # reads like a parse error in the script rather than a locale problem in the tool.
+      # -f gcc is not a style preference. shellcheck's DEFAULT format echoes the offending
+      # source line, and it dies doing that when the line contains a non-ASCII character —
+      # these scripts are full of em dashes. It exits 2 with the output truncated mid-line,
+      # which reads like a parse error in the script rather than a crash in the tool; it
+      # cost a wrong diagnosis here. Measured on a two-line file with one SC2010 and an em
+      # dash on the flagged line:
+      #     default format               rc=2, output cut at the em dash
+      #     default format + LC_ALL      rc=2  (a UTF-8 locale does NOT fix it)
+      #     -f gcc                       rc=1, finding reported in full
+      # gcc format prints location + message and never echoes the source line, so it is
+      # structurally immune. The failure only appears when there IS a finding, i.e. exactly
+      # when CI needs to tell you something.
       - name: shellcheck
-        env:
-          LC_ALL: C.UTF-8
-          LANG: C.UTF-8
-        run: shellcheck -s bash --severity=warning scripts/wellforge scripts/*.sh
+        run: shellcheck -s bash --severity=warning -f gcc scripts/wellforge scripts/*.sh
                         wellforge-plugin/hooks/scripts/*.sh
 
       # Drives the real CLI against shim executables and real git fixtures. Cases marked

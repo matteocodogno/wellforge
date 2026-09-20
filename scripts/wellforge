@@ -31,7 +31,7 @@ set -uo pipefail
 # Bumped only by scripts/release-cli.sh, which also updates Formula/wellforge.rb and cuts
 # the tag. The Formula's test block asserts this string, and CI asserts it equals the
 # newest `cli-v*` tag — an unbumped release and an untagged bump are both caught.
-WELLFORGE_CLI_VERSION="1.3.0"
+WELLFORGE_CLI_VERSION="1.4.0"
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
 CONFIG_DIR="$HOME/.config/wellforge"
@@ -105,6 +105,52 @@ if [ -z "$WELLFORGE_HOME" ] && [ -f "$CONFIG_FILE" ]; then
 fi
 WELLFORGE_HOME="${WELLFORGE_HOME:-$HOME/.ai/wellforge}"
 
+# `brew outdated` is a slow call (it resolves the whole tap). It used to run once per
+# tool — four times per doctor, four more per update. Once per COMMAND now; cmd_doctor and
+# cmd_update reset the cache, which matters because `doctor --fix` installs things and the
+# second doctor inside `setup` must not be told they are still outdated.
+BREW_OUTDATED=""; BREW_OUTDATED_DONE=""
+brew_outdated_reset() { BREW_OUTDATED=""; BREW_OUTDATED_DONE=""; }
+is_outdated() { # <formula>
+  if [ -z "$BREW_OUTDATED_DONE" ]; then
+    BREW_OUTDATED_DONE=1
+    if command -v brew >/dev/null; then BREW_OUTDATED="$(brew outdated --quiet 2>/dev/null)"; fi
+  fi
+  printf '%s\n' "$BREW_OUTDATED" | grep -qx "$1"
+}
+
+# Exact-match helpers for the two `claude plugin …` listings. `grep -q wellforge` matched
+# ANY plugin whose name merely contains the word: with only `wellforge-extras` installed,
+# doctor reported "wellforge installed". Verified against the real output, which lists
+# plugins as `name@marketplace` and marketplaces as a bare name:
+#     ❯ wellforge-extras@wellforge          ❯ wellforge
+# so the token is extracted and compared whole rather than searched for.
+plugin_is_installed() {
+  claude plugin list 2>/dev/null \
+    | sed -n 's/^[^A-Za-z0-9]*\([A-Za-z0-9._-]*@[A-Za-z0-9._-]*\).*/\1/p' \
+    | grep -qx "wellforge@wellforge"
+}
+marketplace_is_registered() {
+  claude plugin marketplace list 2>/dev/null \
+    | sed -n 's/^[^A-Za-z0-9]*\([A-Za-z0-9._-]*\).*/\1/p' \
+    | grep -qx "wellforge"
+}
+
+# A bounded fetch. doctor used a plain `git fetch` on every run, so a flaky VPN made the
+# health check HANG instead of reporting — the one behaviour a diagnostics tool must not
+# have. coreutils' timeout is `timeout` on Linux and `gtimeout` on macOS (brew coreutils);
+# with neither, git's own low-speed abort is the fallback.
+git_fetch_bounded() { # <repo-dir>
+  local d="$1" t=""
+  if command -v timeout >/dev/null; then t=timeout
+  elif command -v gtimeout >/dev/null; then t=gtimeout; fi
+  if [ -n "$t" ]; then
+    "$t" 10 git -C "$d" fetch --quiet 2>/dev/null
+  else
+    git -C "$d" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 fetch --quiet 2>/dev/null
+  fi
+}
+
 # `a` is strictly older than `b`. sort -V is in both BSD (macOS) and GNU coreutils.
 version_lt() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]; }
 
@@ -133,7 +179,7 @@ err_tail() { printf '%s' "${1:-}" | tail -1; }
 check_tool() { # name [fix]
   local t="$1" fix="${2:-}" err
   if command -v "$t" >/dev/null; then
-    if [ -n "$fix" ] && command -v brew >/dev/null && brew outdated --quiet 2>/dev/null | grep -qx "$t"; then
+    if [ -n "$fix" ] && command -v brew >/dev/null && is_outdated "$t"; then
       say "  ${DIM}upgrading ${t}…${RST}"
       if err=$(brew upgrade "$t" 2>&1 >/dev/null); then
         ok "$t" "upgraded → $("$t" --version 2>/dev/null | head -1 || echo '?')"
@@ -290,7 +336,7 @@ check_repo() {
   # recurring "am I up to date?" question honest. Skipped if no upstream / offline.
   local up behind
   up="$(git -C "$WELLFORGE_HOME" rev-parse --abbrev-ref '@{u}' 2>/dev/null)" || { warn "checkout" "no upstream tracked — can't check for plugin updates"; return; }
-  git -C "$WELLFORGE_HOME" fetch --quiet 2>/dev/null || { warn "checkout" "couldn't reach $up (offline?) — skipped update check"; return; }
+  git_fetch_bounded "$WELLFORGE_HOME" || { warn "checkout" "couldn't reach $up within 10s (offline? VPN?) — skipped update check"; return; }
   behind="$(git -C "$WELLFORGE_HOME" rev-list --count 'HEAD..@{u}' 2>/dev/null || echo 0)"
   if [ "$behind" = "0" ]; then
     ok "checkout" "current with $up"
@@ -363,10 +409,10 @@ plugin_cache_state() {
 
 check_plugin() {
   command -v claude >/dev/null || { skip "plugin" "skipped — claude not installed"; return 0; }
-  if claude plugin marketplace list 2>/dev/null | grep -q "wellforge"; then ok "marketplace" "WellForge registered"; else
+  if marketplace_is_registered; then ok "marketplace" "WellForge registered"; else
     bad "marketplace" "run: claude plugin marketplace add $WELLFORGE_HOME"; FAILURES=$((FAILURES+1))
   fi
-  if claude plugin list 2>/dev/null | grep -q "wellforge"; then ok "plugin" "wellforge installed"; else
+  if plugin_is_installed; then ok "plugin" "wellforge installed"; else
     bad "plugin" "run: claude plugin install wellforge@wellforge --scope user"; FAILURES=$((FAILURES+1))
   fi
   # Loaded-plugin freshness, from the one place that computes it.
@@ -388,7 +434,7 @@ check_plugin() {
 collision_resolve() {  # <path> <kind: agent|skill> <name> <label> <fix>
   local path="$1" kind="$2" name="$3" label="$4" fix="$5"
   if [ -z "$fix" ] || [ ! -t 0 ]; then
-    warn "collision" "$label $kind '$name' shares a WellForge $kind name${kind:+ — run 'wellforge doctor --fix' to disable it}"
+    warn "collision" "$label $kind '$name' shares a WellForge $kind name — run 'wellforge doctor --fix' to disable it"
     return 1
   fi
   local backup; backup="$(dirname "$path")-disabled-by-wellforge"
@@ -653,6 +699,7 @@ cmd_doctor() {
   local fix=""
   [ "${1:-}" = "--fix" ] && fix=1
   FAILURES=0
+  brew_outdated_reset   # once per command, not once per tool
   say "WellForge doctor ${DIM}(home: $WELLFORGE_HOME)${RST}"
   say ""
   say "tools:"
@@ -719,7 +766,12 @@ cmd_setup() {
   # 2. repo
   if [ -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
     say "  ${DIM}repo present — pulling latest…${RST}"
-    git -C "$WELLFORGE_HOME" pull --ff-only 2>/dev/null || warn "repo" "pull skipped (no upstream yet)"
+    local perr
+    # "no upstream yet" was a guess, and usually the wrong one: a contributor with local
+    # commits on the checkout gets a non-fast-forward, which is a completely different
+    # situation from having no remote. Show git's own last line.
+    perr=$(git -C "$WELLFORGE_HOME" pull --ff-only 2>&1 >/dev/null) \
+      || warn "repo" "pull skipped: $(err_tail "$perr")"
   else
     say "  ${DIM}cloning ${WELLFORGE_REPO}…${RST}"
     mkdir -p "$(dirname "$WELLFORGE_HOME")"
@@ -735,14 +787,14 @@ cmd_setup() {
   # 4. marketplace + plugin (idempotent)
   if command -v claude >/dev/null; then
     local err
-    if ! claude plugin marketplace list 2>/dev/null | grep -q "wellforge"; then
+    if ! marketplace_is_registered; then
       if err=$(claude plugin marketplace add "$WELLFORGE_HOME" 2>&1 >/dev/null); then
         ok "marketplace" "registered from $WELLFORGE_HOME"
       else
         bad "marketplace" "add failed: $(err_tail "$err") — retry: claude plugin marketplace add $WELLFORGE_HOME"
       fi
     fi
-    if ! claude plugin list 2>/dev/null | grep -q "wellforge"; then
+    if ! plugin_is_installed; then
       if err=$(claude plugin install wellforge@wellforge --scope user 2>&1 >/dev/null); then
         ok "plugin" "installed"
       else
@@ -769,10 +821,15 @@ cmd_setup() {
   # — indistinguishable from a crash.
   say ""
   if cmd_doctor; then
+    # Read from .mcp.json rather than repeated from memory: the hard-coded list said three
+    # servers and the plugin had shipped four for a while.
+    local mcp_list
+    mcp_list=$(jq -r '(.mcpServers // {}) | keys | join(", ")' \
+                 "$WELLFORGE_HOME/wellforge-plugin/.mcp.json" 2>/dev/null) || mcp_list=""
     say "
 ${GRN}done.${RST} Open a Claude Code session and verify:
   /plugin   → wellforge installed
-  /mcp      → sequential-thinking, playwright, github
+  /mcp      → ${mcp_list:-the servers listed in wellforge-plugin/.mcp.json}
 Next: docs/QUICKSTART.md — /wellforge:new for your first project."
   else
     say "
@@ -824,6 +881,7 @@ is_brew_install() {
 
 cmd_update() {
   say "WellForge update"
+  brew_outdated_reset   # once per command, not once per tool
 
   # Refresh brew metadata up front so the tool + CLI outdated-checks below are accurate.
   if command -v brew >/dev/null; then
@@ -834,16 +892,21 @@ cmd_update() {
 
   # 1. checkout (templates, gates, plugin source)
   if [ -d "$WELLFORGE_HOME/.git" ]; then
-    git -C "$WELLFORGE_HOME" pull --ff-only 2>/dev/null \
-      && ok "repo" "$(git -C "$WELLFORGE_HOME" describe --tags --match 'v*' --always 2>/dev/null)" \
-      || warn "repo" "pull skipped (no upstream / local changes)"
+    local rerr
+    if rerr=$(git -C "$WELLFORGE_HOME" pull --ff-only 2>&1 >/dev/null); then
+      ok "repo" "$(git -C "$WELLFORGE_HOME" describe --tags --match 'v*' --always 2>/dev/null || echo '?')"
+    else
+      # Local commits on the checkout are the NORMAL case for a contributor, and they read
+      # very differently from "no upstream". git already says which; relay it.
+      warn "repo" "pull skipped: $(err_tail "$rerr")"
+    fi
   fi
 
   # 2. pinned dev tools
   if command -v brew >/dev/null; then
     local err
     for t in "${BREW_TOOLS[@]}"; do
-      brew outdated --quiet 2>/dev/null | grep -qx "$t" || continue
+      is_outdated "$t" || continue
       if err=$(brew upgrade "$t" 2>&1 >/dev/null); then
         ok "$t" "upgraded"
       else
@@ -866,7 +929,7 @@ cmd_update() {
   #   re-records the version, and leaves the old dir behind for pruning.
   if ! command -v claude >/dev/null; then
     skip "plugin" "skipped — claude not installed"
-  elif ! claude plugin list 2>/dev/null | grep -q "wellforge"; then
+  elif ! plugin_is_installed; then
     warn "plugin" "not installed — run: wellforge setup (or: claude plugin install wellforge@wellforge --scope user)"
   else
     local state perr src_now
@@ -958,11 +1021,18 @@ cmd_version() {
   fi
 }
 
+wf_help() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; }
+
 case "${1:-help}" in
   setup)    shift; cmd_setup "$@" ;;
   doctor)   shift; cmd_doctor "$@" ;;
   update)   shift; cmd_update "$@" ;;
   telegram) shift; cmd_telegram "$@" ;;
   version|--version|-v) cmd_version ;;
-  *) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
+  help|-h|--help) wf_help ;;
+  # A typo used to print the help and exit 0, so `wellforge dcotor` "succeeded" — and any
+  # script wrapping this had no way to tell. The help still prints; the status does not lie.
+  *) printf '%serror:%s unknown command: %s\n\n' "$RED" "$RST" "$1" >&2
+     wf_help >&2
+     exit 1 ;;
 esac

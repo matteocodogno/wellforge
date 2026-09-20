@@ -85,6 +85,7 @@ case "$1" in
   outdated)
     # `brew outdated <pkg>` (used for the CLI self-check) exits 0 when CURRENT.
     if [ "${2:-}" = "--quiet" ] || [ -z "${2:-}" ]; then
+      echo "brew-outdated-list" >> "$SHIM_LOG"   # counted: it should run once per command
       printf '%s\n' ${FAKE_BREW_OUTDATED:-}
       exit 0
     fi
@@ -110,8 +111,16 @@ SH
 echo "claude $*" >> "$SHIM_LOG"
 case "$*" in
   "--version")                 echo "${FAKE_CLAUDE_VERSION:-2.0.0 (Claude Code)}" ;;
-  "plugin marketplace list")   printf '%s\n' "${FAKE_CLAUDE_MARKETPLACES:-}" ;;
-  "plugin list")               printf '%s\n' "${FAKE_CLAUDE_PLUGINS:-}" ;;
+  # Shaped like the real command's output, captured from the CLI:
+  #     Configured marketplaces:        Installed plugins:
+  #       ❯ wellforge                     ❯ wellforge-extras@wellforge
+  # A shim that prints a bare word would let an unanchored grep pass and hide the bug.
+  "plugin marketplace list")
+    echo "Configured marketplaces:"; echo
+    for m in ${FAKE_CLAUDE_MARKETPLACES:-}; do echo "  ❯ $m"; echo "    Source: Directory (/tmp/x)"; done ;;
+  "plugin list")
+    echo "Installed plugins:"; echo
+    for pl in ${FAKE_CLAUDE_PLUGINS:-}; do echo "  ❯ $pl"; echo "    Version: 1.0.0"; echo "    Scope: user"; done ;;
   "plugin marketplace add"*)   exit "${FAKE_CLAUDE_MKT_ADD_RC:-0}" ;;
   "plugin install"*)
     [ "${FAKE_CLAUDE_INSTALL_RC:-0}" = "0" ] || { echo "Error: install refused" >&2; exit 1; } ;;
@@ -183,6 +192,33 @@ SH
 # for xdg-open there and leave \`open\` alone.
 echo "$t \$*" >> "\$SHIM_LOG"
 exit 0
+SH
+        ;;
+      git-watch) cat > "$bin/git" <<'SH'
+#!/usr/bin/env bash
+# Real git for everything (the fixtures are real repositories), except that a `fetch` is
+# logged with its full argv — which is how the fallback path is observed — and hangs when
+# asked, which is the flaky-VPN case the 10s bound exists for.
+case " $* " in
+  *" fetch "*)
+    echo "git $*" >> "$SHIM_LOG"
+    [ -n "${FAKE_GIT_FETCH_HANG:-}" ] && sleep 300 ;;
+esac
+exec /usr/bin/git "$@"
+SH
+        # The file is "git", not "git-watch" — the loop's chmod at the bottom uses $t and
+        # would leave it non-executable, so PATH would silently fall through to real git.
+        chmod +x "$bin/git" ;;
+      timeout) cat > "$bin/timeout" <<'SH'
+#!/usr/bin/env bash
+# Enough of coreutils' timeout to bound a hanging command. macOS ships neither `timeout`
+# nor `gtimeout`, so without this the primary path could only ever be exercised on CI.
+dur="$1"; shift
+"$@" & pid=$!
+( sleep "$dur"; kill -9 "$pid" 2>/dev/null ) & killer=$!
+wait "$pid"; rc=$?
+kill "$killer" 2>/dev/null
+exit "$rc"
 SH
         ;;
       uname) cat > "$bin/uname" <<'SH'
@@ -300,7 +336,7 @@ FAKE_VARS=(FAKE_BREW_VERSION FAKE_BREW_OUTDATED FAKE_BREW_OUTDATED_PKG_RC
            FAKE_GH_AUTH_RC FAKE_DOCKER_INFO_RC FAKE_COPIER_RC
            FAKE_MISE_USE_RC FAKE_MISE_USE_ERR FAKE_NPM_INSTALL_RC FAKE_NPM_INSTALL_ERR
            FAKE_TG_GETME FAKE_TG_GETUPDATES FAKE_TG_SEND
-           FAKE_UNAME)
+           FAKE_UNAME FAKE_GIT_FETCH_HANG)
 
 run_cli() { # <wellforge-home> <args…> ; stdin from $RUN_STDIN (default /dev/null)
   local wf_home="$1"; shift
@@ -547,15 +583,6 @@ run_cli "$SANDBOX/nowhere" help
 assert_rc "$RC" 0
 assert_has "$OUT" "wellforge setup"
 assert_has "$OUT" "wellforge doctor"
-finish
-
-# An unknown subcommand is a user error, and a tool that exits 0 on one cannot be
-# used in a script. Expected to fail until that lands.
-reset_fakes; begin "unknown subcommand: prints help and exits non-zero" xfail
-new_sandbox "${ALL_TOOLS[@]}"
-run_cli "$SANDBOX/nowhere" not-a-command
-assert_has "$OUT" "wellforge setup"
-[ "$RC" -ne 0 ] || _bad "expected a non-zero rc for an unknown subcommand, got 0"
 finish
 
 # ── 11. version from a checkout ───────────────────────────────────────────────
@@ -837,6 +864,113 @@ new_sandbox "${ALL_TOOLS[@]}"
 FAKE_UNAME=Linux; RUN_SHELL=/usr/bin/fish
 run_cli "$SANDBOX/nowhere" doctor
 assert_has "$OUT" "mise activate fish | source"
+finish
+
+# ── 16. the small-fixes batch ───────────────────────────────────────────────────────
+
+# `brew outdated` resolves the whole tap. Four tools meant four of them per doctor.
+reset_fakes; begin "brew outdated runs once per command, not once per tool"
+new_sandbox "${ALL_TOOLS[@]}"
+run_cli "$SANDBOX/nowhere" doctor --fix
+n=$(grep -c '^brew-outdated-list$' "$SHIM_LOG")
+[ "$n" = "1" ] || _bad "expected 1 'brew outdated --quiet' call, got $n"
+finish
+
+# grep -q "wellforge" matched ANY plugin containing the word. With only the decoy
+# installed, doctor used to report the real plugin as present.
+reset_fakes; begin "a decoy plugin named wellforge-extras is not mistaken for wellforge"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge"
+FAKE_CLAUDE_PLUGINS="wellforge-extras@wellforge"     # the real one is NOT installed
+run_cli "$SANDBOX/wf" doctor
+assert_has "$OUT" "claude plugin install wellforge@wellforge"   # reported missing, correctly
+assert_lacks "$OUT" "✓ plugin             wellforge installed"
+finish
+
+reset_fakes; begin "the real plugin alongside the decoy is recognised"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge"
+FAKE_CLAUDE_PLUGINS="wellforge-extras@wellforge wellforge@wellforge"
+run_cli "$SANDBOX/wf" doctor
+assert_has "$OUT" "wellforge installed"
+finish
+
+# A diagnostics tool that hangs is worse than one that reports a problem: doctor used to
+# run a plain `git fetch` on every invocation.
+reset_fakes; begin "a hanging git fetch is bounded, and reads as offline"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+make_shims "$BIN" git-watch timeout        # shadow git AFTER the fixture is built
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+FAKE_GIT_FETCH_HANG=1
+RUN_TIMEOUT=45                             # the bound is 10s; the hang would be 300s
+run_cli "$SANDBOX/wf" doctor
+[ "$RC" = "timeout" ] && _bad "doctor hung on the fetch instead of bounding it"
+assert_has "$OUT" "skipped update check"
+assert_has "$OUT" "offline"
+finish
+
+# No coreutils timeout (bare macOS): git's own low-speed abort has to be the fallback,
+# because an unbounded fetch is the thing being removed.
+reset_fakes; begin "with no timeout binary, the fetch falls back to git's low-speed abort"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+make_shims "$BIN" git-watch                # note: no timeout shim
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+run_cli "$SANDBOX/wf" doctor
+assert_has "$(cat "$SHIM_LOG")" "http.lowSpeedLimit=1000"
+assert_has "$(cat "$SHIM_LOG")" "http.lowSpeedTime=10"
+finish
+
+# A typo used to exit 0, so no wrapper script could tell.
+reset_fakes; begin "unknown subcommand: help on stderr, exit 1"
+new_sandbox "${ALL_TOOLS[@]}"
+run_cli "$SANDBOX/nowhere" dcotor
+assert_rc "$RC" 1
+assert_has "$OUT" "unknown command: dcotor"
+assert_has "$OUT" "wellforge doctor"        # the help still prints
+finish
+
+reset_fakes; begin "help, -h and --help all exit 0"
+new_sandbox "${ALL_TOOLS[@]}"
+for flag in help -h --help; do
+  run_cli "$SANDBOX/nowhere" "$flag"
+  assert_rc "$RC" 0
+  assert_has "$OUT" "wellforge setup"
+done
+finish
+
+# "no upstream yet" was a guess, and wrong for the commonest case: a contributor with
+# local commits on the checkout.
+reset_fakes; begin "a pull that fails shows git's reason, not a guess"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+advance_upstream "$SANDBOX/wf" 1
+echo "local work" >> "$SANDBOX/wf/local.txt"
+gitf -C "$SANDBOX/wf" add -A >/dev/null
+gitf -C "$SANDBOX/wf" commit -qm "local commit that diverges" >/dev/null
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+run_cli "$SANDBOX/wf" update
+assert_has "$OUT" "pull skipped:"
+assert_lacks "$OUT" "no upstream / local changes"    # the old undifferentiated guess
+finish
+
+# The done message listed three MCP servers while the plugin shipped four.
+reset_fakes; begin "setup lists the MCP servers from .mcp.json, not from memory"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/src" "2.43.0"
+printf '{"mcpServers":{"alpha":{},"beta":{},"gamma":{},"delta":{}}}\n' \
+  > "$SANDBOX/src/wellforge-plugin/.mcp.json"
+gitf -C "$SANDBOX/src" add -A >/dev/null
+gitf -C "$SANDBOX/src" commit -qm "four servers" >/dev/null
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+RUN_REPO="$SANDBOX/src"
+run_cli "$SANDBOX/dest" setup
+assert_has "$OUT" "alpha, beta, delta, gamma"
+assert_lacks "$OUT" "sequential-thinking, playwright, github"
 finish
 
 # ── summary ───────────────────────────────────────────────────────────────────
