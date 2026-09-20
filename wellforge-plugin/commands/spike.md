@@ -76,7 +76,10 @@ terse state up front, next to the tier line above.
    trips, STOP and fix — the floor is the one thing a spike cannot skip.
 
 5. **Fill `## Findings`** in brief.md: did the spike answer its question? What was learned?
-   Set `status: done`.
+   Then **run the `/wellforge:done` procedure** (spike branch) to close it — don't set
+   `status: done` here. It is the single guarded place that transition lives, it stamps
+   `done: <today>` too, and its spike branch is exactly this tier's bar (findings filled, the
+   question answered) plus the "if it proved out, suggest `/wellforge:promote`" nudge.
 
 6. **Record the run (lightweight).** Per the **observability** skill, write
    `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`) with `command: spike`,

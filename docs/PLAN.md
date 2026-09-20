@@ -272,6 +272,20 @@ defined home: a `## Architecture notes` section in tasks.md that `orchestrate` a
 assumed existed but no format defined. The lesson is the same one Phase 9's rubric fix
 taught: a tier that is never exercised end-to-end is a tier that is only *written*.
 
+**Follow-up fix** (plugin `2.27.4`, 2026-09-20): the `done` transition was set in four
+places while `done.md` called itself "the single guarded place". `spike.md` flipped it
+inline, `promote.md` flipped it **without checking every task was ticked**,
+`orchestrate.md`'s mvp close flipped it **without the `done:` date** (its production close
+re-implemented the gate correctly, which is how the drift stayed invisible), and `eval.md`
+contradicted itself — Step 4 said it doesn't flip the status, its hard rules said it produces
+"on the user's confirmation, the spec `done` status". Fixed by making `done.md` the only
+implementation and a callable procedure: all three commands now run it, it re-verifies
+against the artifacts on disk rather than the caller's recollection, it always stamps
+`done: <today>`, and a promoted feature is re-gated at its NEW tier instead of inheriting the
+mvp close. The spec-driven skill's "(or `/wellforge:orchestrate`'s close step, same gate)"
+parenthetical — which sanctioned the second copy — is gone. Same species as the two fixes
+above it: the gate was right in the place that was read, wrong in the places that ran.
+
 ## Phase 11 — SDLC extension & hardening (added 2026-06-29)
 
 Goal: close outer-loop gaps and harden the agent system, off the back of an "is this all of

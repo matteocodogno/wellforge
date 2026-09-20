@@ -59,8 +59,11 @@ orchestrate.
 
 ## Hard rules
 
-- Read-only on code/specs — this command only produces `eval-report.md` (via the
-  evaluator) and, on the user's confirmation, the spec `done` status.
+- Read-only on code/specs, **and on status** — this command produces exactly one artifact,
+  `eval-report.md` (via the evaluator). It never sets `status: done`, with or without the
+  user's confirmation: an eval PASS is one input to the done gate, and
+  `/wellforge:done` is the only place that gate is checked and the transition recorded
+  (Step 4 already points there).
 - Never lower a rubric floor or override a FAIL. The rubric is central
   (`gates/configs/eval-rubric.yml`); changing it is a PR to `gates/`, which also refreshes
   the plugin's byte-identical mirror (`wellforge-plugin/config/eval-rubric.yml`) — CI's

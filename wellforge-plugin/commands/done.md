@@ -10,6 +10,23 @@ the **spec-driven** and **rigor-tiers** skills (load them).
 
 Feature: $ARGUMENTS
 
+## Step 0 — Who is calling
+
+This procedure is **the only implementation of the `done` transition**, and it is invoked two
+ways — both run everything below, unchanged:
+
+- **Directly** by the user (`/wellforge:done [feature]`).
+- **As a procedure**, by a command that just finished the work and would otherwise flip the
+  status itself: `/wellforge:spike` step 5, `/wellforge:promote`'s final step, and
+  `/wellforge:orchestrate`'s close step (both its `mvp` and `production` pipelines). They say
+  "run the `/wellforge:done` procedure"; you run it here, in the main loop, with the feature
+  already resolved by the caller.
+
+A caller that just ran the gate's inputs still re-verifies them here. That is the point: the
+gate is checked against the **artifacts on disk**, never against a caller's recollection of
+having passed it. Four copies of this transition is how one of them ends up not checking that
+the tasks are all ticked.
+
 ## Step 1 — Resolve the feature + tier
 
 Resolve the feature from the argument (number / slug / full name), or infer the one ready to
@@ -32,14 +49,17 @@ condition and the command that fixes it, and do NOT set done.
   1. every task checked
   2. QE-light passed (SAST-high / lint / typecheck / security-floor green; coverage is advisory)
   — no eval; mvp's bar is QE, not the LM-judge
-- **`spike`** — a spike closes through its `brief.md`, not tasks/QE/eval: its `## Findings`
-  are filled and the question answered. Set the brief `status: done`; if it proved out and
-  should become real, suggest `/wellforge:promote` instead of just closing.
+- **`spike`** — a spike closes through its `brief.md`, not tasks/QE/eval: the condition is
+  that `## Findings` is filled and the spike's question answered. (Step 3 does the write, on
+  the brief rather than a spec.) If it proved out and should become real, suggest
+  `/wellforge:promote` alongside the close.
 
 ## Step 3 — Close
 
 Only when the gate passes: set the spec (or brief) frontmatter `status: done` and add
-`done: <today>`. Change nothing else — this command only flips the status.
+`done: <today>` — **both, at every tier**, whoever called. Change nothing else: this
+procedure only flips the status. A caller that also owns another field (e.g.
+`/wellforge:promote` setting `rigor: production`) writes that itself, before calling you.
 
 ## Step 4 — Report
 
@@ -55,3 +75,9 @@ verdict, eval score/date), and that status is now `done`. If a spike proved out,
   task. An unmet condition is work to do, not a status to force.
 - `done` is the calling session's call to record, never an agent's. You verify and flip it
   here; agents only ever produced the artifacts you're checking.
+- **A promoted feature is gated at its NEW tier.** `mvp → production` does not inherit the
+  mvp close: the production branch runs in full, so an eval PASS and a fresh QE are required
+  even though the feature was already `done` as an mvp.
+- No other command may write `status: done`. If you find one that does, that is the bug —
+  this is the single guarded place the transition lives, and it is only true while that
+  stays literally true.

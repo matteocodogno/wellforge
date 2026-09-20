@@ -68,8 +68,10 @@ draft ──► approved ──► in-progress ──► done
 - Only the **user** moves a spec from `draft` to `approved` — never set it yourself.
   Record approval as `approved: 2026-06-04` in the frontmatter when the user says so.
 - `in-progress` is set when the first task starts. Reaching `done` goes through the guarded
-  **`/wellforge:done`** command (or `/wellforge:orchestrate`'s close step, same gate) — never
-  a hand-edit or an agent. The **done gate is tier-aware**: `production` needs every task
+  **`/wellforge:done`** procedure and nowhere else — never a hand-edit, never an agent, and
+  never a second copy of the gate. `/wellforge:orchestrate` (both pipelines),
+  `/wellforge:promote` and `/wellforge:spike` all *call* that procedure rather than flipping
+  the status themselves; "same gate, re-implemented" is how the copies drift apart. The **done gate is tier-aware**: `production` needs every task
   checked + QE PASS + a fresh passing `eval-report.md` (the LM-judge — QE alone isn't enough,
   "set the bar at the eval, not the demo"); `mvp` needs tasks checked + QE-light PASS (no
   eval); `spike` closes via its `brief.md` findings. `/wellforge:done` refuses to close a

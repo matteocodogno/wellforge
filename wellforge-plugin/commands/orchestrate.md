@@ -125,11 +125,13 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
     can't cover — set the bar at the eval, not the QE demo. FAIL → **triage each failing
     dimension to its owner** (as in step 9: code → dev, spec → PO, plan → architect, design →
     designer), same bounded 2-round loop, re-eval.
-11. **Close** → apply the same **done gate** as `/wellforge:done` (production: all tasks
-    checked + QE PASS + eval PASS). When it's met, set spec `status: done` + `done: <date>`,
-    summarize (stories delivered, QE + eval verdict tables, commits), suggest next steps. The
-    pipeline may close itself here since it just ran the gate; a caller who stopped early
-    closes later with `/wellforge:done`.
+11. **Close** → **run the `/wellforge:done` procedure** (production branch) for this
+    feature. It re-verifies the gate against the artifacts on disk — all tasks checked, QE
+    PASS, fresh eval PASS — and records `status: done` + `done: <date>`. Do not flip the
+    status yourself even though you just ran the stages that produced those artifacts; one
+    implementation of this transition is the point. If its gate refuses, relay the missing
+    condition instead of closing. Then summarize (stories delivered, QE + eval verdict
+    tables, commits) and suggest next steps.
 12. **Record the run** → write the run trace per the **observability** skill:
     `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`, include `rigor: production`)
     capturing the full pipeline — every agent + outcome, drift events, QE + eval verdicts,
@@ -162,8 +164,9 @@ contract and disk-based artifacts, fewer stages. **Never spawn the frontier agen
    security floor BLOCK** (rigor-tiers). Coverage is reported as gap-to-80%, not enforced.
    Triage blocking defects to their owner (code → dev; a wrong/untestable AC → the PO for a
    spec amendment — mvp has no architect/designer to route to). Same bounded 2-round loop.
-6. **Close** → when the blocking gates pass and all tasks are checked: set spec
-   `status: done`. **No eval** — mvp's `done` is QE-light, not the LM-judge. End with the
+6. **Close** → **run the `/wellforge:done` procedure** (mvp branch: all tasks checked +
+   QE-light PASS, **no eval** — mvp's bar is QE, not the LM-judge). It records `status: done`
+   *and* `done: <date>`; don't flip the status here. End with the
    rigor-tiers visibility reminder: "rigor: mvp — coverage advisory, not yet production;
    `/wellforge:promote NNN-slug --to production` to graduate (adds plan, full coverage, eval)."
 7. **Record the run** → trace as below with `command: orchestrate`, `rigor: mvp`.

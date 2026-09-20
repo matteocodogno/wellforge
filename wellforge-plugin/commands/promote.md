@@ -58,7 +58,13 @@ raising rigor, so agents work at the destination tier's effort, not the source's
    dev agent; bounded 2-round loop, then escalate with the verdict table.
 4. **Eval** — run the `/wellforge:eval` procedure (LM-judge). **A PASS is the gate into
    `done`** — QE alone is not enough. FAIL → route failing dimensions to the dev agents
-   (same bounded loop), re-eval. Only on PASS set `rigor: production` and spec `status: done`.
+   (same bounded loop), re-eval.
+5. **Close** — only on PASS: set `rigor: production` in the frontmatter (the tier field is
+   yours), then **run the `/wellforge:done` procedure**, which re-verifies the *production*
+   gate against the artifacts on disk and records the close. Do not set `status: done`
+   yourself: the feature was already `done` at mvp, so the transition here must be re-earned
+   at the new tier — and the production branch also checks **every task is ticked**, which
+   this flow previously skipped.
 
 ## Pay the debt — project promotion (`--project`)
 
