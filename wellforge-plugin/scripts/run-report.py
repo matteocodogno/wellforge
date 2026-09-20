@@ -137,6 +137,124 @@ def totals(evts, pricing):
     return tok_in, tok_out, (round(cost, 4) if pricing else None), len(evts), all_exact
 
 
+def load_budgets(path=None):
+    p = path or os.path.join(os.path.dirname(__file__), "..", "config", "rigor-budgets.yml")
+    if not os.path.exists(p):
+        return None
+    try:
+        import yaml
+        return yaml.safe_load(open(p))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def rework(runs):
+    """Rework rounds per feature and per agent — the evidence model-routing.yml asks for.
+
+    A REWORK ROUND is a run whose `qe` or `security` verdict is FAIL: work that had to be
+    redone. It is attributed to every agent that participated in that run, because the
+    question this metric answers is "does this agent's work keep coming back", which is the
+    question that decides whether a tier is too cheap.
+
+    Also counted: REPEAT DISPATCHES — the same agent appearing twice in one run's `agents`,
+    which is the in-run fix loop that never produced a second trace.
+
+    Deliberately NOT inferred: whether the rework was the agent's fault. A failing AC and a
+    failing implementation both land here, and separating them is judgement, not counting.
+    """
+    by_feature, by_agent, repeats = {}, {}, {}
+    for r in runs:
+        feat = r.get("feature") or "(none)"
+        v = r.get("verdicts") or {}
+        failed = v.get("qe") == "FAIL" or v.get("security") == "FAIL"
+        agents = [a.get("agent") for a in (r.get("agents") or []) if a.get("agent")]
+        f = by_feature.setdefault(feat, {"rounds": 0, "runs": 0, "agents": {}})
+        f["runs"] += 1
+        if failed:
+            f["rounds"] += 1
+            for a in set(agents):
+                f["agents"][a] = f["agents"].get(a, 0) + 1
+                by_agent[a] = by_agent.get(a, 0) + 1
+        seen = {}
+        for a in agents:
+            seen[a] = seen.get(a, 0) + 1
+        for a, n in seen.items():
+            if n > 1:
+                repeats[a] = repeats.get(a, 0) + (n - 1)
+    return {"by_feature": by_feature, "by_agent": by_agent, "repeat_dispatches": repeats}
+
+
+def budget_report(report, runs, budgets, attributed=None):
+    """Spend vs ceiling per run and per feature. Three states, never two.
+
+    `unknown` is not `within`: est_cost_usd is null when the pricing table is unreadable and
+    0.0 when no token events were captured at all — the state of every trace in this repo.
+    Reporting "under budget" for a feature nobody measured turns missing data into
+    reassurance, which is the failure this file exists downstream of.
+    """
+    if not budgets:
+        return None
+    tiers = budgets.get("tiers", {})
+    attributed = attributed or {}
+
+    tier_of = {}
+    for r in runs:
+        if r.get("feature"):
+            tier_of.setdefault(r["feature"], r.get("rigor") or "production")
+
+    def state(spent, ceiling, measured):
+        if not measured or ceiling is None:
+            return "unknown", None
+        pct = round(spent / ceiling * 100)
+        return ("over" if pct > 100 else "within"), pct
+
+    per_run = []
+    for x in report:
+        tier = x.get("rigor") or "production"
+        ceiling = (tiers.get(tier) or {}).get("cost_per_run_usd")
+        measured = bool(x.get("events")) and x.get("est_cost_usd") is not None
+        st, pct = state(x.get("est_cost_usd") or 0.0, ceiling, measured)
+        per_run.append({"run_id": x["run_id"], "feature": x.get("feature"), "tier": tier,
+                        "spent_usd": x.get("est_cost_usd"), "ceiling_usd": ceiling,
+                        "pct": pct, "state": st})
+
+    # Per feature: spend, and the agent that consumed the most. OUTPUT tokens are the honest
+    # proxy for consumption — input is mostly context the agent did not choose, output is
+    # what it actually produced.
+    feats = {}
+    run_feature = {x["run_id"]: (x.get("feature") or "(none)") for x in report}
+    for x in report:
+        f = x.get("feature") or "(none)"
+        e = feats.setdefault(f, {"spent": 0.0, "events": 0, "runs": 0, "by_agent": {}})
+        e["spent"] += x.get("est_cost_usd") or 0.0
+        e["events"] += x.get("events") or 0
+        e["runs"] += 1
+    for run_id, evts in attributed.items():
+        f = run_feature.get(run_id)
+        if f is None or f not in feats:
+            continue
+        for ev in evts:
+            agent = ev.get("agent_type")
+            if agent:
+                feats[f]["by_agent"][agent] = feats[f]["by_agent"].get(agent, 0) + (ev.get("output_tokens") or 0)
+
+    per_feature = []
+    for f, e in feats.items():
+        tier = tier_of.get(f, "production")
+        ceiling = (tiers.get(tier) or {}).get("cost_per_feature_usd")
+        st, pct = state(e["spent"], ceiling, bool(e["events"]))
+        top = max(e["by_agent"].items(), key=lambda kv: kv[1], default=(None, 0))
+        per_feature.append({
+            "feature": f, "tier": tier, "spent_usd": round(e["spent"], 4),
+            "ceiling_usd": ceiling, "pct": pct, "state": st, "runs": e["runs"],
+            "token_events": e["events"],
+            "top_agent": top[0], "top_agent_output_tokens": top[1] or None,
+        })
+    return {"advisory_only": budgets.get("advisory_only", True),
+            "per_run": per_run,
+            "per_feature": sorted(per_feature, key=lambda x: x["feature"])}
+
+
 def load_runs(runs_dir, feature):
     runs = []
     for fp in sorted(glob.glob(os.path.join(runs_dir, "*.json"))):
@@ -226,6 +344,11 @@ def main():
     ap.add_argument("--feature", default="")
     ap.add_argument("--pricing", default=os.path.join(os.path.dirname(__file__), "..", "config", "model-pricing.yml"))
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--budget", action="store_true",
+                    help="spend vs the per-tier ceilings in config/rigor-budgets.yml (advisory)")
+    ap.add_argument("--rework", action="store_true",
+                    help="QE/security fail rounds per feature and per agent — the re-tiering evidence")
+    ap.add_argument("--budgets", default=None, help="path to rigor-budgets.yml")
     args = ap.parse_args()
 
     if not os.path.isdir(args.runs_dir):
@@ -278,10 +401,16 @@ def main():
 
         report.append(entry)
 
+    envelope = {"runs": report,
+                "unattributed_events": len(unattributed),
+                "cost_estimated": pricing is not None}
+    if args.budget:
+        envelope["budget"] = budget_report(report, runs, load_budgets(args.budgets), attributed)
+    if args.rework:
+        envelope["rework"] = rework(runs)
+
     if args.json:
-        print(json.dumps({"runs": report,
-                          "unattributed_events": len(unattributed),
-                          "cost_estimated": pricing is not None}, indent=2))
+        print(json.dumps(envelope, indent=2))
         return 0
 
     for x in report:
@@ -311,6 +440,44 @@ def main():
         print("\nCost not estimated: config/model-pricing.yml unreadable (see note above).")
     elif any(not x.get("cost_rates_exact", True) for x in report):
         print("\nSome runs used the DEFAULT rate — their model id matched no pricing key.")
+    if args.budget:
+        b = envelope.get("budget")
+        if not b:
+            print("\nbudget: config/rigor-budgets.yml not found — nothing to compare against")
+        else:
+            print("\nBUDGET (advisory — never blocks; compared against ESTIMATED cost, which"
+                  "\n        undercounts: subagent-only, no main loop, no cache)")
+            print(f"  {'FEATURE':28} {'TIER':11} {'SPENT':>8} {'CEIL':>7} {'USE':>6}  TOP CONSUMER")
+            for f in b["per_feature"]:
+                pct = f"{f['pct']}%" if f["pct"] is not None else "—"
+                mark = " ⚠ OVER" if f["state"] == "over" else ("  (no token data)" if f["state"] == "unknown" else "")
+                top = f["top_agent"] or "—"
+                print(f"  {f['feature'][:28]:28} {f['tier']:11} "
+                      f"{(f['spent_usd'] if f['spent_usd'] is not None else 0):>8.4f} "
+                      f"{(f['ceiling_usd'] or 0):>7.2f} {pct:>6}  {top}{mark}")
+            over = [f for f in b["per_feature"] if f["state"] == "over"]
+            unknown = [f for f in b["per_feature"] if f["state"] == "unknown"]
+            if unknown:
+                print(f"  {len(unknown)} feature(s) have NO token data — that is unknown, not under budget.")
+            if over:
+                print(f"  {len(over)} feature(s) over their tier ceiling — surface, do not block.")
+
+    if args.rework:
+        rw = envelope["rework"]
+        print("\nREWORK (a round = a run whose qe or security verdict FAILED)")
+        if not any(v["rounds"] for v in rw["by_feature"].values()):
+            print("  none recorded")
+        for feat, v in sorted(rw["by_feature"].items()):
+            if v["rounds"]:
+                print(f"  {feat:28} {v['rounds']} round(s) over {v['runs']} run(s)")
+        if rw["by_agent"]:
+            print("  by agent: " + ", ".join(f"{a}={n}" for a, n in
+                                             sorted(rw["by_agent"].items(), key=lambda kv: -kv[1])))
+        if rw["repeat_dispatches"]:
+            print("  re-dispatched within one run: " +
+                  ", ".join(f"{a}×{n}" for a, n in sorted(rw["repeat_dispatches"].items())))
+        print("  This is the evidence config/model-routing.yml asks for before re-tiering an agent.")
+
     print(f"\n{len(report)} runs. Trajectory/verdicts/drift above are exact.")
     print("Tokens are PARTIAL — captured from subagent stops only; the main orchestrating")
     print("loop and cache tokens (which dominate cost) are NOT visible to WellForge.")

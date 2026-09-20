@@ -87,11 +87,12 @@ Inside Claude Code:
 | `hooks/scripts/trace-subagent.sh` | SubagentStop → best-effort token events to `.forge/runs/.events.jsonl` (observability) |
 | `scripts/forge-state.py` | **Feature lifecycle state, deterministically** — walks `specs/`, validates frontmatter against the schema, counts tasks, computes drift from git order, joins QE/eval verdicts, resolves the tier, evaluates the done gate. `--json` emits `forge-state/v1`; status, triage, done and promote all read it instead of re-deriving |
 | `config/spec-frontmatter.schema.json` | Machine-readable mirror of the spec-driven skill's frontmatter; `check-docs.py` fails if its enums drift from the skill |
-| `scripts/run-report.py` | Summarizes `.forge/runs/` — agents, verdicts, drift, estimated cost |
+| `scripts/run-report.py` | Summarizes `.forge/runs/` — agents, verdicts, drift, estimated cost; `--budget` (spend vs tier ceiling, top consumer) and `--rework` (QE/security fail rounds per feature and agent — the re-tiering evidence) |
 | `scripts/check-routing.py` | Verifies agent frontmatter models match the routing policy (drift guard) |
 | `scripts/check-budget.py` | Measures what the plugin injects into **every** session (all skill/command/agent descriptions) and fails when it exceeds the ratchet in `config/budget.yml` |
 | `config/budget.yml` | The session-injection ceiling, and why it moves only by decision |
 | `config/security-triggers.yml` | Path globs + substrings whose presence in a batch dispatches the owasp-reviewer; `always_at_tier: [production]` |
+| `config/rigor-budgets.yml` | Advisory per-tier cost/wall-clock ceilings + the rework thresholds — surfaced by triage, never blocking |
 | `scripts/security-triggers.py` | Evaluates those triggers against `touch:` ∪ `git diff` — what implement/orchestrate call before QE |
 | `docs/PLUGIN-MIGRATIONS.md` (repo) | Project-side changes per plugin minor — read by `/wellforge:upgrade`, reported by `/wellforge:doctor` |
 | `config/model-pricing.yml` | Per-model price table for run-report cost estimates |

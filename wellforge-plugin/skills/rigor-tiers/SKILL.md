@@ -155,6 +155,34 @@ as evidence in a QE or eval verdict — it only stops known, checklist-shaped de
 consuming a reviewer's round. `spike` skips it (no agents, shortest path — the `// SPIKE:`
 marker records the cut instead); `mvp` and `production` run it, once.
 
+## Budgets — advisory tripwires, per tier
+
+`config/rigor-budgets.yml` gives each tier a soft cost ceiling per feature and per run, and
+a wall-clock ceiling per implement batch. `/wellforge:triage` surfaces a feature over its
+ceiling; `run-report.py --budget` shows spend vs ceiling with the agent that consumed most.
+
+| Tier | per feature | per run | per batch |
+|---|---|---|---|
+| `spike` | $1.00 | $0.50 | 30 min |
+| `mvp` | $4.00 | $1.50 | 60 min |
+| `production` | $12.00 | $4.00 | 120 min |
+
+Three things about these numbers, all of which matter more than the numbers:
+
+- **`advisory_only: true`. They never block.** A budget that failed a gate would be the
+  surface-never-ship rule broken by the very signal meant to respect it — and it would be
+  built on an estimate.
+- **The estimate undercounts**, structurally: subagent stops only, no main loop, no cache
+  (observability skill). So these are *relative* tripwires — "several times what a feature
+  of this tier usually costs" — not dollars. `/usage` is the bill.
+- **No token data is not "under budget".** A feature whose trace captured nothing reports
+  `unknown`, and triage is told to count it in a footer rather than list it as a finding.
+  Missing data reading as reassurance is the failure mode these numbers exist to avoid.
+
+The spike wall-clock ceiling is the one that is not really about money: a spike still
+running after half a day has stopped being a spike, and that is a finding about the tier's
+premise.
+
 ## Security floor — non-negotiable, ALL tiers (incl. spike)
 
 These always run and always **block**, regardless of tier. Fast must never mean "leaks

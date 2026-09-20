@@ -891,6 +891,34 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 25 — Make the cost numbers actionable (added 2026-09-20)
+
+`.forge/runs/` carried tokens and an estimated cost, and `model-routing.yml` said to move
+agents down a tier "only with evidence". No command consumed either. A number nobody reads
+is a number nobody maintains.
+
+- ☑ **`config/rigor-budgets.yml`** — per-tier soft ceilings (feature / run / wall-clock per
+  batch) and the rework thresholds, `advisory_only: true`.
+- ☑ **`run-report.py --budget`** (spend vs ceiling, %, top consumer by output tokens) and
+  **`--rework`** (fail rounds per feature and per agent, plus repeat dispatches inside one
+  run). 18 new test cases.
+- ☑ **Three states, not two.** `unknown` — no token events captured — is never reported as
+  `within`. Every trace in this repo prices at $0.0000 because `.events.jsonl` was never
+  written for them, so a two-state check would have reported the whole fleet as comfortably
+  under budget while measuring nothing.
+- ☑ **triage gains signals 6 and 7** (over budget, rework hotspots), each with the
+  deterministic query that produced it, and each told to report `unknown` in a footer
+  rather than as a finding. Rework is surfaced as a **question**: the count does not say
+  whether the agent was too cheap, the spec was wrong, or the work was hard.
+- ☑ **`scripts/fleet-cost.sh`** — org sweep: features in flight, rework rounds, top rework
+  agent per repo. It deliberately does **not** recompute cost: the pricing table lives with
+  the plugin, and a fleet sweep guessing at prices is worse than one that says where to look.
+- ☑ **`model-routing.yml` now names its own evidence standard** — the rework metric, both
+  directions, with what it does *not* say (whose fault the rework was).
+
+Honest limit, stated in three places: the cost estimate undercounts structurally, so these
+are relative tripwires for spotting outliers, not dollars.
+
 ## Phase 24 — Dispatch the specialists from data, not memory (added 2026-09-20)
 
 The security floor is called non-negotiable, and the specialist that reviews the code behind

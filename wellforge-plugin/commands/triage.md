@@ -38,7 +38,7 @@ Read `drift_open` per run from that. (forge-state answers "is tasks.md behind th
 run-report answers "did an agent report drift and was it reconciled". Both are real, and
 they are not the same question.)
 
-## The four signals — deterministic rules
+## The signals — deterministic rules
 
 Evaluate every feature; a feature can appear under more than one signal.
 
@@ -83,6 +83,34 @@ the rule is checkable, not recalled.
    the schema violation quoted verbatim. This signal exists *because* discovery became
    deterministic: a script can tell that a value is not in an enum, and a reader skimming
    prose cannot.
+
+6. **Over budget** [`budget.per_feature[].state == "over"`]. The deterministic query:
+
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json --budget
+   ```
+
+   → "spent $X of a $Y `<tier>` ceiling (Z%), top consumer `<agent>`". Budgets are
+   **advisory** (`config/rigor-budgets.yml`, `advisory_only: true`) — this surfaces, it
+   never blocks, per the surface-never-ship rule.
+
+   **`state: "unknown"` is not a finding and must not be reported as one.** It means no
+   token events were captured for that feature, which is the normal state when the
+   SubagentStop hook never fired. Listing it under "over budget" would turn missing data
+   into an accusation. Mention the count once in the footer instead: *"N features have no
+   cost data."*
+
+7. **Rework hotspots** [`rework.by_agent[agent] >= hotspot_rounds`]. Same call with
+   `--rework`; the threshold and window live in `config/rigor-budgets.yml`
+   (`rework.hotspot_rounds`, `rework.window_runs`).
+
+   → "`backend-dev`: 4 rework rounds in the last 20 runs". A rework round is a run whose
+   `qe` or `security` verdict FAILED — work that had to be redone.
+
+   Report it as a **question, not a verdict**: rework concentrated on one agent is the
+   evidence `config/model-routing.yml` asks for before re-tiering, but the count alone does
+   not say whether the agent was too cheap, the spec was wrong, or the feature was hard.
+   Naming the candidate is the digest's job; deciding is not.
 
 Also fold in the **lower-tier debt** signal `/wellforge:status` already computes (a `spike`/`mvp`
 feature older than ~30 days → promote or archive) — restate it here so the digest is the single

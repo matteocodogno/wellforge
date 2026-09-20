@@ -118,6 +118,10 @@ End with a one-line summary: counts per phase (e.g. "1 done · 1 implementing ·
 
 ## Observability (when `.forge/runs/` exists)
 
+For a single-feature detail view, add `--budget --rework` to that call and show one line:
+spend vs the tier ceiling with the top consumer, and any rework rounds. Advisory — and a
+feature with no token data reports *unknown*, never "under budget".
+
 Two scripts, two questions — keep them apart. `forge-state.py` answers *what state is each
 feature in* (the section above); `run-report.py` answers *what happened in each run*:
 trajectory, tokens, cost, agent-reported drift. Neither subsumes the other, and merging them

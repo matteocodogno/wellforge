@@ -120,6 +120,66 @@ _json.dump({"schema": "wellforge-run/v99", "run_id": "future"},
 check("an unrecognised schema is skipped, not crashed",
       sorted(r["run_id"] for r in rr.load_runs(_os.path.join(_d, "runs"), "")), ["new", "old"])
 
+# ── budgets and rework (advisory signals, added 2026-09-20) ────────────────────
+BUDGETS = rr.load_budgets()
+check("budgets load", BUDGETS is not None, True)
+check("budgets are advisory_only", BUDGETS["advisory_only"], True)
+check("all three tiers have a feature ceiling",
+      sorted(BUDGETS["tiers"]), ["mvp", "production", "spike"])
+
+def _mkrun(rid, feature, tier, verdicts, agents):
+    return {"schema": "wellforge-run/v3", "run_id": rid, "feature": feature, "rigor": tier,
+            "started": "2026-09-01T10:00:00Z", "finished": "2026-09-01T10:30:00Z",
+            "agents": [{"agent": a} for a in agents], "verdicts": verdicts, "drift_events": []}
+
+# rework: a FAIL round is counted, a PASS round is not, and repeats inside one run count.
+_runs = [
+    _mkrun("r1", "001-x", "production", {"qe": "FAIL"}, ["backend-dev", "quality-engineer"]),
+    _mkrun("r2", "001-x", "production", {"qe": "PASS"}, ["backend-dev", "quality-engineer"]),
+    _mkrun("r3", "001-x", "production", {"security": "FAIL"}, ["backend-dev"]),
+    _mkrun("r4", "002-y", "mvp", {"qe": "PASS"}, ["frontend-dev", "frontend-dev"]),
+]
+rw = rr.rework(_runs)
+check("rework counts a qe FAIL round", rw["by_feature"]["001-x"]["rounds"], 2)
+check("...attributing it to the agents in that run", rw["by_agent"]["backend-dev"], 2)
+check("a security FAIL is also a rework round",
+      rw["by_feature"]["001-x"]["agents"]["backend-dev"], 2)
+check("a passing feature has no rounds", rw["by_feature"]["002-y"]["rounds"], 0)
+check("a repeat dispatch inside one run is counted separately",
+      rw["repeat_dispatches"]["frontend-dev"], 1)
+check("a single dispatch is not a repeat", "backend-dev" in rw["repeat_dispatches"], False)
+
+# budget states: over / within / unknown — and unknown is NOT within.
+_report_over = [{"run_id": "r1", "feature": "001-x", "rigor": "production",
+                 "est_cost_usd": 20.0, "events": 3, "agents": []}]
+b = rr.budget_report(_report_over, _runs, BUDGETS)
+check("spend above the tier ceiling is `over`", b["per_feature"][0]["state"], "over")
+check("...with a percentage", b["per_feature"][0]["pct"], 167)
+_report_within = [{"run_id": "r1", "feature": "001-x", "rigor": "production",
+                   "est_cost_usd": 2.0, "events": 3, "agents": []}]
+check("spend below the ceiling is `within`",
+      rr.budget_report(_report_within, _runs, BUDGETS)["per_feature"][0]["state"], "within")
+_report_nodata = [{"run_id": "r1", "feature": "001-x", "rigor": "production",
+                   "est_cost_usd": 0.0, "events": 0, "agents": []}]
+b0 = rr.budget_report(_report_nodata, _runs, BUDGETS)
+check("NO token data is `unknown`, never `within`", b0["per_feature"][0]["state"], "unknown")
+check("...and carries no misleading percentage", b0["per_feature"][0]["pct"], None)
+check("a missing budgets file yields no report rather than a crash",
+      rr.budget_report(_report_within, _runs, None), None)
+
+# the tier ceiling actually used is the run's own tier
+_mvp = [{"run_id": "r4", "feature": "002-y", "rigor": "mvp",
+         "est_cost_usd": 5.0, "events": 2, "agents": []}]
+bm = rr.budget_report(_mvp, _runs, BUDGETS)
+check("mvp is measured against the mvp ceiling", bm["per_feature"][0]["ceiling_usd"], 4.0)
+check("...and 5.00 over a 4.00 ceiling is over", bm["per_feature"][0]["state"], "over")
+
+# top consumer comes from attributed events, by OUTPUT tokens
+_attr = {"r1": [{"agent_type": "backend-dev", "output_tokens": 9000},
+                {"agent_type": "quality-engineer", "output_tokens": 500}]}
+bt = rr.budget_report(_report_within, _runs, BUDGETS, _attr)
+check("top consumer is the biggest output producer", bt["per_feature"][0]["top_agent"], "backend-dev")
+
 # 9. There must be no second pricing table in the script.
 src = open(os.path.join(HERE, "..", "run-report.py")).read()
 check("no embedded fallback pricing table", "_FALLBACK_PRICING" in src, False)

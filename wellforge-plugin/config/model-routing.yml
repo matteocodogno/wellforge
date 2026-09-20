@@ -37,6 +37,30 @@ agents:
   # cause rework loops (false economy). The tier exists for future mechanical surfaces
   # (e.g. a changelog/status-summarizer agent), assigned only with evidence it holds quality.
 
+# ── What "evidence" means, concretely ───────────────────────────────────────────────
+# "Move agents down a tier only with evidence" was a rule with no measure attached, which
+# makes it a preference. The measure is the REWORK METRIC:
+#
+#   run-report.py --rework   →  rework rounds per feature and per agent
+#
+# A rework round is a run whose `qe` or `security` verdict FAILED — work that had to be
+# redone — attributed to every agent that participated. The threshold and window live in
+# config/rigor-budgets.yml (`rework.hotspot_rounds`, `rework.window_runs`), and
+# /wellforge:triage surfaces agents that cross it.
+#
+# The standard, both directions:
+#   DOWN a tier — only when the agent's rework rate over a real window is at or below the
+#                 rate of agents already at that tier. "It seemed fine" is not evidence;
+#                 neither is one good feature.
+#   UP   a tier — when its rework rate exceeds the hotspot threshold. Rework is the OpEx
+#                 trap made visible: a cheaper model that needs three rounds costs more
+#                 than an expensive one that needs none, and only the first number is
+#                 obvious on the invoice.
+#
+# What the metric does NOT say: whose fault the rework was. A failing AC and a failing
+# implementation both land in the same count, and separating them is judgement. The metric
+# names a candidate; a human decides.
+#
 # Escalation: for a genuinely complex feature, run the dev agents at frontier instead of
 # mid. The mechanism is the agent frontmatter (fixed per run), so escalation is a
 # deliberate human/orchestrator choice — flag it in the plan, then run the harder model —
