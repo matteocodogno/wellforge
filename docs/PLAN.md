@@ -305,6 +305,19 @@ the SDLC?" review (deploy/operate still open; see FEATURES for the honest covera
   `disallowedTools:[Edit]`, observability schema sync.
 - ☑ MIT `LICENSE`; README revamp (Forgey mascot); docs sync.
 
+**Follow-up fix** (plugin `2.27.5`, 2026-09-20): two stack skills told agents to do what the
+plugin's own hook blocks. `hono-ts-backend` said `cp .env.example .env` and `react-ts-vite`
+listed `.env.production` as the home for "prod secrets", while `pre-bash-guard.sh` refuses any
+command mentioning a dotenv file and the `connections` skill names `.mise.local.toml` as the
+convention. An agent following the stack skill got stopped mid-setup by its own toolchain.
+The Vite half was a security bug, not just a clash: `VITE_`-prefixed values are statically
+inlined into the client bundle, so a "secret" there is served to every visitor. Both skills
+now route real values to `.mise.local.toml` (injected by mise, so `process.env` and the Zod
+schema work unchanged), keep `.env.example` as the committed *manifest* of variable names, and
+cite `connections/references/environments.md` as the authority; the `mise` skill's
+"`.mise.local.toml` **or** a gitignored `.env.local`" alternative is gone for the same reason.
+Also fixes the `docker run --env-file` line, which had the same conflict.
+
 ## Phase 12 — Design tooling & template reuse (added 2026-07-05)
 
 Goal: enrich the design stage (Pillar 2) with real mockups, and close the brownfield loop

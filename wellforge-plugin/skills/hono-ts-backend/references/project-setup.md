@@ -312,11 +312,28 @@ JWT_SECRET=your-secret-key-min-32-characters-long
 LOG_LEVEL=info
 ```
 
-**.env** (never commit):
+**Real values — `.mise.local.toml`, not `.env`:**
 
-```bash
-cp .env.example .env
+`.env.example` above stays committed: it is the *manifest* of which variables exist, with
+placeholder values. Do not copy it to `.env`. WellForge keeps runtime secrets in
+**`.mise.local.toml`** (gitignored), which mise injects into the process environment — so
+`process.env.DATABASE_URL` and the Zod schema below work unchanged, with no loader and no
+file for an agent to leak:
+
+```toml
+# .mise.local.toml  — gitignored, never committed
+[env]
+DATABASE_URL = "postgres://postgres:postgres@localhost:5432/mydb"
+JWT_SECRET = "<32+ chars>"
 ```
+
+Then run everything through mise (`mise run dev`, `mise exec -- pnpm test`) so the process
+actually sees them. In CI the same names come from the CI secret store.
+
+Two reasons, not one: the `connections` skill's `references/environments.md` is the
+authority for this convention across every WellForge stack, **and** the plugin's
+`pre-bash-guard.sh` blocks any command mentioning a `.env` file — `cp .env.example .env` is
+refused mid-session, so a skill that told you to run it would strand you.
 
 **src/config/env.ts:**
 
@@ -573,5 +590,7 @@ CMD ["node", "dist/index.js"]
 
 ```bash
 docker build -t my-hono-api .
-docker run -p 3000:3000 --env-file .env my-hono-api
+docker run -p 3000:3000 \
+  -e DATABASE_URL -e JWT_SECRET -e LOG_LEVEL \
+  my-hono-api   # values come from the mise-injected environment, not a file
 ```

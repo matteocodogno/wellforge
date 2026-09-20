@@ -5,13 +5,31 @@
 ### The rule
 Every env var exposed to the browser **must** be prefixed `VITE_`. Vite statically replaces them at build time via `import.meta.env`. Never use `process.env` in frontend code.
 
-### Files
+### Files — and why NONE of them holds a secret
+
 ```
-.env                  # committed — defaults only, no secrets
-.env.local            # git-ignored — local overrides
-.env.development      # git-ignored — dev secrets
-.env.production       # git-ignored — prod secrets
+.env                  # committed — public VITE_* defaults only
+.env.local            # git-ignored — local overrides, still public values
+.env.development      # git-ignored — dev-only public values
+.env.production       # git-ignored — prod-only public values
 ```
+
+**A `VITE_` variable is not a secret store, in any of these files.** Vite *statically
+replaces* `import.meta.env.VITE_X` at build time, so the value is baked into the JS bundle
+and served to every visitor — `.env.production` is as public as the HTML. If you
+can read it with devtools, it was never secret. An API key, a DB URL or a signing secret
+belongs on the server, reached through your own backend; the frontend gets a URL, not a
+credential.
+
+**Secrets for the build or the process** (a private registry token, a Sentry auth token for
+sourcemap upload) go in **`.mise.local.toml`** — gitignored, injected by mise, and the convention the
+rest of WellForge uses (`connections` skill → `references/environments.md`, the authority).
+In CI they come from the CI secret store under the same names.
+
+This is also why the plugin's `pre-bash-guard.sh` blocks commands that mention `.env` files:
+it is not being awkward, it is keeping the one file class that *looks* like a secret store
+out of an agent's hands. Work with it — put the value in `.mise.local.toml` and read it via
+`mise exec`/`mise run`.
 
 ### Typing `import.meta.env`
 

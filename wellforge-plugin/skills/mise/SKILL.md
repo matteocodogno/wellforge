@@ -246,7 +246,10 @@ DATABASE_URL     = "postgresql://localhost/mydb_local"
 ```
 
 Use `_.file = ".env"` in the main `mise.toml` only for non-sensitive defaults.
-Secrets always go in `.mise.local.toml` or a gitignored `.env.local`.
+Secrets always go in **`.mise.local.toml`** — one place, not a choice. A gitignored `.env.local` is
+*not* an equivalent option here: the plugin's `pre-bash-guard.sh` blocks commands mentioning
+`.env` files, so an agent cannot create, read or copy one, and half a convention is worse
+than none. See the `connections` skill → `references/environments.md` (the authority).
 
 ---
 
