@@ -18,7 +18,11 @@ fi
 # Without this carve-out the connections skill's own secrets-hygiene check —
 # `git check-ignore .mise.local.toml .env.local` — is refused, which is how a guard teaches people
 # to work around it.
-if echo "$COMMAND" | grep -qE '^[[:space:]]*(git[[:space:]]+check-(ignore|attr)|ls|stat|test|\[)[[:space:]]'; then
+# ...and ONLY for a single simple command. Anchoring at the start is not enough on its own:
+# `ls . && cat <secret>` begins with `ls`, so an early exit here would wave the whole line
+# through. Any separator (&& || ; | newline) or substitution disqualifies the carve-out.
+if echo "$COMMAND" | grep -qE '^[[:space:]]*(git[[:space:]]+check-(ignore|attr)|ls|stat|test|\[)[[:space:]]' \
+   && ! echo "$COMMAND" | grep -qE '(\&\&|\|\||;|\||\$\(|`)'; then
   exit 0
 fi
 # Protected files. This rule reads the COMMAND TEXT, not the files a command opens, so it
@@ -64,10 +68,26 @@ if echo "$COMMAND" | grep -qE 'git\s+branch\s+(-[a-zA-Z]*D[a-zA-Z]*|--delete\s+-
   echo "BLOCKED: force-deleting a branch requires manual confirmation (-d deletes merged branches)" >&2; exit 2
 fi
 
-# .mise.local.toml is WellForge's sanctioned secret store: the setup flow WRITES it, so a blanket
-# block would break the documented path. Mirror pre-file-guard.sh instead — deny the read,
-# allow the write. Reported 2026-09-20: `Read` was blocked while `cat` sailed through.
-if echo "$COMMAND" | grep -qE '(^|[|;&[:space:]])(cat|bat|less|more|head|tail|nl|od|xxd|strings|view|vi|vim|nano|open|pbcopy|base64)([[:space:]]+-[^[:space:]]+)*[[:space:]]+[^|;&]*\.mise\.local\.toml'; then
-  echo "BLOCKED: reading .mise.local.toml would pull secret values into the transcript (write is allowed; run 'mise env' yourself to inspect)" >&2; exit 2
+# .mise.local.toml is WellForge's sanctioned secret store: the setup flow WRITES it, so a
+# blanket block would break the documented path — but it must never be READ back into the
+# transcript.
+#
+# This is an INVERTED rule, and the inversion is the point. It used to allow-list reader
+# commands (cat, head, less, ...), which cannot work: the set of ways to read a file is
+# unbounded, and `grep`, `awk`, `sed`, `cp`, `python3 -c`, `curl -d @file` and `git diff`
+# all sailed past. The set of sanctioned WRITES is short and closed, so that is what gets
+# enumerated. Anything else naming the file is refused, including tools nobody has thought
+# of yet.
+#
+# Sanctioned writes: redirection INTO it (> / >>), tee, touch, and `mise set`. Metadata
+# queries (ls / stat / test / git check-ignore) exited above.
+if echo "$COMMAND" | grep -qE '\.mise\.local\.toml'; then
+  if ! echo "$COMMAND" | grep -qE '(>>?[[:space:]]*\.mise\.local\.toml|tee([[:space:]]+-[a-zA-Z]+)*[[:space:]]+[^|;&]*\.mise\.local\.toml|^[[:space:]]*touch[[:space:]]+[^|;&]*\.mise\.local\.toml|^[[:space:]]*mise[[:space:]]+set[[:space:]])'; then
+    echo "BLOCKED: .mise.local.toml holds live secrets — only writing it is allowed" >&2
+    echo "  Allowed:  > / >> redirection into it, tee, touch, mise set, and metadata (ls/stat/test/git check-ignore)" >&2
+    echo "  Refused:  everything else that names it, including read tools not on any list" >&2
+    echo "  To see resolved values, run 'mise env' yourself outside the agent." >&2
+    exit 2
+  fi
 fi
 exit 0

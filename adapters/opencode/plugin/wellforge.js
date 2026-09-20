@@ -32,7 +32,9 @@ export const WellForge = async ({ $, client }) => {
 
       if (input.tool !== "bash") return
       const cmd = args.command || ""
-      if (/^\s*(git\s+check-(ignore|attr)|ls|stat|test|\[)\s/.test(cmd)) return   // metadata only
+      // metadata only, and only as a single simple command (`ls . && cat <secret>` must not
+      // ride the carve-out through)
+      if (/^\s*(git\s+check-(ignore|attr)|ls|stat|test|\[)\s/.test(cmd) && !/(&&|\|\||;|\||\$\(|`)/.test(cmd)) return
       if (/rm(\s+-[a-zA-Z-]+)+\s+(\/|\/\*|~|~\/\*?|\*)(\s|[;"')]|$)/.test(cmd))
         deny("blocked recursive deletion from root/home")
       if (/DROP\s+DATABASE|DROP\s+TABLE\s+[`"']?\w|TRUNCATE\s+TABLE/i.test(cmd))
@@ -42,8 +44,11 @@ export const WellForge = async ({ $, client }) => {
       const scrubbed = cmd.replace(/\.env\.example/g, "").replace(/\.env\.jinja/g, "")
       if (/\.(env|pem|key|p12|pfx)([^A-Za-z0-9_]|$)|\.envrc([^A-Za-z0-9_]|$)|secrets\.ya?ml/.test(scrubbed))
         deny("touches a protected file (dotenv / pem / key / secrets.yml)")
-      if (/(^|[|;&\s])(cat|bat|less|more|head|tail|nl|od|xxd|strings|open|pbcopy|base64)(\s+-\S+)*\s+[^|;&]*\.mise\.local\.toml/.test(cmd))
-        deny("reading .mise.local.toml would pull secret values into the transcript (write is allowed)")
+      // INVERTED: naming the file is refused unless it is a sanctioned WRITE. Enumerating
+      // readers cannot work — grep/awk/sed/cp/python/curl/git-diff all evade such a list.
+      if (/\.mise\.local\.toml/.test(cmd) &&
+          !/(>>?\s*\.mise\.local\.toml|tee(\s+-[a-zA-Z]+)*\s+[^|;&]*\.mise\.local\.toml|^\s*touch\s+[^|;&]*\.mise\.local\.toml|^\s*mise\s+set\s)/.test(cmd))
+        deny(".mise.local.toml holds live secrets — only writing it is allowed (>, >>, tee, touch, mise set); run 'mise env' yourself to inspect")
       if (/git\s+push\b/.test(cmd) && !/--force-with-lease/.test(cmd) &&
           /(--force([^-]|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s\+[A-Za-z0-9_./@-]+(:|\s|$))/.test(cmd))
         deny("force push requires manual confirmation (use --force-with-lease if you mean it)")

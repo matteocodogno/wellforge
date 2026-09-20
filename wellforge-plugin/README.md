@@ -101,7 +101,16 @@ Two hooks protect secrets and destructive operations, and they work differently 
   that IS deliberate: `.mise.local.toml` is read-denied and **write-allowed** in both, because
   it is the sanctioned secret store the setup flow creates. Metadata-only commands
   (`ls`, `stat`, `test`, `git check-ignore`) may name a protected file — they reveal nothing,
-  and refusing them is what taught people to route around the guard.
+  and refusing them is what taught people to route around the guard. That carve-out applies
+  only to a **single simple command**: a separator (`&&`, `;`, `|`, `$(…)`) disqualifies it,
+  because `ls . && cat <secret>` starts with `ls`.
+- **Enumerate the small set, not the unbounded one.** The `.mise.local.toml` rule is
+  inverted for this reason: it denies *any* command naming the file except a handful of
+  sanctioned write shapes (`>`/`>>` into it, `tee`, `touch`, `mise set`). The first version
+  allow-listed readers — `cat`, `head`, `less` — and `grep`, `awk`, `sed`, `cp`,
+  `python3 -c`, `curl -d @file` and `git diff` all walked straight through. There is no
+  finite list of ways to read a file; there is a finite list of ways you are meant to write
+  one.
 - **`pre-bash-guard.sh`** can only match the **text of a command**, because that is all a
   shell invocation gives it. Two consequences worth knowing before you file a bug:
   1. **False positives.** A command that merely *mentions* a protected name is blocked even
