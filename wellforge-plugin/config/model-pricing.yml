@@ -1,16 +1,48 @@
 # Model pricing for run-report.py cost ESTIMATES (USD per 1M tokens).
 # Used only to turn captured token counts into an approximate cost — not billing.
-# Update when prices change (rare). Keys are matched by substring against the model id
-# the SubagentStop hook captured (e.g. "claude-opus-4-8" matches "opus").
-# Also the natural home for P3 (intelligent model routing) — cheap tiers for cheap tasks.
-version: pricing-v1
+#
+# THE ONLY PRICING TABLE. run-report.py used to carry an embedded copy "kept in sync" by
+# comment; both drifted years out of date (opus at 15/75, haiku at 0.80/4.00) and nothing
+# noticed, because a cost estimate has no failing test. The script now reads this file and
+# reports "cost unavailable" if it cannot — a missing number beats a confidently wrong one.
+#
+# Source of truth for the rates: the `claude-api` skill's model table (never from memory —
+# these change). Verified against it 2026-09-20; that table was itself cached 2026-06-24.
+#
+# MATCHING: keys are substrings of the captured model id, matched LONGEST KEY FIRST so a
+# specific id wins over a family name. That specificity matters — Sonnet 5 and Sonnet 4.6
+# are not the same price, and a bare "sonnet" key would have silently charged one as the
+# other.
+version: pricing-v2
 currency: USD
 unit_tokens: 1000000
 
 models:
-  opus:    { input: 15.00, output: 75.00 }
-  sonnet:  { input: 3.00,  output: 15.00 }
-  haiku:   { input: 0.80,  output: 4.00 }
+  # Frontier reasoning tier
+  claude-fable-5-1:  { input: 10.00, output: 50.00 }
+  claude-mythos-5-1: { input: 10.00, output: 50.00 }
+  claude-fable-5:    { input: 10.00, output: 50.00 }
+  fable:             { input: 10.00, output: 50.00 }
 
-# Fallback when the captured model id matches nothing above (assume mid-tier).
+  # Opus family — 5, 4.8, 4.7, 4.6 all at this rate
+  claude-opus-5:     { input: 5.00,  output: 25.00 }
+  claude-opus-4-8:   { input: 5.00,  output: 25.00 }
+  claude-opus-4-7:   { input: 5.00,  output: 25.00 }
+  claude-opus-4-6:   { input: 5.00,  output: 25.00 }
+  opus:              { input: 5.00,  output: 25.00 }
+
+  # Sonnet — the generations differ, so both are listed explicitly
+  claude-sonnet-5:   { input: 2.00,  output: 10.00 }
+  claude-sonnet-4-6: { input: 3.00,  output: 15.00 }
+  sonnet:            { input: 3.00,  output: 15.00 }
+
+  claude-haiku-4-5:  { input: 1.00,  output: 5.00 }
+  haiku:             { input: 1.00,  output: 5.00 }
+
+# Used when the captured model id matches no key above. Mid-tier, and the report labels
+# any run costed this way so an unknown model never looks precisely priced.
 default: { input: 3.00, output: 15.00 }
+
+# Not modelled, deliberately: cache reads/writes (cheaper and dominant in a long session),
+# batch (50%), fast mode on Opus 5 ($10/$50), and partner rates on Bedrock/Vertex. These
+# numbers are an order-of-magnitude aid, not a bill — `/usage` is the real figure.

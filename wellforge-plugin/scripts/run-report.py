@@ -19,39 +19,38 @@ import sys
 from datetime import datetime
 
 
-# Embedded fallback so cost ALWAYS computes — even without pyyaml or the config file.
-# Keep in sync with config/model-pricing.yml (USD per 1M tokens).
-_FALLBACK_PRICING = {
-    "version": "fallback", "unit_tokens": 1000000,
-    "models": {"opus": {"input": 15.0, "output": 75.0},
-               "sonnet": {"input": 3.0, "output": 15.0},
-               "haiku": {"input": 0.8, "output": 4.0}},
-    "default": {"input": 3.0, "output": 15.0},
-}
-
-
+# There is exactly ONE pricing table: config/model-pricing.yml. This script used to carry
+# an embedded copy "kept in sync" by comment — both drifted years stale (opus 15/75, haiku
+# 0.80/4.00) and nothing caught it, because a wrong cost estimate still prints a number.
+# A duplicated constant with a sync comment is a drift trap; if the table can't be read we
+# report no cost, which is honest, instead of a confident wrong one.
 def load_pricing(path):
-    if path and os.path.exists(path):
-        try:
-            import yaml
-            return yaml.safe_load(open(path))
-        except ImportError:
-            # stderr, never stdout — --json output must stay pure JSON
-            print("note: pyyaml unavailable — using built-in pricing fallback", file=sys.stderr)
-        except Exception as e:  # noqa: BLE001
-            print(f"note: pricing config unreadable ({e}) — using built-in fallback", file=sys.stderr)
-    return _FALLBACK_PRICING
+    if not path or not os.path.exists(path):
+        print(f"note: pricing table not found at {path} — cost not estimated", file=sys.stderr)
+        return None
+    try:
+        import yaml
+    except ImportError:
+        # stderr, never stdout — --json output must stay pure JSON
+        print("note: pyyaml unavailable — cost not estimated (pip install pyyaml)", file=sys.stderr)
+        return None
+    try:
+        return yaml.safe_load(open(path))
+    except Exception as e:  # noqa: BLE001
+        print(f"note: pricing table unreadable ({e}) — cost not estimated", file=sys.stderr)
+        return None
 
 
 def price_for(model, pricing):
+    """Longest key first, so `claude-sonnet-5` beats `sonnet` — the generations differ."""
     if not pricing:
-        return None
+        return None, False
     models = pricing.get("models", {})
     m = (model or "").lower()
-    for key, rate in models.items():
-        if key in m:
-            return rate
-    return pricing.get("default")
+    for key in sorted(models, key=len, reverse=True):
+        if key.lower() in m:
+            return models[key], True
+    return pricing.get("default"), False
 
 
 def load_events(runs_dir):
@@ -70,25 +69,68 @@ def load_events(runs_dir):
     return out
 
 
-def cost_in_window(events, started, finished, pricing):
-    """Sum tokens of events within [started, finished] (string compare on ISO ts), → $."""
+def _in_window(e, run):
+    started, finished = run.get("started", ""), run.get("finished", "")
+    ts = e.get("ts", "")
+    if not (started and finished):
+        return False
+    return started <= ts <= finished
+
+
+def _agents_of(run):
+    return {(a.get("agent") or "").lower() for a in run.get("agents", []) if a.get("agent")}
+
+
+def attribute(events, runs):
+    """Assign each token event to at most ONE run. Returns {run_id: [events]}, plus the
+    events that could not be attributed.
+
+    Time alone is not an attribution key. Two runs execute concurrently on every parallel
+    batch `/wellforge:implement` dispatches, their [started, finished] windows overlap, and
+    a per-run window sum then counts *both* runs' tokens in *each* run's total — inflating
+    both, silently, exactly when a run is most expensive.
+
+    So: window first, then `agent_type` (recorded by the SubagentStop hook where the harness
+    exposes it) to break a tie. An event whose window matches several runs and whose agent
+    matches none of them, or more than one, is left UNATTRIBUTED and reported separately.
+    An honest gap beats a number that is wrong in the direction of looking cheap.
+    """
+    by_run = {r.get("run_id"): [] for r in runs}
+    unattributed = []
+    for e in events:
+        cands = [r for r in runs if _in_window(e, r)]
+        if not cands:
+            unattributed.append(e)
+            continue
+        if len(cands) > 1:
+            at = (e.get("agent_type") or "").lower()
+            if at:
+                narrowed = [r for r in cands if at in _agents_of(r)]
+                if len(narrowed) == 1:
+                    cands = narrowed
+        if len(cands) == 1:
+            by_run[cands[0].get("run_id")].append(e)
+        else:
+            unattributed.append(e)
+    return by_run, unattributed
+
+
+def totals(evts, pricing):
+    """Sum an already-attributed list of events → (in, out, cost|None, n, exact_rates)."""
     tok_in = tok_out = 0
     cost = 0.0
-    counted = 0
-    for e in events:
-        ts = e.get("ts", "")
-        if started and finished and not (started <= ts <= finished):
-            continue
+    all_exact = True
+    for e in evts:
         ti = e.get("input_tokens") or 0
         to = e.get("output_tokens") or 0
         tok_in += ti
         tok_out += to
-        counted += 1
-        rate = price_for(e.get("model"), pricing)
+        rate, exact = price_for(e.get("model"), pricing)
+        all_exact = all_exact and exact
         if rate and pricing:
             unit = pricing.get("unit_tokens", 1_000_000)
             cost += ti / unit * rate["input"] + to / unit * rate["output"]
-    return tok_in, tok_out, (round(cost, 4) if pricing else None), counted
+    return tok_in, tok_out, (round(cost, 4) if pricing else None), len(evts), all_exact
 
 
 def load_runs(runs_dir, feature):
@@ -193,15 +235,21 @@ def main():
     # subset, so a control run is never missed because of an unrelated CLI filter.
     all_runs = runs if not args.feature else load_runs(args.runs_dir, "")
 
+    # Attribute once, over ALL runs (not just the filtered view) — a run excluded by
+    # --feature still competes for an event, and ignoring it would re-create the
+    # double-count the attribution exists to prevent.
+    attributed, unattributed = attribute(events, all_runs)
+
     report = []
     for r in runs:
-        ti, to, cost, n = cost_in_window(events, r.get("started", ""), r.get("finished", ""), pricing)
+        ti, to, cost, n, exact = totals(attributed.get(r.get("run_id"), []), pricing)
         drift_open = [d for d in r.get("drift_events", []) if not d.get("resolved")]
         entry = {
             "run_id": r.get("run_id"), "command": r.get("command"), "feature": r.get("feature"),
             "result": r.get("result"), "agents": [a.get("agent") for a in r.get("agents", [])],
             "verdicts": r.get("verdicts", {}), "drift_open": len(drift_open),
             "input_tokens": ti, "output_tokens": to, "est_cost_usd": cost, "events": n,
+            "cost_rates_exact": exact,
             "terse": bool(r.get("terse", False)),
         }
 
@@ -213,9 +261,7 @@ def main():
         if entry["terse"]:
             control = find_control(r, all_runs)
             if control is not None:
-                _, c_to, _, _ = cost_in_window(
-                    events, control.get("started", ""), control.get("finished", ""), pricing
-                )
+                _, c_to, _, _, _ = totals(attributed.get(control.get("run_id"), []), pricing)
                 if c_to > 0:
                     entry["control_run_id"] = control.get("run_id")
                     entry["output_tokens_saved"] = c_to - to
@@ -224,7 +270,9 @@ def main():
         report.append(entry)
 
     if args.json:
-        print(json.dumps(report, indent=2))
+        print(json.dumps({"runs": report,
+                          "unattributed_events": len(unattributed),
+                          "cost_estimated": pricing is not None}, indent=2))
         return 0
 
     for x in report:
@@ -239,6 +287,14 @@ def main():
                 f"    terse: saved ~{x['output_tokens_saved']} output tok "
                 f"(~{x['pct_saved']}%) vs control {x['control_run_id']} (subagent output only)"
             )
+    if unattributed:
+        print(f"\n⚠ {len(unattributed)} token event(s) could not be attributed to a single run")
+        print("  (overlapping run windows and no distinguishing agent_type). They are counted")
+        print("  in NO run's total rather than in several — see the observability skill.")
+    if pricing is None:
+        print("\nCost not estimated: config/model-pricing.yml unreadable (see note above).")
+    elif any(not x.get("cost_rates_exact", True) for x in report):
+        print("\nSome runs used the DEFAULT rate — their model id matched no pricing key.")
     print(f"\n{len(report)} runs. Trajectory/verdicts/drift above are exact.")
     print("Tokens are PARTIAL — captured from subagent stops only; the main orchestrating")
     print("loop and cache tokens (which dominate cost) are NOT visible to WellForge.")

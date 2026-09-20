@@ -72,6 +72,18 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
 - `tokens`/`cost_usd` stay `null` in the trace; `run-report.py` computes them from
   `.events.jsonl` at read time (don't try to fill them inline — you can't read your own
   subagents' token counts reliably mid-run).
+- **Event shape** (one line per subagent completion, written by `trace-subagent.sh`):
+  `{ts, event, model, agent_type, agent_id, session_id, input_tokens, output_tokens}`.
+  Every field except `ts`/`event` is **optional** — the hook records what the harness
+  exposes and omits the rest.
+- **`agent_type` is what makes cost attributable.** Events are matched to runs by time
+  window first, then by `agent_type` when several windows overlap. Time alone is not an
+  identity: a parallel batch has overlapping windows by construction, so a per-window sum
+  counts every run's tokens in every other run's total. An event that matches several runs
+  and no single agent is left **unattributed** and reported as such — a visible gap, never
+  a number inflated in the direction of looking cheap. On a harness that doesn't send
+  `agent_type`, sequential runs still attribute correctly (one window matches); parallel
+  ones lose their token data instead of doubling it.
 - **Drift is recorded, not just handled.** Every time an agent reports drift and the
   command pauses to amend, append a `drift_events` entry — this is the audit beyond the
   binary stop-verify hook.
@@ -136,6 +148,10 @@ The semantic trace (who ran, verdicts, drift) is **exact**. The token/cost layer
 - It **cannot see the main orchestrating loop** — most of the consumption — because only
   subagents trigger the hook.
 - It **ignores cache read/write tokens**, which dominate cost on cache-heavy sessions.
+- Rates come from `config/model-pricing.yml` — the single table, no embedded copy. If it
+  can't be read, the report says cost is unavailable rather than guessing; if a model id
+  matches no key, the default rate is used and the run is flagged as inexact. The rates
+  themselves are refreshed from the `claude-api` skill's model table, never from memory.
 
 So treat the trace as an **audit trail**, not a cost meter. For real session cost, the
 agent CLI's own accounting is authoritative — `/usage` in Claude Code. WellForge does not

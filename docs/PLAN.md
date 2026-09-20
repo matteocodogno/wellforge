@@ -522,6 +522,23 @@ setup flow writes but whose values must not reach the transcript. Regression mat
 text-only limits — false positives on any command *mentioning* a protected name, and evadability
 by anyone actually trying — are now documented in the plugin README rather than being folklore.
 
+**Follow-up fix** (plugin `2.28.1`, 2026-09-20): the cost half of observability was wrong in
+three ways. `trace-subagent.sh` recorded tokens and model but no **agent identity**, so
+`run-report.py` could only attribute events by time window — and a parallel batch has
+overlapping windows by construction, so each run counted the other's tokens. Measured on a
+two-run fixture: both runs reported 1500/2700 tok and $0.045, against a true 1000/2000 +
+500/700 split; the estimate doubled, silently, exactly where a run is most expensive. The
+hook now records `agent_type`/`agent_id`/`session_id` when the harness exposes them, and
+attribution matches window→identity, leaving genuinely ambiguous events **unattributed and
+reported** rather than counted twice. Second, the pricing table existed twice — in
+`config/model-pricing.yml` and as `_FALLBACK_PRICING` in the script, "kept in sync" by
+comment. Both had drifted years stale (Opus 15/75, Haiku 0.80/4.00). The embedded copy is
+deleted; a missing table now reports *no* cost instead of a confident wrong one. Third, the
+rates are refreshed from the `claude-api` skill's table (Opus 5 $5/$25, Sonnet 5 $2/$10,
+Sonnet 4.6 $3/$15, Haiku 4.5 $1/$5, Fable $10/$50) and matched **longest-key-first**, since a
+bare `sonnet` key silently charged Sonnet 5 at 4.6's price. 16-case regression matrix wired
+into ci.yml. The lesson repeats: a wrong number still prints, so nothing failed.
+
 ## Phase 15 — Craft skills: visual direction & debugging discipline (added 2026-08-11)
 
 Goal: two gaps that surfaced from comparing WellForge's skill set against public skill

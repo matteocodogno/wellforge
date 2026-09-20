@@ -288,6 +288,11 @@ jobs:
       # just stops blocking. Ubuntu has coreutils `timeout`, so the budget case runs here
       # even though it skips on a bare macOS.
       - run: wellforge-plugin/hooks/scripts/tests/stop-verify.test.sh
+      # Cost attribution: parallel runs used to count each other's tokens, and the pricing
+      # table had drifted stale behind a "keep in sync" comment. Neither fails loudly on
+      # its own — a wrong cost estimate still prints a number.
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/run-report.test.py
 
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
   # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.
