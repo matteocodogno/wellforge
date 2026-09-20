@@ -1,0 +1,24 @@
+import path from 'node:path'
+import { defineConfig } from 'vitest/config'
+
+// Integration lane — separate from vitest.config.ts on purpose.
+//
+// These tests need Docker; the default `mise run test` must not. Splitting the config is
+// what keeps the fast lane fast and runnable on a machine with no container runtime,
+// while integration tests get a REAL database that belongs to nobody else: Testcontainers
+// starts a throwaway Postgres on a random host port per run, so two git worktrees running
+// this concurrently never meet (docs/adr/0002-per-worktree-databases.md).
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+    include: ['src/**/*.integration.test.ts'],
+    globalSetup: ['./src/test/integration-setup.ts'],
+    // Container start + migrations are slower than a unit test's default budget.
+    testTimeout: 60_000,
+    hookTimeout: 120_000,
+  },
+  resolve: {
+    alias: { '@': path.resolve(__dirname, './src') },
+  },
+})

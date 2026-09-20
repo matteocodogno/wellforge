@@ -9,7 +9,7 @@ outputs     = ["node_modules/.modules.yaml"]
 
 [tasks.dev]
 description = "Start the Hono dev server (watch mode)"
-depends     = ["install"]
+depends     = ["db:guard", "install"]
 run         = "pnpm dev"
 
 [tasks.build]
@@ -20,10 +20,29 @@ sources     = ["src/**/*.ts", "tsconfig.json"]
 outputs     = ["dist/**/*"]
 
 [tasks.test]
-description = "Run Vitest"
-depends     = ["install"]
+description = "Run Vitest (unit — no database, no Docker)"
+depends     = ["db:guard", "install"]
 run         = "pnpm test --run"
 sources     = ["src/**/*.ts"]
+
+# Integration tests get an EPHEMERAL Postgres from Testcontainers: a fresh container on a
+# random host port per run, so there is no shared database for a sibling worktree to drop
+# and nothing to clean up (docs/adr/0002-per-worktree-databases.md). Kept in its own lane
+# because the default `test` above must stay runnable without Docker.
+[tasks."test:integration"]
+description = "Run integration tests against a throwaway Testcontainers Postgres (needs Docker)"
+depends     = ["install"]
+run         = "pnpm test:integration"
+
+[tasks."db:migrate"]
+description = "Apply Drizzle migrations to THIS checkout's database"
+depends     = ["db:guard", "install"]
+run         = "pnpm db:migrate"
+
+[tasks."db:push"]
+description = "Push the Drizzle schema to THIS checkout's database (dev shortcut)"
+depends     = ["db:guard", "install"]
+run         = "pnpm db:push"
 
 [tasks.lint]
 description = "Biome check"

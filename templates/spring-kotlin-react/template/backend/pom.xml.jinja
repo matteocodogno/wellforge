@@ -185,12 +185,51 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- @ServiceConnection: points the datasource at the Testcontainers instance with
+             no URL to configure, so an integration test cannot accidentally be aimed at
+             the dev database. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
         <plugins>
+            <!-- Unit tests (surefire) and integration tests (failsafe) are separate lanes.
+                 `mvn test` must stay runnable with no Docker: the *IT classes below start a
+                 Testcontainers database, so they belong to `mvn verify` / the
+                 `mise run test:integration` task, never to the default test task. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Unit lane never runs an *IT: those need Docker. -->
+                    <excludes>
+                        <exclude>**/*IT.*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.*</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- ktlint — lint gate; run via full coordinates (mise lint task), bound to verify -->
             <plugin>
                 <groupId>com.github.gantsign.maven</groupId>

@@ -256,6 +256,113 @@ jobs:
           done
           exit $fail
 
+  # Per-worktree database isolation (template v0.10.0, ADR 0002). Two git worktrees of one
+  # repo used to resolve the same database name, host port and compose project, so a
+  # parallel batch could drop the database a sibling was mid-test against — a failure that
+  # never looks like a collision, only like broken code. The isolation is DERIVED from the
+  # checkout path, which makes it exactly the kind of thing that silently stops deriving: an
+  # untrusted mise config, a renamed script, a lost `{% raw %}` in the template, and every
+  # checkout quietly shares one database again with nothing red anywhere.
+  #
+  # Asserts the PROPERTY, not the plumbing: scaffold, branch it into two worktrees, and prove
+  # the names differ, the guard refuses a foreign database, and neither worktree can reach
+  # the other's. Deliberately toolchain-free — `mise env` resolves the [env] block without
+  # installing Java or Node, so this job costs seconds and never blocks on a toolchain.
+  worktree-isolation:
+    name: per-worktree database isolation (${{ matrix.preset }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [hono-react, spring-kotlin-react]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - uses: jdx/mise-action@v2
+        with:
+          install: false          # the mise binary only — no project tools needed here
+
+      - name: Scaffold, then branch it into two worktrees
+        run: |
+          uvx copier copy --defaults --trust --vcs-ref HEAD . /tmp/wt --data preset=${{ matrix.preset }}
+          cd /tmp/wt
+          git init -q . && git add -A
+          git -c user.email=ci@wellforge -c user.name=ci commit -qm "chore: scaffold"
+          git worktree add -q /tmp/wt-a -b feat-a
+          git worktree add -q /tmp/wt-b -b feat-b
+          # `mise trust` is the one carry-in these derived values need. An untrusted config
+          # resolves to nothing instead of failing, and "resolves to nothing" IS the
+          # collision — every checkout falls back to the same database.
+          for d in /tmp/wt /tmp/wt-a /tmp/wt-b; do (cd "$d" && mise trust -q .); done
+
+      - name: Three checkouts must derive three different identities
+        run: |
+          read_var() { (cd "$1" && mise env 2>/dev/null | sed -n "s/^export $2=//p" | tr -d "'"); }
+          fail=0
+          for v in WF_DB_NAME WF_DB_PORT COMPOSE_PROJECT_NAME; do
+            main=$(read_var /tmp/wt "$v"); a=$(read_var /tmp/wt-a "$v"); b=$(read_var /tmp/wt-b "$v")
+            echo "  $v: main=$main  a=$a  b=$b"
+            if [ -z "$a" ] || [ -z "$b" ]; then
+              echo "::error::$v did not resolve in a worktree — the [env] derivation is not running"
+              fail=1; continue
+            fi
+            # The primary tree keeps the plain value by design; the worktrees must differ
+            # from each other AND from it.
+            if [ "$a" = "$b" ] || [ "$a" = "$main" ] || [ "$b" = "$main" ]; then
+              echo "::error::$v is shared across checkouts (main=$main a=$a b=$b) — two checkouts, one name"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: db:guard is wired in, refuses a foreign database, allows its own
+        run: |
+          # Wiring first: a guard nothing depends on protects nothing.
+          for t in test dev; do
+            if ! grep -A4 "^\[tasks\.$t\]" /tmp/wt/mise.toml | grep -q 'depends.*db:guard'; then
+              echo "::error::[tasks.$t] in the generated mise.toml does not depend on db:guard"; exit 1
+            fi
+            echo "  [tasks.$t] depends on db:guard"
+          done
+          cd /tmp/wt-a
+          eval "$(mise env -s bash)"
+          sh .wellforge/db-guard.sh                       # its own database — must pass
+          # Now point it at the primary tree's database, the way a real override would.
+          if DATABASE_URL="postgres://u:p@localhost:5432/my_service" sh .wellforge/db-guard.sh; then
+            echo "::error::db:guard allowed a database belonging to another checkout"; exit 1
+          fi
+          echo "OK — guard refused the foreign database"
+
+      - name: Two worktrees bring their databases up CONCURRENTLY without meeting
+        run: |
+          up() { ( cd "$1" && eval "$(mise env -s bash)" && docker compose up -d --wait --wait-timeout 180 ); }
+          up /tmp/wt-a & a=$!
+          up /tmp/wt-b & b=$!
+          wait $a && wait $b
+          # hono-react's compose user is `postgres`; spring-kotlin-react's is the slug.
+          user=postgres; [ "${{ matrix.preset }}" = "spring-kotlin-react" ] && user=my-service
+          for d in a b; do
+            ( cd /tmp/wt-$d && eval "$(mise env -s bash)" \
+              && got=$(docker compose exec -T postgres psql -U "$user" -d "$WF_DB_NAME" -tAc 'select current_database()' | tr -d '\r') \
+              && echo "  wt-$d expected=$WF_DB_NAME actual=$got" \
+              && [ "$got" = "$WF_DB_NAME" ] ) \
+              || { echo "::error::wt-$d did not reach its own database"; exit 1; }
+          done
+          # The decisive one: A must not even be able to SEE B's database.
+          other=$(cd /tmp/wt-b && mise env 2>/dev/null | sed -n 's/^export WF_DB_NAME=//p' | tr -d "'")
+          if ( cd /tmp/wt-a && eval "$(mise env -s bash)" \
+               && docker compose exec -T postgres psql -U "$user" -d "$other" -tAc 'select 1' ) 2>/dev/null; then
+            echo "::error::worktree A reached worktree B's database '$other'"; exit 1
+          fi
+          echo "OK — A cannot reach B's database"
+
+      - name: Teardown
+        if: always()
+        run: |
+          for d in a b; do
+            ( cd /tmp/wt-$d && eval "$(mise env -s bash)" && docker compose down -v ) || true
+          done
+
   # Service-container self-test. The gates start a project's OWN compose file so integration
   # tests get a real database (a pilot project hit this: shared node gate, no Postgres, red
   # CI). What can rot here is the generated compose file itself — a missing/broken healthcheck

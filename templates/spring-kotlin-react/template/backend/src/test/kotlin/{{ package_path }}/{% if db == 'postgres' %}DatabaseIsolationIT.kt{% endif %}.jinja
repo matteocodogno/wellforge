@@ -1,0 +1,44 @@
+package {{ base_package }}
+
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import javax.sql.DataSource
+
+/**
+ * Proves the integration lane has a REAL, PRIVATE database.
+ *
+ * The second test is the one that matters for parallel work: the database these tests talk
+ * to is not this checkout's dev database, so two worktrees running the lane concurrently
+ * cannot drop or migrate each other's data. That was the single most common way a parallel
+ * batch failed — and it never looked like a collision, it looked like the code was broken.
+ */
+class DatabaseIsolationIT : AbstractIntegrationTest() {
+    @Autowired
+    private lateinit var dataSource: DataSource
+
+    @Test
+    fun `the datasource is a live postgres`() {
+        dataSource.connection.use { c ->
+            c.createStatement().executeQuery("select 1").use { rs ->
+                assertTrue(rs.next())
+                assertEquals(1, rs.getInt(1))
+            }
+        }
+    }
+
+    @Test
+    fun `the database is not this checkout's dev database`() {
+        // WF_DB_NAME is the dev database mise derived for this checkout. Testcontainers gave
+        // us a different one; if these ever match, the lane is pointing at long-lived data.
+        val devDb = System.getenv("WF_DB_NAME") ?: return
+        dataSource.connection.use { c ->
+            c.createStatement().executeQuery("select current_database()").use { rs ->
+                rs.next()
+                assertNotEquals(devDb, rs.getString(1))
+            }
+        }
+    }
+}

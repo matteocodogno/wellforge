@@ -1,0 +1,28 @@
+import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
+
+// Vitest globalSetup: one throwaway Postgres for the whole integration run.
+//
+// The container is the isolation. It gets a random host port and a fresh database, so this
+// lane is safe to run concurrently from any number of git worktrees — there is no shared
+// name for two checkouts to resolve to the same object, which is the failure class the
+// per-worktree naming elsewhere in this project exists to prevent.
+let container: StartedPostgreSqlContainer
+
+export async function setup() {
+  container = await new PostgreSqlContainer('postgres:16-alpine').start()
+  // Overriding DATABASE_URL for the test process only. The derived, per-checkout value
+  // that mise exports points at the long-lived dev database; integration tests must never
+  // touch it, not even their own checkout's.
+  process.env.DATABASE_URL = container.getConnectionUri()
+  process.env.NODE_ENV = 'test'
+  // Say which throwaway database this run got. When two worktrees run this lane at once,
+  // these two lines are the evidence that they did not meet.
+  console.log(
+    `[integration] throwaway db ${container.getDatabase()} on port ${container.getPort()} ` +
+      `(this checkout's dev db is ${process.env.WF_DB_NAME ?? 'unset'}, untouched)`,
+  )
+}
+
+export async function teardown() {
+  await container?.stop()
+}

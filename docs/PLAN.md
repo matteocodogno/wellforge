@@ -891,6 +891,56 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 27 — The deferred half: per-worktree databases (added 2026-09-20)
+
+Phase 16 shipped the parallel-execution discipline and deferred its template half. Until now
+the `worktree-isolation` skill said databases were class-1 shared state, the preflight had no
+way to isolate them, and the honest consequence was that **most backend batches of ≥2 ran
+sequentially**. This is that half, in `templates/spring-kotlin-react` and
+`templates/hono-react` — template `v0.10.0`, its own tag, no plugin coupling.
+
+- ☑ **One derived identity** — `.wellforge/worktree-id.sh` turns
+  `sha256(git rev-parse --show-toplevel)` into `suffix` / `id` / `port` / `linked`. POSIX sh,
+  verified under `dash`. Injected through mise `[env]`, which supports Tera templating and
+  `exec()` — so **two** subprocess calls produce `WF_DB_NAME`, `WF_DB_PORT` and
+  `COMPOSE_PROJECT_NAME`, and nothing is hard-coded anywhere.
+- ☑ **The primary tree keeps the plain name and port 5432.** Deliberate: adopting this must
+  not orphan a dev database someone has data in. Only linked worktrees are suffixed.
+- ☑ **Tests use Testcontainers, dev uses a per-checkout compose project** — and both presets'
+  DEFAULT `test` lane stays Docker-free (`test:integration` is its own lane, failsafe `*IT`
+  on the JVM, a second vitest config on Hono). Requiring Docker for unit tests would have
+  been a real regression traded for a theoretical one.
+- ☑ **`mise run db:guard`**, shipped by the template, not the plugin — the skill's own
+  "where the guard lives" rule. Wired into `dev`, `test` and every migration task.
+- ☑ **The skill's class-1 row is now version-aware**: `v0.10.0`+ reads as isolated, older
+  projects keep the sequential rule, and the preflight reads `.forge/manifest.json` to
+  decide. Its isolation-key example — `basename` — was replaced: a basename collides across
+  repos, is not a legal database identifier, and yields no port offset.
+- ☑ **CI asserts the property, not the plumbing** (`worktree-isolation` job, both presets):
+  three checkouts derive three identities, the guard refuses a foreign database, two
+  worktrees bring their databases up concurrently, and A cannot reach B's. Toolchain-free
+  (`mise env` needs no Java or Node), so it costs seconds.
+
+**Measured end to end**, both presets, two worktrees each, concurrently:
+
+| | hono-react | spring-kotlin-react |
+|---|---|---|
+| integration lane | 2/2 tests × 2 worktrees, throwaway DBs on ports 32772 / 32773 | 2/2 tests × 2 worktrees, containers on 32782 / 32783 |
+| dev compose | `my_service_wt5470c47c`:5908 vs `my_service_wt429aa1c0`:5640 | `my-service_wt25135e0b`:5683 vs `my-service_wt76d29864`:5492 |
+| cross-reach | `database "…" does not exist` | `database "…" does not exist` |
+
+**Two pre-existing blockers had to be fixed to verify any of it**, both of the
+never-executed species this plan already names: `spring-modulith-starter-jooq` has never
+existed in any published Modulith release (the POM would not parse, so the JVM preset could
+not build at all), and Testcontainers 1.20.4 cannot find Docker under OrbStack. Fixed as
+their own commit.
+
+**Still open, reported not fixed:** the spring preset's own Kotlin fails its own ktlint gate
+— 20 violations across 4 files that predate this work (`DomainError.kt`, `Result.kt`,
+`GlobalExceptionHandler.kt`, `ModularityTest.kt`), so `mise run lint` is red in a fresh
+scaffold. Out of scope here; `mise run backend:lint:fix` is the one-command fix, and CI does
+not catch it because no job lints a generated project.
+
 ## Phase 26 — A real distribution path, and adapters that cannot ship broken (added 2026-09-20)
 
 Two problems with the same shape: something that *looked* shipped and was installable or

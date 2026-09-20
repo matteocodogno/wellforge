@@ -1,12 +1,21 @@
+# One postgres per CHECKOUT, not per project. The database name and the published host
+# port come from mise's [env] block, which derives them from this checkout's path
+# (docs/adr/0002-per-worktree-databases.md in the wellforge repo). COMPOSE_PROJECT_NAME is
+# set there too, so containers, volumes and networks are per-checkout as well, and Spring
+# Boot's docker-compose support picks the datasource up from whichever container it started
+# — so Liquibase migrates this checkout's database without anything else being configured.
+#
+# The `:-` defaults are what a bare `docker compose up` outside mise gets: the primary
+# tree's values, i.e. exactly what this file did before isolation existed.
 services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_DB: {{ project_slug }}
+      POSTGRES_DB: ${WF_DB_NAME:-{{ project_slug }}}
       POSTGRES_USER: {{ project_slug }}
       POSTGRES_PASSWORD: secret
     ports:
-      - "5432:5432"
+      - "${WF_DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U {{ project_slug }}"]
       interval: 5s

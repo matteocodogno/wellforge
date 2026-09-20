@@ -91,7 +91,7 @@ wellforge/
   update` → zero conflicts.
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
-- Latest tags: `v0.9.0` (template series, PEP440 — what copier resolves), `gates-v11` (gate
+- Latest tags: `v0.10.0` (template series, PEP440 — what copier resolves), `gates-v11` (gate
   workflow pin series) and `plugin-v2.42.0` (plugin series) — three series, the last two
   invisible to copier by design; plugin `2.42.0`. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets;
@@ -107,8 +107,13 @@ wellforge/
   describes is not a failure anything else would report.
 - **Phase 16** (`docs/PLAN.md`) hardens parallel execution from the pilot's field findings —
   the `worktree-isolation` skill, environment faults, `touch:`-overlap edges, ADR failure
-  shapes (plugin `2.26.0`). Its template half — per-worktree test databases and a dev-database
-  guard in the presets — is deliberately deferred to its own `vX.Y.Z` cut.
+  shapes (plugin `2.26.0`). **Its template half landed in `v0.10.0`** (ADR 0002): both app
+  presets derive a per-checkout database name, host port and compose project from
+  `sha256(git rev-parse --show-toplevel)` via mise `[env]`, integration tests run against an
+  ephemeral Testcontainers database, and `mise run db:guard` refuses to act on another
+  checkout's database. Class 1 of the shared-state enumeration is therefore **isolated** for
+  projects at `v0.10.0`+, which is what lets a backend batch of ≥2 run in parallel at all —
+  the preflight reads `.forge/manifest.json` to decide which rule applies.
 - **Phase 17** (`docs/PLAN.md`) adds the reflexive pattern the plugin lacked: the
   `self-critique` skill — one bounded pass over your own artifact before the gate that
   follows, checklist-driven, never a loop, never self-approving, and explicitly not evidence

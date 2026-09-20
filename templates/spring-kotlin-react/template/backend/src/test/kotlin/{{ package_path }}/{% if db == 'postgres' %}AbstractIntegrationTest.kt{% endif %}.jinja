@@ -1,0 +1,43 @@
+package {{ base_package }}
+
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Testcontainers
+
+/**
+ * Base class for integration tests (`*IT`, run by failsafe / `mise run test:integration`).
+ *
+ * The container IS the isolation. Testcontainers starts a throwaway PostgreSQL on a random
+ * host port for this JVM and throws it away afterwards, so any number of git worktrees can
+ * run this lane at the same time without meeting: there is no shared name for two checkouts
+ * to resolve to the same object.
+ *
+ * `@ServiceConnection` wires the datasource to that container with no URL configured
+ * anywhere, which is the point — an integration test cannot be pointed at the long-lived
+ * dev database by forgetting a property. Liquibase then migrates the throwaway database on
+ * context startup, so the schema under test is the one the changelogs describe.
+ *
+ * See docs/adr/0002-per-worktree-databases.md in the wellforge repo.
+ *
+ * `spring.docker.compose.enabled=false` is load-bearing, not tidiness. The app depends on
+ * spring-boot-docker-compose, so a `@SpringBootTest` that does not switch it off would
+ * start this checkout's compose stack and let Liquibase migrate the DEV database — from
+ * inside a test run that believes it is isolated. That is the exact class of failure this
+ * lane exists to avoid, and it would surface later, in someone else's worktree.
+ */
+@SpringBootTest(properties = ["spring.docker.compose.enabled=false"])
+@Testcontainers
+abstract class AbstractIntegrationTest {
+    companion object {
+        @JvmStatic
+        @ServiceConnection
+        val postgres: PostgreSQLContainer<*> =
+            PostgreSQLContainer("postgres:16-alpine").apply {
+                // Reused across every IT in this JVM: starting one container per test class
+                // is the slowest possible way to be correct, and withReuse is not needed
+                // because the static holder already scopes it to the run.
+                start()
+            }
+    }
+}

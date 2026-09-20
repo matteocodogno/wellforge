@@ -21,17 +21,39 @@ sources     = ["pom.xml", "src/**/*.kt"]
 outputs     = ["target/classes/**/*"]
 
 [tasks.test]
-description = "Run backend tests"
-depends     = ["build"]
+description = "Run backend unit tests (surefire — no database, no Docker)"
+depends     = ["db:guard", "build"]
 run         = "mvn test -q --no-transfer-progress"
+sources     = ["src/**/*.kt"]
+
+# Integration tests (*IT, failsafe) get an EPHEMERAL Postgres from Testcontainers: a fresh
+# container on a random host port per run, so there is no shared database for a sibling
+# worktree to drop and nothing to clean up (docs/adr/0002-per-worktree-databases.md).
+# Kept out of `test` above because that lane must stay runnable without Docker.
+[tasks."test:integration"]
+description = "Run *IT integration tests against a throwaway Testcontainers Postgres (needs Docker)"
+depends     = ["build"]
+# failsafe's goals directly, NOT `mvn verify`: the verify phase also runs the ktlint check
+# bound to it, so a lint finding anywhere in the project would report as an integration-test
+# failure. One task, one job — `mise run lint` is the lint lane.
+run         = "mvn test-compile failsafe:integration-test failsafe:verify -q --no-transfer-progress"
 sources     = ["src/**/*.kt"]
 
 [tasks.run]
 description = "Start the Spring Boot service{% if db == 'postgres' %} (Docker Compose starts automatically){% endif %}"
+{%- if db == 'postgres' %}
+# db:guard before the app starts: spring-boot:run brings compose up and lets Liquibase
+# migrate, which is exactly the destructive step that must never land on another
+# checkout's database.
+depends     = ["db:guard"]
+{%- endif %}
 run         = "mvn spring-boot:run"
 
 [tasks.dev]
 description = "Alias for run (used by the root dev aggregate)"
+{%- if db == 'postgres' %}
+depends     = ["db:guard"]
+{%- endif %}
 run         = "mvn spring-boot:run"
 
 [tasks.lint]

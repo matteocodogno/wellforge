@@ -1,12 +1,20 @@
+# One postgres per CHECKOUT, not per project. The database name and the published host
+# port come from mise's [env] block, which derives them from this checkout's path
+# (docs/adr/0002-per-worktree-databases.md in the wellforge repo). COMPOSE_PROJECT_NAME is
+# set there too, so the containers, volume and network are per-checkout as well.
+#
+# The `:-` defaults are what a bare `docker compose up` outside mise gets: the primary
+# tree's values. That is the same thing this file did before isolation existed, so nothing
+# breaks — but prefer `mise run dev`, which sets all three.
 services:
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: {{ project_slug | replace('-', '_') }}
+      POSTGRES_DB: ${WF_DB_NAME:-{{ project_slug | replace('-', '_') }}}
     ports:
-      - '5432:5432'
+      - '${WF_DB_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

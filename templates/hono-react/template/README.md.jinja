@@ -43,6 +43,37 @@ mise run install    # install backend + frontend dependencies
 
 Run a single service's task with the service prefix, e.g. `mise run backend:test`.
 
+{% if db == "postgres" %}
+## Your database is per-checkout
+
+Two git worktrees of this repo do **not** share a database. The name, the published port and
+the compose project are derived from the checkout's own path, so a second worktree cannot
+drop or migrate the database the first one is testing against:
+
+```bash
+mise run wt:info      # what THIS checkout resolved: database, port, compose project
+```
+
+| | primary checkout | a linked worktree |
+|---|---|---|
+| database | `{{ project_slug | replace('-', '_') }}` | `{{ project_slug | replace('-', '_') }}_wt<hash>` |
+| host port | `5432` | `5432 + (hash mod 1000)` |
+| compose project | `{{ project_slug }}` | `{{ project_slug }}_wt<hash>` |
+
+Your main checkout keeps the plain name and port 5432, so nothing you already have changes.
+
+- `mise run db:guard` refuses to act on a database that is not this checkout's, and runs
+  automatically before `dev`, `test` and every migration task. If it refuses, something is
+  pointing this checkout at another one's database — that is a real finding.
+- **Integration tests never touch it.** `mise run backend:test:integration` starts a
+  throwaway PostgreSQL (Testcontainers, needs Docker); the default `mise run test` needs no
+  Docker at all.
+- **If port 5432 is already taken on your machine**, set `WF_DB_BASE_PORT` in
+  `.mise.local.toml` — it is machine-local, which is why it is not a project setting.
+- Run `mise trust` once in each new worktree. An untrusted config resolves these values to
+  nothing, which silently puts every checkout back on one database.
+
+{% endif %}
 ## Documentation
 
 See [AGENTS.md](./AGENTS.md) for the full stack reference, conventions, and the

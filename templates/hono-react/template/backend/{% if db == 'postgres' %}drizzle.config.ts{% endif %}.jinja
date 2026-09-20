@@ -5,9 +5,20 @@ export default defineConfig({
   out: './src/db/migrations',
   dialect: 'postgresql',
   dbCredentials: {
-    url:
-      process.env.DATABASE_URL ||
-      'postgres://postgres:postgres@localhost:5432/{{ project_slug | replace('-', '_') }}',
+    // No hard-coded fallback on purpose. DATABASE_URL is derived per checkout by mise
+    // (docs/adr/0002-per-worktree-databases.md): a literal default here would quietly
+    // migrate the shared database from inside a worktree that believes it is isolated —
+    // the exact failure the isolation exists to prevent, and one that surfaces days later
+    // as a migration row for a file nobody can find.
+    url: (() => {
+      const url = process.env.DATABASE_URL
+      if (!url)
+        throw new Error(
+          'DATABASE_URL is not set. Run drizzle-kit through mise (`mise run db:migrate`), ' +
+            'which derives this checkout\'s own database.',
+        )
+      return url
+    })(),
   },
   verbose: true,
   strict: true,

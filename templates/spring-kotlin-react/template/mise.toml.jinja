@@ -13,6 +13,31 @@ pnpm  = "10"
 # Add project-level env vars here (non-sensitive only — secrets go in .mise.local.toml).
 # _.file = ".env"   ← uncomment to load .env automatically
 
+# ── Worktree isolation — see docs/adr/0002-per-worktree-databases.md (wellforge repo) ──
+# A git worktree isolates the CHECKOUT and nothing else. Without this block two worktrees
+# resolve the same database name, the same host port and the same compose project, and one
+# applies a Liquibase changelog to the database the other is mid-test against. It does not
+# look like a collision; it looks like your code broke.
+#
+# .wellforge/worktree-id.sh turns this checkout's absolute path into a stable identity.
+# The PRIMARY tree keeps the plain database name and port 5432 on purpose, so adopting
+# this never orphans a dev database you already have data in — only linked worktrees are
+# suffixed. Both values derive from the path, never a timestamp, so re-running in the same
+# worktree always resolves to the SAME database (otherwise cleanup leaks).
+#
+# Machine-local overrides belong in .mise.local.toml, which wins over everything here:
+#   WF_DB_BASE_PORT — if 5432 is already taken on your machine
+#   WF_DB_NAME      — to deliberately share a database; `mise run db:guard` then agrees
+WF_WT_SUFFIX = "{% raw %}{{ exec(command='sh ' ~ config_root ~ '/.wellforge/worktree-id.sh suffix') }}{% endraw %}"
+{%- if db == 'postgres' %}
+WF_DB_PORT   = "{% raw %}{{ exec(command='sh ' ~ config_root ~ '/.wellforge/worktree-id.sh port') }}{% endraw %}"
+WF_DB_NAME   = "{{ project_slug }}{% raw %}{{ env.WF_WT_SUFFIX }}{% endraw %}"
+# docker compose reads this itself: one project (containers, volume, network) per checkout.
+# Spring Boot's docker-compose support then derives the datasource from that container, so
+# the app and Liquibase follow the identity without a second place to configure.
+COMPOSE_PROJECT_NAME = "{{ project_slug }}{% raw %}{{ env.WF_WT_SUFFIX }}{% endraw %}"
+{%- endif %}
+
 
 [tasks.install]
 description = "Install all dependencies (backend + frontend)"
@@ -24,7 +49,7 @@ depends     = ["backend:build", "frontend:build"]
 
 [tasks.test]
 description = "Test all services"
-depends     = ["backend:test", "frontend:test"]
+depends     = ["db:guard", "backend:test", "frontend:test"]
 
 [tasks.lint]
 description = "Lint all services"
@@ -32,7 +57,21 @@ depends     = ["backend:lint", "frontend:lint"]
 
 [tasks.dev]
 description = "Start all services in development mode"
-depends     = ["backend:dev", "frontend:dev"]
+depends     = ["db:guard", "backend:dev", "frontend:dev"]
+
+[tasks."db:guard"]
+description = "Refuse to act on a database that is not this checkout's (worktree isolation)"
+run         = "sh .wellforge/db-guard.sh"
+
+[tasks."wt:info"]
+description = "Show this checkout's derived isolation identity (database, port, compose project)"
+run = """
+echo "checkout      $(git rev-parse --show-toplevel)"
+echo "worktree id   $(sh .wellforge/worktree-id.sh id)   (linked worktree: $(sh .wellforge/worktree-id.sh linked))"
+echo "database      ${WF_DB_NAME:-<none — db=none>}"
+echo "db port       ${WF_DB_PORT:-<none — db=none>}"
+echo "compose proj  ${COMPOSE_PROJECT_NAME:-<none — db=none>}"
+"""
 
 [tasks.release]
 description = "Cut a release — version + CHANGELOG from Conventional Commits, tag, GitHub release (release-it)"
@@ -82,6 +121,13 @@ run         = "mise run build"
 description = "test (backend)"
 dir         = "backend"
 run         = "mise run test"
+
+# The integration lane needs its own root pointer for the same reason as every task above:
+# a root task cannot depend on a subdirectory task by name.
+[tasks."backend:test:integration"]
+description = "integration tests (backend) — throwaway Testcontainers database, needs Docker"
+dir         = "backend"
+run         = "mise run test:integration"
 
 [tasks."frontend:test"]
 description = "test (frontend)"
