@@ -96,12 +96,19 @@ There are **two update channels** — they cover different things:
 | What | Updates | Command |
 |---|---|---|
 | The checkout (`~/.ai/wellforge`: plugin, templates, gates) — where commands/agents/skills land | `wellforge update` | or: `cd ~/.ai/wellforge && git pull` |
-| The `wellforge` CLI itself (brew-installed binary) — small, stable launcher | see below | |
+| The `wellforge` CLI itself (brew-installed script) — its own `cli-vX.Y.Z` series | `brew upgrade wellforge` | `wellforge version` says which one you are running |
 
 `wellforge doctor` fetches and tells you if the **checkout** is behind (`! checkout N
-behind…`) — that's the channel most updates arrive on. `brew upgrade` only moves the CLI
-launcher, which changes rarely; "already installed" there usually means the launcher is
-current, not that your plugin is.
+behind…`) — that's the channel most updates arrive on — and, since the CLI got its own
+release series, whether the **CLI** you are running is behind the checkout's copy
+(`! cli 1.0.0 is behind the checkout's 1.1.0`). They are two different files.
+
+> The CLI was described here as a "small, stable launcher that changes rarely". That was
+> not true, it was just stuck: the Homebrew formula pinned the **template** tag, so a CLI
+> fix could only ship with a template release. `scripts/wellforge` drifted 179 insertions
+> past the last one with nothing to ride on. It now has its own `cli-vX.Y.Z` series
+> ([versioning](VERSIONING.md)), so `brew upgrade wellforge` is a real channel — and
+> "already installed" now means what it says.
 
 > **The plugin runs from a version-keyed cache, not the checkout.** Pulling the source
 > (`git pull` / `wellforge update`'s first step) and `/reload-plugins` do **not** refresh

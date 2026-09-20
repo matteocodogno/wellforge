@@ -223,6 +223,12 @@ make_checkout() { # <dir> <plugin-version> [tag]
   git -C "$dir" branch --set-upstream-to=origin/main >/dev/null 2>&1
 }
 
+set_checkout_cli_version() { # <checkout-dir> <version>  — rewrite the fixture CLI's constant
+  local f="$1/scripts/wellforge" t; t="$(mktemp)"
+  sed "s/^WELLFORGE_CLI_VERSION=\".*\"/WELLFORGE_CLI_VERSION=\"$2\"/" "$f" > "$t"
+  cat "$t" > "$f"; rm -f "$t"
+}
+
 advance_upstream() { # <checkout-dir> <n>  — put N commits on the bare origin only
   local dir="$1" n="$2" work; work="$(mktemp -d)"
   git clone -q "$dir.origin" "$work"
@@ -458,14 +464,79 @@ assert_has "$OUT" "wellforge setup"
 finish
 
 # ── 11. version from a checkout ───────────────────────────────────────────────
-reset_fakes; begin "version, run from a checkout: names the checkout and its describe"
+reset_fakes; begin "version: prints the CLI constant, the origin, and the describe"
 new_sandbox "${ALL_TOOLS[@]}"
 make_checkout "$SANDBOX/wf" "2.43.0" "v1.2.3"
+set_checkout_cli_version "$SANDBOX/wf" "3.4.5"
 RUN_CLI="$SANDBOX/wf/scripts/wellforge"
 run_cli "$SANDBOX/wf" version
 assert_rc "$RC" 0
-assert_has "$OUT" "running from checkout"
-assert_has "$OUT" "v1.2.3"
+assert_has "$OUT" "wellforge 3.4.5"     # the constant, not the Cellar path or the tag
+assert_has "$OUT" "(checkout)"
+assert_has "$OUT" "v1.2.3"              # the describe is still there, as context
+finish
+
+# ── 13. the CLI is a different file from the checkout's copy, and they drift ─────────
+reset_fakes; begin "doctor: warns when the running CLI is behind the checkout's"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+set_checkout_cli_version "$SANDBOX/wf" "99.0.0"
+mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+run_cli "$SANDBOX/wf" doctor
+assert_has "$OUT" "behind the checkout's 99.0.0"
+assert_has "$OUT" "brew upgrade wellforge"
+assert_rc "$RC" 0                        # advisory: a stale CLI still works
+finish
+
+reset_fakes; begin "doctor: warns when the checkout is behind the running CLI"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+set_checkout_cli_version "$SANDBOX/wf" "0.0.1"
+mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+run_cli "$SANDBOX/wf" doctor
+assert_has "$OUT" "NEWER than the checkout's 0.0.1"
+assert_has "$OUT" "wellforge update"
+finish
+
+reset_fakes; begin "doctor: cli ok when the two copies agree"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge"
+run_cli "$SANDBOX/wf" doctor
+assert_has "$OUT" "matches the checkout"
+assert_rc "$RC" 0
+finish
+
+# ── 14. the release contract: the constant, the tag and the Formula must agree ───────
+# These read the REPO, not a sandbox: they are what stops a CLI release from being
+# half-done, which is the failure this whole series exists to fix.
+reset_fakes; begin "release: WELLFORGE_CLI_VERSION equals the newest cli-v tag"
+const="$(sed -n 's/^WELLFORGE_CLI_VERSION="\([^"]*\)".*/\1/p' "$CLI" | head -1)"
+newest_tag="$(git -C "$ROOT" tag -l 'cli-v*' --sort=v:refname 2>/dev/null | tail -1)"
+if [ -z "$newest_tag" ]; then
+  # A shallow CI checkout has no tags at all. That is not a pass — say which it is.
+  if [ "$(git -C "$ROOT" rev-parse --is-shallow-repository 2>/dev/null)" = "true" ]; then
+    _bad "no cli-v* tags and the clone is shallow — fetch tags (fetch-depth: 0) or this check is blind"
+  else
+    _bad "no cli-v* tag exists, but scripts/wellforge declares $const — an untagged release reaches nobody"
+  fi
+else
+  assert_has "$newest_tag" "cli-v$const"
+  [ "$newest_tag" = "cli-v$const" ] || _bad "newest tag is $newest_tag but the constant is $const"
+fi
+finish
+
+# The Formula's url can only move once the tag is PUSHED — GitHub generates the tarball and
+# its sha is not reproducible locally, so `release-cli.sh` fetches it after pushing. Until
+# the first cli-v release is published the Formula still names the old template tag.
+reset_fakes; begin "release: the Formula points at the CLI series, not the template's" xfail
+grep -q 'archive/refs/tags/cli-v' "$ROOT/Formula/wellforge.rb" \
+  || _bad "Formula url still names a non-cli tag: $(grep -o 'refs/tags/[^"]*' "$ROOT/Formula/wellforge.rb")"
+grep -q "^  version \"$const\"\$" "$ROOT/Formula/wellforge.rb" \
+  || _bad "Formula has no 'version \"$const\"' line matching the constant"
 finish
 
 # ── 12. telegram wizard, fully canned ─────────────────────────────────────────

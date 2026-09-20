@@ -479,6 +479,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Tags, not just the commit: the suite asserts WELLFORGE_CLI_VERSION equals the
+          # newest cli-v* tag, and a default shallow checkout has no tags — which would
+          # make that check silently blind rather than failing. It says so if it happens.
+          fetch-depth: 0
 
       - name: Install shellcheck
         run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck

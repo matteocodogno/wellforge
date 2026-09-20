@@ -92,8 +92,9 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.10.0` (template series, PEP440 — what copier resolves), `gates-v11` (gate
-  workflow pin series) and `plugin-v2.42.0` (plugin series) — three series, the last two
-  invisible to copier by design; plugin `2.43.0`. A self-CI workflow
+  workflow pin series), `plugin-v2.43.0` (plugin series) and `cli-v1.0.0` (the `wellforge`
+  CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
+  plugin `2.43.0`, CLI `1.0.0`. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets;
   it runs on `origin` (`github.com/matteocodogno/wellforge`, public) and has been green on
   `main` since 2026-08-17.

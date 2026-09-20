@@ -6,15 +6,30 @@
 #
 # Versioned tarball install (NOT head-only): brew's git-based HEAD staging failed
 # inside the install sandbox on some machines ("no time information in ''"), and
-# plain tarballs also give normal `brew upgrade` semantics. Release procedure:
-# bump url/sha256 here in the same commit that tags vX.Y.Z (sha256: curl -sL
-# <url> | shasum -a 256).
+# plain tarballs also give normal `brew upgrade` semantics.
+#
+# THE CLI HAS ITS OWN TAG SERIES: `cli-vX.Y.Z`, not the template's `vX.Y.Z`. It used to
+# follow the template, so a CLI fix could only ship with a template release — and since
+# docs/VERSIONING.md requires a template release to carry a template change, CLI fixes
+# simply did not ship. Do not bump url/sha256 by hand:
+#
+#   scripts/release-cli.sh patch --execute
+#
+# That script is the release: it bumps WELLFORGE_CLI_VERSION in scripts/wellforge, tags
+# cli-vX.Y.Z, pushes, and only THEN fetches the tarball to compute its sha256 — GitHub
+# generates that archive and it is not reproducible locally (measured: for v0.9.0, a local
+# `git archive` of the same tree hashes to 746cc34f…, the formula pins b61eafcb…).
+#
+# `version` is stated explicitly rather than parsed out of the url, so the number cannot
+# drift from what the script prints and stays monotonic across the change of series.
 class Wellforge < Formula
   desc "Reproducible, AI-assisted project setup platform"
   homepage "https://github.com/matteocodogno/wellforge"
   url "https://github.com/matteocodogno/wellforge/archive/refs/tags/v0.9.0.tar.gz"
   sha256 "b61eafcb2f37753faea37c836ecce6aa4e53ccd207ef39b719a3d04a09115bc6"
-  license "UNLICENSED" # internal WellForge tooling
+  # Not "UNLICENSED": `brew audit --strict` rejects it as a non-standard SPDX identifier.
+  # :cannot_represent is Homebrew's own answer for a license SPDX cannot express.
+  license :cannot_represent # internal WellForge tooling
   head "https://github.com/matteocodogno/wellforge.git", branch: "main"
 
   depends_on "gh"
@@ -41,6 +56,10 @@ class Wellforge < Formula
 
   test do
     assert_match "doctor", shell_output("#{bin}/wellforge help")
-    assert_match version.to_s, shell_output("#{bin}/wellforge --version")
+    # The CLI's version is the WELLFORGE_CLI_VERSION constant inside the script, not this
+    # formula and not the Cellar path. Asserting they agree is what catches a release that
+    # bumped one and forgot the other — the failure mode that let brew users run the CLI
+    # as it stood at v0.9.0 while every report called it current.
+    assert_match version.to_s, shell_output("#{bin}/wellforge version")
   end
 end

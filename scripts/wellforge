@@ -21,6 +21,17 @@
 # advice — exactly the machine that needed them. Every call below reports its own outcome.
 set -uo pipefail
 
+# The CLI's own version, and the SINGLE source of it. `cli-vX.Y.Z` is its own tag series
+# (docs/VERSIONING.md): the CLI used to ride the template's `vX.Y.Z` tags, so a one-line
+# CLI fix needed a template release — which the same document says must carry a template
+# change. It did not get one, and every brew user ran the CLI as it was at v0.9.0 while
+# `wellforge doctor` called their checkout current.
+#
+# Bumped only by scripts/release-cli.sh, which also updates Formula/wellforge.rb and cuts
+# the tag. The Formula's test block asserts this string, and CI asserts it equals the
+# newest `cli-v*` tag — an unbumped release and an untagged bump are both caught.
+WELLFORGE_CLI_VERSION="1.0.0"
+
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
 CONFIG_DIR="$HOME/.config/wellforge"
 CONFIG_FILE="$CONFIG_DIR/config"           # remembers the chosen install location
@@ -56,6 +67,15 @@ if [ -z "$WELLFORGE_HOME" ] && [ -f "$CONFIG_FILE" ]; then
   . "$CONFIG_FILE"
 fi
 WELLFORGE_HOME="${WELLFORGE_HOME:-$HOME/.ai/wellforge}"
+
+# `a` is strictly older than `b`. sort -V is in both BSD (macOS) and GNU coreutils.
+version_lt() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]; }
+
+# The constant out of any copy of this script — the checkout's, or a brew-installed one.
+cli_version_of() { # <path-to-a-wellforge-script> → X.Y.Z, or "" when unreadable
+  [ -f "$1" ] || return 0
+  sed -n 's/^WELLFORGE_CLI_VERSION="\([^"]*\)".*/\1/p' "$1" 2>/dev/null | head -1
+}
 
 # ─── tool checks ─────────────────────────────────────────────────────────────
 BREW_TOOLS=(mise uv gh jq)
@@ -207,6 +227,27 @@ check_repo() {
 plugin_json_version() { # <path-to-plugin.json> → version, or "" when unreadable
   [ -f "$1" ] || return 0
   sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1" 2>/dev/null | head -1
+}
+
+# The brew-installed CLI and the checkout's copy are two different files that drift apart:
+# `wellforge update` pulls the checkout (new script on disk, not running) and only then
+# upgrades brew. Nothing reported the gap, so the fix you just pulled was not the one
+# running. Advisory — an older CLI still works, it just is not the one you think.
+check_cli() {
+  local co="$WELLFORGE_HOME/scripts/wellforge" co_ver
+  [ -f "$co" ] || { skip "cli" "skipped — no checkout to compare against"; return 0; }
+  co_ver="$(cli_version_of "$co")"
+  if [ -z "$co_ver" ]; then
+    skip "cli" "skipped — the checkout's CLI predates the version constant"
+    return 0
+  fi
+  if version_lt "$WELLFORGE_CLI_VERSION" "$co_ver"; then
+    warn "cli" "CLI $WELLFORGE_CLI_VERSION is behind the checkout's $co_ver — run: brew upgrade wellforge (or use the checkout's scripts/wellforge)"
+  elif version_lt "$co_ver" "$WELLFORGE_CLI_VERSION"; then
+    warn "cli" "CLI $WELLFORGE_CLI_VERSION is NEWER than the checkout's $co_ver — the checkout is behind: run: wellforge update"
+  else
+    ok "cli" "$WELLFORGE_CLI_VERSION (matches the checkout)"
+  fi
 }
 
 check_plugin() {
@@ -432,6 +473,7 @@ cmd_doctor() {
   say ""
   say "wellforge:"
   check_repo
+  check_cli
   check_plugin
   check_collisions "$fix"
   if telegram_configured; then ok "telegram" "configured ($TELEGRAM_ENV_FILE)"; else
@@ -627,10 +669,17 @@ cmd_update() {
       ok "cli" "current"
     else
       say "  ${DIM}upgrading the wellforge CLI…${RST}"
-      if brew upgrade wellforge >/dev/null 2>&1; then
-        ok "cli" "upgraded to $(brew list --versions wellforge 2>/dev/null | awk '{print $2}' || echo '?') — active on next run"
+      local uerr
+      if uerr=$(brew upgrade wellforge 2>&1 >/dev/null); then
+        # Read the constant out of the file brew just installed, not the Cellar directory
+        # name: what matters is which CLI you will run next, and this process is still the
+        # old one, so it cannot report the new version by looking at itself.
+        local newpath newver
+        newpath="$(command -v wellforge 2>/dev/null)"
+        newver="$(cli_version_of "$(readlink -f "$newpath" 2>/dev/null || echo "$newpath")")"
+        ok "cli" "$WELLFORGE_CLI_VERSION → ${newver:-?} — active on next run"
       else
-        warn "cli" "upgrade failed — run: brew upgrade wellforge"
+        warn "cli" "upgrade failed: $(err_tail "$uerr") — run: brew upgrade wellforge"
       fi
     fi
   else
@@ -639,20 +688,24 @@ cmd_update() {
 }
 
 cmd_version() {
-  # CLI version: derived from the brew Cellar path (no hardcoded constant to
-  # forget at release time); a checkout run reports its git describe instead.
-  local src ver="unknown"
-  # resolve symlinks: brew links /opt/homebrew/bin/wellforge -> Cellar/…
+  # The constant is the version. The Cellar path used to BE the version, which meant the
+  # number came from wherever brew happened to install it — fine until the CLI stopped
+  # riding the template tags. It is kept as a cross-check: if the two disagree, the
+  # installed tree is not what its own path claims, and that is worth saying out loud.
+  local src origin="checkout" note=""
   src="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
   src="$(cd "$(dirname "$src")" 2>/dev/null && pwd)" || src=""
   case "$src" in
     */Cellar/wellforge/*)
-      ver="${src#*/Cellar/wellforge/}"; ver="${ver%%/*} (brew)" ;;
+      origin="brew"
+      local cellar="${src#*/Cellar/wellforge/}"; cellar="${cellar%%/*}"
+      [ -n "$cellar" ] && [ "$cellar" != "$WELLFORGE_CLI_VERSION" ] \
+        && note=" ${YLW}(installed under Cellar/$cellar — reinstall: brew reinstall wellforge)${RST}" ;;
     *)
       local repo; repo="$(script_repo)"
-      [ -n "$repo" ] && ver="$(git -C "$repo" describe --tags --match 'v*' --always 2>/dev/null || echo '?') (running from checkout)" ;;
+      [ -n "$repo" ] && note=" — $(git -C "$repo" describe --tags --match 'v*' --always 2>/dev/null || echo '?')" ;;
   esac
-  say "wellforge $ver"
+  say "wellforge $WELLFORGE_CLI_VERSION ($origin)$note"
   if [ -f "$WELLFORGE_HOME/.claude-plugin/marketplace.json" ]; then
     local desc fresh=""
     desc="$(git -C "$WELLFORGE_HOME" describe --tags --match 'v*' --always 2>/dev/null || echo '?')"

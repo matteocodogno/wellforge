@@ -6,6 +6,25 @@
 (`Formula/wellforge.rb` installs exactly this file). It is the one script here that is NOT
 fleet tooling, and the one with a regression suite.
 
+### Releasing it
+
+The CLI has its **own** tag series, `cli-vX.Y.Z` — it is not part of the template's
+`vX.Y.Z`. It used to be, which meant a CLI fix could only ship with a template release, and
+so CLI fixes did not ship: `scripts/wellforge` drifted 179 insertions past `v0.9.0` while
+every brew user ran the old one. Full reasoning in [`docs/VERSIONING.md`](../docs/VERSIONING.md).
+
+```bash
+scripts/release-cli.sh patch            # plan only — prints every step, changes nothing
+scripts/release-cli.sh patch --execute  # bump, commit, tag, push, sha256, formula, push
+```
+
+`WELLFORGE_CLI_VERSION` at the top of `scripts/wellforge` is the single source: it is what
+`wellforge version` prints, what the Formula's `test` block asserts, and what CI compares
+against the newest `cli-v*` tag. Do not bump it by hand — the constant, the tag and the
+Formula's `url`/`version`/`sha256` have to agree, and the sha can only come from the pushed
+tag (GitHub generates that tarball; a local `git archive` of the same tree hashes
+differently — measured, see the script's header).
+
 ### Tests
 
 ```bash

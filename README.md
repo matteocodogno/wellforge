@@ -66,6 +66,18 @@ brew install matteocodogno/wellforge/wellforge
 wellforge setup            # toolchain + repo + plugin, verified
 ```
 
+Keeping it current — two different things, on purpose:
+
+```bash
+brew upgrade wellforge     # the CLI itself  (its own `cli-vX.Y.Z` series)
+wellforge update           # the checkout + the Claude Code plugin
+wellforge version          # which CLI you are actually running
+```
+
+`wellforge doctor` reports when the CLI you are running is older than the checkout's copy —
+they are two different files, and until the CLI got its own release series it was normal for
+the installed one to be months behind with nothing saying so.
+
 Then, in Claude Code (or OpenCode):
 
 ```
@@ -146,8 +158,8 @@ gates + a generated `lefthook.yml`). See [multi-tool support](docs/MULTI-TOOL-SU
 
 All 6 pillars built and E2E-tested, plus rigor tiers and release management. Works with
 **Claude Code, OpenCode, and GitHub Copilot** (VS Code, via adapter). Latest: template
-`v0.9.0`, gates `gates-v11`, plugin `2.23.1` — three series that move independently, see
-[versioning](docs/VERSIONING.md).
+`v0.10.0`, gates `gates-v11`, plugin `2.43.0`, CLI `cli-v1.0.0` — four series that move
+independently, see [versioning](docs/VERSIONING.md).
 Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/PLAN.md).
 
 Built for any team. **[MIT licensed](LICENSE).** Contributions: PRs to `templates/` and gate
