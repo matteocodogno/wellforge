@@ -89,7 +89,7 @@ new layers.** Only run steps 1–3 on a first-time adoption.
 2. `specs/README.md` — pointer to the spec-driven workflow (same as scaffolds get).
 3. `.claude/settings.json` — pre-allow the project's routine commands (its actual
    build/test/lint invocations). Merge into an existing file, never clobber.
-4. `.forge/adoption.json` — `{ "adopted": "<date>", "plugin": "<version>", "rigor": "<tier>", "layers": [...] }`.
+4. `.forge/adoption.json` — `{ "adopted": "<date>", "plugin": { "version": "<version>", "set_by": "adopt", "at": "<date>" }, "rigor": "<tier>", "layers": [...] }`.
    Records that this is an ADOPTED project: `/wellforge:upgrade` stays unavailable
    (no template ancestry) and fleet tooling can distinguish adopted from scaffolded.
    - **`rigor`** — the project's default tier (from the Stage 1 interview; `production` if not
@@ -97,9 +97,15 @@ new layers.** Only run steps 1–3 on a first-time adoption.
      resolve when a feature has no `rigor:` frontmatter and no `--mode` (rigor-tiers
      precedence). This is the brownfield equivalent of a scaffold's `manifest.json` `rigor` —
      without it, every feature falls back to `production`.
+   - **`plugin`** — an OBJECT (`version` / `set_by` / `at`), read from the installed
+     plugin's `.claude-plugin/plugin.json`. Earlier adoptions wrote a bare version string
+     here; when you find one, replace it with the object rather than leaving the shape
+     mixed. Readers accept both, writers emit the object.
    - **Add-layers mode: MERGE, never overwrite** — keep the original `adopted` date and
      `rigor` (unless the user re-chooses it), append the newly added layers to `layers`
-     (dedupe), and add `"updated": "<date>"`. This is the one file that changes on a re-run.
+     (dedupe), and add `"updated": "<date>"`. Refresh `plugin` to the running version with
+     `set_by: "adopt"` — adding a layer is this plugin touching the project, and the field
+     records who last did. This is the one file that changes on a re-run.
 
 ## Stage 3 — Quality gates (if chosen)
 

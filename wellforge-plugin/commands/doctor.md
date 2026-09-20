@@ -88,6 +88,27 @@ project expects secrets. For a scaffolded project also compare the manifest's
 `template_version` against the newest `vX.Y.Z` tag of the template source
 (`git ls-remote --tags`) and, if behind, point at `/wellforge:upgrade`.
 
+**Plugin version vs. the project** — the project records which plugin set it up
+(`plugin.version` in `.forge/manifest.json`, or `.forge/adoption.json` for an adopted
+project). Compare it against the running plugin's `.claude-plugin/plugin.json` and report
+one of four states:
+
+| Recorded | State | Report |
+|---|---|---|
+| equal to running | **OK** | `plugin 2.38.0 — project and plugin agree` |
+| older than running | **WARN** | `project set up by 2.31.0, running 2.38.0 — run /wellforge:upgrade to apply plugin migrations`, and list the applicable entries from `docs/PLUGIN-MIGRATIONS.md` if the wellforge repo is reachable |
+| **newer** than running | **FAIL** | `project is on 2.40.0, this plugin is 2.38.0 — you are running an OLD plugin against a newer project. Update the plugin (/plugin) before running commands that write state; a stale plugin can write a file format the project has already moved past.` |
+| **absent** | **WARN** | `no plugin version recorded — this project predates the field (plugin < 2.38). /wellforge:upgrade will stamp it and apply any migrations since.` |
+
+The absent case is the **normal** state of every project scaffolded before 2.38, not an
+error: report it as a WARN with that fix and move on. Never crash, and never treat a missing
+field as a mismatch — "unknown" and "wrong" are different answers and only one of them needs
+alarm.
+
+An adopted project's `plugin` may be a bare version **string** rather than an object (the
+shape before 2.38). Accept both; report the string form as recorded-but-old-shape, which
+`/wellforge:adopt` or `/wellforge:upgrade` will normalise.
+
 **Git policy** — `git config merge.ff` (want `only`), `pull.rebase` (want `true`), and
 whether `gates/hooks/commit-msg` is installed in `.git/hooks/`. On FAIL:
 `./scripts/setup-git-policy.sh` (or `mise run git-policy` in a generated project).

@@ -1,0 +1,78 @@
+# Plugin migrations — project-side changes, per plugin minor
+
+`.forge/manifest.json` (or `.forge/adoption.json`) records which **plugin** version last set
+a project up. This file records what changed on the *project* side since — the things a
+newer plugin expects to find that an older one never created.
+
+**Read by `/wellforge:upgrade`**, which compares the recorded `plugin.version` against the
+running one and applies or surfaces every entry in between. `/wellforge:doctor` reports the
+gap without acting on it.
+
+## What belongs here
+
+Only changes a **project** must absorb: a `.forge/` schema bump, a new hook that needs a
+`.gitignore` entry, a renamed frontmatter field, a file the plugin now expects. Plugin-internal
+changes — a reworded skill, a new command, a tighter guard — do **not** belong here: they
+travel with the plugin and need nothing from the project.
+
+The test: *would a project set up by the older plugin be wrong, incomplete, or noisy under
+the newer one?* If no, it is not a migration.
+
+## Format
+
+Each entry: the minor it landed in, whether it is automatic or needs a human, and what to do.
+An entry with no project-side action still gets a line saying so — silence is ambiguous
+between "nothing to do" and "nobody wrote it down".
+
+---
+
+## 2.38 — session-injection budget
+
+**Action: none.** `config/budget.yml` and `check-budget.py` govern the plugin's own
+descriptions. Nothing in a project changes.
+
+## 2.37 — lifecycle rules enforced by a hook
+
+**Action: automatic, informational.** A new PostToolUse hook (`post-spec-guard.sh`) refuses
+edits that write `status: done` without a passing gate, lower `rigor:`, or reopen a closed
+feature. It ships with the plugin and needs nothing installed in the project.
+
+**Worth knowing:** a project whose specs have frontmatter that predates the schema — a typo'd
+status, a `superseded` with no `superseded_by` — will start seeing the hook refuse *edits to
+those files*. Run `forge-state.py` (or `/wellforge:doctor`) to list them, and fix the
+frontmatter; the guard is reporting real breakage, not new strictness.
+
+## 2.36 — deterministic feature state
+
+**Action: automatic.** `forge-state.py` reads `specs/` and `.forge/runs/` and validates
+frontmatter against `config/spec-frontmatter.schema.json`. No project file changes.
+
+**Worth knowing:** as above, pre-existing invalid frontmatter becomes *visible* for the first
+time in `/wellforge:status` and `/wellforge:triage` (as `problems[]`). That is discovery, not
+regression.
+
+## 2.33 — `.forge/runs/` trace envelope gained `rigor_recorded`
+
+**Action: automatic, backward compatible.** Traces written by older plugins have no
+`rigor_recorded` field; `run-report.py` treats its absence as "the run matched the feature's
+recorded tier", which is what it meant. Nothing to rewrite.
+
+## 2.31 — `.forge/runs/.events.jsonl` should be gitignored
+
+**Action: one line, applied by `/wellforge:upgrade`.** The raw token-event buffer is
+transient and was never meant to be committed; scaffolds from 2.31 on ignore it. Older
+projects may have it tracked.
+
+```gitignore
+.forge/runs/.events.jsonl
+```
+
+If the file is already tracked: `git rm --cached .forge/runs/.events.jsonl`. The semantic
+`.forge/runs/*.json` traces stay committed — they are the audit trail.
+
+---
+
+## Adding an entry
+
+Add it in the **same commit** as the plugin change that needs it, at the top, under the minor
+being released. An entry written later is one an upgrade already skipped.

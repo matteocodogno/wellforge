@@ -57,7 +57,22 @@ date lives in git history, where it already was.
 
 - `.forge/manifest.json` — template, version, answers. **The upgrade contract.** Never
   hand-edit it, and never hand-edit `.copier-answers.yml`; between them they are the only
-  record of where a project came from.
+  record of where a project came from. It also carries a `plugin` object —
+  `{version, set_by: new|adopt|upgrade, at}` — recording which **plugin** version last set
+  the project up, because the conventions, file formats, trace schema and hooks all move
+  with the plugin and nothing else records that. Adopted projects keep the same object in
+  `.forge/adoption.json`.
+
+  The `plugin` object is **written by the command after generation, never asked by copier**.
+  A persisted answer would replay the scaffold-time version forever (copier re-renders from
+  recorded answers, so an upgrade would still claim the old plugin), and a hidden `when:
+  false` answer is not persisted at all, which is the conflict trap this repo already hit
+  with a generation date. General rule: **a value that depends on when the command ran is
+  written after generation; only what the user answered is a copier question.**
+
+  Because the template never emits the key, a `copier update` re-render does not touch those
+  lines and should merge cleanly — and `/wellforge:upgrade` rewrites the object anyway, so
+  the field is right afterwards either way.
 - `AGENTS.md` (with `CLAUDE.md` importing it) — the project's own conventions, so an agent
   arriving later reads the project rather than guessing.
 - `mise.toml` — pinned toolchain plus `install`/`build`/`test`/`lint` tasks. In a monorepo,

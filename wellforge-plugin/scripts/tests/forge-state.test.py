@@ -64,7 +64,7 @@ def feature(root, slug, spec_fm=None, brief_fm=None, tasks=None, tasks_fm=None,
 def trace(root, slug, **kw):
     rd = os.path.join(root, ".forge", "runs")
     os.makedirs(rd, exist_ok=True)
-    run = {"schema": "wellforge-run/v1", "run_id": kw.get("run_id", f"r-{slug}"),
+    run = {"schema": kw.get("schema", "wellforge-run/v2"), "run_id": kw.get("run_id", f"r-{slug}"),
            "command": "implement", "feature": slug, "rigor": kw.get("rigor", "production"),
            "started": kw.get("at", "2026-09-01T10:00:00Z"),
            "finished": kw.get("at", "2026-09-01T10:30:00Z"),
@@ -237,6 +237,21 @@ out2 = subprocess.run([sys.executable, SCRIPT, "--specs-dir", os.path.join(r, "s
 check("human table exits 0", out2.returncode, 0)
 check("human table has a header", "FEATURE" in out2.stdout, True)
 check("--feature filters", len(state(r, feature="001-prod")["features"]), 1)
+
+# ── a v1 trace still counts (schema bumped to v2 in plugin 2.39) ────────────────
+# Traces outlive the plugin that wrote them, and forge-state reads them through
+# run-report's loader — so the loader accepting both versions has to hold end to end here,
+# not just in run-report's own tests.
+r_v1 = repo()
+feature(r_v1, "001-old", {"id": "001", "slug": "old", "status": "in-progress", "rigor": "mvp"},
+        tasks=[True])
+trace(r_v1, "001-old", run_id="r-v1", schema="wellforge-run/v1", verdicts={"qe": "PASS"})
+commit(r_v1)
+env_v1 = state(r_v1)
+check("a v1 trace still yields its QE verdict",
+      one(env_v1, "001-old")["verdicts"]["qe"]["verdict"], "PASS")
+check("...and an mvp gate built on it passes",
+      one(env_v1, "001-old")["done_gate"]["passes"], True)
 
 print(f"\nforge-state: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

@@ -32,9 +32,11 @@ def check(desc, got, want):
         print(f"  FAIL: {desc}\n        want {want}\n        got  {got}")
 
 
-def run(rid, agent, started, finished):
-    return {"schema": "wellforge-run/v1", "run_id": rid, "started": started,
-            "finished": finished, "agents": [{"agent": agent}]}
+def run(rid, agent, started, finished, schema="wellforge-run/v2", **extra):
+    r = {"schema": schema, "run_id": rid, "started": started,
+         "finished": finished, "agents": [{"agent": agent}]}
+    r.update(extra)
+    return r
 
 
 def ev(ts, tin, tout, agent_type=None, model="claude-sonnet-5"):
@@ -94,6 +96,27 @@ check("report entry carries rigor and rigor_recorded",
       '"rigor": r.get("rigor"), "rigor_recorded": r.get("rigor_recorded")' in src_rr, True)
 check("downgrade is only flagged when the tiers differ",
       'rec and rec != x.get("rigor")' in src_rr, True)
+
+# 8c. BOTH trace schemas are read. v2 added plugin_version; v1 traces predate it and must
+#     still load — a reader that drops old traces on a schema bump turns the archive it
+#     exists to preserve into a silent gap.
+check("v1 and v2 are both accepted", sorted(rr.ACCEPTED_SCHEMAS),
+      ["wellforge-run/v1", "wellforge-run/v2"])
+import tempfile as _tf, os as _os, json as _json
+_d = _tf.mkdtemp(); _os.makedirs(_os.path.join(_d, "runs"))
+for _rid, _schema in (("old", "wellforge-run/v1"), ("new", "wellforge-run/v2")):
+    _r = run(_rid, "backend-dev", "2026-09-01T10:00:00Z", "2026-09-01T10:05:00Z", schema=_schema)
+    if _schema.endswith("v2"):
+        _r["plugin_version"] = "2.39.0"
+    _json.dump(_r, open(_os.path.join(_d, "runs", _rid + ".json"), "w"))
+_loaded = rr.load_runs(_os.path.join(_d, "runs"), "")
+check("a v1 and a v2 trace both load", sorted(r["run_id"] for r in _loaded), ["new", "old"])
+check("an unknown schema is still filtered out",
+      len(rr.load_runs(_os.path.join(_d, "runs"), "")) , 2)
+_json.dump({"schema": "wellforge-run/v99", "run_id": "future"},
+           open(_os.path.join(_d, "runs", "future.json"), "w"))
+check("an unrecognised schema is skipped, not crashed",
+      sorted(r["run_id"] for r in rr.load_runs(_os.path.join(_d, "runs"), "")), ["new", "old"])
 
 # 9. There must be no second pricing table in the script.
 src = open(os.path.join(HERE, "..", "run-report.py")).read()

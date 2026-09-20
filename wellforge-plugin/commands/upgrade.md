@@ -41,9 +41,18 @@ section 4 rather than performing it.
 3. Resolve source + target: the template source is the wellforge repo (`_src_path` in
    the answers file; if it's a stale local path, ask for the current checkout/URL).
    Target = `$ARGUMENTS` or the latest `vX.Y.Z` tag. Already there → report and stop.
-4. Show the plan of record before running: current → target version, and the template
-   changelog between them (`git log <cur>..<target> -- templates/<preset>/ copier.yml`
-   in the wellforge repo, when available). Ask the user to confirm.
+4. **Read the recorded plugin version too** — `plugin.version` in `.forge/manifest.json`
+   (older projects have no `plugin` object at all; treat that as "unknown, pre-2.38" and
+   carry on — it is the normal state of every project scaffolded before this field existed,
+   not an error). Compare it against the running plugin's
+   `.claude-plugin/plugin.json`. **Two upgrades are in play and they are independent:** the
+   template (`vX.Y.Z`, what copier re-renders) and the plugin (`2.x`, what changes the
+   conventions, spec formats, trace schema and hooks around it). A project can need either,
+   both, or neither.
+5. Show the plan of record before running: current → target **template** version with its
+   changelog (`git log <cur>..<target> -- templates/<preset>/ copier.yml` in the wellforge
+   repo, when available), **and** recorded → running **plugin** version with every
+   applicable entry from `docs/PLUGIN-MIGRATIONS.md` in between. Ask the user to confirm.
 
 ## Run the update
 
@@ -80,6 +89,24 @@ infrastructure the template owns, not a user preference like `project_name`:
 4. **Raise-only.** Never lower a gate pin to make CI green — that is the same discretion the
    ratchet forbids. If the user declines the bump, say so explicitly in the report.
 
+## Apply the plugin migrations
+
+Independent of the template re-render, and skippable only when the recorded plugin version
+already equals the running one.
+
+1. Read **`docs/PLUGIN-MIGRATIONS.md`** and take every entry whose minor is greater than the
+   recorded `plugin.version`, in order. An unknown recorded version (pre-2.38 project) means
+   read them all — they are written to be idempotent, so re-applying one is safe, and
+   skipping one because the version is unknown is not.
+2. **Automatic** entries: apply them, and say which. **Human** entries: do not guess — surface
+   them with the exact change and let the user decide, in the same message as the rest of the
+   plan.
+3. An entry that says "no project-side action" still gets reported. Silence is ambiguous
+   between "nothing to do" and "nobody checked".
+4. If `docs/PLUGIN-MIGRATIONS.md` is unreachable (the wellforge repo isn't at hand), say so
+   plainly and **do not claim the project is migrated** — record what the gap is so the next
+   run can close it.
+
 ## Resolve conflicts (the AI-value step)
 
 For every file with inline conflict markers:
@@ -91,6 +118,22 @@ For every file with inline conflict markers:
 3. Genuinely ambiguous (template and project changed the same behavior differently):
    don't guess — present both sides to the user with a recommendation.
 4. Zero conflict markers may remain; verify with a grep for `<<<<<<<` before moving on.
+
+## Stamp the manifest
+
+Before the commit, update `.forge/manifest.json` (or `.forge/adoption.json` for an adopted
+project — where `/wellforge:upgrade` does not re-template but the plugin migrations still
+apply):
+
+```jsonc
+"plugin": { "version": "<the running plugin version>", "set_by": "upgrade", "at": "<today>" }
+```
+
+Write it even when the template version did not move: the point of the field is to record
+which plugin last touched the project, and a plugin-only upgrade is exactly the case that
+would otherwise leave a stale value behind. If a migration was surfaced but **not** applied
+(a human entry the user deferred), say so in the report and leave the version at the
+recorded one — stamping it would claim work that was not done.
 
 ## Verify
 

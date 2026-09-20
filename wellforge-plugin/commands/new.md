@@ -74,8 +74,22 @@ User confirms or overrides; their choice wins.
    (requires `uv`; if missing: `brew install uv` or `mise use -g uv`.)
    Prefer the git URL over a local path once wellforge is hosted — it makes
    `/wellforge:upgrade` work for every team member, not just this machine.
-4. Initialize: `git init -b main && git add -A && git commit -m "chore: scaffold from <template> v<version>"`.
-   The scaffold commit must be pristine — no manual edits before it.
+4. **Stamp the plugin version into `.forge/manifest.json`** — copier cannot, and this is
+   the only record of which plugin set the project up (its `AGENTS.md` conventions, spec
+   formats, trace schema and hooks all move with the plugin):
+
+   ```jsonc
+   // added to the generated manifest, alongside template/version/answers
+   "plugin": { "version": "<this plugin's version>", "set_by": "new", "at": "<today>" }
+   ```
+
+   Read the version from the installed plugin's own `.claude-plugin/plugin.json` — never
+   from memory, and never a copier answer (a persisted answer would replay the scaffold-time
+   version forever; see the template-contract skill for why).
+
+5. Initialize: `git init -b main && git add -A && git commit -m "chore: scaffold from <template> v<version>"`.
+   The scaffold commit must be pristine — no manual edits before it, and the manifest
+   including its `plugin` object is part of that first commit.
 
 ## Stage 4 — Verify the build
 

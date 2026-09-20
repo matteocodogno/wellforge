@@ -44,7 +44,7 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 
 | File | Requirement |
 |---|---|
-| `.forge/manifest.json` | `{ "template": "<name>", "version": "<template version>", "answers": { …all answers… } }` — the upgrade contract |
+| `.forge/manifest.json` | `{ "template": "<name>", "version": "<template version>", "answers": { …all answers… } }` — the upgrade contract. The **command** adds a `plugin` object after generation; see below |
 | `.copier-answers.yml` | standard copier answers file (`{{ _copier_answers\|to_nice_yaml }}`) — enables `copier update` |
 | `AGENTS.md` | project context (canonical, cross-tool standard): stack + versions, dev commands (mise tasks), architecture pointers, spec-driven workflow note (`specs/` + plugin commands) |
 | `CLAUDE.md` | one-line `@AGENTS.md` import for Claude Code — content lives in AGENTS.md only |
@@ -56,6 +56,52 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 | `.gitignore` | stack-appropriate + `.mise.local.toml`, `.claude/settings.local.json` |
 | `.release-it.json` | release-it config: `@release-it/conventional-changelog` (semver bump + CHANGELOG from Conventional Commits) + `@release-it/bumper` (per-service version files); `npm.publish:false`; JVM preset bumps `pom.xml` via a Maven `after:bump` hook. Drives `mise run release` / `/wellforge:release` |
 | `README.md` | quickstart: `mise install && mise run dev`, layout table, link to CLAUDE.md |
+
+## The `plugin` object — written by the command, never a copier answer
+
+`.forge/manifest.json` records the **template** version, which is what makes `copier update`
+possible. It does not record which **plugin** version set the project up — yet the project's
+`AGENTS.md` conventions, the spec-driven file formats, the `.forge/runs/` trace schema and
+the hooks all change with the plugin. A project scaffolded by plugin 2.20 and driven by 2.38
+is a real and currently invisible situation.
+
+Every scaffolded project therefore carries:
+
+```json
+{ "template": "hono-react", "version": "0.9.0",
+  "answers": { "…": "…" },
+  "plugin": { "version": "2.38.0", "set_by": "new", "at": "2026-09-20" } }
+```
+
+`set_by` is `new` | `adopt` | `upgrade`. Adopted projects carry the same object in
+`.forge/adoption.json` (which previously held `plugin` as a bare version string — readers
+must accept both and writers must emit the object).
+
+**It is NOT a copier question, and the templates must not render it.** Two reasons, and the
+second is the one that bites:
+
+1. A persisted answer would be *the plugin version at scaffold time, replayed forever*:
+   `copier update` re-renders from recorded answers, so the manifest would keep asserting
+   2.20 no matter which plugin ran the upgrade. The field would be actively wrong at exactly
+   the moment it matters.
+2. A hidden (`when: false`) answer is not persisted at all, which is the documented trap this
+   repo already hit with a generation date — the re-rendered base diverges from the project
+   and every future `copier update` conflicts on the manifest.
+
+So the template emits a manifest **without** the key and the command writes it afterwards.
+On `copier update` the re-rendered base still lacks the key while the project has it, so the
+template side never touches those lines and the three-way merge should keep them.
+
+**That last sentence is reasoning, not a measurement** — three attempts to exercise a real
+`copier update` against a local template source were refused by copier before the merge
+(`Updating is only supported in git-tracked templates` / `cannot obtain old template
+references`), so the merge itself is unproven here. It is also not load-bearing:
+`/wellforge:upgrade` rewrites the `plugin` object as part of every upgrade, so the field is
+correct afterwards even if a merge were to drop it. Worth confirming for real the first time
+an upgrade runs against a git-hosted template.
+
+The same rule in one line: **anything whose value depends on *when the command ran* rather
+than *what the user answered* is written after generation, not asked by copier.**
 
 ## Versioning & lifecycle
 

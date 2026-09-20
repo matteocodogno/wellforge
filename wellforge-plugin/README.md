@@ -91,6 +91,7 @@ Inside Claude Code:
 | `scripts/check-routing.py` | Verifies agent frontmatter models match the routing policy (drift guard) |
 | `scripts/check-budget.py` | Measures what the plugin injects into **every** session (all skill/command/agent descriptions) and fails when it exceeds the ratchet in `config/budget.yml` |
 | `config/budget.yml` | The session-injection ceiling, and why it moves only by decision |
+| `docs/PLUGIN-MIGRATIONS.md` (repo) | Project-side changes per plugin minor — read by `/wellforge:upgrade`, reported by `/wellforge:doctor` |
 | `config/model-pricing.yml` | Per-model price table for run-report cost estimates |
 
 ### What the guards can and cannot do

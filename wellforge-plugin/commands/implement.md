@@ -152,13 +152,15 @@ own box. State which mode you used and, if the preflight forced it, which class.
 ## Step 6 — Record the run (observability)
 
 Write a run trace per the **observability** skill (load it): capture `started` at the
-start of this run and, now, write `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`)
+start of this run and, now, write `.forge/runs/<run_id>.json` (schema `wellforge-run/v2`)
 with every dispatched agent + outcome, any drift events (resolved or not), the QE verdict,
 and `result` (completed / escalated / partial). Record the isolation mode used, any
 collision events, and any environment faults (per the observability skill's `worktree` /
 `collision_events` / `env_faults` fields) — including, when a batch fell back to sequential,
 the preflight class that forced it.
-Set `rigor_recorded` when Step 0 resolved a tier different from the feature's own `rigor:`
+Set `plugin_version` to the running plugin's version (from its `.claude-plugin/plugin.json`)
+— a trace outlives the plugin that produced it, and the tier rules, agent roster and gate it
+records all move with that version. Set `rigor_recorded` when Step 0 resolved a tier different from the feature's own `rigor:`
 (a `--mode` downgrade must be legible in the trace, not only in the transcript that
 scrolls away). Set `terse` to the boolean resolved in Step 0 (`true` iff `--terse` resolved
 on for this run, `false` otherwise); leave `control_run_id` `null` (pairing to a control run is a later

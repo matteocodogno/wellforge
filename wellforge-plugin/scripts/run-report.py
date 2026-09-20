@@ -4,7 +4,7 @@
   run-report.py [--runs-dir .forge/runs] [--feature NNN-slug] [--pricing <model-pricing.yml>]
                 [--json]
 
-Reads the semantic run traces (wellforge-run/v1) the workflow commands write, joins the
+Reads the semantic run traces (wellforge-run/v1 and /v2) the workflow commands write, joins the
 best-effort token events (.events.jsonl) by each run's [started, finished] window, and
 prints per-run agents/verdicts/drift + an estimated cost. Token/cost are ESTIMATES (see
 skills/observability "Honest limits"); the who/what/verdict/drift parts are exact.
@@ -17,6 +17,10 @@ import json
 import os
 import sys
 from datetime import datetime
+
+# Every trace schema this tool understands. Add, never replace: a reader that stops
+# accepting an old version turns an archive into a gap.
+ACCEPTED_SCHEMAS = ("wellforge-run/v1", "wellforge-run/v2")
 
 
 # There is exactly ONE pricing table: config/model-pricing.yml. This script used to carry
@@ -140,7 +144,11 @@ def load_runs(runs_dir, feature):
             r = json.load(open(fp))
         except json.JSONDecodeError:
             continue
-        if r.get("schema") != "wellforge-run/v1":
+        # Accept every known trace schema. v2 added `plugin_version`; nothing else moved,
+        # so a v1 trace is read unchanged. Dropping old traces on a schema bump would
+        # discard the history the traces exist to preserve — and silently, since a filtered
+        # run just looks like a project with fewer runs.
+        if r.get("schema") not in ACCEPTED_SCHEMAS:
             continue
         if feature and r.get("feature") != feature and feature not in r.get("feature", ""):
             continue

@@ -891,6 +891,41 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 23 — Which plugin set this project up (added 2026-09-20)
+
+`.forge/manifest.json` recorded the **template** version, which is what makes `copier
+update` work. It recorded nothing about the **plugin** — yet the project's `AGENTS.md`
+conventions, the spec-driven file formats, the `.forge/runs/` trace schema and the hooks all
+move with it. A project scaffolded by 2.20 and driven by 2.39 was invisible.
+
+- ☑ **A `plugin` object** — `{version, set_by: new|adopt|upgrade, at}` — in
+  `.forge/manifest.json`, and the same in `.forge/adoption.json` (which previously held
+  `plugin` as a bare string; readers accept both, writers emit the object).
+- ☑ **Written by the command, never a copier answer**, documented in CONTRACT.md with the
+  reason: a persisted answer replays the scaffold-time version forever, because `copier
+  update` re-renders from recorded answers — the field would be wrong at exactly the moment
+  it matters. The general rule it follows: *a value that depends on when the command ran is
+  written after generation; only what the user answered is a question.*
+- ☑ **`docs/PLUGIN-MIGRATIONS.md`** — project-side changes per plugin minor, with the test
+  for what belongs there (*would a project set up by the older plugin be wrong, incomplete
+  or noisy under the newer one?*). `/wellforge:upgrade` applies or surfaces every entry
+  between recorded and running, as a first-class step beside the template re-render, and
+  stamps the manifest at the end — including on a plugin-only upgrade, which is exactly the
+  case that would otherwise leave a stale value.
+- ☑ **`/wellforge:doctor` reports four states**, and the one that matters most is the
+  common one: **absent** is a WARN with the fix, not an error, because it is the normal
+  state of every project older than this field. Newer-project-than-plugin is the FAIL.
+- ☑ **Trace schema `wellforge-run/v2`** adds `plugin_version`; `run-report.py` accepts v1
+  and v2, and both test suites assert that a v1 trace still loads and still yields its
+  verdict. A schema bump that orphans the history it exists to preserve is a bad trade.
+- ☑ `fleet-status.sh` gains a plugin column, reported alongside template staleness rather
+  than folded into it — a project can be current on one and behind on the other.
+
+Honest gap: the claim that a command-written `plugin` key survives `copier update` is
+reasoning, not a measurement — three attempts to exercise a real update were refused by
+copier before the merge (local template source). It is not load-bearing, since upgrade
+rewrites the object, but it is unproven.
+
 ## Phase 22 — What the plugin costs before you type (added 2026-09-20)
 
 Nobody had measured the toll. Claude Code injects every skill, command and agent
