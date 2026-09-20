@@ -61,6 +61,8 @@ assert_has()       { printf '%s' "$1" | grep -qF -- "$2" || _bad "output is miss
 assert_has_re()    { printf '%s' "$1" | grep -qE -- "$2" || _bad "output does not match /$2/"; }
 assert_lacks()     { printf '%s' "$1" | grep -qF -- "$2" && _bad "output should NOT contain: $2"; return 0; }
 assert_file_has()  { grep -qF -- "$2" "$1" 2>/dev/null || _bad "$1 is missing: $2"; }
+assert_called()    { grep -qE "^$1( |\$)" "$SHIM_LOG" 2>/dev/null || _bad "expected a call to '$1'"; }
+assert_not_called(){ grep -qE "^$1( |\$)" "$SHIM_LOG" 2>/dev/null && _bad "'$1' should not have been called"; return 0; }
 assert_exists()    { [ -e "$1" ] || _bad "expected to exist: $1"; }
 assert_absent()    { [ -e "$1" ] && _bad "expected NOT to exist: $1"; return 0; }
 
@@ -174,11 +176,19 @@ esac
 exit 0
 SH
         ;;
-      open) cat > "$bin/open" <<'SH'
+      open|xdg-open) cat > "$bin/$t" <<SH
 #!/usr/bin/env bash
-# Never actually open a browser during a test run.
-echo "open $*" >> "$SHIM_LOG"
+# Never actually open a browser during a test run. Both exist in the sandbox on purpose:
+# on Linux \`open\` is util-linux's open(1), NOT a browser launcher, so the CLI must reach
+# for xdg-open there and leave \`open\` alone.
+echo "$t \$*" >> "\$SHIM_LOG"
 exit 0
+SH
+        ;;
+      uname) cat > "$bin/uname" <<'SH'
+#!/usr/bin/env bash
+# The whole platform split hangs off this one call.
+printf '%s\n' "${FAKE_UNAME:-Darwin}"
 SH
         ;;
       curl) cat > "$bin/curl" <<'SH'
@@ -205,6 +215,14 @@ SH
 }
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
+# Fixture git must not inherit the developer's global config. Signing is the one that bit:
+# a locked 1Password agent turned every fixture commit into "failed to fill whole buffer"
+# and the suite failed for reasons that had nothing to do with the CLI. A global
+# core.hooksPath would be just as bad — this repo's own commit-msg hook would reject
+# "fixture" as a non-conventional commit message.
+gitf() { git -c commit.gpgsign=false -c tag.gpgsign=false -c init.templateDir= \
+             -c core.hooksPath="$SUITE/nohooks" -c user.email=t@t -c user.name=t "$@"; }
+
 # A real checkout with a real bare upstream: "N commits behind" is measured, not mocked.
 make_checkout() { # <dir> <plugin-version> [tag]
   local dir="$1" ver="$2" tag="${3:-v9.9.9}" origin="$1.origin"
@@ -221,14 +239,15 @@ make_checkout() { # <dir> <plugin-version> [tag]
   echo '{"hooks":{"Stop":[]}}'                         > "$dir/wellforge-plugin/hooks/hooks.json"
   cp "$CLI" "$dir/scripts/wellforge"                   # so `version` resolves this checkout
 
-  git init -q "$dir"
-  git -C "$dir" config user.email t@t; git -C "$dir" config user.name t
-  git -C "$dir" add -A >/dev/null; git -C "$dir" commit -qm "fixture"
-  git -C "$dir" tag "$tag"
-  git init -q --bare "$origin"
-  git -C "$dir" remote add origin "$origin"
-  git -C "$dir" push -q -u origin HEAD:refs/heads/main 2>/dev/null
-  git -C "$dir" branch --set-upstream-to=origin/main >/dev/null 2>&1
+  mkdir -p "$SUITE/nohooks"
+  gitf init -q "$dir"
+  gitf -C "$dir" add -A >/dev/null
+  gitf -C "$dir" commit -qm "fixture" >/dev/null || { echo "fixture commit failed" >&2; return 1; }
+  gitf -C "$dir" tag "$tag"
+  gitf init -q --bare "$origin"
+  gitf -C "$dir" remote add origin "$origin"
+  gitf -C "$dir" push -q -u origin HEAD:refs/heads/main 2>/dev/null
+  gitf -C "$dir" branch --set-upstream-to=origin/main >/dev/null 2>&1
 }
 
 set_checkout_cli_version() { # <checkout-dir> <version>  — rewrite the fixture CLI's constant
@@ -239,14 +258,13 @@ set_checkout_cli_version() { # <checkout-dir> <version>  — rewrite the fixture
 
 advance_upstream() { # <checkout-dir> <n>  — put N commits on the bare origin only
   local dir="$1" n="$2" work; work="$(mktemp -d)"
-  git clone -q "$dir.origin" "$work"
-  git -C "$work" config user.email t@t; git -C "$work" config user.name t
+  gitf clone -q "$dir.origin" "$work"
   local i
   for i in $(seq 1 "$n"); do
     echo "$i" >> "$work/upstream.txt"
-    git -C "$work" add -A >/dev/null; git -C "$work" commit -qm "upstream $i"
+    gitf -C "$work" add -A >/dev/null; gitf -C "$work" commit -qm "upstream $i" >/dev/null
   done
-  git -C "$work" push -q origin HEAD:main
+  gitf -C "$work" push -q origin HEAD:main
   rm -rf "$work"
 }
 
@@ -272,7 +290,8 @@ FAKE_VARS=(FAKE_BREW_VERSION FAKE_BREW_OUTDATED FAKE_BREW_OUTDATED_PKG_RC
            FAKE_CLAUDE_UPDATE_RC FAKE_CLAUDE_UPDATE_ERR FAKE_CLAUDE_UPDATE_TO
            FAKE_GH_AUTH_RC FAKE_DOCKER_INFO_RC FAKE_COPIER_RC
            FAKE_MISE_USE_RC FAKE_MISE_USE_ERR FAKE_NPM_INSTALL_RC FAKE_NPM_INSTALL_ERR
-           FAKE_TG_GETME FAKE_TG_GETUPDATES FAKE_TG_SEND)
+           FAKE_TG_GETME FAKE_TG_GETUPDATES FAKE_TG_SEND
+           FAKE_UNAME)
 
 run_cli() { # <wellforge-home> <args…> ; stdin from $RUN_STDIN (default /dev/null)
   local wf_home="$1"; shift
@@ -286,6 +305,9 @@ run_cli() { # <wellforge-home> <args…> ; stdin from $RUN_STDIN (default /dev/n
     WELLFORGE_HOME="$wf_home"
     WELLFORGE_REPO="${RUN_REPO:-}"
     TERM=dumb
+    # The login shell decides which rc file gets written; env -i would otherwise leave it
+    # unset and every shell-wiring case would test the same "unknown shell" branch.
+    SHELL="${RUN_SHELL:-/bin/zsh}"
   )
   for v in "${FAKE_VARS[@]}"; do
     [ -n "${!v+set}" ] && envs+=("$v=${!v}")
@@ -316,10 +338,10 @@ run_cli() { # <wellforge-home> <args…> ; stdin from $RUN_STDIN (default /dev/n
 reset_fakes() {
   local v
   for v in "${FAKE_VARS[@]}"; do unset "$v"; done
-  unset RUN_STDIN RUN_REPO RUN_CLI RUN_TIMEOUT
+  unset RUN_STDIN RUN_REPO RUN_CLI RUN_TIMEOUT RUN_SHELL
 }
 
-ALL_TOOLS=(brew claude gh docker uvx mise uv npx node npm open curl)
+ALL_TOOLS=(brew claude gh docker uvx mise uv npx node npm open xdg-open curl uname)
 
 # ══ cases ═════════════════════════════════════════════════════════════════════
 printf '\nwellforge CLI matrix\n\n'
@@ -639,6 +661,131 @@ new_sandbox "${ALL_TOOLS[@]}"
 RUN_TIMEOUT=8                      # it is expected to hang; do not wait the full budget
 run_cli "$SANDBOX/nowhere" telegram
 [ "$RC" = "timeout" ] && _bad "spun forever instead of exiting"
+finish
+
+# ── 15. Linux is a supported platform, so behave like it ────────────────────────────
+# README has always said "macOS or Linux with Homebrew". The script said "on a Mac" and
+# its Linux failures were the quiet kind: a source line written to a file the shell never
+# reads, followed by a tick.
+
+tg_stdin() { printf 'shim-token\n\n' > "$SANDBOX/stdin"; RUN_STDIN="$SANDBOX/stdin"; }
+tg_canned() {
+  FAKE_TG_GETME='{"ok":true,"result":{"username":"shim_bot"}}'
+  FAKE_TG_GETUPDATES='{"ok":true,"result":[{"message":{"chat":{"id":4242,"type":"private"}}}]}'
+  FAKE_TG_SEND='{"ok":true}'
+}
+
+reset_fakes; begin "linux + bash: wires ~/.bashrc, not ~/.zshrc"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Linux; RUN_SHELL=/bin/bash; tg_stdin; tg_canned
+run_cli "$SANDBOX/nowhere" telegram
+assert_has "$OUT" ".bashrc"
+assert_exists "$HOME_DIR/.bashrc"
+assert_absent "$HOME_DIR/.zshrc"
+assert_file_has "$HOME_DIR/.bashrc" "telegram.env"
+finish
+
+reset_fakes; begin "macos + bash: wires ~/.bash_profile (login shells read that one)"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Darwin; RUN_SHELL=/bin/bash; tg_stdin; tg_canned
+run_cli "$SANDBOX/nowhere" telegram
+assert_has "$OUT" ".bash_profile"
+assert_exists "$HOME_DIR/.bash_profile"
+assert_absent "$HOME_DIR/.bashrc"
+finish
+
+reset_fakes; begin "zsh: wires ~/.zshrc on either platform"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Linux; RUN_SHELL=/usr/bin/zsh; tg_stdin; tg_canned
+run_cli "$SANDBOX/nowhere" telegram
+assert_has "$OUT" ".zshrc"
+assert_exists "$HOME_DIR/.zshrc"
+finish
+
+# fish cannot source a file of POSIX `export` lines. Writing one anyway and reporting
+# success is the exact failure this platform work exists to remove.
+reset_fakes; begin "fish: refuses to auto-wire, prints the lines, writes no rc file"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Linux; RUN_SHELL=/usr/bin/fish; tg_stdin; tg_canned
+run_cli "$SANDBOX/nowhere" telegram
+assert_has "$OUT" "auto-wiring skipped"
+assert_has "$OUT" "set -gx TELEGRAM_CHAT_ID 4242"
+assert_lacks "$OUT" "source line appended"
+assert_absent "$HOME_DIR/.zshrc"
+assert_absent "$HOME_DIR/.bashrc"
+assert_absent "$HOME_DIR/.config/fish/config.fish"
+finish
+
+# On Linux, `open` is util-linux's open(1) — it opens a virtual terminal, not a browser.
+reset_fakes; begin "linux: opens URLs with xdg-open and never calls open(1)"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Linux; RUN_SHELL=/bin/bash; tg_stdin; tg_canned
+run_cli "$SANDBOX/nowhere" telegram
+assert_called "xdg-open"
+assert_not_called "open"          # util-linux open(1) is not a browser launcher
+finish
+
+reset_fakes; begin "macos: opens URLs with open and never calls xdg-open"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Darwin; RUN_SHELL=/bin/zsh; tg_stdin; tg_canned
+run_cli "$SANDBOX/nowhere" telegram
+assert_called "open"
+assert_not_called "xdg-open"
+finish
+
+reset_fakes; begin "linux: docker advice is the docker group, not Docker Desktop"
+new_sandbox brew claude gh uvx mise uv npx node npm curl uname   # no docker shim
+FAKE_UNAME=Linux; RUN_SHELL=/bin/bash
+run_cli "$SANDBOX/nowhere" doctor
+assert_has "$OUT" "add your user to the 'docker' group"
+assert_lacks "$OUT" "Docker Desktop"
+assert_lacks "$OUT" "--cask"
+finish
+
+reset_fakes; begin "macos: docker advice is still Docker Desktop"
+new_sandbox brew claude gh uvx mise uv npx node npm curl uname
+FAKE_UNAME=Darwin; RUN_SHELL=/bin/zsh
+run_cli "$SANDBOX/nowhere" doctor
+assert_has "$OUT" "docker-desktop"
+finish
+
+# A daemon that is installed but unreachable is the group-membership case on Linux at
+# least as often as it is a stopped Desktop.
+reset_fakes; begin "linux: docker present but daemon unreachable names the group fix"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Linux; RUN_SHELL=/bin/bash; FAKE_DOCKER_INFO_RC=1
+run_cli "$SANDBOX/nowhere" doctor
+assert_has "$OUT" "usermod -aG docker"
+assert_lacks "$OUT" "Docker Desktop"
+finish
+
+# mise installs into a shim dir that is on PATH only after activation. Claude Code
+# inherits the login shell's environment, so an unactivated mise means the MCP servers
+# never start — and the old check said "installed" and moved on.
+reset_fakes; begin "mise not activated: warns with the exact activate line for the shell"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Linux; RUN_SHELL=/bin/bash
+run_cli "$SANDBOX/nowhere" doctor
+assert_has "$OUT" "mise activated"
+assert_has "$OUT" "not activated for bash"
+assert_has "$OUT" "mise activate bash"
+assert_has "$OUT" "MCP servers"
+finish
+
+reset_fakes; begin "mise activated via the rc file: reported ok, no warning"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Linux; RUN_SHELL=/bin/bash
+printf 'eval "$(mise activate bash)"\n' > "$HOME_DIR/.bashrc"
+run_cli "$SANDBOX/nowhere" doctor
+assert_has "$OUT" ".bashrc activates it"
+assert_lacks "$OUT" "not activated for"
+finish
+
+reset_fakes; begin "fish: the activate line uses fish syntax, not eval"
+new_sandbox "${ALL_TOOLS[@]}"
+FAKE_UNAME=Linux; RUN_SHELL=/usr/bin/fish
+run_cli "$SANDBOX/nowhere" doctor
+assert_has "$OUT" "mise activate fish | source"
 finish
 
 # ── summary ───────────────────────────────────────────────────────────────────

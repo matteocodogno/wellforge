@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# wellforge — install, check, and update the WellForge environment on a Mac.
+# wellforge — install, check, and update the WellForge environment on macOS or Linux
+# (both with Homebrew, which is what README.md requires).
 #
 #   wellforge setup     full setup: doctor --fix, repo clone/update, plugin install
 #   wellforge doctor    check the environment (add --fix to install/upgrade tools)
@@ -30,7 +31,7 @@ set -uo pipefail
 # Bumped only by scripts/release-cli.sh, which also updates Formula/wellforge.rb and cuts
 # the tag. The Formula's test block asserts this string, and CI asserts it equals the
 # newest `cli-v*` tag — an unbumped release and an untagged bump are both caught.
-WELLFORGE_CLI_VERSION="1.1.0"
+WELLFORGE_CLI_VERSION="1.2.0"
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
 CONFIG_DIR="$HOME/.config/wellforge"
@@ -51,6 +52,42 @@ warn() { printf "  %s!%s %-18s %s\n" "$YLW" "$RST" "$1" "${2:-}"; }
 skip() { printf "  %s–%s %-18s %s%s%s\n" "$DIM" "$RST" "$1" "$DIM" "${2:-}" "$RST"; }
 say()  { printf "%s\n" "$*"; }
 die()  { printf "%serror:%s %s\n" "$RED" "$RST" "$*" >&2; exit 1; }
+
+# ─── platform ────────────────────────────────────────────────────────────────
+# README has always said "macOS or Linux with Homebrew"; this script said "on a Mac" and
+# behaved like it. The Linux faults were quiet ones: a source line appended to a ~/.zshrc
+# that bash never reads, followed by "✓ shell wired"; "start Docker Desktop" on a machine
+# with dockerd; and `open <url>`, which on Linux is util-linux's open — a completely
+# different command that does not open a browser.
+WF_OS="$(uname -s 2>/dev/null || echo unknown)"
+is_macos() { [ "$WF_OS" = "Darwin" ]; }
+
+login_shell() { basename "${SHELL:-}" 2>/dev/null; }
+
+# The rc file the LOGIN shell will actually read. Getting this wrong is worse than not
+# writing one, because the write succeeds and the report says it worked.
+#   zsh  → ~/.zshrc
+#   bash → ~/.bash_profile on macOS (Terminal starts login shells), ~/.bashrc on Linux
+#          (terminals start non-login interactive shells)
+#   else → "" — we do not guess; the caller prints what to add by hand
+shell_rc() {
+  case "$(login_shell)" in
+    zsh)  printf '%s/.zshrc' "$HOME" ;;
+    bash) if is_macos; then printf '%s/.bash_profile' "$HOME"; else printf '%s/.bashrc' "$HOME"; fi ;;
+    *)    printf '' ;;
+  esac
+}
+
+# Best-effort browser open. macOS `open` and Linux `xdg-open` are not interchangeable, and
+# the guard used to be `command -v open`, which on Linux finds util-linux's open(1).
+open_url() {
+  if is_macos; then
+    command -v open >/dev/null && open "$1" >/dev/null 2>&1
+  else
+    command -v xdg-open >/dev/null && xdg-open "$1" >/dev/null 2>&1
+  fi
+  return 0
+}
 
 # ─── home resolution ─────────────────────────────────────────────────────────
 script_repo() {
@@ -153,7 +190,10 @@ check_node() { # [fix] — npx is needed by the plugin's MCP servers
     fi
     say "  ${DIM}installing node via mise…${RST}"
     if err=$(mise use -g node@22 2>&1 >/dev/null); then
-      ok "node/npx" "installed via mise"; return
+      # Deliberately not "installed": it is on disk, not on PATH. npx appears only once
+      # mise is activated in the login shell, which is the line above this one.
+      ok "node/npx" "installed; effective in a new shell once mise is activated (see the 'mise activated' line)"
+      return
     fi
     bad "node/npx" "mise use -g node@22 failed: $(err_tail "$err")"
     FAILURES=$((FAILURES+1)); return
@@ -163,11 +203,51 @@ check_node() { # [fix] — npx is needed by the plugin's MCP servers
 }
 
 check_docker() {
-  if command -v docker >/dev/null; then
-    if docker info >/dev/null 2>&1; then ok "docker" "daemon running"; else warn "docker" "installed but not running — start Docker Desktop"; fi
+  local not_running install_hint
+  if is_macos; then
+    not_running="installed but not running — start Docker Desktop"
+    install_hint="not found — needed for local postgres/Testcontainers: brew install --cask docker-desktop"
   else
-    warn "docker" "not found — needed for local postgres/Testcontainers: brew install --cask docker-desktop"
+    # `brew install --cask` does not exist on Linux, and there is no Desktop to start.
+    not_running="installed but the daemon is not reachable — start it (sudo systemctl start docker) and make sure your user is in the 'docker' group (sudo usermod -aG docker \"\$USER\", then log out and back in)"
+    install_hint="not found — needed for local postgres/Testcontainers: install docker from your distro or docker.com, then add your user to the 'docker' group"
   fi
+  if command -v docker >/dev/null; then
+    # `docker info` is the real check on both: it talks to the daemon, which is what
+    # Testcontainers needs. A docker binary with no reachable daemon is the Linux
+    # group-membership case as often as it is a stopped Desktop.
+    if docker info >/dev/null 2>&1; then ok "docker" "daemon running"; else warn "docker" "$not_running"; fi
+  else
+    warn "docker" "$install_hint"
+  fi
+}
+
+# Installing node with `mise use -g` puts it in mise's shim directory, and NOTHING is on
+# PATH until mise is activated in the login shell. The old check reported "installed" and
+# moved on — but Claude Code inherits the login shell's environment, so the plugin's MCP
+# servers (which run via npx) would not start, and nothing said why.
+check_mise_activated() {
+  command -v mise >/dev/null || { skip "mise activated" "skipped — mise not installed"; return 0; }
+
+  local shim="${MISE_DATA_DIR:-$HOME/.local/share/mise}/shims"
+  case ":$PATH:" in
+    *":$shim:"*) ok "mise activated" "shims on PATH"; return 0 ;;
+  esac
+
+  local rc; rc="$(shell_rc)"
+  if [ -n "$rc" ] && grep -qs 'mise activate' "$rc"; then
+    ok "mise activated" "$(basename "$rc") activates it — effective in new shells"
+    return 0
+  fi
+
+  local sh_name line
+  sh_name="$(login_shell)"
+  case "$sh_name" in
+    fish) line="mise activate fish | source" ;;
+    "")   sh_name="your shell"; line='eval "$(mise activate zsh)"   # or bash/fish' ;;
+    *)    line="eval \"\$(mise activate $sh_name)\"" ;;
+  esac
+  warn "mise activated" "not activated for $sh_name — tools mise installs stay off PATH, so the plugin's MCP servers (npx) will not start in Claude Code. Add to ${rc:-your shell rc}:  $line"
 }
 
 check_gh_auth() {
@@ -407,7 +487,7 @@ cmd_telegram() {
   say "  2. Send:  ${GRN}/newbot${RST}"
   say "  3. Pick any display name, then a username ending in ${DIM}bot${RST} (e.g. matteo_claude_bot)"
   say "  4. BotFather replies with an ${GRN}HTTP API token${RST} — copy it"
-  command -v open >/dev/null && open "https://t.me/BotFather" 2>/dev/null
+  open_url "https://t.me/BotFather"
   say ""
 
   local token="" bot_user=""
@@ -426,7 +506,7 @@ cmd_telegram() {
   say ""
   say "${YLW}Step 2/3 — link your account${RST}"
   say "  Open ${GRN}https://t.me/$bot_user${RST} (opening now…), press ${GRN}START${RST}, send any message."
-  command -v open >/dev/null && open "https://t.me/$bot_user" 2>/dev/null
+  open_url "https://t.me/$bot_user"
   printf "Press Enter once you've sent the message… "; read -r _
 
   local chat_id="" tries=0
@@ -451,20 +531,34 @@ cmd_telegram() {
   chmod 600 "$TELEGRAM_ENV_FILE"
   ok "saved" "$TELEGRAM_ENV_FILE (chmod 600)"
 
-  local rc="$HOME/.zshrc" src_line="[ -f \"$TELEGRAM_ENV_FILE\" ] && . \"$TELEGRAM_ENV_FILE\""
-  if ! grep -qsF "$TELEGRAM_ENV_FILE" "$rc"; then
-    printf "\n# WellForge Telegram notifications\n%s\n" "$src_line" >> "$rc"
-    ok "shell wired" "source line appended to ~/.zshrc"
+  # The rc file the login shell actually reads — not a hard-coded ~/.zshrc, which on Linux
+  # or a bash macOS meant appending to a file nothing sources and then reporting success.
+  local rc src_line
+  rc="$(shell_rc)"
+  src_line="[ -f \"$TELEGRAM_ENV_FILE\" ] && . \"$TELEGRAM_ENV_FILE\""
+  if [ -z "$rc" ]; then
+    # fish (and anything else): its syntax is not POSIX, so it cannot source that file at
+    # all. Say so and hand over the exact lines rather than writing something that looks
+    # wired and is not. The token stays in the 600 file instead of on screen.
+    warn "shell wired" "$(login_shell) cannot source $TELEGRAM_ENV_FILE (POSIX export syntax) — auto-wiring skipped"
+    say "    add to ~/.config/fish/config.fish (fish) or your shell's rc:"
+    say "      set -gx TELEGRAM_CHAT_ID $chat_id"
+    say "      set -gx TELEGRAM_BOT_TOKEN <the token — it is in $TELEGRAM_ENV_FILE>"
+  elif ! grep -qsF "$TELEGRAM_ENV_FILE" "$rc"; then
+    if printf "\n# WellForge Telegram notifications\n%s\n" "$src_line" >> "$rc"; then
+      ok "shell wired" "source line appended to $rc"
+    else
+      warn "shell wired" "could not write $rc — add this line yourself:  $src_line"
+    fi
   else
-    # The tilde here is prose for the reader, not a path this code expands.
-    # shellcheck disable=SC2088
-    ok "shell wired" "~/.zshrc already sources it"
+    ok "shell wired" "$rc already sources it"
   fi
 
   export TELEGRAM_BOT_TOKEN="$token" TELEGRAM_CHAT_ID="$chat_id"
   tg_test || die "test message failed — check your network and re-run: wellforge telegram"
   say ""
-  say "${GRN}done.${RST} ${DIM}Open a new terminal (or 'source ~/.zshrc') so Claude Code sessions inherit the vars.${RST}"
+  local rc_hint; rc_hint="$(shell_rc)"
+  say "${GRN}done.${RST} ${DIM}Open a new terminal${rc_hint:+ (or 'source $rc_hint')} so Claude Code sessions inherit the vars.${RST}"
 }
 
 tg_test() {
@@ -491,6 +585,7 @@ cmd_doctor() {
   # does not care which. Gating the loop meant a machine without brew got no line at all
   # for mise/uv/gh/jq — absence of evidence printed as absence of the tool.
   for t in "${BREW_TOOLS[@]}"; do check_tool "$t" "$fix"; done
+  check_mise_activated
   check_node "$fix"
   check_claude "$fix"
   check_docker
