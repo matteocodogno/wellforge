@@ -43,6 +43,7 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   "command": "implement | orchestrate | eval | spike | promote | triage",
   "feature": "001-user-auth",
   "rigor": "production | mvp | spike",
+  "rigor_recorded": null,
   "started": "2026-06-24T10:44:00Z",
   "finished": "2026-06-24T10:52:13Z",
   "agents": [
@@ -76,6 +77,12 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   `{ts, event, model, agent_type, agent_id, session_id, input_tokens, output_tokens}`.
   Every field except `ts`/`event` is **optional** — the hook records what the harness
   exposes and omits the rest.
+- **`rigor_recorded`** is the feature's own `rigor:` when a `--mode` flag ran this pass at a
+  DIFFERENT tier; `null` when they agree (the normal case). `rigor` is always what actually
+  ran. Keeping both is what makes a downgrade legible later: a run at `mvp` on a feature
+  recorded `production` produced less verification than the spec's standard, and an
+  evaluator reading trajectory evidence needs to see that rather than infer it from missing
+  agents. See [[rigor-tiers]] — the flag is allowed, unannounced use of it is not.
 - **`agent_type` is what makes cost attributable.** Events are matched to runs by time
   window first, then by `agent_type` when several windows overlap. Time alone is not an
   identity: a parallel batch has overlapping windows by construction, so a per-window sum

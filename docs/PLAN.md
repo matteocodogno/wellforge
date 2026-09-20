@@ -865,6 +865,18 @@ list was re-checked against the spec; it did not have to change) — and by rewr
 to name the fix, the branch-wide scope, and why an old commit is implicated. Documented in
 the drift rule and the hook table; two regression cases pin both halves.
 
+**Follow-up — the one hole in defer-don't-lower** (plugin `2.35.0`, 2026-09-20): tier
+precedence put `--mode` above a feature's recorded `rigor:` unconditionally and silently, so
+a `production` feature could be run at `mvp` for a pass — skipping architect, designer and
+the eval — with nothing said. The flag still wins (there are honest uses: two quick tasks
+before the full pipeline), so the rule is enforced by **announcement**, not refusal: a
+downgrade now prints what it skips, that the recorded tier is unchanged, and that
+`/wellforge:done` still gates at the higher tier — which was already true and is the reason
+allowing it is defensible. A raise needs no warning. It is also recorded (`rigor_recorded`
+in the run trace) and **surfaced** by `run-report.py`, so a cheap run stays legible after
+the transcript scrolls away; recording without surfacing would have been archival, not
+useful. Defined once in `rigor-tiers`, so implement and orchestrate inherit it.
+
 ## Phase 19 — Remove the second scaffolding path (added 2026-09-20)
 
 `springboot-scaffold` hand-generated a whole Spring project from a 741-line `scaffold.sh`,

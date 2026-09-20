@@ -15,7 +15,12 @@ Full WellForge rigor (7 agents, 2 approval gates, frontier models, 80% coverage,
 eval) is right for production and wasteful for a feasibility spike that may be thrown away.
 A **rigor tier** matches ceremony to stakes.
 
-**Principle: don't lower the bar — defer it, explicitly and reversibly.** Lower rigor is a
+**Principle: don't lower the bar — defer it, explicitly and reversibly.** The one place
+this is tested in practice is a `--mode` flag below a feature's recorded tier: the flag wins
+for that run, so the rule is enforced by *announcement* rather than refusal — see
+"Resolving the tier and terse at dispatch" below. A downgrade that is stated, scoped to one
+run, and unable to close the feature is deferral; the same downgrade unannounced is the
+silent lowering this principle exists to prevent. Lower rigor is a
 *declared, recorded, promotable* lifecycle stage, never a silent corner-cut. A lower tier is
 a tracked debt (the `rigor:` frontmatter), paid by `/wellforge:promote` when the work becomes
 real. The failure mode this design exists to prevent: a spike silently becoming production.
@@ -82,7 +87,30 @@ deviation (below).
 2. **Strip the matched `--mode` token** from the arguments before parsing the rest.
 3. **State the resolved tier and where it came from, before doing anything.** A tier nobody
    announced is a tier nobody can question.
-4. **Terse is an orthogonal axis**, not a property of a tier: read a `--terse` / `--no-terse`
+4. **A `--mode` BELOW the feature's recorded `rigor:` is a downgrade — say so, every time.**
+   The flag wins (there are legitimate reasons: implementing two tasks quickly before the
+   full pipeline, reproducing something cheaply), but it sits against this skill's own
+   *defer-don't-lower* principle, so it may never happen quietly. Print, before any work:
+
+   ```
+   ⚠ Running at mvp; this feature is recorded as production.
+     Skipped this run: architect + designer, the LM-judge eval, blocking coverage.
+     NOT changed: the feature's rigor: stays production, and /wellforge:done still gates
+     at production — this run cannot close it.
+     Raise the tier for real with /wellforge:promote, not with a flag.
+   ```
+
+   Name the specific stages the downgrade skips, not just the tier names — "mvp" means
+   nothing to someone who has to decide whether that is acceptable right now. Record it in
+   the run trace (`rigor_recorded`, [[observability]]) so the trajectory shows the run was
+   cheaper than the feature's standard; an evaluator reading that trace should see it too.
+
+   A `--mode` **above** the recorded tier needs no warning — more verification is never the
+   surprise. State it like any other resolution and move on.
+
+   The **security floor blocks in every tier regardless** (below), so a downgrade reduces
+   process, never safety.
+5. **Terse is an orthogonal axis**, not a property of a tier: read a `--terse` / `--no-terse`
    token (terse skill), strip it too, and **state the resolved boolean**. Default **OFF**
    everywhere except `/wellforge:spike`, which defaults it **ON**.
 

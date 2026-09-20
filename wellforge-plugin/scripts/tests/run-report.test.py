@@ -87,6 +87,14 @@ check("unknown model uses default, flagged inexact", [rate, exact], [PRICING["de
 # 8. No pricing table → no cost, rather than a guessed one.
 check("missing table yields no cost", rr.totals([ev("10:05", 100, 100)], None)[2], None)
 
+# 8b. A --mode downgrade must be legible: rigor_recorded different from rigor is surfaced,
+#     and identical/absent is silent. Recording it without surfacing it helps nobody.
+src_rr = open(os.path.join(HERE, "..", "run-report.py")).read()
+check("report entry carries rigor and rigor_recorded",
+      '"rigor": r.get("rigor"), "rigor_recorded": r.get("rigor_recorded")' in src_rr, True)
+check("downgrade is only flagged when the tiers differ",
+      'rec and rec != x.get("rigor")' in src_rr, True)
+
 # 9. There must be no second pricing table in the script.
 src = open(os.path.join(HERE, "..", "run-report.py")).read()
 check("no embedded fallback pricing table", "_FALLBACK_PRICING" in src, False)

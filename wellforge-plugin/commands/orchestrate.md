@@ -119,7 +119,8 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
     condition instead of closing. Then summarize (stories delivered, QE + eval verdict
     tables, commits) and suggest next steps.
 12. **Record the run** → write the run trace per the **observability** skill:
-    `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`, include `rigor: production`)
+    `.forge/runs/<run_id>.json` (schema `wellforge-run/v1`, include `rigor: production`, and
+    `rigor_recorded` when a `--mode` flag ran this pass at a tier other than the feature's)
     capturing the full pipeline — every agent + outcome, drift events, QE + eval verdicts,
     the isolation mode + any collision events + any environment faults (observability skill
     `worktree` / `collision_events` / `env_faults`), `result`. Write it even when the pipeline escalates or stops early

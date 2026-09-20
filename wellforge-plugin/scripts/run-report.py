@@ -246,6 +246,7 @@ def main():
         drift_open = [d for d in r.get("drift_events", []) if not d.get("resolved")]
         entry = {
             "run_id": r.get("run_id"), "command": r.get("command"), "feature": r.get("feature"),
+            "rigor": r.get("rigor"), "rigor_recorded": r.get("rigor_recorded"),
             "result": r.get("result"), "agents": [a.get("agent") for a in r.get("agents", [])],
             "verdicts": r.get("verdicts", {}), "drift_open": len(drift_open),
             "input_tokens": ti, "output_tokens": to, "est_cost_usd": cost, "events": n,
@@ -279,9 +280,16 @@ def main():
         toks = f"{x['input_tokens']}/{x['output_tokens']} tok (partial)" if x["events"] else "no token data"
         v = " ".join(f"{k}={vv}" for k, vv in x["verdicts"].items()) or "-"
         drift = f" ⚠{x['drift_open']} open drift" if x["drift_open"] else ""
+        # A run that executed BELOW the feature's recorded tier produced less verification
+        # than the spec's standard. Surfacing it is the point of recording it.
+        rec = x.get("rigor_recorded")
+        downgrade = (f"  ⚠ ran at {x['rigor']} — feature is recorded {rec}"
+                     if rec and rec != x.get("rigor") else "")
         print(f"{x['run_id']}")
         print(f"    {x['command']} · {x['result']} · agents: {', '.join(x['agents'])}")
         print(f"    verdicts: {v} · {toks}{drift}")
+        if downgrade:
+            print(downgrade)
         if "output_tokens_saved" in x:
             print(
                 f"    terse: saved ~{x['output_tokens_saved']} output tok "
