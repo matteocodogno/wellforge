@@ -26,6 +26,29 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.43 — the preflight trusts the template for database isolation
+
+**Action: none in the project — but the plugin now behaves differently, and it is worth
+knowing which way.**
+
+The `worktree-isolation` skill's shared-state class 1 (databases) used to be "test: isolate,
+dev: forbid", which in practice meant a backend batch of ≥2 fell back to **sequential**
+dispatch. From template `v0.10.0` the presets isolate the database themselves, so the
+preflight now reads `.forge/manifest.json` and decides:
+
+| Your template version | What changes |
+|---|---|
+| `v0.10.0` or later | class 1 counts as **isolated**; parallel dispatch is available for backend batches that were previously serialized |
+| earlier, adopted, or no manifest | **nothing changes** — the old rule still applies and batches stay sequential. Take [`TEMPLATE-MIGRATIONS.md`](TEMPLATE-MIGRATIONS.md) `v0.10.0` to get the isolation |
+
+The skill also stopped recommending `basename` as the isolation key (it collides across
+repos, is not a legal database identifier, and yields no port offset) in favour of
+`sha256(checkout path)`, which is what the presets ship.
+
+`/wellforge:upgrade` additionally reads the new
+[`TEMPLATE-MIGRATIONS.md`](TEMPLATE-MIGRATIONS.md) alongside this file, so template-side
+notes reach a project the same way plugin-side ones already did.
+
 ## 2.42 — the plugin is installable, and projects declare it
 
 **Action: automatic, one field + one settings block.**

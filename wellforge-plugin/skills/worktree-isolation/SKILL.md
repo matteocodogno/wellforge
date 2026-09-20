@@ -46,7 +46,7 @@ Walk this list against the project in front of you. It is the checklist the pref
 
 | # | Shared-state class | How it's addressed (why worktrees collide) | Default disposition |
 |---|---|---|---|
-| 1 | **Databases** — test, dev, any named instance | host + port + database name, identical from every checkout | test: **isolate** · dev: **forbid** |
+| 1 | **Databases** — test, dev, any named instance | host + port + database name, identical from every checkout | **already isolated** by presets from template `v0.10.0` (check the manifest — see below); otherwise test: **isolate** · dev: **forbid** |
 | 2 | **Migration history** — the applied-migrations table | travels with the database it lives in | with its database |
 | 3 | **Ports** — dev server, API, debugger, DB forward | a fixed number in config or compose | **isolate** (offset) or **forbid** concurrent servers |
 | 4 | **Containers, compose projects, volumes, networks** | compose project name defaults to the directory (differs), but an explicit `container_name`, a fixed host port, or a named volume does not | **isolate** (explicit per-key project name) |
@@ -71,31 +71,65 @@ gets classified the same way, by the same rule — the rule is what generalises.
 
 ## The isolation key
 
-One deterministic value, unique per worktree, stable for that worktree's whole life:
+One deterministic value, unique per worktree, stable for that worktree's whole life.
+
+**In a project scaffolded from template `v0.10.0` or later, do not compute this yourself** — the
+preset ships it, and a second definition is a second answer:
+
+```bash
+sh .wellforge/worktree-id.sh id       # main | wt<hash8>
+sh .wellforge/worktree-id.sh port     # 5432 | 5432 + (hash mod 1000)
+sh .wellforge/worktree-id.sh linked   # no | yes
+mise run wt:info                      # all of it, plus the resolved database and compose project
+```
+
+The key is `sha256(git rev-parse --show-toplevel) | cut -c1-8`. For anything older, or a project
+that is not WellForge-scaffolded, compute the same thing the same way:
 
 ```bash
 # Am I in a linked worktree?  (git-dir and git-common-dir diverge only there)
 [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ] && echo linked
 
-# The key — the worktree's own directory name
-WF_WORKTREE_ID="$(basename "$(git rev-parse --show-toplevel)")"
+WF_WORKTREE_ID="wt$(printf %s "$(git rev-parse --show-toplevel)" | sha256sum | cut -c1-8)"
 ```
 
-Derive it from the worktree path or branch — never from a timestamp or a random value. A re-run
-inside the same worktree must resolve to the *same* database, the same port, the same container,
-or cleanup silently leaks resources and the second run is not reproducible.
+**Hash the path; do not use its basename.** A basename is not unique (two repos each with a
+`feature-auth` worktree collide), it is not a legal identifier in every place the key is spent
+(a database name, a compose project), and it is not a number, so no port offset can be derived
+from it. Never derive the key from a timestamp or a random value either: a re-run inside the same
+worktree must resolve to the *same* database, port and container, or cleanup silently leaks
+resources and the second run is not reproducible.
+
+See `docs/adr/0002-per-worktree-databases.md` for the decision and its failure shapes.
 
 ## The preflight — before dispatching a batch of ≥2
 
-Walk the enumeration against this project — read the compose file, the env/mise config, the
-migration directory, and the batch's own `touch:` lists — and give every class that is **present**
-a disposition. Then state it compactly before dispatching:
+**Step 0 — is the database already isolated?** Read the project's template version and let it
+answer class 1 for you, instead of re-deriving it:
+
+```bash
+jq -r '.version' .forge/manifest.json          # scaffolded projects; adopted ones have no template
+```
+
+| Template version | Class 1 disposition | What you write in the preflight |
+|---|---|---|
+| `v0.10.0` or later, `db != none` | **isolated by the preset** | `test database   isolate    Testcontainers (ephemeral, per run)`<br>`dev database    isolate    ${WF_DB_NAME} — per-checkout, guarded by mise run db:guard` |
+| earlier, or adopted, or no manifest | **not isolated** | the old rule: test **isolate**, dev **forbid** — and if you cannot isolate, the batch is sequential |
+
+Confirm rather than assume — `mise run wt:info` in the worktree prints the database, port and
+compose project it actually resolved, and a project can always have overridden `WF_DB_NAME` in
+`.mise.local.toml`. A version number says what the template shipped; `wt:info` says what this
+checkout will really use, and only the second one is evidence.
+
+Then walk the rest of the enumeration against this project — read the compose file, the env/mise
+config, the migration directory, and the batch's own `touch:` lists — and give every class that is
+**present** a disposition. State it compactly before dispatching:
 
 ```
-worktree preflight — 3 agents, batch [T8, T10, T12]
-  test database   isolate    byline_test_${WF_WORKTREE_ID}
-  dev database    forbid     no task in this batch migrates dev
-  ports           n/a        no dev server in this batch
+worktree preflight — 3 agents, batch [T8, T10, T12]     (template v0.10.0 — db isolated by preset)
+  test database   isolate    Testcontainers, ephemeral per run
+  dev database    isolate    byline_wt<hash> per checkout + `mise run db:guard`
+  ports           isolate    5432 + (hash mod 1000), per checkout
   secret env      carry-in   .mise.local.toml, .env.local → verified in all 3
   migrations      order      T8, T12 both create db/migrations/* → edge added, T12 after T8
   git refs        forbid     agents commit on their own branch only
@@ -126,6 +160,21 @@ failure surfaces much deeper, inside application code, looking exactly like brok
 3. **A file is only half of a secret reference.** A value fetched at run time from a credential
    store (`op://…`) also needs that store reachable from a **non-interactive** process. Check the
    resolution, not the presence of the reference.
+4. **Check the derived variables too, not only the carried-in ones.** From template `v0.10.0`
+   the preset *computes* `WF_DB_NAME`, `WF_DB_PORT` and `COMPOSE_PROJECT_NAME` from the checkout
+   path, so they are never missing the way a copied file can be — but they can be **wrong**, and
+   wrong in a way that reads as normal:
+
+   | What you see | What it means |
+   |---|---|
+   | `WF_DB_NAME` identical in two worktrees | mise is not resolving the `[env]` block — usually the worktree was never `mise trust`ed, so every derived value fell back to the shell's. **Hard stop**: this is the collision, not a warning about it. |
+   | `WF_DB_NAME` with no `_wt…` suffix inside a linked worktree | same cause, or a `.mise.local.toml` that pins it. Ask which before dispatching. |
+   | `mise run db:guard` refuses | an override is pointing this checkout at another database. Report it as an environment fault; do **not** set `WF_DB_NAME` to silence it. |
+
+   `mise trust` is the one carry-in step these variables need — a fresh worktree is untrusted, and
+   an untrusted config resolves to nothing rather than failing loudly. Run `mise run wt:info` in
+   each worktree and diff the results across the batch: two agents with one database name is the
+   defect this whole skill exists to prevent, and it is visible in one line before any work starts.
 
 An agent that meets an unresolved variable reports an **environment fault** and stops. It does not
 diagnose the code, and it never reports "pre-existing breakage" on that evidence — see
@@ -229,7 +278,7 @@ did not describe what the tasks actually did. Say so when you surface it.
 
 | What you see | Likely class |
 |---|---|
-| A large number of tests fail suddenly, mid-run, having passed minutes ago | 1 — a sibling worktree dropped/recreated the shared database |
+| A large number of tests fail suddenly, mid-run, having passed minutes ago | 1 — a sibling worktree dropped/recreated the shared database. On `v0.10.0`+ this should be impossible: check `mise run wt:info` in both worktrees, because it means the derivation did not take |
 | Tests fail in the worktree but pass on the integrated branch | 5 — carry-in missing; env resolved to nothing |
 | "Port already in use" / a dev server answering with another branch's code | 3 |
 | Migration history has a row for a file that doesn't exist in the tree | 1 + 7 — a discarded branch migrated a shared database |
@@ -243,11 +292,20 @@ editing application code, and it never justifies a "pre-existing breakage" verdi
 
 - **Dispatch-time preflight and carry-in → the plugin** (this skill). It knows a batch is about
   to run and can refuse to parallelize.
-- **A guard that refuses to run at all from a linked worktree** (a migration task, a deploy task,
+- **A guard that refuses to act on another checkout's database** (a migration task, a deploy task,
   a seed task) → the **project's own task definitions**, shipped by the template. That is the only
   layer where the guard is present for a human running the command by hand, and where it cannot be
   forgotten by whichever agent happens to dispatch. The plugin cannot enforce it, and should not
   pretend to.
+
+  **From template `v0.10.0` this is shipped, not aspirational**: `mise run db:guard` compares the
+  database anything is about to act on against the one derived for this checkout and refuses on a
+  mismatch. It is wired into `dev`, `test` and every migration task in both the JVM and Hono
+  presets, so the refusal happens before the work, not after. Two limits worth knowing: it sees
+  the *configured* target (`DATABASE_URL` / `SPRING_DATASOURCE_URL`), so a connection string built
+  by hand inside application code is invisible to it; and setting `WF_DB_NAME` makes it agree with
+  you, which is the deliberate escape hatch — an agent must never reach for it to get past a
+  refusal.
 
 ## Fallback and recording
 

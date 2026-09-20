@@ -51,8 +51,14 @@ section 4 rather than performing it.
    both, or neither.
 5. Show the plan of record before running: current → target **template** version with its
    changelog (`git log <cur>..<target> -- templates/<preset>/ copier.yml` in the wellforge
-   repo, when available), **and** recorded → running **plugin** version with every
-   applicable entry from `docs/PLUGIN-MIGRATIONS.md` in between. Ask the user to confirm.
+   repo, when available) **and every applicable entry from `docs/TEMPLATE-MIGRATIONS.md`**,
+   **and** recorded → running **plugin** version with every applicable entry from
+   `docs/PLUGIN-MIGRATIONS.md` in between. Ask the user to confirm.
+
+   The two migration files are siblings and both matter: a diff shows what copier will
+   rewrite, and the notes show what copier *cannot* do — a command to run afterwards, a pin
+   you may have overridden, a task that changed meaning. `v0.10.0` is the standing example:
+   the re-render is clean and the project is still broken until someone runs `mise trust`.
 
 ## Run the update
 
@@ -106,6 +112,23 @@ already equals the running one.
 4. If `docs/PLUGIN-MIGRATIONS.md` is unreachable (the wellforge repo isn't at hand), say so
    plainly and **do not claim the project is migrated** — record what the gap is so the next
    run can close it.
+
+## Apply the template migration notes
+
+Independent of the plugin migrations, and read from **`docs/TEMPLATE-MIGRATIONS.md`**: take
+every entry between the recorded template version and the target, in order.
+
+1. **Automatic** steps (a `chmod`, a moved file) — apply them and say which.
+2. **Human** steps (a pin you may have overridden, a CI task that must be re-pointed) — do
+   not guess: surface them with the exact change and let the user decide.
+3. An entry that says "no project-side action" still gets reported. Silence is ambiguous
+   between "nothing to do" and "nobody checked".
+4. If the file is unreachable (the wellforge repo isn't at hand), say so plainly and do
+   **not** claim the project is migrated — record the gap so the next run can close it.
+
+A re-render that applied cleanly is not the same as an upgrade that is finished. `v0.10.0`
+is the case to remember: every file lands correctly and the project still resolves every
+worktree to one database until `mise trust` is run.
 
 ## Resolve conflicts (the AI-value step)
 
