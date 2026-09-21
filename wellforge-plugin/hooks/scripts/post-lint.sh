@@ -6,7 +6,7 @@
 # A tool only runs when the project ACTUALLY configures it.
 INPUT=$(cat)
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.path // empty')
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.notebook_path // .tool_input.path // empty')
 [ -z "$FILE" ] && exit 0
 [[ "$FILE" != /* ]] && FILE="$PROJECT_DIR/$FILE"
 [ ! -f "$FILE" ] && exit 0

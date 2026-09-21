@@ -27,7 +27,9 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+# NotebookEdit sends `notebook_path`; without it this hook matches the tool and then
+# reads nothing, which is a matcher that only looks like coverage.
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.notebook_path // empty')
 [ -z "$FILE" ] && exit 0
 
 # Only a spec's or a brief's own frontmatter carries these fields.

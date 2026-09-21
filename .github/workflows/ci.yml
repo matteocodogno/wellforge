@@ -586,6 +586,11 @@ jobs:
       # goes down, a closed feature does not reopen by edit. Prompt promises until they had
       # a hook and a matrix.
       - run: wellforge-plugin/hooks/scripts/tests/post-spec-guard.test.sh
+      # Telemetry that writes nothing is indistinguishable from telemetry with nothing to
+      # write: the SubagentStop hook always exits 0 and discards jq's stderr, so a payload
+      # missing any identity field silently produced no event at all. Only inspecting the
+      # written .events.jsonl can tell the two apart, which is what this matrix does.
+      - run: wellforge-plugin/hooks/scripts/tests/trace-subagent.test.sh
       # Cost attribution: parallel runs used to count each other's tokens, and the pricing
       # table had drifted stale behind a "keep in sync" comment. Neither fails loudly on
       # its own — a wrong cost estimate still prints a number.

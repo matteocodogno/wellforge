@@ -116,11 +116,37 @@ run_case BLOCK 'xargs -a .mise.local.toml echo'
 run_case BLOCK 'ls . && cat .mise.local.toml'
 run_case BLOCK 'stat .mise.local.toml; cat .mise.local.toml'
 run_case BLOCK 'test -f .mise.local.toml || cat .mise.local.toml'
+# A sanctioned write does not excuse another mention on the same line. The allow-list used
+# to match ANYWHERE in the command, so every one of these read the file and passed, while
+# plain `cat .mise.local.toml` (above) was correctly refused — the guard was strictest
+# against the least inventive phrasing.
+run_case BLOCK 'cat .mise.local.toml > .mise.local.toml.bak'
+run_case BLOCK 'cat .mise.local.toml; echo x > .mise.local.toml'
+run_case BLOCK 'cat .mise.local.toml | tee .mise.local.toml'
+run_case BLOCK 'mise set FOO=bar; cat .mise.local.toml'
+run_case BLOCK 'touch .mise.local.toml; cat .mise.local.toml'
+# Found while fixing the five above: a read hidden in a substitution, and a read hidden in
+# an INPUT redirect on an otherwise-sanctioned tee.
+run_case BLOCK 'echo $(cat .mise.local.toml) > .mise.local.toml'
+run_case BLOCK 'tee .mise.local.toml < .mise.local.toml'
+run_case BLOCK 'cat < .mise.local.toml'
+run_case BLOCK 'mise set --file .mise.local.toml A=1 && cat .mise.local.toml'
+
 # ...but writing it is the documented setup flow, and metadata queries reveal nothing.
 run_case ALLOW 'echo "FOO=bar" >> .mise.local.toml'
 run_case ALLOW 'printf "A=1\\n" > .mise.local.toml'
 run_case ALLOW 'tee -a .mise.local.toml'
 run_case ALLOW 'touch .mise.local.toml'
+# Writes that contain a separator or a substitution must STILL pass: a literal "no
+# separators, no substitution" rule would have broken both of these, and the second is the
+# 1Password flow the connections skill prescribes.
+run_case ALLOW 'echo "x" | tee .mise.local.toml'
+run_case ALLOW 'echo "TOKEN=$(op read op://vault/item/field)" > .mise.local.toml'
+run_case ALLOW 'printf "A=1\\n" > .mise.local.toml && printf "B=2\\n" >> .mise.local.toml'
+run_case ALLOW 'touch .mise.local.toml && echo "A=1" >> .mise.local.toml'
+run_case ALLOW 'mise set --file .mise.local.toml A=1'
+run_case ALLOW 'echo "A=1" > "$HOME/.mise.local.toml"'
+run_case ALLOW 'echo "A=1" > ./.mise.local.toml'
 run_case ALLOW 'mise set FOO=bar'
 run_case ALLOW 'git check-ignore .mise.local.toml .env.local'
 run_case ALLOW 'ls -la .mise.local.toml'

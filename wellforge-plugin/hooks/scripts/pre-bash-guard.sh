@@ -81,11 +81,45 @@ fi
 #
 # Sanctioned writes: redirection INTO it (> / >>), tee, touch, and `mise set`. Metadata
 # queries (ls / stat / test / git check-ignore) exited above.
+#
+# HOW THE TEST WORKS, and why it is not "does a write pattern appear somewhere".
+# That was the bug: the allow-list matched ANYWHERE in the command, so one sanctioned write
+# excused every other mention on the line. All five of these read the file and passed:
+#     cat .mise.local.toml > .mise.local.toml.bak
+#     cat .mise.local.toml; echo x > .mise.local.toml
+#     cat .mise.local.toml | tee .mise.local.toml
+#     mise set FOO=bar; cat .mise.local.toml
+#     touch .mise.local.toml; cat .mise.local.toml
+# (and two more found while fixing it: `echo $(cat <file>) > <file>` and `tee <file> < <file>`)
+# while plain `cat .mise.local.toml` was correctly refused.
+#
+# So: STRIP every mention that is itself a sanctioned write, then ask whether any mention
+# SURVIVES. A survivor is a read, or something this guard cannot classify, and either way it
+# is refused. Each write is removed on its own terms, so the number of chained commands stops
+# mattering — which is what the old rule got wrong.
+#
+# Note this deliberately does NOT copy the metadata carve-out's "no separators, no
+# substitution" condition verbatim. Both would break documented writes: `echo x | tee <file>`
+# is a sanctioned write whose whole point is a pipe, and
+# `echo "K=$(op read op://v/i/f)" > <file>` is the 1Password setup flow the connections skill
+# prescribes. A substitution is harmless here precisely BECAUSE of the residue test — if it
+# reads the file it must name it, and then it survives the strip and is blocked.
+#
+# PFX is the path prefix a write target may carry (./, ~/, "$HOME/, a quote). It excludes
+# whitespace, separators and redirect operators, so no single pattern can span two commands.
 if echo "$COMMAND" | grep -qE '\.mise\.local\.toml'; then
-  if ! echo "$COMMAND" | grep -qE '(>>?[[:space:]]*\.mise\.local\.toml|tee([[:space:]]+-[a-zA-Z]+)*[[:space:]]+[^|;&]*\.mise\.local\.toml|^[[:space:]]*touch[[:space:]]+[^|;&]*\.mise\.local\.toml|^[[:space:]]*mise[[:space:]]+set[[:space:]])'; then
+  PFX='["'"'"']?[^[:space:];&|<>()`]*'
+  RESIDUE=$(echo "$COMMAND" | sed -E \
+    -e "s|>>?[[:space:]]*${PFX}\.mise\.local\.toml||g" \
+    -e "s|tee([[:space:]]+-[a-zA-Z-]+)*[[:space:]]+${PFX}\.mise\.local\.toml||g" \
+    -e "s|touch([[:space:]]+-[a-zA-Z-]+)*[[:space:]]+${PFX}\.mise\.local\.toml||g" \
+    -e "s|mise[[:space:]]+set[[:space:]]+([^;&|]*[[:space:]])?${PFX}\.mise\.local\.toml||g")
+  if echo "$RESIDUE" | grep -qE '\.mise\.local\.toml'; then
     echo "BLOCKED: .mise.local.toml holds live secrets — only writing it is allowed" >&2
     echo "  Allowed:  > / >> redirection into it, tee, touch, mise set, and metadata (ls/stat/test/git check-ignore)" >&2
     echo "  Refused:  everything else that names it, including read tools not on any list" >&2
+    echo "  A sanctioned write does NOT excuse another mention on the same line: each" >&2
+    echo "  mention has to be a write on its own." >&2
     echo "  To see resolved values, run 'mise env' yourself outside the agent." >&2
     exit 2
   fi

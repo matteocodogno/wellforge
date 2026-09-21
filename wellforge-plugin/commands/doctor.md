@@ -58,8 +58,24 @@ actual connection state — do not guess or imply you checked.
 
 **Hooks** ⟨plugin⟩ — read `hooks/hooks.json` and confirm each referenced script exists and
 is executable. A hook whose script is missing fails open: it never blocks and never says so.
-Report the event → script map so the user can see what is meant to be firing — **7 events,
-8 scripts** (PostToolUse runs two: `post-lint.sh` and `post-spec-guard.sh`).
+Report the event → script map so the user can see what is meant to be firing.
+
+**Count from the file; never state a number from this document.** This paragraph used to say
+"7 events, 8 scripts" while `hooks.json` referenced 9 — a doctor that reports a remembered
+number cannot detect the thing it exists to detect, and would have reported a complete map
+with one script silently absent. Derive both counts:
+
+```bash
+jq -r '.hooks | to_entries[] | .key as $e | .value[] | .matcher as $m | .hooks[] |
+       "\($e)\t\($m // "")\t\(.command | split("/") | last)"' <plugin>/hooks/hooks.json
+jq -r '[.hooks | to_entries[] | .value[] | .hooks[] | .command | split("/") | last]
+       | unique | length' <plugin>/hooks/hooks.json   # distinct scripts
+jq -r '.hooks | keys | length' <plugin>/hooks/hooks.json                    # events
+```
+
+Report the counts you measured, and flag any `matcher` asymmetry you notice — `PostToolUse`
+excluded `NotebookEdit` while `PreToolUse` included it, so notebook writes were guarded on
+the way in and unguarded on the way out.
 
 Call out `post-spec-guard.sh` specifically if it is missing or not executable: it is the
 only mechanical enforcement of the `status: done` gate and the raise-only `rigor:` rule.
@@ -179,10 +195,22 @@ pass/fail counts per suite.
 <plugin>/hooks/scripts/tests/pre-file-guard.test.sh
 <plugin>/hooks/scripts/tests/stop-verify.test.sh
 <plugin>/hooks/scripts/tests/post-spec-guard.test.sh
+<plugin>/hooks/scripts/tests/trace-subagent.test.sh
 uv run --with pyyaml python <plugin>/scripts/tests/run-report.test.py
 uv run --with pyyaml python <plugin>/scripts/tests/forge-state.test.py
+uv run --with pyyaml python <plugin>/scripts/tests/security-triggers.test.py
 uv run --with pyyaml python <plugin>/scripts/check-budget.py
 ```
+
+Rather than trusting this list, check it against what is on disk — a suite that exists and
+is never run is worse than no suite, because the green report implies it passed:
+
+```bash
+ls <plugin>/hooks/scripts/tests/*.test.sh <plugin>/scripts/tests/*.test.py
+```
+
+Report any suite present on disk but absent from the list above as a **WARN** against this
+command, not a silent omission. `security-triggers.test.py` was exactly that for a while.
 
 `check-budget.py` is worth reporting even when it passes: it prints what this plugin costs
 every session in this project (~4,900 estimated tokens of descriptions, loaded before the
@@ -203,8 +231,18 @@ One table, `OK` / `WARN` / `FAIL` per check, then:
 - End with the **command index** — what this plugin offers here, grouped: spec flow
   (`spec` → `plan` → `design` → `tasks` → `implement` → `eval` → `done`), orchestration
   (`orchestrate`, `spike`, `promote`), lifecycle (`new`, `upgrade`, `adopt`,
-  `extract-template`, `release`), visibility (`status`, `triage`, `doctor`). One line each,
-  so `/wellforge:doctor` doubles as the help the plugin otherwise lacks.
+  `extract-template`, `release`), visibility (`status`, `triage`, `doctor`), output control
+  (`terse`, `terse-compress`). One line each, so `/wellforge:doctor` doubles as the help the
+  plugin otherwise lacks.
+
+  **Build this list from `commands/*.md`, not from the grouping above.** The grouping named
+  18 of the 20 commands that shipped — `terse` and `terse-compress` were missing, and a help
+  text is the one place an omission is indistinguishable from the feature not existing. If
+  the file count and the list disagree, the list is wrong:
+
+  ```bash
+  ls <plugin>/commands/*.md | wc -l
+  ```
 
 ## Hard rules
 
