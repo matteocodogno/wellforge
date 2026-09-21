@@ -515,6 +515,36 @@ jobs:
       - name: wellforge CLI matrix
         run: scripts/tests/wellforge.test.sh
 
+  # The Homebrew package, not just the script. The repo's own suite runs scripts/wellforge
+  # directly; this proves the thing a teammate actually installs — the formula builds, and
+  # its test block passes: `help` mentions doctor, `version` matches the formula's version,
+  # `doctor` with an empty HOME prints its whole report and exits 1 (the error model
+  # surviving packaging), and an unknown subcommand exits non-zero.
+  #
+  # NON-BLOCKING on purpose. A macos-latest runner is billed at 10x, and the formula is
+  # only required to be right at release time — `scripts/release-cli.sh` runs the same
+  # install+test as step 7 of docs/RELEASING-CLI.md before anyone is told to upgrade.
+  # Advisory here means an unrelated push is not held up by a 10x runner, while a broken
+  # package still shows up on the commit that broke it. Read it before you tag.
+  formula:
+    name: Homebrew formula (advisory)
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+
+      # Path-based, so it builds THIS commit's formula rather than whatever the tap has.
+      # `brew audit --strict` is deliberately absent: it refuses a path and needs the repo
+      # tapped, which is steps 3 and 8 of docs/RELEASING-CLI.md, by hand.
+      - name: brew style
+        run: brew style Formula/wellforge.rb
+
+      - name: brew install --build-from-source
+        run: brew install --build-from-source Formula/wellforge.rb
+
+      - name: brew test
+        run: brew test wellforge
+
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
   # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.
   terse-mode-fixtures:

@@ -188,19 +188,12 @@ scripts/release-cli.sh patch            # plan only — prints every step, chang
 scripts/release-cli.sh patch --execute  # bump, commit, tag, push, sha256, formula, push
 ```
 
-**It is two commits, and that is forced rather than sloppy.** The Formula pins the sha256 of
-GitHub's generated tarball, which does not exist until the tag is pushed and is *not*
-reproducible locally. For the existing `v0.9.0` tag:
-
-```
-GitHub   b61eafcb2f37753faea37c836ecce6aa4e53ccd207ef39b719a3d04a09115bc6   ← what the formula pins
-local    746cc34fd84f6563a3ad4c688b1c195852b3a9d7969e7d8538232b4098010441   ← git archive, same tree
-```
-
-So: commit 1 sets the constant and carries the tag; the tag is pushed; only then can the
-real sha be fetched, and commit 2 points the Formula at it. Use
-`--formula-only --execute` to run just that second half against a tag that is already
-pushed — which is also the recovery path if the sha step failed.
+**The full checklist is [`RELEASING-CLI.md`](RELEASING-CLI.md)** — the steps live there and
+only there, and `release-cli.sh` prints them as it runs, so the three cannot drift far.
+The one rule worth repeating here because it constrains the *shape* of a release: it takes
+**two commits**, because the Formula pins the sha256 of GitHub's generated tarball, which
+does not exist until the tag is pushed and is not reproducible locally. Tag first, sha
+second, always.
 
 ### The rules, same as the other three
 

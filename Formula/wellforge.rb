@@ -56,10 +56,23 @@ class Wellforge < Formula
 
   test do
     assert_match "doctor", shell_output("#{bin}/wellforge help")
+
     # The CLI's version is the WELLFORGE_CLI_VERSION constant inside the script, not this
     # formula and not the Cellar path. Asserting they agree is what catches a release that
     # bumped one and forgot the other — the failure mode that let brew users run the CLI
     # as it stood at v0.9.0 while every report called it current.
     assert_match version.to_s, shell_output("#{bin}/wellforge version")
+
+    # The error model, verified through packaging rather than only in the repo's own
+    # suite. `doctor` on a machine with no checkout is the first thing a new teammate
+    # runs, and it used to die mid-report at exit 2 with no summary and no advice. It must
+    # print the whole report and exit 1: a complete failure, not a crash.
+    report = shell_output("HOME=#{testpath} #{bin}/wellforge doctor 2>&1", 1)
+    assert_match "check(s) failed", report
+    assert_match "wellforge setup", report
+
+    # A typo must not look like success. `wellforge dcotor` exited 0 for a long time, so
+    # nothing wrapping this script could tell the difference.
+    shell_output("HOME=#{testpath} #{bin}/wellforge notacommand 2>&1", 1)
   end
 end

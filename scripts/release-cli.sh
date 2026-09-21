@@ -11,7 +11,11 @@
 # The CLI has its own tag series because it used to have none: it rode the template's
 # `vX.Y.Z` tags, so shipping a one-line CLI fix required a template release, which
 # docs/VERSIONING.md says must carry a template change. Nobody cut one, and brew users ran
-# the CLI as it stood at v0.9.0 for months. See docs/VERSIONING.md → "the CLI series".
+# the CLI as it stood at v0.9.0 for months.
+#
+# The checklist is docs/RELEASING-CLI.md. This script prints each step as it performs it,
+# with the same numbers, so a reader of either can follow the other — and if they ever
+# disagree, what the script did is what happened.
 #
 # WHY THIS TAKES TWO COMMITS, measured rather than assumed. The Formula pins the sha256 of
 # GitHub's generated tarball, and that tarball does not exist until the tag is pushed. It
@@ -32,6 +36,9 @@ REMOTE_URL="https://github.com/matteocodogno/wellforge"
 
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*"; }
+# Same numbering as docs/RELEASING-CLI.md. Printed while the step runs, not after, so an
+# interrupted release says where it stopped.
+step() { printf '\n[%s/8] %s\n' "$1" "$2"; }
 
 BUMP=""; EXECUTE=0; FORMULA_ONLY=0
 while [ $# -gt 0 ]; do
@@ -105,21 +112,22 @@ if [ "$problems" -gt 0 ]; then
   say ""
 fi
 
+say "checklist (docs/RELEASING-CLI.md):"
 if [ "$FORMULA_ONLY" -eq 1 ]; then
-  say "plan (--formula-only — the tag already exists):"
-  say "  1. fetch   $url, compute its sha256"
-  say "  2. rewrite the Formula's url/version/sha256, commit 'chore(cli): formula for $tag'"
-  say "  3. push    main"
-else
-  say "plan:"
-  say "  1. set WELLFORGE_CLI_VERSION=\"$next\" in scripts/wellforge"
-  say "  2. commit  'chore(cli): release $next'"
-  say "  3. tag     $tag"
-  say "  4. push    main and $tag            ← the tarball does not exist before this"
+  say "  --formula-only: steps 5-7 alone, against a tag that already exists"
   say "  5. fetch   $url, compute its sha256"
   say "  6. rewrite the Formula's url/version/sha256, commit 'chore(cli): formula for $tag'"
-  say "  7. push    main"
+  say "  7. smoke   brew install --build-from-source + brew test"
+else
+  say "  1. decide  $BUMP -> $next"
+  say "  2. bump    WELLFORGE_CLI_VERSION=\"$next\" in scripts/wellforge"
+  say "  3. prove   test suite, shellcheck, brew style  (before the tag)"
+  say "  4. commit  'chore(cli): release $next'  +  tag $tag"
+  say "  5. push    main and $tag            ← the tarball does not exist before this"
+  say "  6. sha     fetch $url, rewrite the Formula, commit, push"
+  say "  7. smoke   brew install --build-from-source + brew test"
 fi
+say "  8. audit   brew audit --strict --online, once the tap has the new commit"
 
 if [ "$EXECUTE" -eq 0 ]; then
   say ""
@@ -135,22 +143,41 @@ read -r confirm
 [ "$confirm" = "$next" ] || die "not confirmed (expected '$next')"
 
 if [ "$FORMULA_ONLY" -eq 0 ]; then
-# 1-3 ─ the constant is the release; the tag names the commit that sets it.
+step 2 "bumping WELLFORGE_CLI_VERSION to $next"
 tmp="$(mktemp)"
 sed "s/^WELLFORGE_CLI_VERSION=\".*\"/WELLFORGE_CLI_VERSION=\"$next\"/" "$CLI" > "$tmp" || die "sed failed"
 grep -q "^WELLFORGE_CLI_VERSION=\"$next\"\$" "$tmp" || die "the constant did not take — check $CLI by hand"
 cat "$tmp" > "$CLI"; rm -f "$tmp"
 
+step 3 "proving it before the tag — test suite, shellcheck, brew style"
+"$ROOT/scripts/tests/wellforge.test.sh" || die "the CLI test suite failed — not releasing this"
+if command -v shellcheck >/dev/null 2>&1; then
+  # -f gcc: the default format dies rendering a source line with a non-ASCII character,
+  # and these scripts are full of em dashes (docs/RELEASING-CLI.md step 3).
+  shellcheck -s bash --severity=warning -f gcc "$CLI" "$ROOT"/scripts/*.sh \
+    || die "shellcheck rejected the scripts"
+else
+  say "  (shellcheck not installed — skipped, and a skip is not a pass)"
+fi
+if command -v brew >/dev/null 2>&1; then
+  brew style "$FORMULA" || die "brew style rejected the formula"
+else
+  say "  (brew not installed — style/audit skipped, and a skip is not a pass)"
+fi
+
+step 4 "committing and tagging $tag"
 git -C "$ROOT" add scripts/wellforge || die "git add failed"
 git -C "$ROOT" commit -qm "chore(cli): release $next" || die "commit failed"
 git -C "$ROOT" tag "$tag" || die "tag failed"
+# One series per commit: a second tag makes `git describe` answer with the wrong one.
+[ "$(git -C "$ROOT" tag --points-at HEAD | wc -l | tr -d ' ')" -eq 1 ] \
+  || die "HEAD now carries more than one tag — never two series on one commit"
 
-# 4 ─ push before the sha: GitHub generates the tarball, and it is not reproducible here.
+step 5 "pushing main and $tag — the tarball does not exist until this lands"
 git -C "$ROOT" push -q origin main "$tag" || die "push failed — the tag is local; delete it with 'git tag -d $tag' if you are retrying"
 fi
 
-# 5 ─ the only place the real sha can come from.
-say "  fetching the tarball…"
+step 6 "fetching the tarball and hashing it — the only place the real sha comes from"
 tarball="$(mktemp)"
 curl -fsSL "$url" -o "$tarball" || die "could not fetch $url (is the tag pushed?)"
 sha="$( { command -v sha256sum >/dev/null 2>&1 && sha256sum "$tarball" || shasum -a 256 "$tarball"; } | cut -d' ' -f1)"
@@ -183,11 +210,26 @@ git -C "$ROOT" add Formula/wellforge.rb || die "git add failed"
 git -C "$ROOT" commit -qm "chore(cli): formula for $tag" || die "commit failed"
 git -C "$ROOT" push -q origin main || die "push failed — the formula commit is local"
 
+step 7 "smoke the PACKAGE, not just the script"
+if command -v brew >/dev/null 2>&1; then
+  say "  brew install --build-from-source $FORMULA && brew test wellforge"
+  say "  ${SKIP_SMOKE:+skipped by SKIP_SMOKE}"
+  if [ -z "${SKIP_SMOKE:-}" ]; then
+    brew install --build-from-source "$FORMULA" \
+      && brew test wellforge \
+      || say "  WARNING: the package smoke failed — the tag and formula are pushed, so fix
+           it forward with another patch release rather than moving the tag."
+  fi
+else
+  say "  (brew not installed — run it on a Mac before telling anyone to upgrade)"
+fi
+
 say ""
 say "released $tag"
 say "  constant  $next"
 say "  sha256    $sha"
 say "  install   brew upgrade wellforge   (or: brew install matteocodogno/wellforge/wellforge)"
 say ""
-say "Next: brew audit --strict matteocodogno/wellforge/wellforge — it needs the tap, so it"
-say "      can only run now that the tag is published (docs/VERSIONING.md)."
+step 8 "audit once the tap has the new commit"
+say "  brew audit --strict --online matteocodogno/wellforge/wellforge"
+say "  (it reads the TAP's checkout, not this one — docs/RELEASING-CLI.md step 8)"
