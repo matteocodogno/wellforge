@@ -28,6 +28,7 @@ jobs:
           fetch-depth: 0           # need the full commit range
       - name: Lint commit messages
         run: |
+          set -euo pipefail
           if [ -n "${{ github.event.pull_request.base.sha }}" ]; then
             base="${{ github.event.pull_request.base.sha }}"
             head="${{ github.event.pull_request.head.sha }}"
@@ -39,8 +40,13 @@ jobs:
           if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
             echo "no comparable base ($base) — skipping"; exit 0
           fi
+          if ! shas=$(git rev-list "$base..$head" 2>&1); then
+            echo "::error::commit range ${base}..${head} could not be resolved — refusing to"
+            echo "::error::report a pass (force-push mid-run, or a shallow checkout)."
+            echo "$shas"; exit 1
+          fi
           fail=0
-          for sha in $(git rev-list "$base..$head"); do
+          for sha in $shas; do
             msg=$(git log -1 --format=%B "$sha")
             if ! printf '%s' "$msg" | python3 gates/scripts/check-commit-msg.py -; then
               echo "::error::$(git log -1 --format='%h %s' "$sha")"
@@ -61,6 +67,7 @@ jobs:
           fetch-depth: 0
       - name: Assert no merge commits
         run: |
+          set -euo pipefail
           if [ -n "${{ github.event.pull_request.base.sha }}" ]; then
             base="${{ github.event.pull_request.base.sha }}"
             head="${{ github.event.pull_request.head.sha }}"
@@ -71,7 +78,11 @@ jobs:
           if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
             echo "no comparable base ($base) — skipping"; exit 0
           fi
-          merges=$(git rev-list --merges "$base..$head")
+          if ! merges=$(git rev-list --merges "$base..$head" 2>&1); then
+            echo "::error::commit range ${base}..${head} could not be resolved — refusing to"
+            echo "::error::report a pass (force-push mid-run, or a shallow checkout)."
+            echo "$merges"; exit 1
+          fi
           [ -z "$merges" ] && { echo "OK — no merge commits"; exit 0; }
           for sha in $merges; do
             echo "::error::merge commit $(git log -1 --format='%h %s' "$sha") — rebase instead (git rebase origin/main)"
@@ -603,6 +614,12 @@ jobs:
       # Which paths pull in a security review. Glob matching looks right and silently
       # misses `migrations/001.sql` when the pattern says `**/` — a miss nobody sees.
       - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/security-triggers.test.py
+      # The GATE scripts themselves: run-eval.py turns a judge's JSON into a PASS/FAIL and
+      # check-jacoco.py turns a coverage report into one. gates/README.md has claimed
+      # "tested: pass/fail/floor" since it was written and no test file existed — meanwhile
+      # run-eval never clamped a score, so a judge answering 9 on every 1-5 dimension printed
+      # `TOTAL 180.0/100 ... PASS`.
+      - run: uv run --with pyyaml python gates/scripts/tests/gates.test.py
 
   # Adapter outputs. Both generators print a healthy summary whether or not what they wrote
   # is usable — they count files, and every failure in this class is invisible in a count:
@@ -668,8 +685,18 @@ jobs:
       # structurally immune. The failure only appears when there IS a finding, i.e. exactly
       # when CI needs to tell you something.
       - name: shellcheck
-        run: shellcheck -s bash --severity=warning -f gcc scripts/wellforge scripts/*.sh
-                        wellforge-plugin/hooks/scripts/*.sh
+        run: |
+          set -euo pipefail
+          # Everything executable and shell-shaped, not just the scripts someone remembered.
+          # Previously skipped: gates/hooks/* (the COMMITTED git hooks every clone installs —
+          # a syntax error there breaks commits locally and CI never saw the file), and both
+          # tests/ directories, where a broken test script exits non-zero and reads as a
+          # failing suite rather than a broken harness.
+          shellcheck -s bash --severity=warning -f gcc \
+            scripts/wellforge scripts/*.sh scripts/tests/*.sh \
+            gates/hooks/* \
+            wellforge-plugin/hooks/scripts/*.sh \
+            wellforge-plugin/hooks/scripts/tests/*.sh
 
       # Drives the real CLI against shim executables and real git fixtures. Cases marked
       # xfail describe behaviour a later change introduces; the suite fails if one of them

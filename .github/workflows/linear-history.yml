@@ -26,10 +26,19 @@ jobs:
 
       - name: Assert no merge commits in the PR range
         run: |
+          # See commit-lint.yml: without this a failed rev-list left `merges` empty, which
+          # reads exactly like "no merge commits found" and exits 0.
+          set -euo pipefail
           base="${{ github.event.pull_request.base.sha }}"
           head="${{ github.event.pull_request.head.sha }}"
           [ -z "$base" ] && { echo "not a PR — skipping"; exit 0; }
-          merges=$(git rev-list --merges "$base..$head")
+          if ! merges=$(git rev-list --merges "$base..$head" 2>&1); then
+            echo "::error::commit range ${base}..${head} could not be resolved — refusing to"
+            echo "::error::report a pass. Usually a force-push after the run started, or a"
+            echo "::error::shallow checkout: this job needs fetch-depth: 0."
+            echo "$merges"
+            exit 1
+          fi
           if [ -z "$merges" ]; then
             echo "OK — $(git rev-list --count "$base..$head") commit(s), none are merges"
             exit 0

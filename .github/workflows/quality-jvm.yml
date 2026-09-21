@@ -1,5 +1,5 @@
 # Reusable quality gate — JVM (Spring Boot Kotlin Maven) packages.
-# Called by generated projects:  uses: matteocodogno/wellforge/.github/workflows/quality-jvm.yml@gates-v0
+# Called by generated projects:  uses: matteocodogno/wellforge/.github/workflows/quality-jvm.yml@gates-v13
 # Thresholds live HERE — changing them requires a PR to gates/ (the single discretion point).
 name: quality-jvm
 
@@ -114,8 +114,11 @@ jobs:
       - name: Install toolchain (maven plugin + tools)
         run: |
           mise plugins install maven https://github.com/mise-plugins/mise-maven || true
-          mise install
+          # trust BEFORE install: mise refuses to read an untrusted config, so `mise install`
+          # ran against a config it would not load — it appeared to succeed while installing
+          # nothing, and the failure surfaced later as a missing tool.
           mise trust --yes || true
+          mise install
 
       - name: Lint (ktlint)
         working-directory: ${{ inputs.working-directory }}

@@ -15,8 +15,8 @@ propagates on the next ref bump, no re-scaffold needed.
 | Lint | `pnpm run lint` (zero warnings) | ktlint via `com.github.gantsign.maven:ktlint-maven-plugin:3.2.0:check` |
 | Types | `pnpm run typecheck` | Kotlin compiler (via tests) |
 | Coverage | Vitest: lines ≥ **80%**, branches ≥ **70%** (CLI-enforced) | JaCoCo: lines ≥ **80%** enforced, branches reported (`scripts/check-jacoco.py`) |
-| Dependency audit | `pnpm audit --prod --audit-level high` | `osv-scanner v2.0.0` (fails on any known vuln) |
-| SAST | semgrep 1.172.0: `configs/semgrep/wellforge.yml` + `p/typescript` | semgrep 1.172.0: `configs/semgrep/wellforge.yml` + `p/kotlin` |
+| Dependency audit | `pnpm audit --prod --audit-level high` | `osv-scanner v2.5.1` (fails on any known vuln) |
+| SAST | semgrep 1.173.0: `configs/semgrep/wellforge.yml` + `p/typescript` | semgrep 1.173.0: `configs/semgrep/wellforge.yml` + `p/kotlin` |
 | Reproducibility | `pnpm-lock.yaml` required, `--frozen-lockfile` | mise-pinned toolchain |
 
 Coverage enforcement skips modules under **50 total lines** (fresh scaffolds must not

@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034
+# ^ FILE-LEVEL, and deliberately so. Every FAKE_* assignment below looks unused because its
+# only consumer is a generated shim executable, reached through an INDIRECT expansion over
+# the FAKE_VARS array (which holds variable NAMES, not references) — shellcheck cannot
+# follow that, and reports 13 separate SC2034s for one mechanism. The repo's rule is
+# "inline disable with a reason, never a blanket exclusion"; thirteen copies of the same
+# sentence is not more informative than one, and `export`ing them instead would make the
+# explicit env list the harness builds redundant. One directive, one reason, one place.
 # Regression matrix for scripts/wellforge — the CLI every teammate runs first, and the one
 # piece of this repo that had no test at all.
 #

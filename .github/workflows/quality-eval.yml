@@ -30,7 +30,12 @@ on:
       gates-ref:
         required: false
         type: string
-        default: gates-v2
+        # EMPTY, resolved below to github.job_workflow_sha — the exact commit of THIS
+        # reusable workflow, the same pattern every other gate uses. It used to default to
+        # `gates-v2`: a caller that omitted the input silently evaluated against the rubric
+        # and script as they were in 2026-06, and a rubric change would not have reached it.
+        # This was the only gate still carrying a hardcoded default.
+        default: ''
     secrets:
       anthropic-api-key:
         required: true
@@ -47,8 +52,26 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: ${{ inputs.gates-repo }}
-          ref: ${{ inputs.gates-ref }}
+          ref: ${{ inputs.gates-ref || github.job_workflow_sha }}
           path: .wellforge-gates
+
+      - name: Verify gate configs resolved
+        run: |
+          set -euo pipefail
+          ref="${{ inputs.gates-ref || github.job_workflow_sha }}"
+          missing=0
+          for f in gates/scripts/run-eval.py gates/configs/eval-rubric.yml; do
+            [ -f ".wellforge-gates/$f" ] || { echo "::error::gate file missing at ref ${ref}: $f"; missing=1; }
+          done
+          if [ "$missing" = "1" ]; then
+            echo "::error::The gates checkout (${{ inputs.gates-repo }}@${ref}) does not contain this gate's files. Pass gates-ref explicitly, matching the tag you call this workflow with."
+            exit 1
+          fi
+          echo "gate files OK at ${ref}"
+
+      # `uv run` below needs uv on PATH. Every other job that runs uv installs it; this one
+      # relied on the runner image happening to ship it.
+      - uses: astral-sh/setup-uv@v7
 
       - name: LM-judge eval
         env:

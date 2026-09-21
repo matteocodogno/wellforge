@@ -108,10 +108,27 @@ jobs:
           echo "::notice::$title"
           emit true "$title" "$body"
 
+  # `failed` is computed from an OUTPUT, and a job that crashed produces no outputs — so
+  # `needs.check.outputs.behind` was the empty string, `'' == 'true'` was false, and
+  # heartbeat-report CLOSED the drift issue with "green again". An internal error therefore
+  # resolved the very issue that exists to surface a problem, which is the worst available
+  # failure mode for a heartbeat: silence that looks like health.
+  #
+  # So this job now runs ONLY on a successful check, and a separate one below speaks up when
+  # the check did not succeed. `if: always()` is kept nowhere that decides green/red.
+  #
+  # NOTE on `uses: ./...`, deliberately kept local. Per GitHub's reusable-workflow docs a
+  # `./` reference resolves against the repository containing THIS file, at the same commit
+  # — which is precisely what is wanted: a consumer calling template-drift.yml@gates-v13 gets
+  # heartbeat-report.yml from gates-v13. Fully qualifying it would be worse, not better,
+  # because `uses:` accepts no contexts or expressions: the ref would have to be a hardcoded
+  # `@gates-vN` literal that must be bumped by hand every release and goes stale silently.
+  # (The generated projects spell it out only because Jinja renders their `uses:` to a
+  # literal at scaffold time, which is a different mechanism.)
   report:
     name: file / update the drift issue
     needs: check
-    if: always()
+    if: needs.check.result == 'success'
     uses: ./.github/workflows/heartbeat-report.yml
     permissions:
       contents: read
@@ -122,3 +139,36 @@ jobs:
       issue-title: ${{ needs.check.outputs.title || '📦 Template drift' }}
       body: ${{ needs.check.outputs.body }}
       run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  # The heartbeat failing is itself news. Without this the only signal was an empty output
+  # silently read as "not behind".
+  heartbeat-failed:
+    name: heartbeat could not run
+    needs: check
+    if: needs.check.result != 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Say so, loudly, and do not touch the drift issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ needs.check.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          echo "::error::template-drift check did not succeed (result: ${RESULT}) — the drift" \
+               "issue has been left exactly as it was. Its state is now UNKNOWN, not green."
+          # Comment on the existing drift issue if there is one, so the staleness is visible
+          # where someone will look. Never close it, never open a new one: this job knows
+          # that the check failed, not whether the project is behind.
+          num=$(gh issue list --label template-drift --state open \
+                  --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "${num:-}" ] && [ "${num}" != "null" ]; then
+            gh issue comment "$num" --body \
+              "⚠️ The template-drift heartbeat **could not run** (job result: \`${RESULT}\`). This issue is unchanged and its contents may be stale — it was neither updated nor closed. [Run log](${RUN_URL})" \
+              || echo "::warning::could not comment on issue #${num}"
+          else
+            echo "::warning::no open template-drift issue to annotate; the failure is in this run log only"
+          fi

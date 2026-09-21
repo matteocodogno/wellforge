@@ -16,10 +16,12 @@ on:
         required: false
         type: string
         # Default is EMPTY on purpose, resolved below to github.job_workflow_sha — the exact
-        # commit of THIS reusable workflow. A hardcoded default rots: it used to be `gates-v0`,
-        # where the semgrep config was still named welld.yml, so any caller that omitted this
-        # input silently checked out 2026-06 configs and semgrep died with exit 7
-        # (config not found). Pass it explicitly anyway; this is the safety net.
+        # commit of THIS reusable workflow. A hardcoded default rots, and the consequence here
+        # is specific to this gate: the checkout supplies `check-commit-msg.py`, so a stale
+        # ref lints every commit against an older version of the Conventional Commits rules
+        # than the repo documents — passing messages a current hook would reject, and vice
+        # versa. (The paragraph here used to describe semgrep's welld.yml breakage, copy-pasted
+        # from quality-node.yml; this gate runs no semgrep.) Pass it explicitly anyway.
         default: ''
 
 jobs:
@@ -47,11 +49,23 @@ jobs:
 
       - name: Lint commit messages in the PR
         run: |
+          # Without `set -e`, `$(git rev-list ...)` failing — an unknown SHA after a
+          # force-push is the usual way — expanded to nothing, the loop body never ran, and
+          # the step exited 0. A gate that passes because it could not find the commits is
+          # worse than one that is absent, because it reports green.
+          set -euo pipefail
           base="${{ github.event.pull_request.base.sha }}"
           head="${{ github.event.pull_request.head.sha }}"
           [ -z "$base" ] && { echo "not a PR — skipping"; exit 0; }
+          if ! shas=$(git rev-list "$base..$head" 2>&1); then
+            echo "::error::commit range ${base}..${head} could not be resolved — refusing to"
+            echo "::error::report a pass. Usually a force-push after the run started, or a"
+            echo "::error::shallow checkout: this job needs fetch-depth: 0."
+            echo "$shas"
+            exit 1
+          fi
           fail=0
-          for sha in $(git rev-list "$base..$head"); do
+          for sha in $shas; do
             msg=$(git log -1 --format=%B "$sha")
             if ! printf '%s' "$msg" | python3 "$GITHUB_WORKSPACE/.wf-gates/gates/scripts/check-commit-msg.py" -; then
               echo "::error::$(git log -1 --format='%h %s' "$sha")"

@@ -38,27 +38,68 @@ def load_rubric(path):
     return r, by_key
 
 
-def gate(rubric, by_key, scores):
-    """Pure scoring: returns (verdict, total, rows, failed_floor). No I/O — unit-testable.
+def applies(dim, present):
+    """Does a conditional dimension apply, given the artifacts actually on disk?
 
-    Conditional dimensions (those with `applies_when`) are scored only when the judge
-    provided a score; otherwise they are N/A — excluded from the total (which re-normalises
-    over the dimensions that DO apply) and their floor doesn't apply. Always-on dimensions
-    with no score count as worst (1), as before. With no conditional dimension active the
-    applicable weights sum to 100 and the total equals the old un-normalised sum.
+    `applies_when` reads like "design.md present"; the first token is the filename. A
+    dimension with no `applies_when` always applies.
+
+    This used to be decided by whether the JUDGE emitted a score, which inverts the
+    control: a judge that forgot `design_fidelity` on a feature that HAS a design.md made
+    the dimension disappear — 15% of the rubric silently dropped and the total
+    re-normalised over what was left, so the run scored 100/100 and passed. Presence on
+    disk is a fact; what the judge chose to return is the thing being graded.
+    """
+    cond = dim.get("applies_when")
+    if not cond:
+        return True
+    if present is None:                       # caller did not say — fall back to old behaviour
+        return None
+    return cond.split()[0] in present
+
+
+def gate(rubric, by_key, scores, present=None):
+    """Pure scoring: returns (verdict, total, rows, failed_floor, errors). No I/O.
+
+    `present` is the set of artifact filenames found in the spec dir (see gather_present).
+    Conditional dimensions apply iff their artifact is present; an applicable dimension the
+    judge did not score counts as worst (1), exactly like an always-on one. A dimension that
+    does not apply is N/A — excluded from the total, which re-normalises over the dimensions
+    that DO apply, and its floor does not bite.
     """
     scale = rubric["scale"]
-    seen = {s["key"]: s for s in scores}
+    seen = {s["key"]: s for s in scores if isinstance(s, dict) and "key" in s}
     total_weighted = 0.0
     total_weight = 0.0
     rows = []
     failed_floor = []
+    errors = []
     for key, dim in by_key.items():
         s = seen.get(key)
-        if s is None and dim.get("applies_when"):
+        applicable = applies(dim, present)
+        if applicable is None:                # unknown: preserve the pre-existing behaviour
+            applicable = s is not None
+        if not applicable:
+            if s is not None:
+                errors.append(f"{key}: judge scored a dimension that does not apply "
+                              f"({dim['applies_when']}) — ignored")
             rows.append((dim["title"], dim["weight"], None, dim["floor"], None, False))  # N/A
             continue
-        score = int(s["score"]) if s else 1  # a missing always-on dimension scores worst
+        raw = s["score"] if s else 1          # a missing applicable dimension scores worst
+        try:
+            score = int(raw)
+        except (TypeError, ValueError):
+            errors.append(f"{key}: score {raw!r} is not an integer")
+            score = 1
+        # CLAMP, and treat the excursion as a judge error. Unclamped, a judge returning 9 on
+        # a 1-5 scale produced `TOTAL 180.0/100 ... PASS` — a verdict arithmetically incapable
+        # of failing, printed with the same confidence as a real one. Clamping alone would
+        # silently repair a judge that is not answering the question asked, so the run also
+        # fails: a score outside the scale means the judge misread the rubric, and nothing
+        # about the rest of its output has earned trust.
+        if score < 1 or score > scale:
+            errors.append(f"{key}: score {score} is outside the 1-{scale} scale")
+            score = max(1, min(score, scale))
         weighted = (score / scale) * dim["weight"]
         total_weighted += weighted
         total_weight += dim["weight"]
@@ -67,13 +108,22 @@ def gate(rubric, by_key, scores):
             failed_floor.append(key)
         rows.append((dim["title"], dim["weight"], score, dim["floor"], round(weighted, 1), below))
     total = round((total_weighted / total_weight) * 100, 1) if total_weight else 0.0
-    passed = total >= rubric["pass_score"] and not failed_floor
-    return ("PASS" if passed else "FAIL"), total, rows, failed_floor
+    passed = total >= rubric["pass_score"] and not failed_floor and not errors
+    return ("PASS" if passed else "FAIL"), total, rows, failed_floor, errors
+
+
+ARTIFACTS = ("spec.md", "plan.md", "tasks.md", "design.md")
+
+
+def gather_present(spec_dir):
+    """Which rubric artifacts exist on disk. This is what decides whether a conditional
+    dimension applies — not the judge's choice of what to score."""
+    return {name for name in ARTIFACTS if os.path.exists(os.path.join(spec_dir, name))}
 
 
 def gather(spec_dir, base):
     parts = []
-    for name in ("spec.md", "plan.md", "tasks.md", "design.md"):
+    for name in ARTIFACTS:
         p = os.path.join(spec_dir, name)
         if os.path.exists(p):
             parts.append(f"===== {name} =====\n{open(p).read()}")
@@ -136,7 +186,9 @@ def main():
     else:
         scores = judge_via_api(rubric, gather(args.spec_dir, args.base), args.model)
 
-    verdict, total, rows, failed = gate(rubric, by_key, scores)
+    # Presence on disk decides which conditional dimensions apply — see applies().
+    verdict, total, rows, failed, errors = gate(rubric, by_key, scores,
+                                                gather_present(args.spec_dir))
     print(f"Eval ({rubric['version']}) — {args.spec_dir}")
     print(f"{'dimension':32} {'score':>5} {'floor':>5} {'weighted':>9}")
     for title, _w, score, floor, weighted, below in rows:
@@ -146,9 +198,15 @@ def main():
         flag = "  ✗ below floor" if below else ""
         print(f"{title:32} {score:>5} {floor:>5} {weighted:>9}{flag}")
     print(f"{'TOTAL':32} {'':>5} {'':>5} {total:>9}/100  (pass ≥ {rubric['pass_score']})")
+    # Judge errors first: they explain why a total that looks passing is not one.
+    for e in errors:
+        print(f"::error::eval FAIL — judge error: {e}")
+    if errors:
+        print("::error::A score outside the rubric's scale means the judge misread the "
+              "rubric; the run is failed rather than silently clamped into a pass.")
     if failed:
         print(f"::error::eval FAIL — dimensions below floor: {', '.join(failed)}")
-    elif verdict == "FAIL":
+    elif verdict == "FAIL" and not errors:
         print(f"::error::eval FAIL — total {total} < pass_score {rubric['pass_score']}")
     print(f"verdict: {verdict}")
     return 0 if verdict == "PASS" else 1
