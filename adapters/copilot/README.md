@@ -55,6 +55,9 @@ quality gates (`.github/workflows/`).
 | post-lint | `lefthook` pre-commit lint-ts / lint-kotlin (prettier/eslint/ktlint, `stage_fixed`) | ✓ |
 | stop-verify (spec-drift) | `lefthook` pre-commit spec-drift | ✓ blocks on drift |
 | stop-verify (compile) | `lefthook` pre-push typecheck-ts / compile-kotlin | ✓ |
+| post-spec-guard (lifecycle gates) | — | ✗ no PostToolUse event. The `status: done` gate and the raise-only `rigor:` rule are **prompt promises here**, not mechanism: `/wf-done` still evaluates the gate, but nothing stops a hand-edit of the frontmatter. The CI gates remain the durable half |
+| pre-file-guard (secret files) | `lefthook` pre-commit secret-scan | ~ partial. The commit-time scan catches a secret file being COMMITTED; it cannot stop Copilot READING one into the chat transcript, which is the half with no analog |
+| notify | — | ✗ no event, and nothing to notify — Copilot has no long-running background session to be told about |
 | trace-subagent (token observability) | — | ✗ no Copilot event — covered by **CI gates** |
 | session-start / pre-compact | — | ✗ (lower value) |
 

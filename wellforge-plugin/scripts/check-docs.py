@@ -217,6 +217,116 @@ if os.path.exists(_readme_path) and os.path.isdir(_WORKFLOWS):
                     fail.append(f"gates/README.md:{lineno} says {label} {found} but the gate "
                                 f"workflows pin {pinned} — the README is the number people copy")
 
+# ── the CLI's version lives in three files and a tag ────────────────────────────────
+# Formula/wellforge.rb had no `version` line at all and its url still pointed at the
+# TEMPLATE tag v0.9.0, so Homebrew guessed 0.9.0 while the script printed 1.4.0 — and the
+# formula's own `test do` block compares the two. A brew user ran a CLI a year behind every
+# report that named it current.
+_cli_path = os.path.join(ROOT, "scripts", "wellforge")
+_formula_path = os.path.join(ROOT, "Formula", "wellforge.rb")
+cli_version = None
+if os.path.exists(_cli_path):
+    m = re.search(r'^WELLFORGE_CLI_VERSION="([0-9]+\.[0-9]+\.[0-9]+)"', open(_cli_path).read(), re.M)
+    if m:
+        cli_version = m.group(1)
+    else:
+        fail.append("scripts/wellforge has no WELLFORGE_CLI_VERSION — the CLI version has no source")
+
+if cli_version and os.path.exists(_formula_path):
+    ftext = open(_formula_path).read()
+    fm = re.search(r'^\s*version "([0-9]+\.[0-9]+\.[0-9]+)"', ftext, re.M)
+    if not fm:
+        fail.append("Formula/wellforge.rb has no explicit `version` line — Homebrew will guess "
+                    "it from the url, and a cli-vX.Y.Z tag is not a shape it can parse")
+    elif fm.group(1) != cli_version:
+        fail.append(f"Formula/wellforge.rb pins version {fm.group(1)} but scripts/wellforge is "
+                    f"{cli_version} — `brew test` asserts these agree")
+    um = re.search(r"archive/refs/tags/([^.]+(?:\.[^.]+)*)\.tar\.gz", ftext)
+    if um and not um.group(1).startswith("cli-v"):
+        fail.append(f"Formula/wellforge.rb url points at {um.group(1)!r}, which is not a cli-v "
+                    f"tag — the CLI ships in its own series (docs/VERSIONING.md)")
+    # The sha is a placeholder until the tag is pushed and release-cli.sh fills it in. That
+    # is a WARNING, not a failure: it is a true statement about an unreleased formula, and
+    # failing CI for it would block every unrelated change until someone cuts a release.
+    if re.search(r'sha256 "0{64}"', ftext):
+        print("⚠ Formula/wellforge.rb carries a placeholder sha256 — the formula is not "
+              "released yet. Fix with: scripts/release-cli.sh "
+              f"{cli_version} --formula-only --execute (after pushing cli-v{cli_version}).",
+              file=sys.stderr)
+
+# Tag agreement, only when tags are actually present — a shallow CI checkout has none, and
+# "no tags" must not read as "the tags disagree".
+if cli_version:
+    try:
+        import subprocess
+        tags = subprocess.run(["git", "-C", ROOT, "tag", "-l", "cli-v*", "--sort=-v:refname"],
+                              capture_output=True, text=True, timeout=10).stdout.split()
+        if tags and tags[0] != f"cli-v{cli_version}":
+            fail.append(f"newest cli tag is {tags[0]} but scripts/wellforge is {cli_version} — "
+                        f"one of them was bumped without the other")
+    except Exception:  # noqa: BLE001
+        pass
+
+# ── no document may claim a version that does not exist yet ─────────────────────────
+# The brief for this check asked that EVERY plugin version mention equal plugin.json. It
+# cannot: CLAUDE.md legitimately cites plugin 2.26.0 and 2.27.0 as the releases that shipped
+# Phases 16 and 17, and rewriting those to today's number would turn a changelog into a lie.
+# The rule that IS enforceable: nothing may claim a version NEWER than the files define
+# (that version does not exist), and the single designated current-state line must match
+# exactly. Everything older than the current version is history and is left alone.
+def _tuple(v):
+    return tuple(int(x) for x in v.split("."))
+
+
+_docs = [("README.md", os.path.join(ROOT, "README.md")),
+         ("CLAUDE.md", os.path.join(ROOT, "CLAUDE.md")),
+         ("docs/INSTALLATION.md", os.path.join(ROOT, "docs", "INSTALLATION.md"))]
+for label, path in _docs:
+    if not os.path.exists(path):
+        continue
+    body = open(path, encoding="utf-8").read()
+    for lineno, line in enumerate(body.splitlines(), 1):
+        for found in re.findall(r"plugin[ -]`?v?([0-9]+\.[0-9]+\.[0-9]+)`?", line):
+            if _tuple(found) > _tuple(pj):
+                fail.append(f"{label}:{lineno} names plugin {found}, which is newer than "
+                            f"plugin.json ({pj}) — that release does not exist")
+        if cli_version:
+            for found in re.findall(r"(?:CLI|cli)[ -]`?v?([0-9]+\.[0-9]+\.[0-9]+)`?", line):
+                if _tuple(found) > _tuple(cli_version):
+                    fail.append(f"{label}:{lineno} names CLI {found}, newer than "
+                                f"scripts/wellforge ({cli_version}) — that release does not exist")
+
+# The designated current-state line, asserted exactly.
+_cl = open(os.path.join(ROOT, "CLAUDE.md"), encoding="utf-8").read()
+_cur = [l for l in _cl.splitlines() if "Latest tags:" in l]
+if not _cur:
+    fail.append("CLAUDE.md no longer has a `Latest tags:` line — the current-state check "
+                "has nothing to assert against")
+else:
+    # The statement spans a few wrapped lines; take the paragraph.
+    _idx = _cl.splitlines().index(_cur[0])
+    _para = "\n".join(_cl.splitlines()[_idx:_idx + 6])
+    # EVERY version in this paragraph must be the current one. Requiring merely that the
+    # current version appears somewhere is not enough: the paragraph names each series
+    # twice (as a tag and as a bare version), so one of the two could go stale while the
+    # other satisfied the check — measured, that is exactly what slipped through.
+    for found in re.findall(r"plugin[ -]`?v?([0-9]+\.[0-9]+\.[0-9]+)`?", _para):
+        if found != pj:
+            fail.append(f"CLAUDE.md's `Latest tags` paragraph names plugin {found} but "
+                        f"plugin.json is {pj} — the one paragraph that states current "
+                        f"versions has a stale mention")
+    if cli_version:
+        for found in re.findall(r"(?:CLI|cli)[ -]`?v?([0-9]+\.[0-9]+\.[0-9]+)`?", _para):
+            if found != cli_version:
+                fail.append(f"CLAUDE.md's `Latest tags` paragraph names CLI {found} but "
+                            f"scripts/wellforge is {cli_version}")
+    if f"plugin `{pj}`" not in _para and f"plugin-v{pj}" not in _para:
+        fail.append(f"CLAUDE.md's `Latest tags` paragraph does not name plugin {pj} "
+                    f"(plugin.json) — the one line that states current versions is stale")
+    if cli_version and f"cli-v{cli_version}" not in _para:
+        fail.append(f"CLAUDE.md's `Latest tags` paragraph does not name cli-v{cli_version} "
+                    f"(scripts/wellforge) — the one line that states current versions is stale")
+
 if fail:
     print("✗ docs drift:")
     for f in fail:

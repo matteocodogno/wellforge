@@ -46,7 +46,7 @@ check 2 Read  ".mise.local.toml"
 # Ordinary files untouched
 check 0 Write "src/main.ts"
 check 0 Read  "package.json"
-check 0 Edit  "docs/PLAN.md"
+check 0 Edit  "docs/plans/PLAN.md"
 
 # ── Grep, reported 2026-09-20: it sends `path`, not `file_path`, and content mode PRINTS
 # matching lines — a read by another name. It was outside the matcher entirely.

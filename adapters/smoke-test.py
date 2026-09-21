@@ -4,7 +4,7 @@
     uv run --with pyyaml python adapters/smoke-test.py --adapter copilot|opencode
     uv run --with pyyaml python adapters/smoke-test.py --adapter opencode --keep /tmp/x
 
-Generates the adapter into a temp dir and asserts four things about what came out. Each
+Generates the adapter into a temp dir and asserts five things about what came out. Each
 assertion exists because its failure is INVISIBLE — the generator prints a healthy summary
 either way:
 
@@ -59,6 +59,11 @@ ADAPTERS = {
 }
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+
+
+# Where each adapter ships the deterministic layer. The prompts resolve $WF to this.
+ADAPTER_ROOT = {"copilot": os.path.join(".github", "wf-skills"),
+                "opencode": os.path.join(".opencode", "wellforge")}
 
 
 def plugin_inventory():
@@ -174,6 +179,81 @@ def c_coverage(out, spec, adapter):
     return problems, have
 
 
+def e_references(out, adapter):
+    """e. Every `$WF/...` path a generated artifact names must EXIST in the output, and
+    every shipped script must actually run there.
+
+    This is the assertion whose absence hid the gap. a-d inventoried commands, agents and
+    skills — the artifacts — and never looked at what those artifacts tell the reader to
+    run. Seven prompts (status, done, triage, promote, implement, orchestrate, doctor) plus
+    the quality-gates and rigor-tiers skills called forge-state.py, run-report.py and
+    security-triggers.py and cited config/rigor-budgets.yml and config/security-triggers.yml,
+    none of which either generator copied. Every one of those instructions pointed at a file
+    that was not there, and the generators printed a healthy summary.
+    """
+    root_rel = ADAPTER_ROOT[adapter]
+    root = os.path.join(out, root_rel)
+    problems = []
+
+    # Collect the referenced paths from every generated text artifact.
+    referenced = {}
+    # os.walk, not glob: `.github` and `.opencode` are dot-directories and glob's `**`
+    # does not descend into them. The first version of this check used glob, found zero
+    # references, and reported it as "the layer stopped being mentioned".
+    def _md_files():
+        for dirpath, _dirs, files in os.walk(out):
+            for fn in files:
+                if fn.endswith(".md"):
+                    yield os.path.join(dirpath, fn)
+
+    for fp in _md_files():
+        body = open(fp, encoding="utf-8", errors="replace").read()
+        for rel in re.findall(r"\$WF/((?:scripts|config)/[A-Za-z0-9_.-]+)", body):
+            referenced.setdefault(rel, []).append(os.path.relpath(fp, out))
+    if not referenced:
+        problems.append("no generated artifact references $WF/scripts or $WF/config — either "
+                        "the deterministic layer stopped being mentioned, or the repointing "
+                        "broke and this assertion is now blind")
+    for rel, where in sorted(referenced.items()):
+        if not os.path.exists(os.path.join(root, rel)):
+            problems.append(f"{where[0]} references $WF/{rel}, which is not in the output "
+                            f"({root_rel}/{rel} missing)")
+
+    # A file that exists but cannot run is the same failure one step later.
+    for script in sorted(glob.glob(os.path.join(root, "scripts", "*.py"))):
+        r = subprocess.run([sys.executable, script, "--help"],
+                           capture_output=True, text=True, cwd=root)
+        if r.returncode != 0:
+            tail = (r.stderr or r.stdout).strip().splitlines()
+            problems.append(f"{root_rel}/scripts/{os.path.basename(script)} --help exited "
+                            f"{r.returncode} from the generated tree"
+                            + (f": {tail[-1]}" if tail else ""))
+
+    # The $WF ROOT must not be resolved the Claude way. Scoped to the assignment itself:
+    # an earlier version flagged any file that merely MENTIONED installed_plugins.json, and
+    # wf-doctor legitimately does — it diagnoses the Claude install in its own section.
+    # Flagging that made a true statement about the wrong line.
+    root_via_claude = re.compile(r"^\s*WF=\$\(python3[^\n]*installed_plugins\.json", re.M)
+    for fp in _md_files():
+        body = open(fp, encoding="utf-8", errors="replace").read()
+        if root_via_claude.search(body):
+            problems.append(f"{os.path.relpath(fp, out)} assigns $WF via "
+                            f"installed_plugins.json — that file belongs to a Claude Code "
+                            f"install and is absent or unrelated here")
+
+    # Not a failure, but worth saying every run: sections that diagnose the CLAUDE install
+    # are meaningless in this tool and were never rewritten for it. Listing them keeps a
+    # known gap visible instead of letting a green run imply there is none.
+    residue = sorted(os.path.relpath(fp, out) for fp in _md_files()
+                     if "installed_plugins.json" in open(fp, encoding="utf-8",
+                                                         errors="replace").read())
+    if residue:
+        print(f"       note: {len(residue)} generated file(s) still describe the Claude "
+              f"plugin install, which does not exist here: {', '.join(residue[:4])}"
+              + (" …" if len(residue) > 4 else ""))
+    return problems
+
+
 def d_routing(out, spec, adapter):
     """d. Generated `model:` values == routing × tiers for this tool. Reuses the plugin's
     own drift guard rather than re-deriving the expectation here."""
@@ -237,11 +317,22 @@ def main():
         else:
             print(f"  ✓ d. {msg.lstrip('✓ ')}")
 
+        problems = e_references(out, args.adapter)
+        if problems:
+            failed += 1
+            print(f"  ✗ e. {len(problems)} broken reference(s) to the deterministic layer:")
+            for e in problems[:20]:
+                print(f"       {e}")
+        else:
+            root = os.path.join(out, ADAPTER_ROOT[args.adapter])
+            n = len(glob.glob(os.path.join(root, "scripts", "*.py")))
+            print(f"  ✓ e. every $WF/ path referenced exists; {n} shipped script(s) run")
+
         print()
         if failed:
-            print(f"{args.adapter}: {failed} of 4 assertions FAILED")
+            print(f"{args.adapter}: {failed} of 5 assertions FAILED")
             return 1
-        print(f"{args.adapter}: 4 of 4 assertions passed")
+        print(f"{args.adapter}: 5 of 5 assertions passed")
         return 0
     finally:
         if not args.keep:

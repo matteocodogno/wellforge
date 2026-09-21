@@ -39,6 +39,9 @@ The enforcement plugin (`.opencode/plugins/wellforge.js`) ports the high-value h
 | pre-bash-guard | `tool.execute.before` (throw = deny) | ✓ (guard regexes parity-tested 13/13) |
 | post-lint | `file.edited` | ✓ prettier/eslint/ktlint, best-effort |
 | stop-verify (spec-drift) | `session.idle` | ✓ warns (can't block on idle) |
+| post-spec-guard (lifecycle gates) | — | ✗ OpenCode has no post-edit event that can refuse. The `status: done` gate and the raise-only `rigor:` rule are **prompt promises here**, not mechanism; the CI gates remain the durable half |
+| pre-file-guard (secret files) | `tool.execute.before` | ~ partial. The plugin's guard inspects BASH command text, so it covers `cat .env`; a direct Read of a secret file does not pass through that event and is not blocked |
+| notify | — | ✗ no equivalent event |
 | trace-subagent (token observability) | — | ✗ no OpenCode subagent-usage event |
 | session-start / pre-compact | `session.created` / `experimental.session.compacting` | not yet (lower value) |
 

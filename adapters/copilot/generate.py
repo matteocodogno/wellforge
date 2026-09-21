@@ -27,6 +27,9 @@ import os
 import re
 import shutil
 import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import deterministic  # noqa: E402  — adapters/deterministic.py, shared with the other adapter
+import sys
 
 try:
     import yaml
@@ -109,6 +112,12 @@ def relink(s, skill=None):
         t = m.group(1)
         if t.startswith("../skills/"):
             return "](../wf-skills/" + t[len("../skills/"):] + ")"
+        # A link to a COMMAND. In the plugin a skill reaches one as `../../commands/x.md`;
+        # here commands are prompt files one level under `.github/`, so from
+        # `.github/wf-skills/<name>/` that is `../../prompts/wf-x.prompt.md`.
+        m2 = re.match(r"^\.\./\.\./commands/([a-z0-9-]+)\.md$", t)
+        if m2:
+            return f"](../../prompts/wf-{m2.group(1)}.prompt.md)"
         if skill:
             for other in _SKILL_NAMES:
                 if t.startswith(f"../{other}/"):
@@ -121,7 +130,7 @@ def relink(s, skill=None):
 
 
 # ── emit stage (Copilot-native) ─────────────────────────────────────────────────────────
-# Implemented incrementally per docs/PLAN-copilot-adapter.md build order. Each returns a
+# Implemented incrementally per docs/plans/PLAN-copilot-adapter.md build order. Each returns a
 # count for the summary line. Stubs below are filled in by the noted step.
 
 def gen_prompts(plugin, out):
@@ -152,6 +161,18 @@ def gen_prompts(plugin, out):
         hint = " ".join(hm.group(1).split()).replace("{", "").replace("}", "") if hm else ""
         arg_var = f"${{input:args:{hint}}}" if hint else "${input:args}"
         body = relink(translate(body)).replace("$ARGUMENTS", arg_var)
+        # Repoint the deterministic layer at the shipped copy. Left alone, the body carries
+        # Claude's plugin-root lookup (~/.claude/plugins/installed_plugins.json), which in a
+        # Copilot checkout resolves to nothing and falls back to a directory that is not
+        # there — so every forge-state/run-report call in the prompt failed silently.
+        if deterministic.needs_repoint(body):
+            body, k = deterministic.repoint(
+                body, '"$(git rev-parse --show-toplevel)/.github/wf-skills"', "Copilot")
+            if not k:
+                raise SystemExit(
+                    f"wf-{name}: references $WF but no plugin-root preamble was found to "
+                    f"rewrite — the prompt would resolve the root the Claude way. Fix the "
+                    f"preamble in commands/{name}.md or the matcher in adapters/deterministic.py")
         fm = yaml.safe_dump({"mode": "agent", "description": desc},
                             sort_keys=False, allow_unicode=True, width=4096).strip()
         with open(os.path.join(d, f"wf-{name}.prompt.md"), "w") as f:
@@ -308,7 +329,9 @@ def gen_instructions(plugin, out):
                 # `open(p, "w")` BEFORE the argument, truncating the file to zero, so the
                 # read returns "" and every skill was emitted EMPTY. Read first, then write.
                 content = open(p).read()
-                open(p, "w").write(translate(content))
+                # relink too: a skill that links to a COMMAND (`../../commands/x.md`) is
+                # broken in this layout, and copytree + translate alone never touched it.
+                open(p, "w").write(relink(translate(content)))
                 n_lib += 1
 
     # 2. glob-scoped instruction pointers for path-mappable skills
@@ -340,6 +363,11 @@ def gen_instructions(plugin, out):
     print(f"  instructions: {n_inst} scoped + copilot-instructions.md; "
           f"library: {n_lib} skill md files in .github/wf-skills/", file=sys.stderr)
     return n_inst
+
+
+def gen_deterministic(plugin, out):
+    """Ship scripts/ + config/ under .github/wf-skills/ — see adapters/deterministic.py."""
+    return deterministic.ship(plugin, out, os.path.join(".github", "wf-skills"))
 
 
 def gen_mcp(plugin, out):
@@ -457,6 +485,7 @@ def main():
     # AFTER gen_instructions: it rebuilds .github/wf-skills/ from scratch (rmtree), so a
     # rubric written before it would be wiped.
     gen_rubric(args.plugin, args.out, os.path.join(".github", "wf-skills", "eval-rubric.yml"))
+    det = gen_deterministic(args.plugin, args.out)
     m = gen_mcp(args.plugin, args.out)
     g = gen_githooks(args.out)
     assert_nonempty(os.path.join(args.out, ".github"), "copilot adapter")

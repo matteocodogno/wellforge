@@ -57,7 +57,7 @@ for p in [
 
 # ── paths that must NOT (otherwise every batch dispatches and the signal dies) ──
 for p in [
-    "frontend/src/components/Button.tsx", "README.md", "docs/PLAN.md",
+    "frontend/src/components/Button.tsx", "README.md", "docs/plans/PLAN.md",
     "backend/src/main/kotlin/com/acme/domain/Order.kt",
     "frontend/src/hooks/useDebounce.ts", "mise.toml", "package.json",
     "backend/src/service/ReportExporter.kt", "src/utils/format-date.ts",

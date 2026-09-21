@@ -46,6 +46,7 @@ useful complete.
 | `mise` | generated projects' tasks | `brew install mise` |
 | `gh` | connections, releases, the `gh issue` heartbeat path | `brew install gh && gh auth login` |
 | `python3` | the gate scripts and run-report | — |
+| `python3` + **pyyaml** | `forge-state.py` parses frontmatter with it; without it every status/rigor/verdict reads as *unknown*, not absent | `uv` covers it (the commands fall back to `uv run --with pyyaml python`), else `pip install pyyaml` |
 | `node`, `pnpm` | Node/TS presets | via mise |
 | `java`, `mvn` | JVM preset | via mise |
 
@@ -80,6 +81,35 @@ the way in and unguarded on the way out.
 Call out `post-spec-guard.sh` specifically if it is missing or not executable: it is the
 only mechanical enforcement of the `status: done` gate and the raise-only `rigor:` rule.
 Without it both revert to prompt promises, and nothing in a session will say so.
+
+**The deterministic layer runs** — prove it rather than assuming, because every command
+below (`/wf-status`, `/wf-done`, `/wf-triage`, `/wf-promote`) is built on it and its absence
+looks like an empty project rather than a broken tool:
+
+```bash
+# Resolve the plugin root ONCE per session, then reuse $WF. ${CLAUDE_PLUGIN_ROOT} is
+# substituted for HOOKS only — it is NOT exported to the Bash tool (measured: unset), so
+# interpolating it here silently runs `python3 /scripts/...`.
+WF=$(python3 -c "import json,os;p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins'];print(next(i['installPath'] for k,v in p.items() if k.startswith('wellforge@') for i in v))" 2>/dev/null)
+# Running from a checkout (claude --plugin-dir) installs nothing; fall back to the repo.
+[ -n "$WF" ] || WF="$(pwd)/wellforge-plugin"
+# A FUNCTION, not a variable holding a command: `WFPY="uv run ... python"` then `wfpy x`
+# relies on word splitting, which zsh does not do for unquoted parameters — measured, it
+# fails with `command not found: uv run --quiet --with pyyaml python`.
+# uv first because forge-state needs pyyaml to read frontmatter and the system python3
+# usually lacks it; without it every field reads as unknown.
+wfpy() {
+  if python3 -c "import yaml" 2>/dev/null; then python3 "$@"; else uv run --quiet --with pyyaml python "$@"; fi
+}
+wfpy "$WF/scripts/forge-state.py" --explain-gate >/dev/null \
+  && echo "OK — forge-state runs ($WF)" \
+  || echo "FAIL — forge-state could not run from $WF"
+```
+
+FAIL here is the **first** thing to report: nothing else in this report is trustworthy if
+the state layer cannot run. In an adapter checkout (Copilot / OpenCode) `$WF` is a directory
+inside the repository, so the usual cause is a missing `python3`/`pyyaml` rather than a
+missing install — say which, using the toolchain rows above.
 
 **Guards** ⟨plugin⟩ — run the two drift guards and report their output verbatim:
 

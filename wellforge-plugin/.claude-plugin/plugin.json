@@ -1,14 +1,21 @@
 {
   "name": "wellforge",
-  "version": "2.48.0",
-  "description": "Full-stack development plugin for Spring Boot Kotlin + React TypeScript projects. Bundles a spec-driven workflow (spec/plan/design/tasks/implement commands) with rigor tiers (spike/mvp/production \u2014 match ceremony to stakes via /wellforge:spike or --mode, graduate with /wellforge:promote), a role-based agent team (PO, architect, designer, FE/BE dev, devops, QE, LM-judge evaluator) with an orchestrator, eval (rubric-scored LM-judge) and status commands, a Copier-based scaffolder with connection checklists, brownfield adoption, skills, security and ADR specialist agents, lifecycle hooks, and MCP servers (sequential-thinking, playwright, github, context-hub).",
+  "version": "2.49.0",
+  "description": "Full-stack AI-assisted development: spec-driven workflow, role-based agent team, orchestrator, scaffolder, lifecycle upgrades, quality-gate and eval enforcement.",
   "author": {
     "name": "WellForge"
   },
   "license": "MIT",
   "keywords": [
+    "spec-driven",
+    "multi-agent",
+    "quality-gates",
+    "copier",
+    "scaffolding",
     "kotlin",
     "spring-boot",
+    "hono",
+    "pulumi",
     "react",
     "typescript",
     "owasp",

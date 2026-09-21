@@ -1,6 +1,6 @@
 # Copilot adapter — VS Code smoke test
 
-Step 8 of `docs/PLAN-copilot-adapter.md`: a hands-on pass in a real VS Code + Copilot session.
+Step 8 of `docs/plans/PLAN-copilot-adapter.md`: a hands-on pass in a real VS Code + Copilot session.
 Ordered so each artifact type is verified independently, with explicit pass criteria and the
 two known gaps called out so they aren't flagged as bugs.
 

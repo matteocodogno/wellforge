@@ -16,6 +16,9 @@ import os
 import re
 import shutil
 import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import deterministic  # noqa: E402  — adapters/deterministic.py, shared with the other adapter
+import sys
 
 try:
     import yaml
@@ -67,8 +70,14 @@ def perms_for(tools, disallowed=None):
         available = set(_TOOL2PERM)     # effectively everything
     else:
         granted = {_TOOL2PERM[t.lower()] for t in tools if t.lower() in _TOOL2PERM}
+        # DENY by default, webfetch included. It was the one key seeded "allow" in a
+        # deny-by-default dict, so all ten generated agents could reach the network
+        # although not one of them lists WebFetch in its Claude `tools:` — the adapter
+        # granted an access the source withheld, which is the wrong direction for a
+        # translation to be lossy in. An agent that needs it lists WebFetch and gets it
+        # through `granted` below, like every other tool.
         perm = {"read": "deny", "edit": "deny", "bash": "deny", "grep": "deny",
-                "glob": "deny", "list": "deny", "webfetch": "allow", "task": "deny"}
+                "glob": "deny", "list": "deny", "webfetch": "deny", "task": "deny"}
         for g in granted:
             perm[g] = "allow"
         if perm["glob"] == "allow":
@@ -120,10 +129,35 @@ def gen_commands(plugin, out):
         dm = re.search(r"^description:\s*(.+)$", fm_text, re.M)
         desc = translate(" ".join(dm.group(1).split())) if dm else name
         fmt = yaml.safe_dump({"description": desc}, sort_keys=False, default_flow_style=False).strip()
+        body = translate(body)
+        # See the Copilot adapter: the Claude plugin-root lookup cannot work here.
+        if deterministic.needs_repoint(body):
+            body, k = deterministic.repoint(
+                body, '"$(git rev-parse --show-toplevel)/.opencode/wellforge"', "OpenCode")
+            if not k:
+                raise SystemExit(
+                    f"wf-{name}: references $WF but no plugin-root preamble was found to "
+                    f"rewrite — the command would resolve the root the Claude way. Fix the "
+                    f"preamble in commands/{name}.md or the matcher in adapters/deterministic.py")
         with open(os.path.join(d, f"wf-{name}.md"), "w") as f:
-            f.write("---\n" + fmt + "\n---\n" + translate(body))
+            f.write("---\n" + fmt + "\n---\n" + body)
         n += 1
     return n
+
+
+def gen_deterministic(plugin, out):
+    """Ship scripts/ + config/ under .opencode/wellforge/ — see adapters/deterministic.py."""
+    return deterministic.ship(plugin, out, os.path.join(".opencode", "wellforge"))
+
+
+_CMD_LINK = re.compile(r"\]\(\.\./\.\./commands/([a-z0-9-]+)\.md\)")
+
+
+def relink_commands(s):
+    """A skill linking to a COMMAND. In the plugin that is `../../commands/x.md`; here
+    commands live at `.opencode/commands/wf-x.md`, so from `.opencode/skills/<name>/` it is
+    `../../commands/wf-x.md`. Only the filename changes, but it changes on every one."""
+    return _CMD_LINK.sub(lambda m: f"](../../commands/wf-{m.group(1)}.md)", s)
 
 
 def gen_skills(plugin, out):
@@ -143,7 +177,7 @@ def gen_skills(plugin, out):
                 # `open(p, "w")` BEFORE the argument, truncating the file to zero, so the
                 # read returns "" and every skill was emitted EMPTY. Read first, then write.
                 content = open(p).read()
-                open(p, "w").write(translate(content))
+                open(p, "w").write(relink_commands(translate(content)))
                 n += 1
     return n
 
@@ -234,6 +268,7 @@ def main():
                        for f in __import__("glob").glob(os.path.join(args.plugin, "agents", "*.md"))]
 
     gen_rubric(args.plugin, args.out, os.path.join(".opencode", "eval-rubric.yml"))
+    det = gen_deterministic(args.plugin, args.out)
     a = gen_agents(args.plugin, args.out, models)
     c = gen_commands(args.plugin, args.out)
     s = gen_skills(args.plugin, args.out)

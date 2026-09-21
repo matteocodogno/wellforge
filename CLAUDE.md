@@ -51,7 +51,7 @@ in every tier. Tier is a copier answer (manifest) + spec/brief frontmatter + com
 ```
 wellforge/
 ├── CLAUDE.md
-├── docs/PLAN.md              # roadmap + per-phase status — read before working here
+├── docs/plans/PLAN.md              # roadmap + per-phase status — read before working here
 ├── copier.yml                # SINGLE template entry point: preset question + templated
 │                             # _subdirectory (required for copier update; repo-wide vX.Y.Z tags)
 ├── .github/workflows/        # reusable gates: quality-node.yml, quality-jvm.yml
@@ -87,18 +87,21 @@ wellforge/
 ## Current state (2026-09)
 
 - **All 6 pillars built** (Phases 0–6 ☑ — per-phase detail and honest deviations in
-  `docs/PLAN.md`). Lifecycle E2E-tested: scaffold v0.1.0 → template change → `copier
+  `docs/plans/PLAN.md`). Lifecycle E2E-tested: scaffold v0.1.0 → template change → `copier
   update` → zero conflicts.
-- **Rigor tiers shipped** (all 3 phases ☑ — `docs/PLAN-rigor-tiers.md`): spike/mvp/production
+- **Rigor tiers shipped** (all 3 phases ☑ — `docs/plans/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v13` (gate
-  workflow pin series), `plugin-v2.48.0` (plugin series) and `cli-v1.0.0` (the `wellforge`
+  workflow pin series), `plugin-v2.49.0` (plugin series) and `cli-v1.4.0` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.48.0`, CLI `1.0.0`. A self-CI workflow
+  plugin `2.49.0`, CLI `1.4.0`. **This is the one line in this file that states current
+  versions**; `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and
+  `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
+  the docs. Every other version in this file is history and stays as written. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets;
   it runs on `origin` (`github.com/matteocodogno/wellforge`, public) and has been green on
   `main` since 2026-08-17.
-  The two series move independently: a `vX.Y.Z` release does NOT carry a `gates_ref` bump to
+  The four series move independently: a `vX.Y.Z` release does NOT carry a `gates_ref` bump to
   existing projects (recorded answer + `--skip-answered`) — `/wellforge:upgrade` bumps it as
   an explicit, raise-only step. Read `docs/VERSIONING.md` before cutting any release: it
   covers which series to bump, why they are separate, and the never-tag-two-series-on-one-
@@ -106,7 +109,7 @@ wellforge/
   `marketplace.json`'s `version` and `source.ref`, CLAUDE.md) — `check-docs.py` fails CI
   otherwise, because a teammate silently installing a different plugin than this repo
   describes is not a failure anything else would report.
-- **Phase 16** (`docs/PLAN.md`) hardens parallel execution from the pilot's field findings —
+- **Phase 16** (`docs/plans/PLAN.md`) hardens parallel execution from the pilot's field findings —
   the `worktree-isolation` skill, environment faults, `touch:`-overlap edges, ADR failure
   shapes (plugin `2.26.0`). **Its template half landed in `v0.10.0`** (ADR 0002): both app
   presets derive a per-checkout database name, host port and compose project from
@@ -115,7 +118,7 @@ wellforge/
   checkout's database. Class 1 of the shared-state enumeration is therefore **isolated** for
   projects at `v0.10.0`+, which is what lets a backend batch of ≥2 run in parallel at all —
   the preflight reads `.forge/manifest.json` to decide which rule applies.
-- **Phase 17** (`docs/PLAN.md`) adds the reflexive pattern the plugin lacked: the
+- **Phase 17** (`docs/plans/PLAN.md`) adds the reflexive pattern the plugin lacked: the
   `self-critique` skill — one bounded pass over your own artifact before the gate that
   follows, checklist-driven, never a loop, never self-approving, and explicitly not evidence
   the evaluator may credit (plugin `2.27.0`).
@@ -179,4 +182,8 @@ wellforge/
   ADR constrains; read the ADR before overturning it. (In generated projects `CLAUDE.md`
   imports `AGENTS.md`; here they sit side by side — this file stays the authority for
   conventions, `AGENTS.md` is the decision log.)
-- All text/docs in English; this is internal WellForge tooling.
+- All text/docs in English. WellForge is **MIT licensed** (see `LICENSE`) and developed
+  in the open; "internal" here only ever described the audience — the team this was
+  built for — never the licence. The Formula said `license :cannot_represent # internal
+  WellForge tooling`, which made an audience note into a licensing claim that
+  contradicted the LICENSE file, plugin.json, the README badge and the public repo.

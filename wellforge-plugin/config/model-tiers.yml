@@ -43,8 +43,12 @@ tools:
   # default for parity with Claude Code.
   copilot:
     anthropic:                                    # default (parity) — verify picker names
-      frontier: Claude Opus 4.1
-      mid:      Claude Sonnet 4.5
+      # These are PICKER LABELS, not model ids — Copilot names them as they appear in the
+      # VS Code model dropdown. They had drifted two generations behind the opencode block
+      # above (Opus 4.1 / Sonnet 4.5 against opus-4-8 / sonnet-4-6), so the two adapters
+      # routed the same tier to different model families.
+      frontier: Claude Opus 5
+      mid:      Claude Sonnet 5
       cheap:    Claude Haiku 4.5
     openai:                                       # template — verify names for your plan
       frontier: GPT-5
