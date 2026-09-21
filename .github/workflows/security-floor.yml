@@ -3,21 +3,61 @@
 # never mean "leaks credentials". Called by generated projects, pinned:
 #   jobs:
 #     security-floor:
-#       uses: matteocodogno/wellforge/.github/workflows/security-floor.yml@gates-v5
+#       uses: matteocodogno/wellforge/.github/workflows/security-floor.yml@gates-v12
 #
-# Scope is deliberately narrow and stack-neutral: a secret/credential scan. The fuller
-# dependency-audit + SAST live in quality-node/jvm.yml (mvp/production tiers); a spike's
-# critical-CVE check is run locally by /wellforge:spike.
+# ── WHAT THIS IS, EXACTLY ─────────────────────────────────────────────────────────────
+# A secret/credential scan over the full git history. That is the whole scope, and the
+# skills now say so too — they used to promise a third item, "dependency audit on CRITICAL
+# CVEs", that this workflow has never run.
+#
+# It is not run here because the floor has two properties that a CVE audit cannot both
+# satisfy today:
+#   * stack-neutral — all three presets call this one workflow, so `pnpm audit` would make
+#     "the floor" uniform in name and Node-only in fact, which is the prose/reality gap this
+#     file is being fixed to close, not a fix for it.
+#   * blocking at every tier — osv-scanner IS stack-neutral (quality-jvm.yml already uses
+#     it), but it reports dev and production dependencies alike: it exposes no --prod flag
+#     and its JSON marks no dependency group (measured on 2.6.0). Blocking on that
+#     contradicts the project's own audit policy (quality-node.yml runs `pnpm audit --prod`)
+#     and fails every fresh scaffold today on vitest@2.1.9 / GHSA-5xrq-8626-4rwp (CVSS 9.8),
+#     a DEV dependency whose fix is a vitest major bump deferred to specs/003-ts-stack-migration.
+#
+# So CVE audits live where they can be judged per stack, and they are honest about the tier:
+#   quality-node.yml  `pnpm audit --prod --audit-level high`   (mvp + production)
+#   quality-jvm.yml   `osv-scanner scan source -r .`            (mvp + production)
+# A `spike` therefore has NO CVE gate in CI. That is a real hole, stated rather than
+# implied; /wellforge:spike checks critical advisories locally, and local is not a gate.
+#
+# "No hardcoded credentials in changed code" is not a separate check — it is what a secret
+# scanner does. gitleaks covers it, over history rather than only the diff.
 name: security-floor
 
 on:
   workflow_call:
     inputs:
+      gates-repo:
+        description: owner/repo hosting gate configs
+        required: false
+        type: string
+        default: matteocodogno/wellforge
+      gates-ref:
+        description: tag/ref of the gates release
+        required: false
+        type: string
+        # Empty resolves to github.job_workflow_sha below — the exact commit of THIS
+        # reusable workflow. Same convention and same reasoning as quality-node.yml: a
+        # hardcoded default rots silently.
+        default: ''
       gitleaks-version:
         description: pinned gitleaks release
         required: false
         type: string
         default: "8.30.1"
+      gitleaks-sha256:
+        description: sha256 of gitleaks_<version>_linux_x64.tar.gz, from the release's checksums.txt
+        required: false
+        type: string
+        default: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
 
 jobs:
   secrets:
@@ -28,13 +68,57 @@ jobs:
         with:
           fetch-depth: 0           # scan full history, not just the tip
 
+      # The config was previously read from `gates/configs/gitleaks.toml` in the CALLER's
+      # checkout — a path that exists in this repo and in no generated project, because
+      # scaffolds reference the gates and never copy them. The `[ -f ]` fallback then made
+      # that silent: every downstream project scanned with pure defaults and the op://
+      # allowlist, the config's entire reason to exist, never applied anywhere it mattered.
+      - name: Checkout gate configs
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ inputs.gates-repo }}
+          ref: ${{ inputs.gates-ref || github.job_workflow_sha }}
+          path: .wellforge-gates
+
+      - name: Verify gate configs resolved
+        run: |
+          ref="${{ inputs.gates-ref || github.job_workflow_sha }}"
+          cfg=.wellforge-gates/gates/configs/gitleaks.toml
+          if [ ! -f "$cfg" ]; then
+            echo "::error::gate config missing at ref ${ref}: gates/configs/gitleaks.toml"
+            echo "::error::The gates checkout (${{ inputs.gates-repo }}@${ref}) does not contain this gate's config. Pass gates-ref explicitly, matching the tag you call this workflow with."
+            exit 1
+          fi
+          echo "gate config OK at ${ref}"
+
+      - name: Install gitleaks (pinned + checksum-verified)
+        env:
+          GL: ${{ inputs.gitleaks-version }}
+          GL_SHA: ${{ inputs.gitleaks-sha256 }}
+        run: |
+          set -euo pipefail
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GL}/gitleaks_${GL}_linux_x64.tar.gz"
+          curl -sSL --fail "$url" -o gitleaks.tgz
+          # A version pin says WHICH release; only the checksum says the bytes are that
+          # release. Without this the floor trusts whatever the URL serves — an odd thing
+          # for the one gate whose job is to distrust what is in the repo.
+          echo "${GL_SHA}  gitleaks.tgz" | sha256sum -c - || {
+            echo "::error::gitleaks ${GL} checksum mismatch — refusing to run the security floor with an unverified binary."
+            echo "::error::expected ${GL_SHA}, got $(sha256sum gitleaks.tgz | cut -d' ' -f1)"
+            exit 1
+          }
+          tar -xzf gitleaks.tgz gitleaks
+          ./gitleaks version
+
       - name: Secret scan (gitleaks)
         run: |
-          GL="${{ inputs.gitleaks-version }}"
-          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GL}/gitleaks_${GL}_linux_x64.tar.gz" -o gitleaks.tgz
-          tar -xzf gitleaks.tgz gitleaks
-          # Use WellForge's gitleaks config (default rules + op:// allowlist) when the caller
-          # ships it; fall back to pure defaults otherwise. Graceful for repos without it.
-          CFG=gates/configs/gitleaks.toml
-          CFGARG=""; [ -f "$CFG" ] && CFGARG="--config $CFG"
-          ./gitleaks detect --source . --redact --no-banner $CFGARG
+          set -euo pipefail
+          # `git`, not `detect`. 8.30.1 lists only dir/git/stdin; `detect` still runs as an
+          # undocumented alias, which is a thin thing for the security floor to stand on.
+          # Verified identical on a fixture repo: same finding, same exit code.
+          #
+          # Git mode walks COMMITS, so the nested .wellforge-gates checkout is not scanned —
+          # its files are untracked in this repository and appear in none of its history.
+          ./gitleaks git . \
+            --redact --no-banner \
+            --config .wellforge-gates/gates/configs/gitleaks.toml

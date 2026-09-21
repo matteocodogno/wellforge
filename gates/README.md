@@ -29,7 +29,7 @@ fail their own gate); the skip is printed as a CI notice, never silent.
 | `/.github/workflows/quality-node.yml` | reusable Node/TS gate (`workflow_call`, input: `working-directory`) |
 | `/.github/workflows/quality-jvm.yml` | reusable JVM gate (same interface) |
 | `configs/semgrep/wellforge.yml` | org-specific SAST rules (secrets, println, debugger) |
-| `configs/gitleaks.toml` | security-floor gitleaks config: default rules + allowlist for 1Password `op://` references (pointers, not secrets). `security-floor.yml` passes it when present; point a local pre-commit gitleaks hook at it too |
+| `configs/gitleaks.toml` | security-floor gitleaks config: default rules + allowlist for 1Password `op://` references (pointers, not secrets). `security-floor.yml` checks out the gates and passes it explicitly — it used to read the path from the *caller's* checkout, where no generated project has one, so downstream every scan silently fell back to pure defaults. Point a local pre-commit gitleaks hook at it too |
 | `scripts/check-jacoco.py` | JaCoCo threshold enforcement (tested: pass/fail/floor) |
 | `scripts/check-commit-msg.py` | Conventional Commits validator — shared by the local hook and both CI gates |
 | `hooks/commit-msg`, `hooks/pre-merge-commit` | local fast-feedback hooks; installed by `/scripts/setup-git-policy.sh` |

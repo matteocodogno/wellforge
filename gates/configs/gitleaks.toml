@@ -6,8 +6,14 @@
 # secrets themselves, and they are the recommended secret-injection pattern — so a literal
 # op:// reference (incl. dummy ones in tests) must not trip the security floor.
 #
-# Wire in with `gitleaks detect --config gates/configs/gitleaks.toml ...` (the security-floor
-# workflow passes it when present; point a local pre-commit gitleaks hook at it too).
+# Honest scope note: measured against gitleaks 8.30.1's default rules, a bare
+# `op://vault/item/field` is not flagged even with no allowlist at all. This entry is
+# defence in depth for the shapes that WOULD trip `generic-api-key` — a long reference, or
+# one sitting next to a `password:`-ish key — not a suppression the floor currently depends
+# on. It costs nothing and removes a class of false positive before it appears.
+#
+# Wire in with `gitleaks git . --config <this file>` (security-floor.yml checks out the
+# gates and passes it explicitly; point a local pre-commit gitleaks hook at it too).
 # Changing the security floor is a gates/ PR — the deliberate discretion point.
 
 title = "WellForge security floor"
@@ -15,7 +21,12 @@ title = "WellForge security floor"
 [extend]
 useDefault = true
 
-[allowlist]
+# Plural `[[allowlists]]`, not the singular `[allowlist]`. The singular form is the
+# deprecated spelling upstream; 8.30.1 still accepts it and emits no warning at any log
+# level (measured), so this is forward-compatibility rather than a fix for a live problem.
+# Verified equivalent on a fixture repo before switching: same finding on a planted token,
+# same suppression of op://, same exit code under both spellings.
+[[allowlists]]
 description = "1Password op:// secret references (runtime pointers, not secrets)"
 regexes = [
   '''op://[A-Za-z0-9 ._%+-]+/[A-Za-z0-9 ._%+-]+(?:/[A-Za-z0-9 ._%+-]+)*''',
