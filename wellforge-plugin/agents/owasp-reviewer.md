@@ -104,6 +104,32 @@ For projects handling regulated or public-sector data:
 
 Start with a one-line verdict: **PASS** (no issues found), **PASS WITH NOTES** (low-severity only), or **REVIEW REQUIRED** (medium+).
 
+### …and the value that goes in the run trace
+
+Those three words are for a human reading the review. `verdicts.security` in the run trace
+is a **two-value, case-sensitive** field — the done gate compares it with `!= "PASS"`, so
+anything else, including `"pass"`, fails. `PASS WITH NOTES` written through verbatim
+therefore **blocked the gate on a review that found only low-severity issues**, which is the
+opposite of what the verdict means.
+
+Whoever writes the trace (`implement`, `orchestrate`, `promote`) maps it:
+
+| Your verdict | `verdicts.security` | Also record |
+|---|---|---|
+| PASS | `"PASS"` | — |
+| PASS WITH NOTES | `"PASS"` | `security.notes[]` — the low-severity findings, verbatim |
+| REVIEW REQUIRED | `"FAIL"` | the findings route per rigor-tiers' *"Routing a QE FAIL"* |
+| *(not dispatched)* | **key omitted** | `security.dispatched: false` |
+
+The mapping is not a downgrade of your judgement: a low-severity finding is still recorded,
+in `security.notes[]`, where `/wellforge:triage` can surface it. What it must not do is
+block a close, because "low-severity only" is a pass by this project's own severity rule
+(findings ≥ medium are defects).
+
+**Never** invent a third value in the trace, and never write `verdicts.security: null` —
+absent is how "no review was dispatched" is spelled (observability skill), and a key that
+asserts `null` reads as a value that was computed.
+
 Then list findings as:
 
 ```

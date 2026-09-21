@@ -163,9 +163,15 @@ difference is deliberate.
   the **2-round cap** in the rigor-tiers skill's *"Routing a QE FAIL"* section, shared so the
   two loops cannot drift apart. A security finding that is really a wrong AC goes to the PO,
   not to a dev.
-- Record the outcome as `verdicts.security` in the run trace (PASS / FAIL / null when not
-  dispatched), with the matched rules. A review that happened and a review that was never
-  needed must not read the same afterwards.
+- Record the outcome as `verdicts.security` in the run trace, **mapped** — the reviewer
+  speaks in three verdicts and the field holds two, case-sensitively:
+  `PASS` → `"PASS"`, `PASS WITH NOTES` → `"PASS"` plus `security.notes[]`,
+  `REVIEW REQUIRED` → `"FAIL"`. Writing `PASS WITH NOTES` through verbatim blocked the gate
+  on a review that found only low-severity issues.
+  When no review was dispatched, **omit the key** and record `security.dispatched: false` —
+  not `null`. Absent is how the observability skill spells "never ran"; a key asserting
+  `null` reads as a value someone computed. Record `security.matched_rules[]` either way, so
+  a later reader can see why it ran or why it did not.
 
 If the script is unavailable, **dispatch anyway and say why**: one extra mid-tier agent is
 the cost of being wrong in that direction; an unreviewed auth change is the cost of the other.

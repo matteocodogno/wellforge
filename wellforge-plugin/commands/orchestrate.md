@@ -188,6 +188,24 @@ contract and disk-based artifacts, fewer stages. **Never spawn the frontier agen
    security floor BLOCK** (rigor-tiers). Coverage is reported as gap-to-80%, not enforced.
    Triage blocking defects to their owner (code → dev; a wrong/untestable AC → the PO for a
    spec amendment — mvp has no architect/designer to route to). Same bounded 2-round loop.
+5b. **Security review** → run the same trigger check the production pipeline runs. It was
+   missing here, and the omission was not a tier decision:
+   `config/security-triggers.yml` reviews `mvp` **on a match**, `implement.md` runs the
+   check at every tier, and only `orchestrate`'s mvp pipeline skipped it — so the same
+   batch was reviewed under `/wellforge:implement` and not under `/wellforge:orchestrate`.
+
+   ```bash
+   # $WF / wfpy as resolved earlier in this command.
+   wfpy "$WF/scripts/security-triggers.py" \
+     --tier mvp --diff-base <the feature branch base> \
+     --touch '<each touch: glob in this batch>' --json
+   ```
+
+   `dispatch: false` → one line saying so, then QE. `dispatch: true` → spawn
+   **`wellforge:owasp-reviewer`** over `scope[]`; findings ≥ medium route like a QE FAIL.
+   Record `verdicts.security` mapped per `agents/owasp-reviewer.md`, and
+   `security.matched_rules[]`. At mvp an absent verdict is legitimate (nothing matched) —
+   record `security.dispatched: false` so that reads as a decision rather than an omission.
 6. **Record the run** → trace as below with `command: orchestrate`, `rigor: mvp`. Before
    the close, not after: the gate reads `verdicts.qe` from the trace, so closing first
    refuses with "QE verdict is absent" on a feature whose only run is this one.

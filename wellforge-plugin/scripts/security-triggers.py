@@ -17,6 +17,7 @@ Pure stdlib except pyyaml for the config.
 """
 import argparse
 import fnmatch
+import glob
 import json
 import os
 import re
@@ -61,35 +62,95 @@ def match_path(path, cfg):
 
 
 def git_changed(base, repo="."):
-    """Files changed against the batch's base. Empty on any git problem — the touch: globs
-    still decide, and a missing diff must never silently turn a match into a miss."""
+    """(files, error). Files changed against the batch's base.
+
+    The docstring here used to promise that "a missing diff must never silently turn a match
+    into a miss" and then do exactly that: every failure returned [] with no note and exit 0,
+    so `--diff-base` with a typo'd ref reported "no trigger matched" and the reviewer was
+    never dispatched. A bad ref does not raise — git exits non-zero with empty stdout — so
+    the try/except never even fired. The error is now returned and the caller fails toward
+    review, which is this file's stated policy everywhere else.
+    """
     try:
         out = subprocess.run(["git", "-C", repo, "diff", "--name-only", base],
                              capture_output=True, text=True, timeout=15)
-        return [l for l in out.stdout.splitlines() if l.strip()]
+    except Exception as e:  # noqa: BLE001
+        return [], f"git diff failed to run: {type(e).__name__}: {e}"
+    if out.returncode != 0:
+        detail = (out.stderr or "").strip().splitlines()
+        return [], (f"git diff --name-only {base!r} exited {out.returncode}"
+                    + (f": {detail[-1]}" if detail else ""))
+    return [l for l in out.stdout.splitlines() if l.strip()], None
+
+
+def expand_touch(glob_pattern, repo="."):
+    """A declared `touch:` glob → the files it currently covers, repo-relative.
+
+    `touch:` globs are matched literally as well (intent before the code exists), but a
+    literal match only fires when the glob itself names a trigger — `src/auth/**` matches
+    `**/auth/**`, while `src/**` does not, even though it covers `src/auth/login.ts`. A
+    batch declaring the broader glob was therefore never reviewed. Expanding against the
+    working tree closes that without giving up the intent half.
+    """
+    if not any(ch in glob_pattern for ch in "*?["):
+        return []
+    pat = glob_pattern
+    # `a/**` in task globs means "everything under a"; glob's recursive form is `a/**/*`.
+    if pat.endswith("/**"):
+        pat = pat + "/*"
+    try:
+        hits = glob.glob(os.path.join(repo, pat), recursive=True)
     except Exception:  # noqa: BLE001
         return []
+    out = []
+    for h in hits:
+        if not os.path.isfile(h):
+            continue
+        try:
+            out.append(os.path.relpath(h, repo))
+        except ValueError:
+            continue
+    return out
 
 
-def evaluate(tier, touches, files, cfg):
+def evaluate(tier, touches, files, cfg, repo=".", error=None):
     matches = []
+    expanded = []
+    for glob_pattern in touches:
+        expanded.extend((glob_pattern, f) for f in expand_touch(glob_pattern, repo))
     for source, paths in (("touch:", touches), ("diff", files)):
         for path in paths:
             m = match_path(path, cfg)
             if m:
                 matches.append({"path": path, "source": source, **m})
+    for glob_pattern, path in expanded:
+        m = match_path(path, cfg)
+        if m:
+            matches.append({"path": path, "source": f"touch:{glob_pattern}", **m})
     always = tier in (cfg.get("always_at_tier") or [])
-    return {
+    # An unusable diff cannot be allowed to read as "nothing matched": we do not know what
+    # changed, so we cannot know that nothing sensitive did. Same policy as a missing config.
+    dispatch = bool(matches) or always or bool(error)
+    if error:
+        reason = f"could not determine changed files — dispatching anyway ({error})"
+    elif always and not matches:
+        reason = "tier is in always_at_tier"
+    elif matches:
+        reason = "matched a security trigger"
+    else:
+        reason = "no trigger matched"
+    result = {
         "tier": tier,
-        "dispatch": bool(matches) or always,
-        "reason": ("tier is in always_at_tier" if always and not matches
-                   else "matched a security trigger" if matches
-                   else "no trigger matched"),
+        "dispatch": dispatch,
+        "reason": reason,
         "always_at_tier": always,
         "matches": matches,
         "scope": sorted({m["path"] for m in matches}) or sorted(set(files)),
-        "considered": {"touch": len(touches), "diff": len(files)},
+        "considered": {"touch": len(touches), "touch_expanded": len(expanded), "diff": len(files)},
     }
+    if error:
+        result["note"] = error
+    return result
 
 
 def main():
@@ -113,10 +174,12 @@ def main():
         return 0
 
     files = list(args.files)
+    error = None
     if args.diff_base:
-        files += git_changed(args.diff_base, args.repo)
+        changed, error = git_changed(args.diff_base, args.repo)
+        files += changed
 
-    result = evaluate(args.tier, args.touch, files, cfg)
+    result = evaluate(args.tier, args.touch, files, cfg, args.repo, error)
     if args.json:
         print(json.dumps(result, indent=2))
     else:
@@ -125,8 +188,15 @@ def main():
             print(f"    {m['path']}  ({m['source']} matched {m['kind']} `{m['rule']}`)")
         if result["dispatch"] and not result["matches"]:
             print(f"    (no pattern matched; {result['tier']} reviews every batch)")
-        print(f"    considered {result['considered']['touch']} touch globs, "
+        print(f"    considered {result['considered']['touch']} touch globs "
+              f"({result['considered']['touch_expanded']} files after expansion), "
               f"{result['considered']['diff']} changed files")
+        if result.get("note"):
+            print(f"    note: {result['note']}", file=sys.stderr)
+    # Non-zero when the answer rests on incomplete input, so a caller that only checks the
+    # exit code still learns something is wrong. `dispatch` is already true in that case.
+    if result.get("note"):
+        return 2
     return 0
 
 

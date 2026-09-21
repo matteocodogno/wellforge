@@ -62,7 +62,7 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
     { "agent": "frontend-dev", "class": "secret env", "detail": "VITE_API_BASE_URL empty in worktree, set in main tree", "resolved_by": "carried .mise.local.toml in, re-ran" }
   ],
   "verdicts": { "qe": "PASS", "security": "PASS", "eval": "PASS" },
-  "security": { "matched_rules": ["**/auth/**", "token"], "dispatched": true },
+  "security": { "matched_rules": ["**/auth/**", "token"], "dispatched": true, "notes": [] },
   "result": "completed | escalated | partial",
   "tokens": null,
   "cost_usd": null,
@@ -93,8 +93,17 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   with the plugin, so a trace read a year later needs to say which rules it was produced
   under. It is also the only way to tell "this project ran an old plugin" from "this run
   behaved oddly".
-- **`verdicts.security`** is the owasp-reviewer's outcome: `PASS`, `FAIL`, or **absent when
-  no review was dispatched**. Absent and PASS must never read alike — at `production` every
+- **`verdicts.security`** is the owasp-reviewer's outcome, **mapped to two case-sensitive
+  values**: `PASS` or `FAIL`, or **absent when no review was dispatched**. The agent's own
+  vocabulary has three verdicts (`PASS` / `PASS WITH NOTES` / `REVIEW REQUIRED`) and the
+  mapping lives in `agents/owasp-reviewer.md`: `PASS WITH NOTES` → `"PASS"` with the
+  low-severity findings in `security.notes[]`, `REVIEW REQUIRED` → `"FAIL"`. Written through
+  verbatim, `PASS WITH NOTES` fails the gate's `!= "PASS"` test — so a review that found
+  only low-severity issues blocked the close.
+  **Absent, never `null`.** `implement` used to say `null`; this skill said absent; both read
+  the same to `forge-state.py`, which is precisely why the disagreement survived. Absent is
+  the rule, and `security.dispatched: false` records the fact positively.
+  Absent and PASS must never read alike — at `production` every
   batch is reviewed (`config/security-triggers.yml`), so an absent verdict there means the
   review did not run, which is a failing done-gate condition rather than a silent pass.
   Record the matched rules alongside it so a later reader can see *why* it ran.

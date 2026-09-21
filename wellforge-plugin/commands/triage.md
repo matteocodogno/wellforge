@@ -98,7 +98,22 @@ the rule is checkable, not recalled.
    deterministic: a script can tell that a value is not in an enum, and a reader skimming
    prose cannot.
 
-6. **Over budget** [`budget.per_feature[].state == "over"`]. The deterministic query:
+6. **QE green, never security-reviewed** [`rigor == "production"`, `verdicts.qe.verdict ==
+   "PASS"`, `verdicts.security.verdict == null`, `status` not terminal]. The most
+   comfortable-looking failure in the set: every test passes, the dashboard is green, and
+   the review that was supposed to be automatic at this tier never ran. `production` is in
+   `always_at_tier`, so an absent verdict here is never "nothing matched" — it means no
+   trigger check happened at all, which was true of `/wellforge:promote` (it dispatched no
+   review and then demanded one) and of `/wellforge:orchestrate`'s mvp pipeline.
+
+   Report it as: `<feature> — QE PASS, no security verdict on record. /wellforge:done will
+   refuse. Run /wellforge:implement <feature> (Step 3b dispatches the reviewer).` Do **not**
+   report it as a gate failure the author caused; the gap is a command that skipped a step.
+
+   A `FAIL` verdict is a different signal and belongs under the ordinary gate reporting — it
+   means the review ran and found something, which is the system working.
+
+7. **Over budget** [`budget.per_feature[].state == "over"`]. The deterministic query:
 
    ```bash
    wfpy "$WF/scripts/run-report.py" --json --budget

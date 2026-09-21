@@ -398,8 +398,35 @@ def compute_drift(d, repo):
 
 
 # ── verdicts ─────────────────────────────────────────────────────────────────────
+# The only two values a verdict may hold. The comparison in done_gate is `!= "PASS"`, so
+# ANY other string fails the gate — including `"pass"` and the owasp-reviewer's own
+# `"PASS WITH NOTES"`, which is a pass in the agent's vocabulary and a blocked close here.
+# The mapping belongs to the producer (agents/owasp-reviewer.md); this script's job is to
+# make a violation legible instead of letting it surface as an unexplained refusal.
+VERDICT_VALUES = ("PASS", "FAIL")
+
+
+def verdict_problems(verdicts):
+    """Verdict values that are neither PASS, FAIL, nor absent."""
+    out = []
+    for name, v in verdicts.items():
+        got = v.get("verdict")
+        if got is None or got in VERDICT_VALUES:
+            continue
+        out.append(f"verdicts.{name} is {got!r} in run {v.get('run_id')} — the trace field "
+                   f"holds {' or '.join(VERDICT_VALUES)} (case-sensitive) and anything else "
+                   f"fails the gate. See agents/owasp-reviewer.md for the mapping.")
+    return out
+
+
 def latest_verdicts(runs, rr):
-    """Newest QE and eval verdict for a feature, from its run traces."""
+    """Newest QE and eval verdict for a feature, from its run traces.
+
+    `null` and an absent key are treated identically on purpose: `implement.md` used to
+    prescribe `null` for "not dispatched" while the observability skill prescribed absence,
+    and this falsy test is why nobody noticed for so long. Absence is now the documented
+    rule; this keeps reading old traces that wrote `null`.
+    """
     out = {"qe": {"verdict": None, "at": None, "run_id": None},
            "security": {"verdict": None, "at": None, "run_id": None},
            "eval": {"verdict": None, "at": None, "run_id": None, "score": None}}
@@ -610,7 +637,7 @@ def build(specs_dir, runs_dir, feature_filter, root):
             "created": (fm or {}).get("created"),
             "last_activity": last_activity(d, root)[0],
             "runs": len(runs),
-            "problems": problems,
+            "problems": problems + verdict_problems(verdicts),
         })
     return {"version": SCHEMA_VERSION,
             "generated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

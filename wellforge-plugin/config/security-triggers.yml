@@ -44,6 +44,24 @@ path_contains:
   - password    # A02 — storage, comparison, reset flows
   - secret
   - credential
+  # ── added after measuring what the globs above actually miss ──────────────────────
+  # The `auth/**` globs need a DIRECTORY called auth. Measured at mvp before this block:
+  # src/Authorization.kt, src/OAuthClient.ts, src/rbac/policy.ts, src/jwt/verify.ts,
+  # src/crypto/hash.ts and src/permissions/check.ts all reported "no trigger matched" —
+  # six of the most security-sensitive filenames a project can have, skipped because of
+  # where they sat rather than what they were. The naming IS the signal; that is the
+  # premise of this whole list.
+  - auth        # Authorization.kt, AuthService, authenticate — also catches oauth
+  - jwt         # A02/A07 — token verification, signing, claims
+  - crypto      # A02 — hashing, signing, key handling
+  - rbac        # A01 — role checks
+  - permission  # A01 — permission/permissions, broken access control
+  #
+  # KNOWN FALSE POSITIVE, accepted deliberately: `auth` also matches `author`, so a blog's
+  # src/authors/ dispatches a review that finds nothing. That costs one mid-tier agent.
+  # The other direction costs an unreviewed authorisation change, which is the asymmetry
+  # this whole file is built on. `oauth` needs no entry of its own — `auth` is a substring
+  # of it.
 
 # Tiers where the review runs for EVERY batch, matched or not. production only: at that tier
 # the eval is the bar and an unreviewed security surface is the gap the eval cannot see.

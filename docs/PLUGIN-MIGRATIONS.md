@@ -26,6 +26,60 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.47.0 — the security review now actually runs where the gate demands it
+
+**Action: none automatic. Expect more reviews to be dispatched, and one previously
+impossible promotion to become possible.**
+
+The production done gate has required `verdicts.security == PASS` since 2.4x, and two of the
+three commands that close work never dispatched the review:
+
+- **`/wellforge:promote`** ran no trigger check at all, then invoked the production gate.
+  An `mvp → production` promotion could only pass if some earlier `/wellforge:implement`
+  happened to have reviewed the same code; otherwise it refused with "security review is
+  absent" and there was no way to satisfy that from inside promote. It now runs the check at
+  the **target** tier before the close, which at `production` always dispatches.
+- **`/wellforge:orchestrate`'s mvp pipeline** skipped the check entirely, so the same batch
+  was reviewed under `/wellforge:implement` and not under `/wellforge:orchestrate`. The step
+  is now in both pipelines.
+
+**More batches will be reviewed than before**, at mvp especially. `config/security-triggers.yml`
+gained `auth`, `jwt`, `crypto`, `rbac` and `permission` to `path_contains`, because the
+`auth/**` globs need a *directory* called auth: measured at mvp, `src/Authorization.kt`,
+`src/OAuthClient.ts`, `src/rbac/policy.ts`, `src/jwt/verify.ts`, `src/crypto/hash.ts` and
+`src/permissions/check.ts` all reported "no trigger matched". Known and accepted: `auth`
+also matches `author`, so a blog's `src/authors/` costs one unnecessary mid-tier agent.
+
+**A `touch:` glob is now expanded against the working tree.** `--touch 'src/**'` covers
+`src/auth/login.ts` but names no trigger, so a literal match missed it and a batch declaring
+the broader glob was never reviewed. Declaring a trigger glob still dispatches before any
+code exists — the intent half is unchanged.
+
+**A bad `--diff-base` no longer reads as "nothing matched".** It returned `[]` with no note
+and exit 0, so a typo'd ref silently turned every match into a miss — the exact failure the
+function's own docstring forbade. It now dispatches, prints the git error, and exits 2.
+**If you script around this, check for exit 2**: it means the answer rests on incomplete
+input, not that something is broken.
+
+**`verdicts.security` is two values, and the reviewer speaks three.** `PASS WITH NOTES` →
+`"PASS"` with the low-severity findings in `security.notes[]`; `REVIEW REQUIRED` → `"FAIL"`.
+Written through verbatim, `PASS WITH NOTES` failed the gate's `!= "PASS"` test — so a review
+that found only low-severity issues blocked the close. `forge-state.py` now reports any
+verdict outside `PASS`/`FAIL` under that feature's `problems[]`, so a producer writing the
+wrong value is diagnosable instead of surfacing as an unexplained refusal.
+
+**"Not dispatched" is an ABSENT key, never `null`.** `implement.md` said `null`, the
+observability skill said absent, and both read identically to `forge-state.py` — which is
+why the disagreement survived. Absent is the rule; `security.dispatched: false` records the
+fact positively. Old traces containing `null` still read correctly.
+
+`/wellforge:triage` gains a signal for the shape all of this produced: **"QE green, never
+security-reviewed"** — a production feature with a QE PASS and no security verdict. It is
+the most comfortable-looking failure in the set, because everything on the dashboard is
+green.
+
+---
+
 ## 2.46.0 — the done gate gained a condition it had always claimed
 
 **Action: none automatic, but expect some closed features to report a blocked gate.**

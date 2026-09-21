@@ -121,6 +121,27 @@ raising rigor, so agents work at the destination tier's effort, not the source's
 4. **Eval** — run the `/wellforge:eval` procedure (LM-judge). **A PASS is the gate into
    `done`** — QE alone is not enough. FAIL → route failing dimensions to the dev agents
    (same bounded loop), re-eval.
+4b. **Security review** — before the close, at the TARGET tier. `promote` never ran this,
+   and then invoked a production gate that requires `verdicts.security == PASS`: an
+   `mvp → production` promotion could only pass if some earlier `/wellforge:implement`
+   happened to have reviewed the code, and otherwise refused with "security review is
+   absent" and no way to satisfy it from inside promote. The tier being promoted TO is the
+   one that decides, and `production` is in `always_at_tier`, so this always dispatches on
+   a `→ production` promotion.
+
+   ```bash
+   # $WF / wfpy as resolved in the block above.
+   wfpy "$WF/scripts/security-triggers.py" \
+     --tier <target tier> --diff-base <the base this promotion's work branched from> --json
+   ```
+
+   `dispatch: true` → spawn **`wellforge:owasp-reviewer`** over `scope[]`. Findings ≥ medium
+   are defects and route exactly like a QE FAIL (rigor-tiers, *"Routing a QE FAIL"*, 2-round
+   cap). Record `verdicts.security` in the trace **mapped** — `PASS WITH NOTES` → `"PASS"`
+   with `security.notes[]`, `REVIEW REQUIRED` → `"FAIL"` (agents/owasp-reviewer.md).
+   A non-zero exit means the script could not read the diff; it dispatches anyway and says
+   why — do not treat that as a skip.
+
 5. **Close** — only on PASS. First **write the run trace** (Close §3 below): the production
    gate reads `verdicts.qe` and `verdicts.security` *from the trace*, so a close that
    precedes the trace is judged against a feature that appears to have no QE and no security
@@ -181,5 +202,20 @@ uvx copier update --trust --skip-answered --conflict inline \
   remarks". The eval is the gate, same as the normal flow.
 - The security floor was always on; promotion ADDS the deferred gates, never removes a check.
 - Bounded loops only (QE/eval fix loop max 2 rounds, then escalate). Dirty tree → no
-  promotion; fully done or fully reverted (`git reset --hard`).
+  promotion; fully done or fully reverted.
+
+  **To revert, do not reach for the destructive reset this line used to prescribe.** The
+  plugin's own `pre-bash-guard.sh` blocks `git reset --hard` at any target, so the command
+  written here could never run in a WellForge session — the document prescribed something
+  its own guard refuses, and the guard has no ask-path to route through. The
+  non-destructive equivalents, in order of preference:
+
+  ```bash
+  git restore --source=HEAD --staged --worktree -- <paths>   # undo tracked edits, keep the rest
+  git stash push -u -m "promote <feature> — aborted"          # keep the work, recoverable
+  git revert <sha>                                            # already committed: revert, do not erase
+  ```
+
+  If a hard reset is genuinely what you want, the user runs it themselves outside the agent
+  — which is exactly the case the guard exists to force.
 - Never weaken a gate or delete a test to make a tier pass — that defeats the promotion.
