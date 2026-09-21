@@ -16,16 +16,15 @@ data class ErrorResponse(val message: String)
 
 fun DomainError.toResponse(): ResponseEntity<ErrorResponse> =
     when (this) {
-        is DomainError.NotFoundError   -> ResponseEntity.status(404).body(ErrorResponse(message))
+        is DomainError.NotFoundError -> ResponseEntity.status(404).body(ErrorResponse(message))
         is DomainError.ValidationError -> ResponseEntity.status(400).body(ErrorResponse(message))
-        is DomainError.StateError      -> ResponseEntity.status(409).body(ErrorResponse(message))
-        is DomainError.DatabaseError   -> ResponseEntity.status(500).body(ErrorResponse("Internal error"))
+        is DomainError.StateError -> ResponseEntity.status(409).body(ErrorResponse(message))
+        is DomainError.DatabaseError -> ResponseEntity.status(500).body(ErrorResponse("Internal error"))
         is DomainError.UnexpectedError -> ResponseEntity.status(500).body(ErrorResponse("Internal error"))
     }
 
 @ControllerAdvice
 class GlobalExceptionHandler {
-
     @ExceptionHandler(NotFoundException::class)
     fun handleNotFound(ex: NotFoundException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(404).body(ErrorResponse(ex.message ?: "Not found"))

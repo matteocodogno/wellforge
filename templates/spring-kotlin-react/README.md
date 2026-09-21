@@ -53,9 +53,11 @@ the `db` switch is handled inline rather than with two divergent files.
 Versions are mirrored from the source skills (the skills are the source of truth):
 
 - Spring Boot **4.0.0**, Kotlin **2.1.20**, Java **21**
-- jOOQ **3.19.18** (explicit — BOM property renamed in SB4), Liquibase **4.29.2**
-- Spring Modulith BOM **2.0.0**, Testcontainers BOM **1.20.4**
-- kotlin-logging-jvm **7.0.3**, MockK **1.13.14**, Kotest **5.9.1**
+- jOOQ (explicit — the BOM property was renamed in SB4), Liquibase, Spring Modulith BOM,
+  Testcontainers BOM, kotlin-logging-jvm, MockK, Kotest — **read the pins from
+  `template/backend/pom.xml`**. They are not repeated here: this list claimed jOOQ 3.19.18
+  and Testcontainers 1.20.4 while the pom had moved to 3.19.38 and 1.21.4, and 3.19.18 was
+  never published as a BOM at all.
 - mise tools: `java = temurin-21`, `node = 22`, `maven = 3.9.9`, `pnpm = 10`
 
 > SB4 note: `spring-boot-starter-web` was renamed to `spring-boot-starter-webmvc`.

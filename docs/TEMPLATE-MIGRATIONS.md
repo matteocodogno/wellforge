@@ -23,6 +23,73 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## v0.10.2 — spring-kotlin-react passes its own gates, and the compose promise is real
+
+**Action: one command, and only if your `project_slug` contains a hyphen** — see the end.
+
+`generated-gates` (added in v0.10.1) covered hono-react and pulumi-gcp-ts. Turning it on for
+spring-kotlin-react found that a fresh scaffold failed its own gates too, and that two things
+the preset documents were never wired.
+
+**The docker-compose promise**
+
+`AGENTS.md` and the `backend:run` task description both say Docker Compose starts
+automatically. It did not. Spring Boot's compose support resolves the file against the
+**process working directory** — `backend/`, because Maven runs there — while
+`docker-compose.yml` lives at the monorepo root. It found nothing and said nothing.
+`spring.docker.compose.file: ../docker-compose.yml` makes the documented behaviour the actual
+behaviour: verified live in a linked worktree, `Using Docker Compose file …/docker-compose.yml`
+then the container started and went healthy.
+
+**The event publication registry**
+
+With compose finally starting, the app got far enough to fail on something else:
+`BadSqlGrammarException` on a missing `EVENT_PUBLICATION` table. `spring-modulith-starter-jdbc`
+stores the registry there and nothing created it. `spring.modulith.events.jdbc.
+schema-initialization.enabled: true` applies Modulith's own DDL on startup. This was latent
+before: the POM used to name `spring-modulith-starter-jooq`, an artifact that has never been
+published in any Modulith release, so the POM did not parse and the app never started at all.
+
+**Gates that could not pass**
+
+- The frontend had no test at all, and `mise run frontend:test` therefore failed on an empty
+  run. It now ships `src/features/home/HomePage.test.tsx` with a jsdom `vitest.config.ts` and
+  a `matchMedia` stub (Mantine needs it), plus the three dev dependencies they require.
+- `eslint.config.ts` was not covered by any `tsconfig` include and could not be linted or
+  type-checked; it is now `eslint.config.js`, which is what flat config expects anyway.
+- `backend:run` and `backend:generate` are named in `AGENTS.md` but had no delegation tasks,
+  so both failed with `task not found` — the exact failure the comment above that section
+  warns about.
+- `.claude/settings.json` pre-allowed `Bash(./mvnw:*)`. No wrapper is shipped; the tasks call
+  `mvn` from mise. Now `Bash(mvn:*)`.
+- The generated application class was `OrderserviceApplication`: `capitalize` was applied to
+  the package's last segment, which is already lowercased with the word boundaries stripped.
+  It now derives from `project_name`, which still has them.
+- `db = none` did not compile — `Result.kt` imported `org.springframework.dao` unconditionally
+  while the dependency is Postgres-only. Both the import and its `catch` are now guarded.
+
+**Version tables that had drifted**
+
+`AGENTS.md` claimed jOOQ 3.19.18 and Testcontainers 1.20.4 while the POM pinned 3.19.38 and
+1.21.4 — and 3.19.18 was never published as a BOM, so a reader who trusted the table got a 404.
+The table now points at `backend/pom.xml` instead of copying it. The `kotlin-springboot` skill
+carried the same two wrong numbers and the phantom `-jooq` starter; both are corrected there.
+
+**The one action.** `WF_DB_NAME` now replaces hyphens with underscores, matching hono-react
+(Postgres accepts a hyphenated name only when quoted). If your `project_slug` has a hyphen,
+your local dev database is about to be addressed under a new name, and the old one's data will
+look like it vanished. It has not — it is still in the old database. Either re-run your
+migrations against the fresh one (`mise run db:up`), or rename in place:
+
+```sh
+psql -h localhost -p "$WF_DB_PORT" -U postgres \
+  -c 'ALTER DATABASE "my-service" RENAME TO my_service;'
+```
+
+CI, tests and throwaway environments need nothing: they create the database from scratch.
+
+---
+
 ## v0.10.1 — the presets pass their own gates
 
 **Action: none, beyond `copier update`** — with one thing to check, at the end. Every change

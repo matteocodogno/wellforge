@@ -17,5 +17,9 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["src", "vite.config.ts", "eslint.config.ts"]
+  // Every .ts the linter sees must be in a project, or typed rules fail with a bare
+  // "parserOptions.project has been provided" and no filename. tailwind.config.ts was
+  // never listed — a gap that predates this release and only surfaced once the frontend
+  // had a lint gate that ran at all.
+  "include": ["src", "vite.config.ts", "vitest.config.ts", "tailwind.config.ts"]
 }

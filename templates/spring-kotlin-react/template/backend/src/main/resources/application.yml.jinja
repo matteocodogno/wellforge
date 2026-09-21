@@ -2,6 +2,24 @@ spring:
   application:
     name: {{ project_slug }}
 {%- if db == 'postgres' %}
+  docker:
+    compose:
+      # Spring Boot looks for the compose file in the PROCESS WORKING DIRECTORY, which is
+      # backend/ (Maven runs there), while docker-compose.yml lives at the monorepo root.
+      # Without this path the support silently finds nothing — so "Docker Compose starts
+      # automatically", promised in AGENTS.md and in the mise task description, did not.
+      file: ../docker-compose.yml
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          # spring-modulith-starter-jdbc keeps its event publication registry in an
+          # EVENT_PUBLICATION table, and nothing else creates it: the app started, then
+          # failed on the registry with BadSqlGrammarException. Modulith ships the DDL and
+          # applies it on startup when this is on. (The starter used to be
+          # `spring-modulith-starter-jooq`, which has never been published — the POM did
+          # not parse at all, so this never got far enough to surface.)
+          enabled: true
   liquibase:
     change-log: classpath:/db/changelog/db.changelog-master.yaml
     enabled: true

@@ -1,10 +1,11 @@
 package {{ base_package }}.common.model
 
-import org.springframework.dao.DataAccessException
+{% if db == 'postgres' %}import org.springframework.dao.DataAccessException
 
-@Suppress("TooManyFunctions")
+{% endif %}@Suppress("TooManyFunctions")
 sealed class Result<out T> {
     data class Success<T>(val value: T) : Result<T>()
+
     data class Failure(val error: DomainError) : Result<Nothing>()
 
     val isSuccess: Boolean get() = this is Success
@@ -28,7 +29,10 @@ sealed class Result<out T> {
             is Failure -> this
         }
 
-    inline fun <R> fold(onSuccess: (T) -> R, onFailure: (DomainError) -> R): R =
+    inline fun <R> fold(
+        onSuccess: (T) -> R,
+        onFailure: (DomainError) -> R,
+    ): R =
         when (this) {
             is Success -> onSuccess(value)
             is Failure -> onFailure(error)
@@ -82,14 +86,15 @@ sealed class Result<out T> {
 
     companion object {
         fun <T> success(value: T): Result<T> = Success(value)
+
         fun <T> failure(error: DomainError): Result<T> = Failure(error)
 
         inline fun <T> catching(block: () -> T): Result<T> =
             try {
                 Success(block())
-            } catch (e: DataAccessException) {
+{% if db == 'postgres' %}            } catch (e: DataAccessException) {
                 Failure(DomainError.DatabaseError(e.message ?: "Unknown database error", e))
-            } catch (e: Exception) {
+{% endif %}            } catch (e: Exception) {
                 Failure(DomainError.UnexpectedError(e.message ?: "Unknown error", e))
             }
     }

@@ -16,7 +16,7 @@ Complete POM skeleton for a WellForge Spring Boot Kotlin service.
 <properties>
     <java.version>21</java.version>
     <kotlin.version>2.1.0</kotlin.version>
-    <jooq.version>3.19.18</jooq.version>
+    <jooq.version>3.19.38</jooq.version>
     <liquibase.version>4.29.2</liquibase.version>
 </properties>
 ```
@@ -73,7 +73,11 @@ Complete POM skeleton for a WellForge Spring Boot Kotlin service.
     </dependency>
     <dependency>
         <groupId>org.springframework.modulith</groupId>
-        <artifactId>spring-modulith-starter-jooq</artifactId>
+        <!-- JDBC, not jOOQ: `spring-modulith-starter-jooq` has never been published in
+             any Spring Modulith release, and this line made every generated POM
+             unparseable. The starter backs the event publication registry's storage; the
+             application's own data access is still jOOQ. -->
+        <artifactId>spring-modulith-starter-jdbc</artifactId>
     </dependency>
 
     <!-- Kotlin logging -->
@@ -137,7 +141,7 @@ Complete POM skeleton for a WellForge Spring Boot Kotlin service.
 >
 > **The source of truth is the pom you are editing**, and for a new project that is
 > `templates/spring-kotlin-react/template/backend/pom.xml` — which today pins Spring Boot
-> `4.0.0`, Modulith `2.0.0`, Testcontainers `1.20.4`, MockK `1.13.14`, Kotest `5.9.1` in
+> `4.0.0`, Modulith `2.0.0`, Testcontainers `1.21.4`, MockK `1.13.14`, Kotest `5.9.1` in
 > `<properties>` and references them everywhere else. Read the pin from there; do not recall
 > it from here, and do not copy a number out of this file into a project.
 

@@ -1,14 +1,17 @@
 # Templates
 
-[Copier](https://copier.readthedocs.io) templates, one per stack preset. Semver-tagged via
-git tags in this repo (`templates/<name>/vX.Y.Z`).
+[Copier](https://copier.readthedocs.io) templates, one per stack preset. They are versioned
+**together**, by a repo-wide `vX.Y.Z` git tag — there is no per-preset tag series, and the
+`templates/<name>/vX.Y.Z` scheme this file used to describe never existed. A release moves
+every preset, which is why the table below has no version column: the answer is always the
+newest `vX.Y.Z` (see [`docs/VERSIONING.md`](../docs/VERSIONING.md)).
 
-| Preset | Stack | Status |
-|---|---|---|
-| `spring-kotlin-react/` | Spring Boot 4 + Kotlin + jOOQ + Liquibase / React + TS + Vite | v0.1.0 |
-| `hono-react/` | Hono + TS + Drizzle / React + TS + Vite | v0.1.0 |
-| `pulumi-gcp-ts/` | Pulumi Infrastructure-as-Code (TypeScript) on GCP — stacks, ComponentResources, CrossGuard policy, mock tests | v0.7.0 |
-| `_shared/CONTRACT.md` | the binding contract every template must satisfy (questions, required files, versioning) | active |
+| Preset | Stack |
+|---|---|
+| `spring-kotlin-react/` | Spring Boot 4 + Kotlin + jOOQ + Liquibase / React + TS + Vite |
+| `hono-react/` | Hono + TS + Drizzle / React + TS + Vite |
+| `pulumi-gcp-ts/` | Pulumi Infrastructure-as-Code (TypeScript) on GCP — stacks, ComponentResources, CrossGuard policy, mock tests |
+| `_shared/CONTRACT.md` | the binding contract every template must satisfy (questions, required files, versioning) |
 
 Generate from the **repo root** (one copier.yml serves all presets — required for
 `copier update` to work):

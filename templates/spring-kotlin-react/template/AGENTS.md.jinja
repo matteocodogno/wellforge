@@ -12,14 +12,19 @@ WellForge full-stack monorepo: **Spring Boot 4 Kotlin** backend + **React TypeSc
 | Backend language | Kotlin | 2.1.20 |
 | JVM | Java (temurin) | 21 |
 {% if db == 'postgres' -%}
-| Data access | jOOQ | 3.19.18 |
-| Migrations | Liquibase | 4.29.2 |
+| Data access | jOOQ | see `backend/pom.xml` |
+| Migrations | Liquibase | see `backend/pom.xml` |
 {% endif -%}
-| Modularity | Spring Modulith BOM | 2.0.0 |
-| Test (integration) | Testcontainers BOM | 1.20.4 |
-| Logging | kotlin-logging-jvm | 7.0.3 |
-| Test | MockK / Kotest | 1.13.14 / 5.9.1 |
-| Frontend | React + TypeScript + Vite | 18 / 5 / 5 |
+| Modularity | Spring Modulith BOM | see `backend/pom.xml` |
+| Test (integration) | Testcontainers BOM | see `backend/pom.xml` |
+| Logging | kotlin-logging-jvm | see `backend/pom.xml` |
+| Test | MockK / Kotest | see `backend/pom.xml` |
+| Frontend | React + TypeScript + Vite | see `frontend/package.json` |
+
+> Backend and frontend versions are **not** repeated here. They live in `backend/pom.xml`
+> `<properties>` and `frontend/package.json`, and a copy in this file is a copy that goes
+> stale: this table used to claim jOOQ 3.19.18 and Testcontainers 1.20.4 while the pom
+> pinned 3.19.38 and 1.21.4. Read the pin from the file that enforces it.
 | UI | Mantine + Tailwind v3 | — |
 | Routing / data | TanStack Router / Query | — |
 | FP / effects | Effect TS | — |

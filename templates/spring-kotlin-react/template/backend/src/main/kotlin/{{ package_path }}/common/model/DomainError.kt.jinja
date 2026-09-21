@@ -31,15 +31,18 @@ sealed class DomainError {
 
     fun toException(): RuntimeException =
         when (this) {
-            is DatabaseError   -> DatabaseException(message, cause)
+            is DatabaseError -> DatabaseException(message, cause)
             is ValidationError -> ValidationException(message, cause)
-            is NotFoundError   -> NotFoundException(message, cause)
+            is NotFoundError -> NotFoundException(message, cause)
             is UnexpectedError -> UnexpectedException(message, cause)
-            is StateError      -> IllegalStateException(message, cause)
+            is StateError -> IllegalStateException(message, cause)
         }
 }
 
 class DatabaseException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
 class ValidationException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
 class NotFoundException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
 class UnexpectedException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

@@ -31,7 +31,7 @@ pnpm  = "10"
 WF_WT_SUFFIX = "{% raw %}{{ exec(command='sh ' ~ config_root ~ '/.wellforge/worktree-id.sh suffix') }}{% endraw %}"
 {%- if db == 'postgres' %}
 WF_DB_PORT   = "{% raw %}{{ exec(command='sh ' ~ config_root ~ '/.wellforge/worktree-id.sh port') }}{% endraw %}"
-WF_DB_NAME   = "{{ project_slug }}{% raw %}{{ env.WF_WT_SUFFIX }}{% endraw %}"
+WF_DB_NAME   = "{{ project_slug | replace('-', '_') }}{% raw %}{{ env.WF_WT_SUFFIX }}{% endraw %}"
 # docker compose reads this itself: one project (containers, volume, network) per checkout.
 # Spring Boot's docker-compose support then derives the datasource from that container, so
 # the app and Liquibase follow the identity without a second place to configure.
@@ -148,6 +148,20 @@ run         = "mise run lint"
 description = "dev (backend)"
 dir         = "backend"
 run         = "mise run dev"
+
+# AGENTS.md tells the reader to run these two, and without the pointers they fail with
+# `task not found` — the very error the comment block above this section describes.
+[tasks."backend:run"]
+description = "run (backend) — start Spring Boot"
+dir         = "backend"
+run         = "mise run run"
+{%- if db == 'postgres' %}
+
+[tasks."backend:generate"]
+description = "generate (backend) — jOOQ sources from the Liquibase changelogs"
+dir         = "backend"
+run         = "mise run generate"
+{%- endif %}
 
 [tasks."frontend:dev"]
 description = "dev (frontend)"

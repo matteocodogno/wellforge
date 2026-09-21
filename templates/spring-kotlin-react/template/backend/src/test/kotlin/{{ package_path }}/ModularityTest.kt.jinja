@@ -5,8 +5,7 @@ import org.springframework.modulith.core.ApplicationModules
 import org.springframework.modulith.docs.Documenter
 
 class ModularityTest {
-
-    private val modules = ApplicationModules.of({{ base_package.rsplit('.', 1)[-1] | capitalize }}Application::class.java)
+    private val modules = ApplicationModules.of({{ project_name | replace('-', ' ') | replace('_', ' ') | title | replace(' ', '') }}Application::class.java)
 
     @Test
     fun `modules should not have illegal dependencies`() {

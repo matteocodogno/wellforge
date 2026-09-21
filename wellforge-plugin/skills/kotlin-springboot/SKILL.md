@@ -50,9 +50,14 @@ For deep reference on a specific area, read the matching file in `references/`:
 **Key versions to align:**
 
 ```xml
+<!-- Shape, not pins. Read the real numbers from the project's own pom.xml — this
+     block said jOOQ 3.19.18 long after the preset moved to 3.19.38, and 3.19.18 was
+     never published as a BOM at all, so copying it here produced a 404 at build time.
+     The preset's current values are in
+     templates/spring-kotlin-react/template/backend/pom.xml. -->
 <properties>
     <kotlin.version>2.1.20</kotlin.version>
-    <jooq.version>3.19.18</jooq.version>
+    <jooq.version>3.19.38</jooq.version>
     <liquibase.version>4.29.2</liquibase.version>
     <java.version>21</java.version>
 </properties>
