@@ -31,7 +31,7 @@ set -uo pipefail
 # Bumped only by scripts/release-cli.sh, which also updates Formula/wellforge.rb and cuts
 # the tag. The Formula's test block asserts this string, and CI asserts it equals the
 # newest `cli-v*` tag — an unbumped release and an untagged bump are both caught.
-WELLFORGE_CLI_VERSION="1.5.0"
+WELLFORGE_CLI_VERSION="1.5.1"
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
 CONFIG_DIR="$HOME/.config/wellforge"
@@ -52,6 +52,21 @@ warn() { printf "  %s!%s %-18s %s\n" "$YLW" "$RST" "$1" "${2:-}"; }
 skip() { printf "  %s–%s %-18s %s%s%s\n" "$DIM" "$RST" "$1" "$DIM" "${2:-}" "$RST"; }
 say()  { printf "%s\n" "$*"; }
 die()  { printf "%serror:%s %s\n" "$RED" "$RST" "$*" >&2; exit 1; }
+
+# A prompt that cannot spin. `read` returns non-zero at end-of-file, and a retry loop that
+# treats that as "empty answer, ask again" burns a core forever: interactively you press
+# Ctrl-C, but in a script, a pipe or CI nothing stops it. Found while building the CLI's
+# own matrix, where `wellforge telegram </dev/null` hung until the watchdog killed it.
+#
+# The `[ -n "$var" ]` half matters: read also reports failure on a final line with no
+# trailing newline, having set the variable perfectly well. Only an EOF with nothing read
+# is the unusable case.
+eof_die() {
+  say ""
+  die "no input available (stdin is at end-of-file).
+  \`wellforge telegram\` is a guided wizard: it needs someone to paste a token and press
+  Enter. Run it in a terminal — not from a script, a pipe, or CI."
+}
 
 # ─── platform ────────────────────────────────────────────────────────────────
 # README has always said "macOS or Linux with Homebrew"; this script said "on a Mac" and
@@ -545,7 +560,8 @@ cmd_telegram() {
   local token="" bot_user=""
   while [ -z "$bot_user" ]; do
     printf "Paste the bot token (input hidden): "
-    read -rs token; printf "\n"
+    read -rs token || [ -n "$token" ] || eof_die
+    printf "\n"
     [ -z "$token" ] && { say "  ${YLW}empty — try again (Ctrl-C to abort).${RST}"; continue; }
     # curl | jq fails as a PIPELINE when the network is down. An empty answer sends the
     # loop round again with a readable message, which is what the user can act on.
@@ -559,7 +575,8 @@ cmd_telegram() {
   say "${YLW}Step 2/3 — link your account${RST}"
   say "  Open ${GRN}https://t.me/$bot_user${RST} (opening now…), press ${GRN}START${RST}, send any message."
   open_url "https://t.me/$bot_user"
-  printf "Press Enter once you've sent the message… "; read -r _
+  printf "Press Enter once you've sent the message… "
+  read -r _ || eof_die
 
   # PRIVATE chats only, and never "whatever arrived last". `last` meant that if the bot
   # was in a group, or anyone else had messaged it, the wizard silently saved that chat —
@@ -598,7 +615,7 @@ cmd_telegram() {
         say "  ${YLW}More than one private chat has messaged @$bot_user:${RST}"
         printf '%s\n' "$ids" | awk -F'\t' '{printf "    %d) @%s  (id %s)\n", NR, $2, $1}'
         printf "  Which one is you? [1-%s] " "$(printf '%s\n' "$ids" | wc -l | tr -d ' ')"
-        read -r pick
+        read -r pick || [ -n "$pick" ] || eof_die
         case "$pick" in
           ''|*[!0-9]*) die "not a number: '$pick' — re-run: wellforge telegram" ;;
         esac

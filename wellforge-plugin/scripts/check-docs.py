@@ -249,10 +249,32 @@ if cli_version and os.path.exists(_formula_path):
     # is a WARNING, not a failure: it is a true statement about an unreleased formula, and
     # failing CI for it would block every unrelated change until someone cuts a release.
     if re.search(r'sha256 "0{64}"', ftext):
-        print("⚠ Formula/wellforge.rb carries a placeholder sha256 — the formula is not "
-              "released yet. Fix with: scripts/release-cli.sh "
-              f"{cli_version} --formula-only --execute (after pushing cli-v{cli_version}).",
-              file=sys.stderr)
+        # WARN while the tag is unpushed — an unreleased formula is a true state and must
+        # not block unrelated work. FAIL once the tag EXISTS on the remote, because from
+        # that moment the tarball is fetchable, `release-cli.sh --formula-only` can fill
+        # the hash in, and a placeholder left behind is simply a broken `brew install`
+        # waiting for someone.
+        import subprocess as _sp
+        tag = f"cli-v{cli_version}"
+        try:
+            r = _sp.run(["git", "-C", ROOT, "ls-remote", "--tags", "origin",
+                         f"refs/tags/{tag}"], capture_output=True, text=True, timeout=20)
+            on_remote = (r.returncode == 0 and bool(r.stdout.strip()))
+            reachable = (r.returncode == 0)
+        except Exception:  # noqa: BLE001
+            on_remote, reachable = False, False
+        fix = (f"scripts/release-cli.sh {cli_version} --formula-only --execute")
+        if on_remote:
+            fail.append(f"Formula/wellforge.rb still carries a placeholder sha256 although "
+                        f"{tag} is on the remote — run: {fix}")
+        elif not reachable:
+            print(f"⚠ Formula/wellforge.rb carries a placeholder sha256, and the remote could "
+                  f"not be reached to see whether {tag} exists. If it does, run: {fix}",
+                  file=sys.stderr)
+        else:
+            print(f"⚠ Formula/wellforge.rb carries a placeholder sha256 — {tag} is not pushed "
+                  f"yet, so there is no tarball to hash. After pushing it, run: {fix}",
+                  file=sys.stderr)
 
 # Tag agreement, only when tags are actually present — a shallow CI checkout has none, and
 # "no tags" must not read as "the tags disagree".

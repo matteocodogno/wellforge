@@ -324,11 +324,45 @@ tg_canned() {
 # ── runner ────────────────────────────────────────────────────────────────────
 # Each case gets its own HOME, its own bin dir and its own shim log.
 SANDBOX_N=0
-new_sandbox() { # <tool…>  → sets HOME_DIR, BIN, SHIM_LOG, SANDBOX
+# ── the sandbox PATH is CLOSED ──────────────────────────────────────────────────────
+# make_shims says "only the named tools exist, so 'brew missing' is a case". That was only
+# ever true by accident: run_cli's PATH ended in /usr/bin:/bin, so an unshimmed tool fell
+# through to the real machine. It held on one developer's Mac (no `timeout`, no `docker`
+# there) and failed everywhere else — the first Linux CI run went red on exactly the cases
+# that assert a tool is ABSENT, and reproducing it here needed nothing more than splicing a
+# `timeout` and a `docker` into that PATH.
+#
+# So the PATH is now $BIN plus a sandbox-owned directory of plain utilities. A tool that a
+# case did not ask for is absent on every machine.
+#
+# SYS_TOOLS is deliberately only the boring stuff the CLI needs to run at all, plus the
+# three that tests drive REAL rather than shimmed (git for the checkout fixtures, curl and
+# jq where a case wants the genuine parser). Everything a case ever asserts the absence of
+# — timeout, gtimeout, docker, brew, claude, gh, node, npm, npx, uv, uvx, mise, copier,
+# open, xdg-open — is NOT here, and must be shimmed to exist.
+SYS_TOOLS=(sh bash env printf echo test true false expr
+           awk sed grep egrep fgrep cut tr sort uniq head tail wc cat tee
+           mkdir rmdir rm mv cp ln chmod touch find ls stat basename dirname
+           mktemp date sleep id xargs comm diff readlink cksum
+           git curl jq python3)
+
+link_sys_tools() { # <dir>
+  local dir="$1" t src
+  mkdir -p "$dir"
+  for t in "${SYS_TOOLS[@]}"; do
+    [ -e "$dir/$t" ] && continue
+    src=$(PATH=/usr/bin:/bin:/usr/sbin:/sbin command -v "$t" 2>/dev/null) || continue
+    ln -s "$src" "$dir/$t" 2>/dev/null || true
+  done
+}
+
+new_sandbox() { # <tool…>  → sets HOME_DIR, BIN, SHIM_LOG, SANDBOX, SYSBIN
   SANDBOX_N=$((SANDBOX_N + 1))
   SANDBOX="$SUITE/s$SANDBOX_N"
   HOME_DIR="$SANDBOX/home"; BIN="$SANDBOX/bin"; SHIM_LOG="$SANDBOX/calls.log"
+  SYSBIN="$SANDBOX/sysbin"
   mkdir -p "$HOME_DIR" "$BIN"; : > "$SHIM_LOG"
+  link_sys_tools "$SYSBIN"
   make_shims "$BIN" "$@"
 }
 
@@ -353,7 +387,7 @@ run_cli() { # <wellforge-home> <args…> ; stdin from $RUN_STDIN (default /dev/n
   # an ambient TELEGRAM_BOT_TOKEN would silently change what telegram_configured answers.
   local -a envs=(
     HOME="$HOME_DIR"
-    PATH="$BIN:/usr/bin:/bin:/usr/sbin:/sbin"
+    PATH="$BIN:${SYSBIN:-$SANDBOX/sysbin}"
     SHIM_LOG="$SHIM_LOG"
     WELLFORGE_HOME="$wf_home"
     WELLFORGE_REPO="${RUN_REPO:-}"
@@ -746,14 +780,18 @@ assert_has "$OUT" "bot was blocked by the user"
 finish
 
 # Found while building this suite, not from the brief: with stdin at EOF the token loop
-# spins forever — `read` fails, the token is empty, `continue`, repeat. Interactively you
-# press Ctrl-C; in a script or CI it burns a core until something kills it. A guided
-# wizard that cannot be run non-interactively should say so and exit.
-reset_fakes; begin "telegram </dev/null: exits instead of spinning on an exhausted stdin" xfail
+# spun forever — `read` fails, the token is empty, `continue`, repeat. Interactively you
+# press Ctrl-C; in a script or CI it burns a core until something kills it. Fixed in 1.5.1
+# with eof_die, so this is no longer xfail: a guided wizard that cannot be guided says so
+# and exits 1.
+reset_fakes; begin "telegram </dev/null: exits instead of spinning on an exhausted stdin"
 new_sandbox "${ALL_TOOLS[@]}"
-RUN_TIMEOUT=8                      # it is expected to hang; do not wait the full budget
+RUN_TIMEOUT=8                      # if it regresses it HANGS; do not wait the full budget
 run_cli "$SANDBOX/nowhere" telegram
 [ "$RC" = "timeout" ] && _bad "spun forever instead of exiting"
+assert_rc "$RC" 1
+assert_has "$OUT" "end-of-file"
+assert_has "$OUT" "Run it in a terminal"
 finish
 
 # ── 15. Linux is a supported platform, so behave like it ────────────────────────────
