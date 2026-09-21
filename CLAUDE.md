@@ -91,10 +91,10 @@ wellforge/
   update` → zero conflicts.
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/plans/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
-- Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v13` (gate
-  workflow pin series), `plugin-v2.49.1` (plugin series) and `cli-v1.5.1` (the `wellforge`
+- Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v14` (gate
+  workflow pin series), `plugin-v2.49.2` (plugin series) and `cli-v1.5.1` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.49.1`, CLI `1.5.1`. **This is the one line in this file that states current
+  plugin `2.49.2`, CLI `1.5.1`. **This is the one line in this file that states current
   versions**; `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and
   `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
   the docs. Every other version in this file is history and stays as written. A self-CI workflow
@@ -170,6 +170,17 @@ wellforge/
   authority; agents and commands delegate to it). It is a floor-raiser, not a gate: one pass
   never a loop, it never sets `status:` or checks a box, and it is never evidence in a QE or
   eval verdict — independent verification stays the authority. Off at the `spike` tier.
+- **Before any tag in any series: `mise run check`** (`scripts/check-all.sh`) — every
+  self-test in this repo behind one exit code. **Red means no tag.** It is a precondition in
+  `scripts/release-cli.sh` and `/wellforge:release`, the committed `gates/hooks/pre-push`
+  runs it when a push carries a release tag (branch pushes stay fast), and CI's
+  `release-guard` job requires every job green on the tag — that last one cannot be
+  bypassed. A tag whose CI is red is **deleted and re-cut, never left**
+  (`docs/VERSIONING.md`). This exists because `plugin-v2.49.0` and `cli-v1.5.0` were tagged
+  from a tree with seven failing cases: nothing was weakened, the suites were simply not all
+  run. Add a new suite to `scripts/check-all.sh` and every one of those paths picks it up —
+  `/wellforge:doctor --tests` calls it too, rather than keeping a second list that already
+  drifted once.
 - **Git policy — non-negotiable, here and in every WellForge repo (incl. generated ones):**
   **linear history** (no merge commits — rebase onto `main`, integrate `--ff-only`, PRs squash
   or rebase) and **Conventional Commits**. Four enforcement layers: local config

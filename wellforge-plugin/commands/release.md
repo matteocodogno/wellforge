@@ -120,13 +120,23 @@ would report the wrong one and mislabel a scaffold's template version):
 3. **Add the `docs/PLUGIN-MIGRATIONS.md` entry** for the minor — including "no project-side
    action", which is information. `/wellforge:upgrade` reads that file; a missing entry is
    indistinguishable from an unexamined one.
-4. **Verify before tagging** — all of it, not a sample:
+4. **Verify before tagging — this is a PRECONDITION, not a checklist line.** Run the whole
+   self-test, not the three drift guards this step used to name:
 
    ```bash
-   cd wellforge-plugin && uv run --with pyyaml python scripts/check-docs.py \
-     && uv run --with pyyaml python scripts/check-routing.py --tool claude \
-     && uv run --with pyyaml python scripts/check-budget.py
+   mise run check          # scripts/check-all.sh — guards, hooks, python suites, CLI, shellcheck
    ```
+
+   **Red means no tag.** `plugin-v2.49.0` was cut from a tree where
+   `post-spec-guard.test.sh` had a failure and the CLI matrix had six, because this step
+   listed three commands and the repo has thirteen suites. One entry point now, and adding
+   a suite to `scripts/check-all.sh` updates this step, the pre-push hook, the CLI release
+   script and `/wellforge:doctor --tests` at once.
+
+   `gates/hooks/pre-push` runs it again when the tag is pushed (install it with
+   `./scripts/setup-git-policy.sh`), and CI's `release-guard` job requires every job green
+   on the tag — that last one cannot be bypassed. If it goes red, **delete the tag and
+   re-cut it**; see `docs/VERSIONING.md`.
 
 5. **Commit, then tag that commit** — in this order, because the manifest must point at its
    own tag:

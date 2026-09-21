@@ -221,16 +221,22 @@ Only with the flag: run the plugin's own regression matrices from the plugin roo
 pass/fail counts per suite.
 
 ```bash
-<plugin>/hooks/scripts/tests/pre-bash-guard.test.sh
-<plugin>/hooks/scripts/tests/pre-file-guard.test.sh
-<plugin>/hooks/scripts/tests/stop-verify.test.sh
-<plugin>/hooks/scripts/tests/post-spec-guard.test.sh
-<plugin>/hooks/scripts/tests/trace-subagent.test.sh
-uv run --with pyyaml python <plugin>/scripts/tests/run-report.test.py
-uv run --with pyyaml python <plugin>/scripts/tests/forge-state.test.py
-uv run --with pyyaml python <plugin>/scripts/tests/security-triggers.test.py
-uv run --with pyyaml python <plugin>/scripts/check-budget.py
+# ONE list, and it is not this document's. `scripts/check-all.sh` in the wellforge repo is
+# the single entry point every release path already takes as a precondition.
+<repo>/scripts/check-all.sh --quick
 ```
+
+Run it from a wellforge CHECKOUT (`--quick` skips the scaffold gates, which need a
+toolchain and minutes). It prints a table of every suite and exits non-zero if any is red.
+
+**This command used to carry its own list of suites, and the list drifted** — it was missing
+`security-triggers.test.py`, which had been running in CI all along, so `--tests` reported a
+clean sweep of a set that was one suite short. A second list of the same thing is a second
+thing to forget to update; `check-all.sh` exists so that adding a suite updates the release
+gate, the pre-push hook, CI and this command at once.
+
+If the user is NOT in a wellforge checkout, say so plainly — the plugin's suites live in the
+repo, not in the installed plugin, so there is nothing to run and that is not a failure.
 
 Rather than trusting this list, check it against what is on disk — a suite that exists and
 is never run is worse than no suite, because the green report implies it passed:
@@ -242,9 +248,10 @@ ls <plugin>/hooks/scripts/tests/*.test.sh <plugin>/scripts/tests/*.test.py
 Report any suite present on disk but absent from the list above as a **WARN** against this
 command, not a silent omission. `security-triggers.test.py` was exactly that for a while.
 
-`check-budget.py` is worth reporting even when it passes: it prints what this plugin costs
-every session in this project (~4,900 estimated tokens of descriptions, loaded before the
-user types), and that number is invisible otherwise.
+`check-budget.py` (one of the suites `check-all.sh` runs) is worth reporting even when it
+passes: it prints what this plugin costs every session in this project (~4,900 estimated
+tokens of descriptions, loaded before the user types), and that number is invisible
+otherwise. Surface it from the run's output rather than invoking it separately.
 
 These are the same suites CI runs. Running them here answers "is the plugin I have actually
 sound", which is otherwise only knowable by pushing. Note in the report that the
