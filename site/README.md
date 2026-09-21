@@ -11,10 +11,16 @@ open site/index.html          # macOS — just open the file
 python3 -m http.server -d site 8000   # then visit http://localhost:8000
 ```
 
-## Publish (deliberate, manual — not automatic)
+## Publish (automatic on push to `main`)
 
-Publishing is **outward-facing and hard to reverse**, and WellForge is marked internal
-tooling, so it does not deploy on push. Going live is a two-step human action:
+`.github/workflows/pages.yml` deploys this directory on every push to `main` that touches
+`site/**` (and is dispatchable by hand). This section used to say the opposite — that
+publishing was a deliberate two-step human action, because "WellForge is marked internal
+tooling". Both halves were wrong: the workflow has a `push` trigger, and the project is
+MIT-licensed and public (`LICENSE`). A deploy story that says "manual" while CI deploys on
+push is the worst of both: nobody expects the site to change, and it changes.
+
+One-time prerequisite, if Pages has never been enabled:
 
 1. **Decide it should be public.** If the repo is private, making the site reachable means
    making the repo public (or using GitHub Enterprise private Pages). That's a Welld call.

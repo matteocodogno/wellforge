@@ -76,7 +76,7 @@ adapters/copilot/
 ├── README.md              # honest support-tier table (mirror adapters/opencode/README.md)
 └── githooks/lefthook.yml  # static enforcement asset (analog of opencode's plugin/wellforge.js)
 config/model-tiers.yml     # + copilot: block (tiers → Copilot model names per subscription)
-docs/PLAN.md               # + adapters/Copilot line
+docs/plans/PLAN.md               # + adapters/Copilot line
 ```
 
 `generate.py` swaps only the emit functions vs. the OpenCode generator; `translate` gains a
@@ -112,4 +112,3 @@ at today), not a copier-emitted layer. Later, wire tool choice into `wellforge s
 automatically. First milestone = **prompts + chat modes + instructions + MCP** — the workflow,
 agents, and skills, i.e. the bulk of WellForge; enforcement fallback and the orchestration
 honesty note follow.
-</invoke>

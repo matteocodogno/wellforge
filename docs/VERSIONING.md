@@ -283,6 +283,23 @@ main ──●───────────────●──────
   formula it rejects.
 
 - Pushing a `vX.Y.Z` tag triggers [`release.yml`](../.github/workflows/release.yml): it
-  publishes the GitHub Release with notes from the Conventional Commits, then pushes a
-  Homebrew formula bump branch (the formula follows the **template** series, since that tag
-  names the tarball users install).
+  publishes the GitHub Release with notes from the Conventional Commits. **It no longer
+  touches the Homebrew formula.**
+
+  It used to, and this paragraph used to say the formula "follows the **template** series,
+  since that tag names the tarball users install" — which contradicted this same document
+  two sections above, where the CLI has its own `cli-vX.Y.Z` series precisely because
+  riding the template's tags meant a CLI fix could not ship without a template release.
+  One file with two owners, and the one that ran on every template tag was the wrong one:
+  the formula sat on `v0.9.0` while the CLI shipped four releases of its own.
+
+  The formula belongs to the CLI release path, end to end:
+
+  ```sh
+  scripts/release-cli.sh <patch|minor|major|X.Y.Z> --execute
+  scripts/release-cli.sh X.Y.Z --formula-only --execute   # the formula alone
+  ```
+
+  `check-docs.py` asserts the formula's `version` against `WELLFORGE_CLI_VERSION` and the
+  newest `cli-v*` tag, so a formula left behind by a hand edit fails CI rather than
+  reaching a brew user.

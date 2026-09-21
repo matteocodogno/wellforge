@@ -73,7 +73,9 @@ that bumps them, so that the docs never describe a state that no longer exists.
 ## Non-goals
 
 - **The JVM preset.** Spring Boot / jOOQ / Modulith versions are a separate matrix with a
-  separate blocker (`spring-modulith-starter-jooq` has no managed version under Boot 4.0.0).
+  separate blocker — RESOLVED in template `v0.10.0`: `spring-modulith-starter-jooq` was
+  never published in any Spring Modulith release (a nonexistent artifact, not a missing
+  managed version), and the preset now uses `spring-modulith-starter-jdbc`.
   Mixing them makes both harder to verify.
 - **Tailwind 4 as part of the same change.** It is CSS-first with no JS config, which makes
   it a frontend restyle rather than a pin bump. Split it out unless the frontend build

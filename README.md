@@ -16,9 +16,14 @@
       |___________|
 ```
 
-![template](https://img.shields.io/badge/template-v0.9.0-1f6feb)
-![plugin](https://img.shields.io/badge/plugin-v2.32.0-8957e5)
-![gates](https://img.shields.io/badge/gates-gates--v11-2da44e)
+<!-- LIVE badges, resolved by shields.io at render time — the same sources site/index.html
+     uses. The hard-coded versions that were here said template v0.9.0 and plugin v2.32.0,
+     sixteen plugin releases behind, because a badge is exactly the kind of number nobody
+     remembers to bump. A badge that can go stale should not exist. -->
+[![template](https://img.shields.io/github/v/release/matteocodogno/wellforge?label=template&color=1f6feb)](https://github.com/matteocodogno/wellforge/releases)
+[![plugin](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmatteocodogno%2Fwellforge%2Fmain%2Fwellforge-plugin%2F.claude-plugin%2Fplugin.json&query=%24.version&prefix=v&label=plugin&color=8957e5)](wellforge-plugin/)
+[![gates](https://img.shields.io/github/v/tag/matteocodogno/wellforge?filter=gates-v*&label=gates&color=2da44e)](docs/VERSIONING.md)
+[![cli](https://img.shields.io/github/v/tag/matteocodogno/wellforge?filter=cli-v*&label=cli&color=d29922)](docs/RELEASING-CLI.md)
 ![works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode%20%2B%20Copilot-111)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -52,11 +57,12 @@ It fits best if you have:
 - **Claude Code**, **OpenCode**, or **GitHub Copilot** (VS Code, via a generated adapter) + model access — it's a plugin/adapter, not a standalone tool
 - **macOS or Linux** with Homebrew (Windows isn't supported yet)
 - **GitHub** — the quality gates are GitHub Actions; connections & releases assume `gh`
-- **Greenfield**: one of two stacks — **Spring-Kotlin + React** or **Hono + React**
+- **Greenfield**: one of three presets — **Spring-Kotlin + React**, **Hono + React**, or
+  **Pulumi GCP (TypeScript)** for infrastructure
 - **Brownfield**: any **Node (pnpm)** or **JVM (Maven)** repo on GitHub, via `/wellforge:adopt`
 
 Outside that (other stacks, other CIs, Windows) the fit drops off — broadening is on
-[the roadmap](docs/PLAN.md).
+[the roadmap](docs/plans/PLAN.md).
 
 ## See it work
 
@@ -133,7 +139,7 @@ audit) blocks in **every** tier: fast never means leaky.
 | **[Installation](docs/INSTALLATION.md)** | machine setup — brew fast path or manual |
 | **[Quick start](docs/QUICKSTART.md)** | idea → running project in ~30 minutes |
 | **[Versioning](docs/VERSIONING.md)** | why there are two tag series (`vX.Y.Z` templates, `gates-vN` gates) and how each reaches a project |
-| [PLAN.md](docs/PLAN.md) · [rigor tiers](docs/PLAN-rigor-tiers.md) | build roadmap, per-phase status, honest deviations |
+| [PLAN.md](docs/plans/PLAN.md) · [rigor tiers](docs/plans/PLAN-rigor-tiers.md) | build roadmap, per-phase status, honest deviations |
 
 ## Under the hood
 
@@ -152,15 +158,15 @@ tool-native files from it — [OpenCode](adapters/opencode/) (`.opencode/`) and
 [GitHub Copilot](adapters/copilot/) for VS Code (`.github/` prompts, chat modes, instructions
 + MCP, invoked as `/wf-*`). Copilot reaches the workflow + agents + skills + MCP; parallel
 multi-agent orchestration and local hooks are Claude Code / OpenCode-only (Copilot leans on CI
-gates + a generated `lefthook.yml`). See [multi-tool support](docs/MULTI-TOOL-SUPPORT.md).
+gates + a generated `lefthook.yml`). See [multi-tool support](docs/plans/MULTI-TOOL-SUPPORT.md).
 
 ## Status
 
 All 6 pillars built and E2E-tested, plus rigor tiers and release management. Works with
 **Claude Code, OpenCode, and GitHub Copilot** (VS Code, via adapter). Latest: template
-`v0.10.0`, gates `gates-v11`, plugin `2.43.0`, CLI `cli-v1.0.0` — four series that move
+four independent series that move
 independently, see [versioning](docs/VERSIONING.md).
-Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/PLAN.md).
+Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/plans/PLAN.md).
 
 Built for any team. **[MIT licensed](LICENSE).** Contributions: PRs to `templates/` and gate
 thresholds — that review is the single discretion point of the quality system.

@@ -53,7 +53,7 @@ plugin source declared relative — no paths to edit):
 
 ```bash
 # 1. Register the marketplace (point it at the repo root)
-claude plugin marketplace add ~/.ai/wellforge
+claude plugin marketplace add matteocodogno/wellforge
 
 # 2. Install
 claude plugin install wellforge@wellforge --scope user

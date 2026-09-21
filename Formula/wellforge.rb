@@ -25,11 +25,21 @@
 class Wellforge < Formula
   desc "Reproducible, AI-assisted project setup platform"
   homepage "https://github.com/matteocodogno/wellforge"
-  url "https://github.com/matteocodogno/wellforge/archive/refs/tags/v0.9.0.tar.gz"
-  sha256 "b61eafcb2f37753faea37c836ecce6aa4e53ccd207ef39b719a3d04a09115bc6"
-  # Not "UNLICENSED": `brew audit --strict` rejects it as a non-standard SPDX identifier.
-  # :cannot_represent is Homebrew's own answer for a license SPDX cannot express.
-  license :cannot_represent # internal WellForge tooling
+  url "https://github.com/matteocodogno/wellforge/archive/refs/tags/cli-v1.5.0.tar.gz"
+  # PLACEHOLDER — not a real hash. The tarball does not exist until cli-v1.5.0 is pushed, and
+  # GitHub's generated archive is not byte-reproducible locally (release-cli.sh's header
+  # records the measurement). Fill it with:
+  #     scripts/release-cli.sh 1.5.0 --formula-only --execute
+  # An all-zero sha fails `brew install` loudly. The previous value was real and pinned the
+  # TEMPLATE tag v0.9.0, so brew installed a year-old CLI successfully and only `brew test`
+  # noticed — silent-wrong, which is the worse of the two.
+  sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+  # EXPLICIT version, because the tag is `cli-vX.Y.Z` and Homebrew cannot parse a version
+  # out of that shape. The `test do` block asserts `version` against what the script
+  # prints; with no version line brew guessed 0.9.0 from the old url and compared it to
+  # "wellforge 1.5.0".
+  version "1.5.0"
+  license "MIT"
   head "https://github.com/matteocodogno/wellforge.git", branch: "main"
 
   depends_on "gh"

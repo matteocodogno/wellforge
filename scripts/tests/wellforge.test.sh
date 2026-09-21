@@ -357,6 +357,10 @@ run_cli() { # <wellforge-home> <args…> ; stdin from $RUN_STDIN (default /dev/n
     SHIM_LOG="$SHIM_LOG"
     WELLFORGE_HOME="$wf_home"
     WELLFORGE_REPO="${RUN_REPO:-}"
+    # Empty unless a case sets RUN_MARKETPLACE. The CLI reads
+    # ${WELLFORGE_MARKETPLACE:-matteocodogno/wellforge}, so empty == the git default —
+    # and it has to be listed HERE, because env -i deliberately drops ambient WELLFORGE_*.
+    WELLFORGE_MARKETPLACE="${RUN_MARKETPLACE:-}"
     TERM=dumb
     # The login shell decides which rc file gets written; env -i would otherwise leave it
     # unset and every shell-wiring case would test the same "unknown shell" branch.
@@ -659,10 +663,12 @@ else
 fi
 finish
 
-# The Formula's url can only move once the tag is PUSHED — GitHub generates the tarball and
-# its sha is not reproducible locally, so `release-cli.sh` fetches it after pushing. Until
-# the first cli-v release is published the Formula still names the old template tag.
-reset_fakes; begin "release: the Formula points at the CLI series, not the template's" xfail
+# No longer xfail. The url now names the CLI series and the formula carries an explicit
+# `version`; only the SHA still waits on a pushed tag (GitHub generates the tarball and its
+# bytes are not reproducible locally, so release-cli.sh fetches it after pushing). Pointing
+# at the series does not need the tarball — that conflation is why the formula sat on the
+# template tag v0.9.0 while the CLI shipped four releases in its own series.
+reset_fakes; begin "release: the Formula points at the CLI series, not the template's"
 grep -q 'archive/refs/tags/cli-v' "$ROOT/Formula/wellforge.rb" \
   || _bad "Formula url still names a non-cli tag: $(grep -o 'refs/tags/[^"]*' "$ROOT/Formula/wellforge.rb")"
 grep -q "^  version \"$const\"\$" "$ROOT/Formula/wellforge.rb" \
@@ -982,6 +988,30 @@ assert_lacks "$OUT" "sequential-thinking, playwright, github"
 finish
 
 # ── summary ───────────────────────────────────────────────────────────────────
+# ── the marketplace SPELLING setup uses ────────────────────────────────────────────
+# Registering the local checkout creates a `directory` marketplace that exists on one
+# machine, so a teammate running the same setup gets a plugin nobody else can install —
+# and doctor then WARNS about the thing setup just did. $SHIM_LOG already records every
+# `claude` call, so the spelling is assertable without touching the shim.
+reset_fakes; begin "setup registers the GIT marketplace, not the local checkout"
+new_sandbox brew claude gh docker uvx uv npx node npm open curl mise git
+run_cli "$SANDBOX/nowhere" setup
+assert_file_has "$SHIM_LOG" "plugin marketplace add matteocodogno/wellforge"
+assert_lacks "$(cat "$SHIM_LOG")" "plugin marketplace add $SANDBOX"
+finish
+
+reset_fakes; begin "WELLFORGE_MARKETPLACE overrides it, for a contributor's checkout"
+new_sandbox brew claude gh docker uvx uv npx node npm open curl mise git
+RUN_MARKETPLACE="$SANDBOX/checkout" run_cli "$SANDBOX/nowhere" setup
+assert_file_has "$SHIM_LOG" "plugin marketplace add $SANDBOX/checkout"
+finish
+
+reset_fakes; begin "doctor points at the same spelling setup uses"
+new_sandbox brew claude gh docker uvx uv npx node npm open curl mise git
+run_cli "$SANDBOX/nowhere" doctor
+assert_has "$OUT" "claude plugin marketplace add matteocodogno/wellforge"
+finish
+
 printf '\nwellforge CLI: %d passed, %d failed, %d expected-fail' "$pass" "$fail" "$xfail"
 [ "$xpass" -gt 0 ] && printf ', %d UNEXPECTEDLY PASSING' "$xpass"
 printf '\n'

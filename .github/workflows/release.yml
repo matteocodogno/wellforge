@@ -69,67 +69,18 @@ jobs:
             gh release create "$tag" --title "$tag" --notes-file /tmp/notes.md --latest
           fi
 
-  formula:
-    name: prepare Homebrew formula bump
-    needs: publish
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0          # need the tag list to know which release is newest
-
-      - name: Refuse to bump backwards
-        id: guard
-        run: |
-          tag="${{ needs.publish.outputs.tag }}"
-          newest=$(git tag -l 'v*' --sort=v:refname | grep -v '^gates-' | tail -1)
-          if [ "$tag" != "$newest" ]; then
-            echo "::notice::$tag is not the newest template tag ($newest) — leaving the formula alone"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Compute the tarball sha256 and bump the formula
-        if: steps.guard.outputs.skip != 'true'
-        id: bump
-        run: |
-          tag="${{ needs.publish.outputs.tag }}"
-          url="https://github.com/${{ github.repository }}/archive/refs/tags/${tag}.tar.gz"
-          # Verify it is a real tarball before trusting its hash (a 404 page hashes just fine)
-          curl -fsSL "$url" -o /tmp/src.tar.gz
-          tar tzf /tmp/src.tar.gz >/dev/null
-          sha=$(sha256sum /tmp/src.tar.gz | awk '{print $1}')
-          echo "sha256($tag) = $sha"
-          python3 - "$tag" "$sha" <<'PY'
-          import pathlib, re, sys
-          tag, sha = sys.argv[1], sys.argv[2]
-          p = pathlib.Path('Formula/wellforge.rb'); t = p.read_text()
-          t = re.sub(r'archive/refs/tags/v[0-9.]+\.tar\.gz', f'archive/refs/tags/{tag}.tar.gz', t, count=1)
-          t = re.sub(r'sha256 "[0-9a-f]{64}"', f'sha256 "{sha}"', t, count=1)
-          p.write_text(t)
-          PY
-          if git diff --quiet Formula/wellforge.rb; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::formula already points at $tag — nothing to bump"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Push the bump to a branch and link the PR
-        if: steps.bump.outputs.changed == 'true' && needs.publish.outputs.dry != 'true'
-        run: |
-          tag="${{ needs.publish.outputs.tag }}"
-          branch="chore/brew-${tag}"
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$branch"
-          git commit -qam "fix(brew): formula → ${tag}"
-          git push -q --force-with-lease origin "$branch"
-          {
-            echo "### Homebrew formula bump ready"
-            echo ""
-            echo "\`brew install\` still resolves the previous tag until this lands:"
-            echo ""
-            echo "**[Open the PR](https://github.com/${{ github.repository }}/compare/${branch}?expand=1)** — branch \`${branch}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+# The `formula` job that used to live here is GONE, deliberately.
+#
+# It rewrote Formula/wellforge.rb's url and sha256 on every TEMPLATE `v*` tag, which is how
+# the formula came to point at v0.9.0: the CLI moved to its own `cli-vX.Y.Z` series
+# (docs/VERSIONING.md) and this job kept aiming the formula at a series the CLI no longer
+# ships in. One file, two owners, and the one that ran most often was the wrong one.
+#
+# The CLI release path owns the formula now, end to end:
+#     scripts/release-cli.sh <patch|minor|major|X.Y.Z> --execute
+#     scripts/release-cli.sh X.Y.Z --formula-only --execute     # the formula alone
+# It tags first, pushes, and only then fetches the tarball to compute the sha256 — that
+# order is forced, because GitHub generates the archive on demand and its bytes are not
+# reproducible locally. check-docs.py asserts the formula's version against
+# WELLFORGE_CLI_VERSION and the newest cli-v tag, so a formula left behind by a hand edit
+# fails CI instead of reaching a brew user.

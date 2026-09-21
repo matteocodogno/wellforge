@@ -31,7 +31,7 @@ set -uo pipefail
 # Bumped only by scripts/release-cli.sh, which also updates Formula/wellforge.rb and cuts
 # the tag. The Formula's test block asserts this string, and CI asserts it equals the
 # newest `cli-v*` tag — an unbumped release and an untagged bump are both caught.
-WELLFORGE_CLI_VERSION="1.4.0"
+WELLFORGE_CLI_VERSION="1.5.0"
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
 CONFIG_DIR="$HOME/.config/wellforge"
@@ -410,7 +410,10 @@ plugin_cache_state() {
 check_plugin() {
   command -v claude >/dev/null || { skip "plugin" "skipped — claude not installed"; return 0; }
   if marketplace_is_registered; then ok "marketplace" "WellForge registered"; else
-    bad "marketplace" "run: claude plugin marketplace add $WELLFORGE_HOME"; FAILURES=$((FAILURES+1))
+    # The same spelling `wellforge setup` uses, so doctor never tells you to undo what
+    # setup did. It used to name $WELLFORGE_HOME — a local path — while every other
+    # document said the git repo.
+    bad "marketplace" "run: claude plugin marketplace add ${WELLFORGE_MARKETPLACE:-matteocodogno/wellforge}"; FAILURES=$((FAILURES+1))
   fi
   if plugin_is_installed; then ok "plugin" "wellforge installed"; else
     bad "plugin" "run: claude plugin install wellforge@wellforge --scope user"; FAILURES=$((FAILURES+1))
@@ -788,10 +791,25 @@ cmd_setup() {
   if command -v claude >/dev/null; then
     local err
     if ! marketplace_is_registered; then
-      if err=$(claude plugin marketplace add "$WELLFORGE_HOME" 2>&1 >/dev/null); then
-        ok "marketplace" "registered from $WELLFORGE_HOME"
+      # The GIT marketplace by default; the local checkout only for a contributor who asks.
+      #
+      # Registering "$WELLFORGE_HOME" creates a marketplace of source `directory`, which
+      # exists on this machine and nowhere else — a teammate running the same setup gets a
+      # plugin nobody else can install, and `doctor` then WARNS about the very thing setup
+      # had just done. Three documents already spelled it the git way
+      # (wellforge-plugin/README.md, docs/PLUGIN-MIGRATIONS.md, and doctor's own fix hint);
+      # setup and docs/INSTALLATION.md were the outliers.
+      #
+      # WELLFORGE_MARKETPLACE overrides it: set it to a path to develop against a checkout.
+      local mkt="${WELLFORGE_MARKETPLACE:-matteocodogno/wellforge}"
+      if err=$(claude plugin marketplace add "$mkt" 2>&1 >/dev/null); then
+        if [ "$mkt" = "matteocodogno/wellforge" ]; then
+          ok "marketplace" "registered from $mkt (git — reproducible for teammates)"
+        else
+          ok "marketplace" "registered from $mkt (local — this machine only)"
+        fi
       else
-        bad "marketplace" "add failed: $(err_tail "$err") — retry: claude plugin marketplace add $WELLFORGE_HOME"
+        bad "marketplace" "add failed: $(err_tail "$err") — retry: claude plugin marketplace add $mkt"
       fi
     fi
     if ! plugin_is_installed; then

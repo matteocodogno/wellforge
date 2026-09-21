@@ -1,5 +1,14 @@
 # Multi-tool support — strategy (OpenCode · Codex · Copilot CLI · Claude Code)
 
+> **HISTORICAL — this is the original proposal, not the current state.**
+> The adapters shipped. For what exists today read
+> [`INSTALLATION.md`](../INSTALLATION.md) and the generated adapters'
+> own READMEs ([`adapters/copilot/`](../../adapters/copilot/README.md),
+> [`adapters/opencode/`](../../adapters/opencode/README.md)), which are regenerated with the
+> code and cannot drift from it the way this document did. Kept for the reasoning that led
+> to the design, the same way `GAP-ANALYSIS-google-sdlc.md` is kept.
+
+
 WellForge is Claude Code-native today. Colleagues use OpenCode, Codex CLI, and Copilot
 CLI. This is the research-backed plan to support them — what's portable, what isn't, and
 how, with honest support tiers. **Status: proposal — needs a scope decision before build.**
@@ -51,7 +60,7 @@ adapters/
   copilot/       .github/{prompts,chatmodes,instructions} + wf-skills/ + .vscode/mcp.json ← BUILT (VS Code)
 ```
 
-> **Copilot adapter built** (VS Code, `adapters/copilot/`, see `docs/PLAN-copilot-adapter.md`).
+> **Copilot adapter built** (VS Code, `adapters/copilot/`, see `docs/plans/PLAN-copilot-adapter.md`).
 > It targets the VS Code Copilot customization surface — richer than the CLI sketched below —
 > reaching prompts + chat modes + skills + MCP, with a `lefthook.yml` git-hook fallback for the
 > hooks Copilot can't run. Honest gaps: no hook runtime, no parallel multi-agent orchestration.
