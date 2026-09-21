@@ -10,7 +10,8 @@ pulumi = "3"
 # Project-level non-sensitive env vars only — secrets go in .mise.local.toml.
 # For local runs authenticate with `gcloud auth application-default login` (ADC);
 # NEVER commit a service-account key. See AGENTS.md for the credential model.
-# _.file = ".env"   ← uncomment to load .env automatically
+# Do NOT add `_.file` pointing at a dotenv file: WellForge projects keep non-sensitive
+# defaults here and secrets in .mise.local.toml (connections skill).
 
 [settings]
 experimental = true    # required for monorepo task features

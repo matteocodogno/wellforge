@@ -7,7 +7,24 @@ pnpm = "10"
 
 [env]
 # Project-level non-sensitive env vars only — secrets go in .mise.local.toml
-# _.file = ".env"   ← uncomment to load .env automatically
+# Do NOT add `_.file` pointing at a dotenv file: this project deliberately has none. See the
+# frontend block below and the connections skill.
+
+# ── Frontend build-time configuration (Vite) ────────────────────────────────────────
+# These live here, not in a committed frontend dotenv file. Vite reads VITE_-prefixed vars
+# from the PROCESS ENVIRONMENT and prefers them over a dotenv file, so `mise run frontend:*`
+# — which is how every documented workflow starts the frontend — sees exactly these values.
+#
+# The file they replaced was `frontend/.env`, committed. It made the scaffold contradict its
+# own rules twice over: the connections skill puts non-sensitive defaults in mise [env] and
+# secrets in .mise.local.toml, "not a dotenv file"; and the plugin's own guards refuse to
+# read or write anything named `.env`, so the agent could not maintain the file the project
+# told it to keep in step with src/vite-env.d.ts.
+#
+# Override locally in .mise.local.toml (gitignored), never by re-creating a dotenv file.
+# Every var here is PUBLIC: Vite inlines VITE_* into the browser bundle. Secrets never.
+VITE_API_BASE_URL = "http://localhost:3000"
+VITE_APP_NAME     = "{{ project_name }}"
 
 # ── Worktree isolation — see docs/adr/0002-per-worktree-databases.md (wellforge repo) ──
 # A git worktree isolates the CHECKOUT and nothing else. Without this block two worktrees

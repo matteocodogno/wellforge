@@ -127,7 +127,12 @@ integration test meets the same Postgres you develop against.
   instead of deep relative paths.
 - **Env vars.** Browser-exposed vars must be prefixed `VITE_`, typed in
   `src/vite-env.d.ts`, and read **only** through `src/config.ts` — never scatter
-  `import.meta.env` across the codebase, never use `process.env`.
+  `import.meta.env` across the codebase, never use `process.env`. Their **values live in the
+  root `mise.toml` `[env]` block**, not in a dotenv file — this project has none. Vite reads
+  `VITE_`-prefixed vars from the process environment and `mise run frontend:*` puts them
+  there, so adding a var means editing both `vite-env.d.ts` (the type) and `mise.toml` (the
+  value). Local overrides: `.mise.local.toml`. Everything `VITE_` is inlined into the bundle
+  and is therefore public.
 - **Strictness.** `tsconfig` is strict (`noUncheckedIndexedAccess`,
   `exactOptionalPropertyTypes`). ESLint uses `strictTypeChecked`; CI runs with
   `--max-warnings 0`. Prettier (no semicolons, single quotes) handles formatting.

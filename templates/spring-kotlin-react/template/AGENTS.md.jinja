@@ -109,7 +109,13 @@ WellForge full-stack monorepo: **Spring Boot 4 Kotlin** backend + **React TypeSc
 - **Mantine** for UI components; **Tailwind v3** for layout/spacing only.
 - **TanStack Router** for routing (lazy-load every page), **TanStack Query** for server state,
   **React Hook Form + Effect Schema** for forms, **Effect TS** for async/validation/error handling.
-- **Env vars** are `VITE_`-prefixed, typed in `src/vite-env.d.ts`, accessed only via `src/config.ts`.
+- **Env vars** are `VITE_`-prefixed, typed in `src/vite-env.d.ts`, accessed only via
+  `src/config.ts`. Their **values live in the root `mise.toml` `[env]` block**, not in a
+  dotenv file — this project has none. Vite reads `VITE_`-prefixed vars from the process
+  environment, and `mise run frontend:*` puts them there. Adding a var means editing two
+  places: `vite-env.d.ts` (the type) and `mise.toml` (the value). Local overrides go in
+  `.mise.local.toml` (gitignored). Everything `VITE_` is inlined into the browser bundle,
+  so none of it is ever secret.
 - The `@/` import alias maps to `src/`. ESLint runs with `--max-warnings 0`.
 
 ## Feature workflow

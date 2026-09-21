@@ -23,6 +23,92 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## v0.11.0 — the security floor runs at every tier, and the frontend loses its dotenv file
+
+**Action: two, both small** — a `gates_ref` bump and one file that disappears. Details at the
+end.
+
+**The floor was called in exactly one tier, and it was the tier nobody ships**
+
+Every preset's `quality.yml` called `security-floor.yml` from inside
+`{% if rigor == 'spike' %}` and `commit-lint.yml` only from the `else` branch. So the two
+gates the docs call non-negotiable were each other's blind spot: a `spike` project had no
+commit-message gate, and every `mvp` and `production` project — including the default — had
+**no secret scan in CI at all**. Their only secret check was the semgrep regex rule, which
+excludes test and example paths and scans the working tree rather than history.
+
+All three tier-independent gates (`linear-history`, `commit-lint`, `security-floor`) are now
+called outside the rigor branch. Nothing about the tier work changed: `mvp`/`production`
+still call `quality-<stack>.yml`, `spike` still gets a build-sanity job.
+
+Nothing caught this, because every existing check reads the *template*, where both strings
+are plainly present. CI now renders each preset at `mvp` and `production` and asserts the
+calls are in the output — and that the output parses as YAML, since a gate named in a file
+GitHub cannot read is not a gate.
+
+**The spike build job is now advisory**
+
+`rigor-tiers` puts lint/typecheck/build in the advisory column at `spike`; the generated job
+blocked. The job now carries `continue-on-error: true` and writes PASS/FAIL to the step
+summary, so the debt stays visible without stopping the fast lane. The skill was already
+right; the workflow was aligned to it rather than the other way round.
+
+**What the security floor actually is**
+
+The skills promised "secret scan, hardcoded credentials, CRITICAL-CVE audit". The first two
+are the same check. The third has never run, and after measuring, it should not: the floor is
+stack-neutral and blocks everywhere, and no CVE tool satisfies both today. `pnpm audit` is
+Node-only. `osv-scanner` is stack-neutral — `quality-jvm.yml` already uses it — but reports
+dev and production dependencies alike (no `--prod` flag, no dependency group in its JSON,
+measured on 2.6.0), so blocking on it would contradict `quality-node.yml`'s own `--prod`
+policy and fail every fresh scaffold today on a **dev** dependency.
+
+The prose now says what the workflow does. CVE audits stay in `quality-node.yml` /
+`quality-jvm.yml` at `mvp`/`production`, and the consequence is stated rather than implied:
+**a `spike` has no CVE gate in CI.**
+
+*Worth knowing regardless of tier:* `osv-scanner` reports `vitest@2.1.9` /
+GHSA-5xrq-8626-4rwp at CVSS 9.8 in all three presets. It is a dev dependency, so
+`pnpm audit --prod` does not see it, and the fix is a vitest major bump already tracked as
+`specs/003-ts-stack-migration`. Nothing in this release changes it; it is recorded here
+because it is currently invisible to every gate.
+
+**The frontend dotenv file is gone**
+
+The presets shipped a committed `frontend/.env` holding two non-secret `VITE_*` defaults, and
+the project contradicted itself about it. The `connections` skill puts non-sensitive defaults
+in `mise.toml` `[env]` and secrets in `.mise.local.toml`, "not a dotenv file". The plugin's own guards
+refuse to read or write anything named `.env` — so the agent could not maintain the file that
+`vite-env.d.ts` told it to keep in step. And in v0.10.1 the bare `.env` ignore rule excluded
+that very tracked file.
+
+The defaults moved to the root `mise.toml` `[env]` block. Vite reads `VITE_`-prefixed vars
+from the process environment and prefers them over a dotenv file (measured on a real
+scaffold, all three ways round), so `mise run frontend:dev` / `:build` resolve them with no
+`envDir` or `envPrefix` configuration. `.gitignore` now ignores every dotenv file with no
+exception, because the project commits none. Adding a browser-exposed var now touches
+`frontend/src/vite-env.d.ts` for the type and root `mise.toml` for the value.
+
+### The two actions
+
+1. **`gates_ref` does not move on its own.** It is a recorded answer, so `copier update`
+   keeps `gates-v11` and your project keeps calling the old floor — including the version
+   with no checksum verification and no working `op://` allowlist. Raise it deliberately:
+
+   ```sh
+   copier update --data gates_ref=gates-v12
+   ```
+
+   `/wellforge:upgrade` does this as an explicit, raise-only step.
+
+2. **If you edited `frontend/.env`,** copy anything you still need into the root `mise.toml`
+   `[env]` block before updating — `copier update` deletes the file. Values never changed
+   from the defaults need nothing; they are already in the new block. Anything in there that
+   was actually secret was public the moment it was built, since Vite inlines `VITE_*` into
+   the bundle — rotate it and move it server-side.
+
+---
+
 ## v0.10.2 — spring-kotlin-react passes its own gates, and the compose promise is real
 
 **Action: one command, and only if your `project_slug` contains a hyphen** — see the end.

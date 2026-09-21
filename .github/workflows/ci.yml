@@ -130,6 +130,66 @@ jobs:
     name: reusable gate callable with default gates-ref
     uses: ./.github/workflows/commit-lint.yml
 
+  # The assertion below belongs conceptually with gate-callable, but cannot live IN it: a job
+  # that is a `uses:` reusable-workflow call takes no `steps:`. Hence a sibling job.
+  #
+  # What it defends: the tier-independent gates were called from inside the `rigor` branch of
+  # every preset's quality.yml.jinja, so security-floor ran ONLY at spike and commit-lint
+  # ONLY at mvp/production. Each was the other's blind spot, and the default tier — mvp —
+  # had no secret scan in CI at all. Nothing caught it, because every existing check reads
+  # the TEMPLATE, where both strings are plainly present, rather than a RENDER, where one of
+  # them is missing depending on a value nobody varied.
+  #
+  # So this renders. Templates are not evidence about their own output.
+  rendered-gates:
+    name: rendered quality.yml calls the tier-independent gates
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [spring-kotlin-react, hono-react, pulumi-gcp-ts]
+        rigor: [mvp, production]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+
+      # --vcs-ref HEAD, for the same reason every other scaffold job here needs it: without
+      # it copier resolves a local git template to its latest TAG, and this job would assert
+      # against the last release instead of the branch under test.
+      - name: Scaffold ${{ matrix.preset }} at rigor=${{ matrix.rigor }}
+        run: |
+          uvx copier copy --defaults --vcs-ref HEAD \
+            --data preset=${{ matrix.preset }} --data rigor=${{ matrix.rigor }} \
+            . "/tmp/rendered-${{ matrix.preset }}-${{ matrix.rigor }}"
+
+      - name: Assert the floor is called, and that the file is valid YAML
+        run: |
+          set -euo pipefail
+          f="/tmp/rendered-${{ matrix.preset }}-${{ matrix.rigor }}/.github/workflows/quality.yml"
+          [ -f "$f" ] || { echo "::error::no quality.yml rendered at ${f}"; exit 1; }
+
+          rc=0
+          for gate in security-floor.yml commit-lint.yml linear-history.yml; do
+            if grep -q "$gate" "$f"; then
+              echo "  OK   ${gate}"
+            else
+              echo "::error::rendered quality.yml (${{ matrix.preset }}, rigor=${{ matrix.rigor }}) does not call ${gate}"
+              rc=1
+            fi
+          done
+
+          # A gate named in a file that does not parse is not a gate GitHub will run.
+          # `uv run --with pyyaml` rather than a heredoc: a quoted heredoc's terminator must
+          # start at column 0, and every line in this block is indented by the YAML scalar.
+          uv run --with pyyaml python3 -c '
+          import sys, yaml
+          d = yaml.safe_load(open(sys.argv[1]))
+          assert isinstance(d, dict) and "jobs" in d, "rendered quality.yml has no jobs block"
+          print("  OK   parses as YAML, %d jobs" % len(d["jobs"]))
+          ' "$f"
+
+          exit "$rc"
+
   # SAST self-test. The gates ship semgrep as a PINNED Python app, and an old pin eventually
   # stops starting on a newer runner Python — which surfaces as a red SAST gate in every
   # downstream project, not here (this repo runs no quality-*.yml on itself). That is exactly

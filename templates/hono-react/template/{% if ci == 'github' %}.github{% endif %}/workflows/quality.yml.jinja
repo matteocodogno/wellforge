@@ -7,31 +7,67 @@ on:
     branches: [main]
 
 jobs:
-  # Linear history holds at EVERY rigor tier, like the security floor: a merge commit can't be
-  # fixed retroactively without rewriting published history. Branches rebase onto main and
-  # integrate fast-forward (see the repo's branch protection: required_linear_history).
+  # ── Tier-independent gates ──────────────────────────────────────────────────────────
+  # These three run at EVERY rigor tier, and the reason is the same for all of them: none
+  # can be repaired after the fact. A merge commit and a non-conventional message can only
+  # be fixed by rewriting published history; a leaked credential can only be rotated, never
+  # unpublished. Tiers trade off how much ceremony a CHANGE carries, never whether the
+  # repository stays recoverable.
+  #
+  # They used to sit inside the rigor branch, which made them each other's blind spot:
+  # security-floor ran only at `spike`, commit-lint only at `mvp`/`production`. An mvp
+  # project — the default — had no secret scan in CI at all.
   linear-history:
     name: linear history (no merge commits)
     uses: {{ gates_repo }}/.github/workflows/linear-history.yml@{{ gates_ref }}
 
+  commits:
+    name: commit messages (Conventional Commits)
+    uses: {{ gates_repo }}/.github/workflows/commit-lint.yml@{{ gates_ref }}
+    with:
+      gates-repo: {{ gates_repo }}
+      gates-ref: {{ gates_ref }}
+
+  security-floor:
+    name: security floor (secrets)
+    uses: {{ gates_repo }}/.github/workflows/security-floor.yml@{{ gates_ref }}
+    with:
+      gates-repo: {{ gates_repo }}
+      gates-ref: {{ gates_ref }}
+
 {%- if rigor == 'spike' %}
 
-  # rigor: spike — build sanity + the non-negotiable secret-scan floor only.
-  # No coverage / SAST / eval. Raise with /wellforge:promote before this goes anywhere real.
-  security-floor:
-    name: Security floor (secrets)
-    uses: {{ gates_repo }}/.github/workflows/security-floor.yml@{{ gates_ref }}
-
+  # rigor: spike — build sanity only; the floor above already covers secrets, history and
+  # commit messages at this tier. No coverage / SAST / eval. Raise with /wellforge:promote
+  # before this goes anywhere real.
+  #
+  # ADVISORY (continue-on-error): the rigor-tiers skill puts lint/typecheck/build in the
+  # advisory column at `spike` — measure and report, do not block. The result is still
+  # visible in the summary, so the debt is honest rather than hidden.
   build:
     name: Build (sanity)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
       - name: Build
+        id: buildstep
         run: |
           mise run install
           mise run build
+      - name: Report (advisory at spike)
+        if: always()
+        run: |
+          # The raw guard below is load-bearing: a GitHub expression and a Jinja one are
+          # spelled the same, so without it copier tries to resolve `steps` and the render
+          # dies with "'steps' is undefined" (it did, before this line existed).
+          if [ "{% raw %}${{ steps.buildstep.outcome }}{% endraw %}" = "success" ]; then
+            echo "### build: PASS" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### build: FAIL (advisory at rigor=spike — not blocking)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Raise the tier with \`/wellforge:promote\` to make this block." >> "$GITHUB_STEP_SUMMARY"
+          fi
 {%- else %}
   backend:
     name: Backend quality
@@ -62,10 +98,4 @@ jobs:
       working-directory: frontend
       rigor: {{ rigor }}
 
-  commits:
-    name: commit messages (Conventional Commits)
-    uses: {{ gates_repo }}/.github/workflows/commit-lint.yml@{{ gates_ref }}
-    with:
-      gates-repo: {{ gates_repo }}
-      gates-ref: {{ gates_ref }}
 {%- endif %}

@@ -10,7 +10,13 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# ─── Env files (frontend) — committed: .env only ───
+# ─── Env files ───
+# ALL of them are ignored, with no exception, because this project commits none. The
+# frontend's public VITE_* defaults live in the root mise.toml [env] block and secrets live
+# in .mise.local.toml (connections skill). The previous rules carved `.env` out of the ignore
+# list so a committed `frontend/.env` could be tracked; that exception is what made a bare
+# `.env` rule silently exclude a tracked file in v0.10.1.
+.env
 .env.local
 .env.development
 .env.production
