@@ -23,6 +23,67 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## v0.10.1 — the presets pass their own gates
+
+**Action: none, beyond `copier update`** — with one thing to check, at the end. Every change
+is inside files the template owns.
+
+Until now a freshly scaffolded hono-react or pulumi-gcp-ts project failed its OWN
+`mise run lint / typecheck / test / build` before anyone had written a line of code. CI
+never caught it: the scaffold job asserted the contract files existed and never ran what the
+preset ships. The new `generated-gates` job does.
+
+**pulumi-gcp-ts**
+
+- The root `mise run install / build / test / lint / dev` never worked at all. They declare
+  `depends = ["infra:install"]` and so on, but no `infra:*` delegation tasks existed, so
+  each failed with `task not found`. The other two presets carry that delegation block for
+  backend/frontend; this preset shipped without it.
+- `tsconfig.json` and `policy/tsconfig.json` paired `module: commonjs` with
+  `moduleResolution: node16`, which tsc rejects outright (TS5110) — so typecheck and build
+  failed before reading a single file. Now `node10`, keeping the CommonJS that Pulumi's
+  Node runtime requires. The `pulumi-gcp-ts` skill's reference carried the same broken pair
+  and is fixed with it.
+
+**hono-react**
+
+- `backend/vitest.config.ts` had no `test.exclude`, so the default `vitest` run picked up
+  `src/db/*.integration.test.ts` and tried to reach a real database: `mise run test` failed
+  with ECONNREFUSED on any machine without Postgres. Integration tests now have exactly one
+  entry point, `mise run backend:test:integration`.
+- The frontend's `test` block moved out of `vite.config.ts` into its own
+  `vitest.config.ts`. It could not type-check where it was: the preset pins vite ^6 and
+  vitest ^2, and vitest 2 bundles vite 5, so each of the two possible `defineConfig`
+  imports produces a different TS2769. Splitting the files removes the conflict without
+  moving the pins (that is specs/003-ts-stack-migration).
+- `"typecheck": "tsc --noEmit"` ran against a solution-style `tsconfig.json` (`"files": []`)
+  and therefore checked **nothing**, passing whatever the app contained. It is now
+  `tsc -b --noEmit`.
+- `@types/node` was missing although `vite.config.ts` uses `node:path` and `__dirname`;
+  `vite-env.d.ts` needed a real `eslint-disable` for the declaration-merging exception its
+  own comment already described; and the template's sources had never been run through the
+  preset's own formatter.
+- **`.gitignore` no longer ignores `frontend/.env`.** The bare `.env` rule excluded the very
+  file the template ships, so `git add -A` silently dropped it and the frontend lost its
+  non-secret `VITE_` defaults. The rules now match the spring preset: `.env` committed,
+  `.env.local` and `.env.*.local` ignored.
+
+  **This is the one thing to check after updating.** If your project has a
+  `frontend/.env`, it was never tracked — git will now offer it as a new file. Look at it
+  before committing: anything secret in there has been living untracked and should move to
+  `.mise.local.toml`, which stays ignored.
+
+**spring-kotlin-react is not covered by this release.** Its frontend lint/build (an
+outdated `jiti`), its frontend test lane ("No test files found") and its backend ktlint
+are still red on a fresh scaffold; the `generated-gates` job reports them on every push.
+Nothing here regresses that preset — it is simply untouched.
+
+**For the repo, not for projects:** `scripts/format-templates.sh` renders each preset, runs
+the preset's own formatter over the output, and copies the result back into the template —
+so the next edit is judged by the formatter the generated project will use. It never
+rewrites a `.jinja` source automatically (its render has the answers baked in); those are
+reported with a diff and applied by hand.
+
 ## v0.10.0 — per-worktree databases
 
 **Action: one command, plus two reconciliations if you pinned things yourself.**

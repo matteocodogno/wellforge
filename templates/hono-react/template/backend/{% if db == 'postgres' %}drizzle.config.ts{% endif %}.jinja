@@ -15,7 +15,7 @@ export default defineConfig({
       if (!url)
         throw new Error(
           'DATABASE_URL is not set. Run drizzle-kit through mise (`mise run db:migrate`), ' +
-            'which derives this checkout\'s own database.',
+            "which derives this checkout's own database."
         )
       return url
     })(),

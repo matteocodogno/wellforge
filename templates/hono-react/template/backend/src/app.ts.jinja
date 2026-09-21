@@ -1,7 +1,7 @@
-import { OpenAPIHono } from '@hono/zod-openapi'
 import { errorHandler } from '@/middleware/error-handler'
 import { requestLogger } from '@/middleware/logger'
 import { createRouter } from '@/routes'
+import { OpenAPIHono } from '@hono/zod-openapi'
 
 export const createApp = () => {
   const app = new OpenAPIHono()
@@ -17,7 +17,7 @@ export const createApp = () => {
   app.doc('/openapi.json', {
     openapi: '3.1.0',
     info: {
-      title: {{ project_name | tojson }},
+      title: {% if "'" in project_name %}{{ project_name | tojson }}{% else %}'{{ project_name }}'{% endif %},
       version: '0.1.0',
     },
   })

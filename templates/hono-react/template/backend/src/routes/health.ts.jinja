@@ -1,6 +1,6 @@
-import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
+{% if db == "postgres" %}import { db } from '@/config/database'
+{% endif %}import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 {% if db == "postgres" %}import { Effect } from 'effect'
-import { db } from '@/config/database'
 
 const healthSchema = z.object({
   status: z.enum(['healthy', 'unhealthy']),

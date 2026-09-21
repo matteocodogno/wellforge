@@ -24,7 +24,7 @@ describe('integration database', () => {
     expect(typeof row.db).toBe('string')
   })
 
-  it('is NOT this checkout\'s dev database', async () => {
+  it("is NOT this checkout's dev database", async () => {
     const [row] = await sql`select current_database() as db`
     // WF_DB_NAME is the dev database mise derived for this checkout. Testcontainers gave
     // us a different one; if these ever match, the lane is pointing at long-lived data.

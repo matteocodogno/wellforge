@@ -6,11 +6,15 @@ dist/
 coverage/
 *.tsbuildinfo
 
-# Environment
-.env
+# Environment — committed: frontend/.env only (non-secret VITE_ defaults, the same
+# convention as the spring preset, whose rules these now match). The bare `.env` rule
+# ignored that very file, so a fresh scaffold shipped a tracked file its own .gitignore
+# excluded — `git add -A` silently dropped it and the frontend lost its defaults.
+# Secrets live in .mise.local.toml (below), never in a dotenv file.
 .env.local
 .env.development
 .env.production
+.env.*.local
 
 # mise local overrides — never commit
 .mise.local.toml

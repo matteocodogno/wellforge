@@ -49,7 +49,11 @@ invokes, so the gate works on the `infra` working-directory with no special-casi
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "moduleResolution": "node16",
+    // node10, not node16: TS5110 refuses `moduleResolution: node16` unless `module` is
+    // node16 as well, and CommonJS is not optional here (see above — an ESM entry point
+    // fails at `pulumi up`). The template shipped commonjs + node16 and tsc rejected the
+    // config outright, so `typecheck` and `build` failed before reading a single file.
+    "moduleResolution": "node10",
     "lib": ["ES2020"],
     "strict": true,
     "noUncheckedIndexedAccess": true,

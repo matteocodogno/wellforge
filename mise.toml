@@ -1,0 +1,19 @@
+# mise.toml — the WELLFORGE repo itself (not a generated project).
+#
+# Deliberately thin: no [tools], because this repo is not an application — its toolchain is
+# whatever the scripts declare they need, and pinning node/java here would shadow the pins a
+# generated project is being tested against. Tasks only.
+#
+# Run `mise trust` once after cloning.
+
+[tasks.format-templates]
+description = "Run each preset's OWN formatter over its rendered output and copy the result back"
+run         = "scripts/format-templates.sh"
+
+[tasks."format-templates:check"]
+description = "Report what format-templates would change; non-zero if anything would"
+run         = "scripts/format-templates.sh --check"
+
+[tasks."test:cli"]
+description = "Regression matrix for scripts/wellforge"
+run         = "scripts/tests/wellforge.test.sh"

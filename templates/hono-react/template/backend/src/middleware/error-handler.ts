@@ -1,6 +1,6 @@
+import { logger } from '@/config/logger'
 import type { ErrorHandler } from 'hono'
 import { ZodError } from 'zod'
-import { logger } from '@/config/logger'
 
 /**
  * Global error handler. Wire with `app.onError(errorHandler)`.

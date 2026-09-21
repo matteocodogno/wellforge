@@ -1,5 +1,5 @@
-import type { MiddlewareHandler } from 'hono'
 import { logger } from '@/config/logger'
+import type { MiddlewareHandler } from 'hono'
 
 /**
  * Request logger — logs method, url, status and duration for every request.

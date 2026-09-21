@@ -2,7 +2,12 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "moduleResolution": "node16",
+    // node10, NOT node16: TS5110 rejects `moduleResolution: node16` unless `module` is
+    // node16 too, and this program must stay CommonJS — Pulumi's Node runtime loads it
+    // through ts-node and an ESM entry point fails at `pulumi up`
+    // (wellforge-plugin/skills/pulumi-gcp-ts/references/project-setup.md). The pair was
+    // commonjs + node16, so tsc refused the config and typecheck/build never ran.
+    "moduleResolution": "node10",
     "lib": ["ES2020"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
