@@ -24,6 +24,27 @@ on:
         type: string
         default: ""
 
+  # Dispatchable so this can be EXERCISED rather than first tried on a schedule in
+  # somebody's project. Nothing in CI calls it — `uses:` workflows only run when something
+  # calls them — so before this trigger existed the first real run was the test.
+  #
+  # Run it here, in the wellforge repo, and it takes the "no manifest — not a WellForge
+  # scaffold" branch: behind=false, and the report job then exercises heartbeat-report's
+  # nothing-to-report path, which is the half that closes an issue. That is the path worth
+  # proving, because getting it wrong CLOSES a real drift issue (see the report job).
+  workflow_dispatch:
+    inputs:
+      manifest-path:
+        description: path to the WellForge manifest (leave default to exercise the no-manifest branch)
+        required: false
+        type: string
+        default: .forge/manifest.json
+      source-repo:
+        description: owner/repo of the template source (empty = read it from the manifest)
+        required: false
+        type: string
+        default: ""
+
 permissions:
   contents: read
   issues: write

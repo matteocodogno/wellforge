@@ -217,7 +217,14 @@ fi
 step 6 "fetching the tarball and hashing it — the only place the real sha comes from"
 tarball="$(mktemp)"
 curl -fsSL "$url" -o "$tarball" || die "could not fetch $url (is the tag pushed?)"
-sha="$( { command -v sha256sum >/dev/null 2>&1 && sha256sum "$tarball" || shasum -a 256 "$tarball"; } | cut -d' ' -f1)"
+# if/else, not `A && B || C`: with the chain, a sha256sum that EXISTS but FAILS (a
+# corrupt read, a permissions error) fell through to shasum and the failure was reported
+# as a hash. Pick the tool first, then let it fail loudly.
+if command -v sha256sum >/dev/null 2>&1; then
+  sha="$(sha256sum "$tarball" | cut -d' ' -f1)"
+else
+  sha="$(shasum -a 256 "$tarball" | cut -d' ' -f1)"
+fi
 rm -f "$tarball"
 [ ${#sha} -eq 64 ] || die "got a $((${#sha}))-char sha, expected 64"
 

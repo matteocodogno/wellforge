@@ -161,7 +161,10 @@ else
   FAILED=$((FAILED + 1))
 fi
 
-# ── 5. shellcheck — the SAME file set ci.yml uses ───────────────────────────────────
+# ── 5. shellcheck — the SAME file set AND severity ci.yml uses ──────────────────────
+# --severity=warning is a recorded decision, not a default: ci.yml carries the audit of
+# every info/style note the same file set produces and why each is accepted. Keep the two
+# invocations identical — that is the point of the comment there.
 # Kept identical to the `cli` job's invocation on purpose: two lists that are meant to
 # agree, maintained apart, is the failure this whole file exists to stop. If you change one,
 # change the other, and the release-guard job compares them.

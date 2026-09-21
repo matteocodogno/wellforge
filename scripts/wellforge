@@ -977,8 +977,14 @@ cmd_update() {
         warn "plugin" "no readable plugin source at $WELLFORGE_HOME — skipped (the checkout step above is what fixes this)" ;;
       stale*|missing)
         set -- $state
-        [ "$1" = "stale" ] && say "  ${DIM}plugin cache is v$2, source is v$3 — updating…${RST}" \
-                           || say "  ${DIM}plugin has no cached version — installing…${RST}"
+        # if/else, not `A && B || C`: `say` is a printf, and if it ever fails the second
+        # branch runs too — the user then sees BOTH "cache is stale" and "no cached
+        # version" for one state.
+        if [ "$1" = "stale" ]; then
+          say "  ${DIM}plugin cache is v$2, source is v$3 — updating…${RST}"
+        else
+          say "  ${DIM}plugin has no cached version — installing…${RST}"
+        fi
         if perr=$(claude plugin update wellforge@wellforge 2>&1 >/dev/null); then
           # Trust the filesystem, not the exit code: prune only once the new version is
           # actually on disk, so a "successful" update that produced nothing cannot take

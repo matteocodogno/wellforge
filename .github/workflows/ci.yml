@@ -700,6 +700,25 @@ jobs:
           # a syntax error there breaks commits locally and CI never saw the file), and both
           # tests/ directories, where a broken test script exits non-zero and reads as a
           # failing suite rather than a broken harness.
+          # SEVERITY: warning. This is a DECISION, recorded here rather than left to
+          # whatever the default happens to be, and re-examined 2026-09-21 against the
+          # 34 info/style notes the same file set produces at --severity=style:
+          #
+          #   SC2086 (4)  unquoted expansion — every one is DELIBERATE word splitting
+          #               (`set -- $state`, `set -- $DETAIL` after IFS=';'). Quoting them
+          #               would break the thing they are doing.
+          #   SC2015 (7)  `A && B || C` — five cannot reach C when A succeeds (the group
+          #               `return`s first). The two that could were fixed: a sha256sum
+          #               fallback that masked a real failure, and a doctor line that could
+          #               print both branches.
+          #   SC2016 (9)  single-quoted `$` — jq and awk programs, which MUST not expand.
+          #   SC2001 (12) `sed` where `${var//}` would do — a style preference, and the sed
+          #               form is the one that reads the same in every shell here.
+          #   SC2329 (1)  "function never invoked" — `pyrun` is passed BY NAME to a runner,
+          #               which shellcheck cannot follow.
+          #
+          # None of the remainder is a defect, so info-level is accepted and not enforced.
+          # A genuine warning still fails this step, and that is the line that matters.
           shellcheck -s bash --severity=warning -f gcc \
             scripts/wellforge scripts/*.sh scripts/tests/*.sh \
             gates/hooks/* \

@@ -115,8 +115,8 @@ fi
 
 # ── 7. always exit 0, even on junk ────────────────────────────────────────────
 for junk in '' 'not json at all' '{"usage":'; do
-  printf '%s' "$junk" | CLAUDE_PROJECT_DIR="$TMPROOT" bash "$HOOK" >/dev/null 2>&1
-  if [ $? -eq 0 ]; then pass=$((pass + 1)); else
+  if printf '%s' "$junk" | CLAUDE_PROJECT_DIR="$TMPROOT" bash "$HOOK" >/dev/null 2>&1; then
+    pass=$((pass + 1)); else
     fail=$((fail + 1)); printf '  FAIL  junk payload changed the exit code: %s\n' "$junk"; fi
 done
 
