@@ -104,6 +104,36 @@ The four layers cover different bypasses: config is the ergonomic default, the h
 protection catches the GitHub merge button. Parallel worktree integration in
 `/wellforge:implement` follows the same rule (rebase each branch, then `merge --ff-only`).
 
+## Required checks on the wellforge repo's own `main`
+
+Everything above is what a GENERATED project enforces. The wellforge repo runs its own CI
+(`.github/workflows/ci.yml`) and these are the jobs branch protection requires — the ones
+whose failure must block a merge:
+
+| Job | Why it blocks |
+|---|---|
+| `commits`, `linear` | Conventional Commits + no merge commits, the policy above applied to this repo |
+| `routing` | model-routing / docs / session-budget drift guards |
+| `rubric-sync` | the eval-rubric mirror is byte-identical to the central copy |
+| `gate-callable`, `sast-selftest` | a reusable gate is callable with its default ref, and the pinned semgrep still runs AND fires |
+| `scaffold` | every preset still produces a contract-complete project |
+| **`generated-gates`** | **every preset's OWN lint / typecheck / test / build pass in the generated project** |
+| `worktree-isolation` | two worktrees of a scaffold derive different databases and cannot reach each other's |
+| `services-selftest` | the generated compose file's healthcheck does not lie |
+| `hook-fixtures`, `terse-mode-fixtures`, `adapter-smoke`, `cli` | the plugin's hooks, the terse fixtures, both adapters, and the CLI |
+
+**Advisory, deliberately not required:**
+
+| Job | Why not |
+|---|---|
+| `formula` (macos-latest) | a macOS runner is billed at 10×, and the Homebrew formula only has to be right at release time, where `scripts/release-cli.sh` runs the same install+test ([RELEASING-CLI.md](../docs/RELEASING-CLI.md)) |
+| the Maven half of `generated-gates (spring-kotlin-react)` | **temporary.** Maven Central access from the runner has never been exercised in this repo's CI; the step carries `continue-on-error` until one run proves it resolves, then the flag comes out. It is not a licence for the backend to be broken — the condition and the reason are in the job |
+
+`generated-gates` is the one that was missing. `scaffold` proved the CONTRACT files existed
+and `worktree-isolation` proved the checkouts differed, but nothing ever RAN what a preset
+ships, so a preset whose lint or build was broken passed CI and the first person to find out
+was whoever scaffolded it.
+
 ## Scheduled heartbeat (opt-in, Phase 14a)
 
 PR-time gates only run when someone pushes. But two findings change *without* a commit:

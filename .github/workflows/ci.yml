@@ -278,7 +278,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v4
         with:
           install: false          # the mise binary only — no project tools needed here
 
@@ -362,6 +362,103 @@ jobs:
           for d in a b; do
             ( cd /tmp/wt-$d && eval "$(mise env -s bash)" && docker compose down -v ) || true
           done
+
+  # The generated project's OWN gates. `scaffold` proves the CONTRACT files exist and
+  # `worktree-isolation` proves the checkouts differ, but neither RUNS anything the project
+  # ships — so a preset whose lint, typecheck, test or build is broken passes CI and the
+  # first person to find out is whoever scaffolds it. That is the gap this closes: every
+  # preset, its own task names, no `|| true`.
+  #
+  # `typecheck` has no root aggregate in any preset (it exists per service), so it is
+  # invoked where it is defined rather than through a root task that does not exist.
+  generated-gates:
+    name: generated-gates (${{ matrix.preset }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [spring-kotlin-react, hono-react, pulumi-gcp-ts]
+        # rigor is a single value today. It is in the matrix because the tier changes which
+        # gates a project enforces, so a future `mvp` row is an added line rather than a
+        # rewrite — and because "which tier was this proven at" should be on the job name.
+        rigor: [production]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      # v4, matching quality-node.yml and quality-jvm.yml: the generated project is about
+      # to run under the same action its own CI will use.
+      - uses: jdx/mise-action@v4
+        with:
+          install: false          # the mise binary; the project's own tools come below
+
+      - name: Scaffold ${{ matrix.preset }} (this branch, not the last tag)
+        run: |
+          uvx copier copy --defaults --trust --vcs-ref HEAD . /tmp/gen \
+            --data preset=${{ matrix.preset }} --data rigor=${{ matrix.rigor }}
+
+      - name: Install the project's pinned toolchain
+        working-directory: /tmp/gen
+        run: |
+          # `--all`, not `--yes` (which is not a flag): a generated project has a mise.toml
+          # per service, and an untrusted config resolves to nothing rather than failing.
+          mise trust --all
+          mise install
+
+      # ── hono-react and pulumi-gcp-ts: the root aggregates cover everything ────────────
+      - name: install / lint / test / build
+        if: matrix.preset != 'spring-kotlin-react'
+        working-directory: /tmp/gen
+        run: |
+          mise run install
+          mise run lint
+          mise run test
+          mise run build
+
+      - name: typecheck (hono-react)
+        if: matrix.preset == 'hono-react'
+        working-directory: /tmp/gen
+        run: |
+          (cd backend  && mise run typecheck)
+          (cd frontend && mise run typecheck)
+          # …and again properly. frontend/tsconfig.json is a SOLUTION file — `"files": []`
+          # with references to tsconfig.app.json and tsconfig.node.json — so `tsc --noEmit`
+          # against it type-checks ZERO files and exits 0 no matter what the app contains.
+          # `tsc -b` follows the references. Until the preset's own script is fixed, this
+          # line is the only thing here that actually type-checks the frontend.
+          pnpm -C frontend exec tsc -b
+
+      - name: typecheck (pulumi-gcp-ts)
+        if: matrix.preset == 'pulumi-gcp-ts'
+        working-directory: /tmp/gen
+        run: (cd infra && mise run typecheck)
+
+      # ── spring-kotlin-react: split, because the two halves have different risk ────────
+      # The root aggregates depend on BOTH services, so they cannot be split; the
+      # per-service delegation tasks can.
+      - name: Node half (required)
+        if: matrix.preset == 'spring-kotlin-react'
+        working-directory: /tmp/gen
+        run: |
+          mise run frontend:install
+          mise run frontend:lint
+          mise run frontend:test
+          mise run frontend:build
+
+      # ADVISORY, and this is the condition for removing it: the Maven half resolves the
+      # whole Spring Boot 4 tree from Maven Central on a runner whose access to it has not
+      # been confirmed from here — it has never been exercised in this repo's CI. Once one
+      # run shows it resolving, delete `continue-on-error` and this comment; leaving it
+      # would turn a real backend failure into a green tick, which is the thing this job
+      # exists to stop. It is NOT a licence for the backend to be broken.
+      - name: Maven half (advisory until Maven Central access is confirmed on the runner)
+        if: matrix.preset == 'spring-kotlin-react'
+        continue-on-error: true
+        working-directory: /tmp/gen
+        run: |
+          mise run backend:install
+          mise run backend:lint
+          mise run backend:test
+          mise run backend:build
 
   # Service-container self-test. The gates start a project's OWN compose file so integration
   # tests get a real database (a pilot project hit this: shared node gate, no Postgres, red
