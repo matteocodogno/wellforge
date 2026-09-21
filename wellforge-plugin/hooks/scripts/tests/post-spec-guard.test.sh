@@ -159,6 +159,90 @@ else
   echo "$out" | sed 's/^/        /'
 fi
 
+# ── 19-21. the OTHER two terminal states ───────────────────────────────────────────
+# done.md calls done/archived/superseded "the three terminal states" and the README says
+# there is no reopening by edit, but the rule only ever guarded `done →`. The two states
+# whose entire meaning is "closed" were the two nobody checked.
+new_project; spec archived; commit_all; spec in-progress
+run 2 "archived → in-progress is blocked"
+
+new_project; spec superseded; commit_all; spec draft
+run 2 "superseded → draft is blocked"
+
+new_project; spec done; tasks 2 2; qe_pass; commit_all; spec archived
+run 0 "done → archived is still allowed (a sanctioned retirement)"
+
+# ── 22-24. rigor: a spec with no `rigor:` is at the project default, i.e. production ──
+# Adding `rigor: spike` to it is a LOWERING, and it was the one spelling that needed no
+# edit to an existing value — so the old `-n "$OLD_RIGOR"` test waved it straight through.
+new_project
+{ echo "---"; echo "id: 001"; echo "slug: x"; echo "status: in-progress"; echo "---"; echo; echo "# X"; } \
+  > "$REPO/specs/001-x/spec.md"
+commit_all
+{ echo "---"; echo "id: 001"; echo "slug: x"; echo "status: in-progress"; echo "rigor: spike"
+  echo "---"; echo; echo "# X"; } > "$REPO/specs/001-x/spec.md"
+run 2 "ADDING rigor: spike to a spec that had none (implicitly production) is blocked"
+
+# Creating a brand-new spike spec is not lowering anything — the carve-out that keeps the
+# rule above from being a false positive on every new spike.
+new_project
+mkdir -p "$REPO/specs/004-probe"
+{ echo "---"; echo "id: 004"; echo "slug: probe"; echo "status: draft"; echo "rigor: spike"
+  echo "---"; echo; echo "# probe"; } > "$REPO/specs/004-probe/spec.md"
+run 0 "a NEW spec created at rigor: spike is allowed" "$REPO/specs/004-probe/spec.md"
+
+new_project; spec in-progress spike; commit_all; spec in-progress production
+run 0 "raising spike → production is allowed"
+
+# ── 25-27. field(): quoted and unspaced scalars are valid YAML and meant what they said ──
+# `status: 'done'` returned the literal `'done'`, which equals no known status, so every
+# rule comparing against done silently did not fire. `status:done` read as empty, so the
+# guard concluded nothing it polices had changed. Both were bypasses by typography.
+# The exit code alone does not discriminate here: an unstripped `'done'` is not in the
+# status enum either, so the old hook also refused — but for the WRONG reason, telling the
+# author their status was invalid when the real objection is the unmet gate. Assert the
+# REASON, which is the part that was wrong.
+for quoted in "status: 'done'" 'status: "done"'; do
+  new_project; spec in-progress; tasks 0 2; commit_all
+  # `done:` is required by the schema whenever status is done — without it the refusal is
+  # about frontmatter, which would not test the gate at all.
+  { echo "---"; echo "id: 001"; echo "slug: x"; echo "$quoted"; echo "rigor: production"
+    echo "done: 2026-09-20"; echo "---"; echo; echo "# X"; } > "$REPO/specs/001-x/spec.md"
+  out=$(printf '{"tool_input":{"file_path":"%s"}}' "$REPO/specs/001-x/spec.md" \
+        | CLAUDE_PROJECT_DIR="$REPO" bash "$HOOK" 2>&1); got=$?
+  if [ "$got" = 2 ] && echo "$out" | grep -q "tasks unchecked" \
+     && ! echo "$out" | grep -qi "outside the enum"; then
+    PASS=$((PASS+1))
+  else
+    FAIL=$((FAIL+1))
+    echo "  FAIL: $quoted must be refused BY THE GATE (unchecked tasks), not as an invalid status"
+    echo "$out" | sed 's/^/        /'
+  fi
+done
+
+new_project; spec in-progress; tasks 0 2; commit_all
+{ echo "---"; echo "id: 001"; echo "slug: x"; echo "status:done"; echo "rigor: production"
+  echo "---"; echo; echo "# X"; } > "$REPO/specs/001-x/spec.md"
+run 2 "status:done (no space) still faces the gate"
+
+# ── 28-29. a broken gate is not a passing gate ──────────────────────────────────────
+# One malformed trace in .forge/runs/ used to crash forge-state.py, and the hook read the
+# empty result as "could not evaluate" and allowed the edit UNVERIFIED. So a single
+# unparseable file silently switched the done gate off.
+new_project; spec in-progress; tasks 2 2; qe_pass; commit_all
+printf '[1]' > "$REPO/.forge/runs/broken.json"
+spec done
+run 2 "a malformed run trace refuses the edit instead of failing open"
+
+out=$(printf '{"tool_input":{"file_path":"%s"}}' "$REPO/specs/001-x/spec.md" \
+      | CLAUDE_PROJECT_DIR="$REPO" bash "$HOOK" 2>&1)
+if echo "$out" | grep -qi "broken.json\|run trace\|forge-state"; then
+  PASS=$((PASS+1))
+else
+  FAIL=$((FAIL+1)); echo "  FAIL: the refusal must name the unreadable trace, not just refuse"
+  echo "$out" | sed 's/^/        /'
+fi
+
 echo
 echo "post-spec-guard: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

@@ -131,6 +131,47 @@ if os.path.exists(schema_path):
         if f"`{t}`" not in rt:
             fail.append(f"schema tier `{t}` is not documented in the rigor-tiers skill")
 
+# ── the run-trace schema version, stated in one place and quoted in many ────────────
+# Four documents named a version and three were stale: implement/spike/orchestrate still
+# said v2 and the evaluator said v1, while the observability skill — the authority — was
+# already on v3. A producer writing `"schema": "wellforge-run/v2"` is not a cosmetic
+# mismatch: the trace it writes claims to be a schema it is not, and a reader that one day
+# drops v2 would drop live traces.
+#
+# The skill's heading is the single source. Everything else must agree, except the two
+# places that legitimately name OLD versions: run-report.py's ACCEPTED_SCHEMAS (a reader
+# must keep accepting the archive) and the migration notes (history).
+_obs_path = os.path.join(PLUGIN, "skills", "observability", "SKILL.md")
+_obs = open(_obs_path, encoding="utf-8").read()
+_m = re.search(r"^## Semantic run trace — schema `(wellforge-run/v\d+)`", _obs, re.M)
+if not _m:
+    fail.append("observability/SKILL.md has no `## Semantic run trace — schema `wellforge-run/vN`` "
+                "heading — the schema version has no single source")
+else:
+    current = _m.group(1)
+    _EXEMPT = (
+        os.path.join(PLUGIN, "scripts", "run-report.py"),      # must accept every old version
+        os.path.join(PLUGIN, "scripts", "check-docs.py"),      # this check itself
+    )
+    for dirpath, dirnames, filenames in os.walk(PLUGIN):
+        dirnames[:] = [d for d in dirnames if d not in (".git", "__pycache__", "tests")]
+        for fn in filenames:
+            if not fn.endswith((".md", ".py", ".json", ".sh")):
+                continue
+            fp = os.path.join(dirpath, fn)
+            if fp in _EXEMPT:
+                continue
+            try:
+                body = open(fp, encoding="utf-8", errors="replace").read()
+            except OSError:
+                continue
+            for lineno, line in enumerate(body.splitlines(), 1):
+                for found in re.findall(r"wellforge-run/v\d+", line):
+                    if found != current:
+                        rel = os.path.relpath(fp, ROOT)
+                        fail.append(f"{rel}:{lineno} names `{found}` but the observability "
+                                    f"skill's current schema is `{current}`")
+
 if fail:
     print("✗ docs drift:")
     for f in fail:

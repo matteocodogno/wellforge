@@ -14,7 +14,21 @@ Argument: $ARGUMENTS  (`--stale-days N` overrides the in-progress staleness thre
 ## Gather — one command
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/forge-state.py --json
+# Resolve the plugin root ONCE per session, then reuse $WF. ${CLAUDE_PLUGIN_ROOT} is
+# substituted for HOOKS only — it is NOT exported to the Bash tool (measured: unset), so
+# interpolating it here silently runs `python3 /scripts/...`.
+WF=$(python3 -c "import json,os;p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins'];print(next(i['installPath'] for k,v in p.items() if k.startswith('wellforge@') for i in v))" 2>/dev/null)
+# Running from a checkout (claude --plugin-dir) installs nothing; fall back to the repo.
+[ -n "$WF" ] || WF="$(pwd)/wellforge-plugin"
+# A FUNCTION, not a variable holding a command: `WFPY="uv run ... python"` then `wfpy x`
+# relies on word splitting, which zsh does not do for unquoted parameters — measured, it
+# fails with `command not found: uv run --quiet --with pyyaml python`.
+# uv first because forge-state needs pyyaml to read frontmatter and the system python3
+# usually lacks it; without it every field reads as unknown.
+wfpy() {
+  if python3 -c "import yaml" 2>/dev/null; then python3 "$@"; else uv run --quiet --with pyyaml python "$@"; fi
+}
+wfpy "$WF/scripts/forge-state.py" --json
 ```
 
 One call, everything below. It returns the `forge-state/v1` envelope documented in
@@ -31,7 +45,7 @@ For unresolved drift the envelope's `drift` is *artifact staleness*; the **drift
 recorded by agents during a run are separate and still come from the run traces:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json
+wfpy "$WF/scripts/run-report.py" --json
 ```
 
 Read `drift_open` per run from that. (forge-state answers "is tasks.md behind the spec";
@@ -87,7 +101,7 @@ the rule is checkable, not recalled.
 6. **Over budget** [`budget.per_feature[].state == "over"`]. The deterministic query:
 
    ```bash
-   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json --budget
+   wfpy "$WF/scripts/run-report.py" --json --budget
    ```
 
    → "spent $X of a $Y `<tier>` ceiling (Z%), top consumer `<agent>`". Budgets are

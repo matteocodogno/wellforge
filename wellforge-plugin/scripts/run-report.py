@@ -255,20 +255,71 @@ def budget_report(report, runs, budgets, attributed=None):
             "per_feature": sorted(per_feature, key=lambda x: x["feature"])}
 
 
-def load_runs(runs_dir, feature):
+def load_runs(runs_dir, feature, rejected=None):
+    """Load the well-formed traces. `rejected` (a list) collects "<file>: <why>" for each
+    one skipped, so a caller can surface it instead of it vanishing.
+
+    EVERY trace here is untrusted input. A trace is a file on disk that a command, a hook,
+    a merge, or a person wrote; one bad file used to take down every consumer with an
+    AttributeError — `[1]` and a bare string and `null` all reach `.get`, and
+    `{"agents":"x"}` / `{"agents":[null]}` / `{"verdicts":"PASS"}` blow up later in the
+    aggregation instead. Measured before this changed: forge-state.py exited 1 on the
+    non-dict shapes and run-report.py exited 1 on all of them, both contradicting their own
+    "Exit 0 always" docstring — and, worse, post-spec-guard.sh reads an empty result as
+    "could not evaluate" and lets a `status: done` edit through UNVERIFIED. So one unparseable
+    file in .forge/runs/ silently disabled the done gate.
+
+    Hence: shape-check at the boundary, coerce the two container fields, and let a bad file
+    cost exactly itself.
+    """
     runs = []
     for fp in sorted(glob.glob(os.path.join(runs_dir, "*.json"))):
+        name = os.path.basename(fp)
         try:
             r = json.load(open(fp))
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
+            if rejected is not None:
+                rejected.append(f"{name}: not readable JSON ({type(e).__name__})")
+            continue
+        # A trace is an OBJECT. A list, a string, a number and null are all valid JSON and
+        # none of them is a trace.
+        if not isinstance(r, dict):
+            if rejected is not None:
+                rejected.append(f"{name}: not a JSON object (got {type(r).__name__})")
             continue
         # Accept every known trace schema. v2 added `plugin_version`; nothing else moved,
         # so a v1 trace is read unchanged. Dropping old traces on a schema bump would
         # discard the history the traces exist to preserve — and silently, since a filtered
         # run just looks like a project with fewer runs.
         if r.get("schema") not in ACCEPTED_SCHEMAS:
+            if rejected is not None:
+                rejected.append(f"{name}: unknown schema {r.get('schema')!r} "
+                                f"(accepted: {', '.join(ACCEPTED_SCHEMAS)})")
             continue
-        if feature and r.get("feature") != feature and feature not in r.get("feature", ""):
+        # Coerce the two fields every consumer iterates. Keeping the trace with an empty
+        # container loses only the malformed part; dropping the trace would lose the
+        # verdicts and timings that ARE well-formed beside it.
+        agents = r.get("agents")
+        if not isinstance(agents, list):
+            if agents is not None and rejected is not None:
+                rejected.append(f"{name}: `agents` is {type(agents).__name__}, not a list — ignored")
+            r["agents"] = []
+        else:
+            clean = [a for a in agents if isinstance(a, dict)]
+            if len(clean) != len(agents) and rejected is not None:
+                rejected.append(f"{name}: {len(agents) - len(clean)} non-object entr"
+                                f"{'y' if len(agents) - len(clean) == 1 else 'ies'} in `agents` — ignored")
+            r["agents"] = clean
+        verdicts = r.get("verdicts")
+        if not isinstance(verdicts, dict):
+            if verdicts is not None and rejected is not None:
+                rejected.append(f"{name}: `verdicts` is {type(verdicts).__name__}, not an object — ignored")
+            r["verdicts"] = {}
+        feat = r.get("feature")
+        if not isinstance(feat, str):
+            feat = ""
+            r["feature"] = ""
+        if feature and feat != feature and feature not in feat:
             continue
         runs.append(r)
     return runs
@@ -357,7 +408,12 @@ def main():
 
     pricing = load_pricing(args.pricing)
     events = load_events(args.runs_dir)
-    runs = load_runs(args.runs_dir, args.feature)
+    # A rejected trace is reported, never swallowed: a run that silently does not load looks
+    # exactly like a run that never happened, and the verdicts it carried read as absent.
+    rejected = []
+    runs = load_runs(args.runs_dir, args.feature, rejected)
+    for why in rejected:
+        print(f"note: skipped trace — {why}", file=sys.stderr)
     if not runs:
         print("no run traces found")
         return 0

@@ -279,5 +279,112 @@ check("a v1 trace still yields its QE verdict",
 check("...and an mvp gate built on it passes",
       one(env_v1, "001-old")["done_gate"]["passes"], True)
 
+# ── malformed traces must not take the whole report down ─────────────────────
+# One bad file in .forge/runs/ raised AttributeError and exited 1, contradicting the
+# "Exit 0 always" contract — and post-spec-guard.sh read the empty result as "could not
+# evaluate the done gate", so it ALLOWED a `status: done` edit unverified. A single
+# unparseable file silently switched the gate off.
+for label, body in (
+    ("a JSON list",        "[1]"),
+    ("a bare string",      '"hello"'),
+    ("null",               "null"),
+    ("agents as a string", '{"schema":"wellforge-run/v3","feature":"001-bad","agents":"x"}'),
+    ("a null in agents",   '{"schema":"wellforge-run/v3","feature":"001-bad","agents":[null]}'),
+    ("verdicts as string", '{"schema":"wellforge-run/v3","feature":"001-bad","verdicts":"PASS"}'),
+    ("unknown schema",     '{"schema":"wellforge-run/v9","feature":"001-bad"}'),
+    ("truncated JSON",     '{"schema":'),
+):
+    r = repo()
+    feature(r, "001-bad", spec_fm={"id": 1, "slug": "bad", "status": "in-progress",
+                                   "rigor": "mvp"}, tasks=[True])
+    rd = os.path.join(r, ".forge", "runs")
+    os.makedirs(rd, exist_ok=True)
+    open(os.path.join(rd, "bad.json"), "w").write(body)
+    try:
+        env = state(r)
+        ok = True
+    except Exception as e:  # noqa: BLE001
+        ok = False
+        env = None
+        print(f"    raised: {type(e).__name__}: {e}")
+    check(f"{label} does not raise", ok, True)
+    if env is not None:
+        check(f"{label} is reported under top-level problems[]",
+              any("bad.json" in p for p in env.get("problems", [])), True)
+    shutil.rmtree(r, ignore_errors=True)
+
+# A malformed trace beside a GOOD one must not cost the good one's verdicts.
+r = repo()
+feature(r, "001-mix", spec_fm={"id": 1, "slug": "mix", "status": "in-progress",
+                               "rigor": "mvp"}, tasks=[True])
+trace(r, "001-mix", verdicts={"qe": "PASS"})
+open(os.path.join(r, ".forge", "runs", "bad.json"), "w").write("[1]")
+env = state(r)
+check("a good trace beside a malformed one still yields its verdict",
+      one(env, "001-mix")["verdicts"]["qe"]["verdict"], "PASS")
+check("...and the malformed one is still reported",
+      any("bad.json" in p for p in env.get("problems", [])), True)
+shutil.rmtree(r, ignore_errors=True)
+
+# ── drift must see the WORKING TREE, not only the last commit ────────────────
+# _newer compared commit times, so an uncommitted spec edit reported no drift (its
+# commit is old) and an uncommitted tasks re-sync still reported drift. Both wrong, and
+# both wrong in the direction that says "nothing to do".
+import time
+
+r = repo()
+feature(r, "001-d", spec_fm={"id": 1, "slug": "d", "status": "in-progress", "rigor": "mvp"},
+        tasks=[True])
+commit(r)
+check("committed together → no drift", one(state(r), "001-d")["drift"]["drifted"], False)
+time.sleep(1.1)
+open(os.path.join(r, "specs", "001-d", "spec.md"), "a").write("\nan uncommitted edit\n")
+check("UNCOMMITTED spec edit is drift",
+      one(state(r), "001-d")["drift"]["drifted"], True)
+# ...and re-syncing tasks (also uncommitted) clears it again.
+time.sleep(1.1)
+open(os.path.join(r, "specs", "001-d", "tasks.md"), "a").write("\n- [x] T2: resynced\n")
+check("UNCOMMITTED tasks re-sync clears the drift",
+      one(state(r), "001-d")["drift"]["drifted"], False)
+shutil.rmtree(r, ignore_errors=True)
+
+# ── last_activity: a directory mtime does not move when a file is edited ─────
+r = repo()
+p = feature(r, "001-act", spec_fm={"id": 1, "slug": "act", "status": "draft", "rigor": "mvp"})
+commit(r)
+before = one(state(r), "001-act")["last_activity"]
+time.sleep(1.1)
+open(os.path.join(p, "spec.md"), "a").write("\nedited\n")
+after = one(state(r), "001-act")["last_activity"]
+check("editing a file inside the feature moves last_activity", after > before, True)
+check("last_activity is UTC with a Z", after.endswith("Z"), True)
+shutil.rmtree(r, ignore_errors=True)
+
+# ── eval staleness: done.md promised this condition and nothing computed it ──
+r = repo()
+feature(r, "001-stale",
+        spec_fm={"id": 1, "slug": "stale", "status": "in-progress", "rigor": "production"},
+        tasks=[True],
+        eval_fm={"spec": "001", "verdict": "PASS", "score": 90})
+trace(r, "001-stale", verdicts={"qe": "PASS", "security": "PASS", "eval": "PASS"})
+os.makedirs(os.path.join(r, "src"), exist_ok=True)
+open(os.path.join(r, "src", "app.py"), "w").write("x = 1\n")
+commit(r)
+check("a fresh eval passes the gate", one(state(r), "001-stale")["done_gate"]["passes"], True)
+time.sleep(1.1)
+open(os.path.join(r, "src", "app.py"), "a").write("y = 2\n")   # code moved on
+g = one(state(r), "001-stale")["done_gate"]
+check("a code change AFTER the eval makes it stale", g["passes"], False)
+check("...and the reason says so", any("stale" in f for f in g["failing"]), True)
+shutil.rmtree(r, ignore_errors=True)
+
+# ── --explain-gate is the single definition the docs quote ───────────────────
+out = subprocess.run([sys.executable, SCRIPT, "--explain-gate"],
+                     capture_output=True, text=True)
+check("--explain-gate exits 0", out.returncode, 0)
+for needed in ("verdicts.qe == PASS", "verdicts.security == PASS", "eval is not stale",
+               "no drift", "tasks.md exists"):
+    check(f"--explain-gate lists `{needed}`", needed in out.stdout, True)
+
 print(f"\nforge-state: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

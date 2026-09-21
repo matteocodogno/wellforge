@@ -62,6 +62,7 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
     { "agent": "frontend-dev", "class": "secret env", "detail": "VITE_API_BASE_URL empty in worktree, set in main tree", "resolved_by": "carried .mise.local.toml in, re-ran" }
   ],
   "verdicts": { "qe": "PASS", "security": "PASS", "eval": "PASS" },
+  "security": { "matched_rules": ["**/auth/**", "token"], "dispatched": true },
   "result": "completed | escalated | partial",
   "tokens": null,
   "cost_usd": null,
@@ -70,6 +71,15 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
 }
 ```
 
+- **Write the trace BEFORE the close it will be judged by.** The done gate reads
+  `verdicts.qe` and `verdicts.security` *from the trace* (`forge-state.py` →
+  `latest_verdicts`), so a command that closes first and records afterwards is asking the
+  gate about a feature that has no trace yet: on a feature whose only run is this one,
+  `/wellforge:done` refuses with "QE verdict is absent" for work that has just passed QE.
+  `orchestrate` (both pipelines) and `promote` had exactly this order and were corrected.
+  The alternative — write the trace incrementally per stage and finalise it after the close
+  — is deliberately NOT the rule: it leaves a partially-written trace on disk at the moment
+  the gate reads it, which trades a clear failure for an intermittent one.
 - Timestamps: `date -u +%FT%TZ`. `run_id` replaces `:` with `-` so it's a safe filename.
 - `tokens`/`cost_usd` stay `null` in the trace; `run-report.py` computes them from
   `.events.jsonl` at read time (don't try to fill them inline — you can't read your own
@@ -125,8 +135,16 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
 - **`rigor`** records the resolved tier for the run (`production`/`mvp`/`spike`, per the
   rigor-tiers skill). `spike` runs record `"agents": []` (main loop, no subagents).
   `promote` runs additionally record the tier transition: `"from": "<tier>", "to": "<tier>"`.
+- **`security`** records WHY the owasp-reviewer ran (or did not): `matched_rules` is the
+  list of `config/security-triggers.yml` entries that matched — path globs, substrings, or
+  the literal `always_at_tier:<tier>` — and `dispatched` whether the review actually ran.
+  This skill, `implement` and `orchestrate` all say to "record the matched rules", and until
+  now the schema had nowhere to put them, so the instruction could only be followed by
+  inventing a field or ignored. An empty `matched_rules` with `dispatched: false` is a real
+  answer: nothing triggered a review. It is not the same as the key being absent, which
+  means the command never evaluated the triggers at all.
 - **`terse`** and **`control_run_id`** are **additive fields** (schema id stays
-  `wellforge-run/v1`; existing readers ignore unknown fields — no migration needed):
+  `wellforge-run/v3`; existing readers ignore unknown fields — no migration needed):
   - `terse: boolean` — was this run dispatched with terse mode active (per the **terse**
     skill's activation matrix: `--terse` resolved on for `orchestrate`/`implement`, or the
     spike default unless `--no-terse`). Producers (`orchestrate`, `implement`, `spike`) set
@@ -155,7 +173,9 @@ producer's).
   It is an object, not a bare list, because the two honesty signals have to travel with the
   data: how many token events could not be attributed to one run, and whether costs were
   priced at all. Consumers read `runs`.
-- **`run-report.py`** (`${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py`) — summarizes
+- **`run-report.py`** (`<plugin>/scripts/run-report.py`; resolve `<plugin>` as
+  `/wellforge:doctor` does — `${CLAUDE_PLUGIN_ROOT}` is substituted for HOOKS only and is
+  NOT exported to the Bash tool) — summarizes
   `.forge/runs/`: per run the agents/verdicts/drift, and tokens × `config/model-pricing.yml`
   → estimated cost (events joined by the run's `[started, finished]` window).
 - **`/wellforge:status`** — an observability line per feature: last run, result, est. cost,

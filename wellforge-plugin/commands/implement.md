@@ -130,7 +130,21 @@ the specialist that reviews the code behind it used to run only when someone tho
 This step removes the remembering:
 
 ```bash
-uv run --with pyyaml python ${CLAUDE_PLUGIN_ROOT}/scripts/security-triggers.py \
+# Resolve the plugin root ONCE per session, then reuse $WF. ${CLAUDE_PLUGIN_ROOT} is
+# substituted for HOOKS only — it is NOT exported to the Bash tool (measured: unset), so
+# interpolating it here silently runs `python3 /scripts/...`.
+WF=$(python3 -c "import json,os;p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins'];print(next(i['installPath'] for k,v in p.items() if k.startswith('wellforge@') for i in v))" 2>/dev/null)
+# Running from a checkout (claude --plugin-dir) installs nothing; fall back to the repo.
+[ -n "$WF" ] || WF="$(pwd)/wellforge-plugin"
+# A FUNCTION, not a variable holding a command: `WFPY="uv run ... python"` then `wfpy x`
+# relies on word splitting, which zsh does not do for unquoted parameters — measured, it
+# fails with `command not found: uv run --quiet --with pyyaml python`.
+# uv first because forge-state needs pyyaml to read frontmatter and the system python3
+# usually lacks it; without it every field reads as unknown.
+wfpy() {
+  if python3 -c "import yaml" 2>/dev/null; then python3 "$@"; else uv run --quiet --with pyyaml python "$@"; fi
+}
+wfpy "$WF/scripts/security-triggers.py" \
   --tier <resolved tier> --diff-base <the branch base> \
   --touch '<each touch: glob of the tasks in this batch>' --json
 ```
@@ -186,7 +200,7 @@ the cost of being wrong in that direction; an unreviewed auth change is the cost
 ## Step 6 — Record the run (observability)
 
 Write a run trace per the **observability** skill (load it): capture `started` at the
-start of this run and, now, write `.forge/runs/<run_id>.json` (schema `wellforge-run/v2`)
+start of this run and, now, write `.forge/runs/<run_id>.json` (schema `wellforge-run/v3`)
 with every dispatched agent + outcome, any drift events (resolved or not), the QE verdict,
 and `result` (completed / escalated / partial). Record the isolation mode used, any
 collision events, and any environment faults (per the observability skill's `worktree` /

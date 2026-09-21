@@ -102,7 +102,21 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
    the task graph, not from anyone remembering:
 
    ```bash
-   uv run --with pyyaml python ${CLAUDE_PLUGIN_ROOT}/scripts/security-triggers.py \
+   # Resolve the plugin root ONCE per session, then reuse $WF. ${CLAUDE_PLUGIN_ROOT} is
+   # substituted for HOOKS only — it is NOT exported to the Bash tool (measured: unset), so
+   # interpolating it here silently runs `python3 /scripts/...`.
+   WF=$(python3 -c "import json,os;p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins'];print(next(i['installPath'] for k,v in p.items() if k.startswith('wellforge@') for i in v))" 2>/dev/null)
+   # Running from a checkout (claude --plugin-dir) installs nothing; fall back to the repo.
+   [ -n "$WF" ] || WF="$(pwd)/wellforge-plugin"
+   # A FUNCTION, not a variable holding a command: `WFPY="uv run ... python"` then `wfpy x`
+   # relies on word splitting, which zsh does not do for unquoted parameters — measured, it
+   # fails with `command not found: uv run --quiet --with pyyaml python`.
+   # uv first because forge-state needs pyyaml to read frontmatter and the system python3
+   # usually lacks it; without it every field reads as unknown.
+   wfpy() {
+     if python3 -c "import yaml" 2>/dev/null; then python3 "$@"; else uv run --quiet --with pyyaml python "$@"; fi
+   }
+   wfpy "$WF/scripts/security-triggers.py" \
      --tier <resolved tier> --diff-base <feature branch base> \
      --touch '<each touch: glob in this batch>' --json
    ```
@@ -126,15 +140,8 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
     can't cover — set the bar at the eval, not the QE demo. FAIL → **triage each failing
     dimension to its owner** (as in step 9: code → dev, spec → PO, plan → architect, design →
     designer), same bounded 2-round loop, re-eval.
-11. **Close** → **run the `/wellforge:done` procedure** (production branch) for this
-    feature. It re-verifies the gate against the artifacts on disk — all tasks checked, QE
-    PASS, fresh eval PASS — and records `status: done` + `done: <date>`. Do not flip the
-    status yourself even though you just ran the stages that produced those artifacts; one
-    implementation of this transition is the point. If its gate refuses, relay the missing
-    condition instead of closing. Then summarize (stories delivered, QE + eval verdict
-    tables, commits) and suggest next steps.
-12. **Record the run** → write the run trace per the **observability** skill:
-    `.forge/runs/<run_id>.json` (schema `wellforge-run/v2`, include `rigor: production`, and
+11. **Record the run** → write the run trace per the **observability** skill:
+    `.forge/runs/<run_id>.json` (schema `wellforge-run/v3`, include `rigor: production`, and
     `rigor_recorded` when a `--mode` flag ran this pass at a tier other than the feature's,
     and `plugin_version` — the plugin that produced the run, since the rules it ran under
     move with that version)
@@ -145,6 +152,19 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
     `--terse` resolved on for this run, `false` otherwise); leave `control_run_id` `null`
     (pairing a run to its control run is a later concern, not this command's). The audit
     trail.
+
+12. **Close** → **run the `/wellforge:done` procedure** (production branch) for this
+    feature. It re-verifies the gate against the artifacts on disk — all tasks checked, QE
+    PASS, security PASS, fresh eval PASS — and records `status: done` + `done: <date>`. Do
+    not flip the status yourself even though you just ran the stages that produced those
+    artifacts; one implementation of this transition is the point. If its gate refuses,
+    relay the missing condition instead of closing. Then summarize (stories delivered, QE +
+    eval verdict tables, commits) and suggest next steps.
+
+    **This step is AFTER the trace on purpose.** The done gate reads `verdicts.qe` and
+    `verdicts.security` *from the run trace*, so on a feature whose only run is this one,
+    closing first means closing against a feature with no trace — and `/wellforge:done`
+    refuses with "QE verdict is absent" for work that just passed QE. Record, then close.
 
 ## Pipeline: mvp  (rigor tier `mvp` — collapsed, one gate, mid agents only)
 
@@ -168,12 +188,14 @@ contract and disk-based artifacts, fewer stages. **Never spawn the frontier agen
    security floor BLOCK** (rigor-tiers). Coverage is reported as gap-to-80%, not enforced.
    Triage blocking defects to their owner (code → dev; a wrong/untestable AC → the PO for a
    spec amendment — mvp has no architect/designer to route to). Same bounded 2-round loop.
-6. **Close** → **run the `/wellforge:done` procedure** (mvp branch: all tasks checked +
+6. **Record the run** → trace as below with `command: orchestrate`, `rigor: mvp`. Before
+   the close, not after: the gate reads `verdicts.qe` from the trace, so closing first
+   refuses with "QE verdict is absent" on a feature whose only run is this one.
+7. **Close** → **run the `/wellforge:done` procedure** (mvp branch: all tasks checked +
    QE-light PASS, **no eval** — mvp's bar is QE, not the LM-judge). It records `status: done`
    *and* `done: <date>`; don't flip the status here. End with the
    rigor-tiers visibility reminder: "rigor: mvp — coverage advisory, not yet production;
    `/wellforge:promote NNN-slug --to production` to graduate (adds plan, full coverage, eval)."
-7. **Record the run** → trace as below with `command: orchestrate`, `rigor: mvp`.
 
 ## Pipeline: bugfix
 

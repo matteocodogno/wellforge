@@ -11,7 +11,21 @@ Target: $ARGUMENTS  (a feature token → detail view for that one; empty → all
 ## Gather — one command, no re-derivation
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/forge-state.py --json [--feature <slug>]
+# Resolve the plugin root ONCE per session, then reuse $WF. ${CLAUDE_PLUGIN_ROOT} is
+# substituted for HOOKS only — it is NOT exported to the Bash tool (measured: unset), so
+# interpolating it here silently runs `python3 /scripts/...`.
+WF=$(python3 -c "import json,os;p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins'];print(next(i['installPath'] for k,v in p.items() if k.startswith('wellforge@') for i in v))" 2>/dev/null)
+# Running from a checkout (claude --plugin-dir) installs nothing; fall back to the repo.
+[ -n "$WF" ] || WF="$(pwd)/wellforge-plugin"
+# A FUNCTION, not a variable holding a command: `WFPY="uv run ... python"` then `wfpy x`
+# relies on word splitting, which zsh does not do for unquoted parameters — measured, it
+# fails with `command not found: uv run --quiet --with pyyaml python`.
+# uv first because forge-state needs pyyaml to read frontmatter and the system python3
+# usually lacks it; without it every field reads as unknown.
+wfpy() {
+  if python3 -c "import yaml" 2>/dev/null; then python3 "$@"; else uv run --quiet --with pyyaml python "$@"; fi
+}
+wfpy "$WF/scripts/forge-state.py" --json [--feature <slug>]
 ```
 
 That is the whole gather step. `forge-state.py` walks `specs/`, validates every frontmatter
@@ -35,6 +49,7 @@ The envelope (`forge-state/v1`):
     "tasks":    { "total": 12, "checked": 9 },
     "drift":    { "drifted": true, "reason": "newer than tasks.md: spec.md", "sources": [...] },
     "verdicts": { "qe":   { "verdict": "PASS", "at": "...", "run_id": "..." },
+                  "security": { "verdict": "PASS", "at": "...", "run_id": "..." },
                   "eval": { "verdict": null, "at": null, "run_id": null, "score": null } },
     "done_gate":{ "tier": "production", "passes": false, "failing": ["3 of 12 tasks unchecked"] },
     "superseded_by": null, "archive_reason": null, "created": "...", "last_activity": "...",
@@ -74,7 +89,15 @@ envelope already carries — the column names the field, so this table documents
 | same, `verdicts.qe.verdict == null` | **verify** | no QE verdict on record — run it: `/wellforge:implement NNN-slug` (its QE step), then `/wellforge:done NNN-slug`. Don't assume a missing verdict is a pass. |
 | `tasks` complete, `rigor == production`, `!artifacts.eval_report` | **eval** | `/wellforge:eval NNN-slug` (LM-judge scored verdict) |
 | `verdicts.eval.verdict == FAIL` | **eval** | fix the failing dimensions, then `/wellforge:eval NNN-slug` |
+| `verdicts.eval.verdict == PASS`, `status != done`, `rigor == production`, `verdicts.security.verdict == null` | **implement** | the security review never ran — `/wellforge:implement NNN-slug` (Step 3b dispatches the reviewer). Do NOT send them to `/wellforge:done`: it refuses on "security review is absent" |
+| `verdicts.eval.verdict == PASS`, `status != done`, `verdicts.security.verdict == FAIL` | **implement** | fix the security findings, then re-run the reviewer |
 | `verdicts.eval.verdict == PASS`, `status != done` | **verify** | `/wellforge:done NNN-slug` |
+
+The three `verdicts.security` rows are not decoration. This table used to omit the field
+entirely, so status sent people to `/wellforge:done` for a production feature whose security
+review had never run — and `/wellforge:done` refused. Two commands, one envelope, opposite
+answers. **Prefer `done_gate.failing` over re-deriving any of this**: it is the same
+computation both commands read, and it already contains the reason in a human sentence.
 | `status == done` | **done** | — complete |
 | `status == superseded` | **retired** | — replaced by `superseded_by:`; nothing to do (flag it only if that feature doesn't exist) |
 | `status == archived` | **retired** | — stopped on purpose (`archive_reason:`); nothing to do |
@@ -130,7 +153,7 @@ would put per-run cost into a per-feature envelope.
 If the project has run traces, append a short **Runs** section from the report script:
 
 ```
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run-report.py --json [--feature <slug>]
+wfpy "$WF/scripts/run-report.py" --json [--feature <slug>]
 ```
 
 It returns `{"runs": [...], "unattributed_events": N, "cost_estimated": bool}`; each entry

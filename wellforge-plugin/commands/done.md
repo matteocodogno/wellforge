@@ -75,7 +75,21 @@ Everything below (the gate, the tiers) applies only WITHOUT this flag.
 ## Step 1 — Resolve the feature + tier
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/forge-state.py --json [--feature <token>]
+# Resolve the plugin root ONCE per session, then reuse $WF. ${CLAUDE_PLUGIN_ROOT} is
+# substituted for HOOKS only — it is NOT exported to the Bash tool (measured: unset), so
+# interpolating it here silently runs `python3 /scripts/...`.
+WF=$(python3 -c "import json,os;p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins'];print(next(i['installPath'] for k,v in p.items() if k.startswith('wellforge@') for i in v))" 2>/dev/null)
+# Running from a checkout (claude --plugin-dir) installs nothing; fall back to the repo.
+[ -n "$WF" ] || WF="$(pwd)/wellforge-plugin"
+# A FUNCTION, not a variable holding a command: `WFPY="uv run ... python"` then `wfpy x`
+# relies on word splitting, which zsh does not do for unquoted parameters — measured, it
+# fails with `command not found: uv run --quiet --with pyyaml python`.
+# uv first because forge-state needs pyyaml to read frontmatter and the system python3
+# usually lacks it; without it every field reads as unknown.
+wfpy() {
+  if python3 -c "import yaml" 2>/dev/null; then python3 "$@"; else uv run --quiet --with pyyaml python "$@"; fi
+}
+wfpy "$WF/scripts/forge-state.py" --json [--feature <token>]
 ```
 
 Resolve the feature from the argument (number / slug / full name) against `features[].slug`,
@@ -108,26 +122,44 @@ not validate should not acquire a `done` on top of a `status: doen`.
 The conditions `done_gate` encodes, for reference — this is documentation of what the
 script checks, not a second implementation to run:
 
-- **`production`**
-  1. every task in `tasks.md` checked (no `- [ ]` remaining)
-  2. QE passed (latest verdict PASS — if stale/absent, run `/wellforge:implement` / QE)
-  2b. **security reviewed** — `verdicts.security` is PASS in the feature's run traces.
-     `production` reviews every batch (`config/security-triggers.yml` `always_at_tier`), so
-     at this tier a missing security verdict means the review never ran, not that it was
-     unnecessary. Absent → run `/wellforge:implement` (its Step 3b dispatches the reviewer);
-     FAIL → fix the findings first. A feature can pass every test and still ship an
-     unreviewed auth change, which is the gap this condition closes.
-  3. `eval-report.md` exists, `verdict: PASS`, and is **not stale** (newer than the last code
-     change to the feature) — otherwise point at `/wellforge:eval`
-- **`mvp`**
-  1. every task checked
-  2. QE-light passed (SAST-high / lint / typecheck / security-floor green; coverage is advisory)
-  — no eval; mvp's bar is QE, not the LM-judge
-- **`spike`** — `done_gate.passes` is `null` here by design: a spike closes through its
+| Condition                      | Applies at  | Why |
+|--------------------------------|-------------|------------------------------------------------------------|
+| tasks.md exists                | every tier  | a feature with no task list has nothing to have finished |
+| every task checked             | every tier  | unchecked tasks are unfinished work, not optimism |
+| tasks.md has >0 tasks          | every tier  | an empty list passes 'all checked' vacuously |
+| verdicts.qe == PASS            | every tier  | from the run trace — independent verification, not self-report |
+| verdicts.security == PASS      | production  | every production batch is reviewed, so ABSENT means it never ran |
+| eval-report.md exists          | production  | the LM-judge half of verification |
+| eval-report.md verdict PASS    | production  | a FAIL or absent verdict is not a pass |
+| eval is not stale              | production  | an eval that predates the last code change judged a different tree |
+| no drift                       | every tier  | spec.md/plan.md newer than tasks.md means the list is out of date |
+
+> **This table is generated.** It is the output of
+> `<plugin>/scripts/forge-state.py --explain-gate`, which prints `GATE_CONDITIONS` from the
+> function that actually decides. Four documents used to state this gate in their own words
+> and no two agreed — this one added a staleness condition nothing computed, the
+> `spec-driven` skill omitted security and drift, `rigor-tiers` never mentioned security,
+> and `status.md` omitted `verdicts.security` from its envelope, so status printed
+> "→ /wellforge:done" for features that `/wellforge:done` then refused. If you change a
+> condition, change it in `done_gate()` and paste this table again.
+
+Notes the table cannot carry:
+
+- **`mvp`** applies the "every tier" rows only — no security verdict, no eval. mvp's bar is
+  QE, not the LM-judge.
+- **A missing verdict is not a pass.** `verdicts.security == null` at `production` means the
+  review never ran (`config/security-triggers.yml` sets `always_at_tier: [production]`), so
+  the gate treats absent exactly like FAIL. Absent → `/wellforge:implement` (its Step 3b
+  dispatches the reviewer); FAIL → fix the findings first. A feature can pass every test and
+  still ship an unreviewed auth change.
+- **Staleness** compares `eval-report.md`'s timestamp against the newest change to code —
+  everything outside `specs/` and `.forge/` — using git, or mtime for files with uncommitted
+  changes. An eval that predates the last code change judged a different tree.
+- **`spike`** — `done_gate.passes` is `null` by design: a spike closes through its
   `brief.md`, not tasks/QE/eval, and no script can read whether a finding answers a
-  question. The condition is that `## Findings` is filled and the spike's question answered. (Step 3 does the write, on
-  the brief rather than a spec.) If it proved out and should become real, suggest
-  `/wellforge:promote` alongside the close.
+  question. The condition is that `## Findings` is filled and the spike's question answered.
+  (Step 3 does the write, on the brief rather than a spec.) If it proved out and should
+  become real, suggest `/wellforge:promote` alongside the close.
 
 ## Step 3 — Close
 

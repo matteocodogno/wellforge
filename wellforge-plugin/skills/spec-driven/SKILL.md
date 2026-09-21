@@ -94,10 +94,16 @@ carries a recorded reason, and only `superseded` carries a pointer that triage c
   never a second copy of the gate. `/wellforge:orchestrate` (both pipelines),
   `/wellforge:promote` and `/wellforge:spike` all *call* that procedure rather than flipping
   the status themselves; "same gate, re-implemented" is how the copies drift apart. The **done gate is tier-aware**: `production` needs every task
-  checked + QE PASS + a fresh passing `eval-report.md` (the LM-judge — QE alone isn't enough,
-  "set the bar at the eval, not the demo"); `mvp` needs tasks checked + QE-light PASS (no
-  eval); `spike` closes via its `brief.md` findings. `/wellforge:done` refuses to close a
-  feature whose gate isn't met.
+  checked + QE PASS + **a security review PASS** + a fresh passing `eval-report.md` (the
+  LM-judge — QE alone isn't enough, "set the bar at the eval, not the demo") + **no drift**;
+  `mvp` needs tasks checked + QE-light PASS (no eval, no security verdict); `spike` closes
+  via its `brief.md` findings. `/wellforge:done` refuses to close a feature whose gate isn't
+  met.
+
+  This sentence is a summary, not the definition — it omitted security and drift for a
+  while and nothing noticed, because nothing reads it. The definition is
+  `forge-state.py done_gate()`; print it with `--explain-gate`, and see
+  [`/wellforge:done`](../../commands/done.md) for the generated table.
 
 ## File formats
 

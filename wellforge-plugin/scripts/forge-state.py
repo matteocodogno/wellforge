@@ -146,22 +146,184 @@ def count_tasks(path):
 
 
 # ── drift ────────────────────────────────────────────────────────────────────────
-def last_change(path, repo):
-    """(display date, clock) for the last change to a path. git first, mtime as fallback.
+def _utc(dt):
+    """A timezone-aware datetime → `YYYY-MM-DDTHH:MM:SSZ`. One format, one zone.
 
-    git is the honest clock: a fresh checkout gives every file the same mtime, so mtime
-    alone reports either everything drifted or nothing.
+    Timestamps used to be emitted in whatever zone the machine happened to be in, with no
+    marker saying which — so two people comparing the same feature's `last_activity` could
+    read times an hour apart and neither could tell. Everything this script prints is UTC
+    and says so.
     """
+    return dt.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _mtime_utc(path):
+    return _utc(datetime.datetime.fromtimestamp(os.path.getmtime(path), datetime.timezone.utc))
+
+
+_DIRTY_CACHE = {}
+
+
+def dirty_paths(repo):
+    """Repo-relative paths git reports as modified/untracked.
+
+    Cached for the duration of ONE build() — `git status` is called for every path
+    comparison otherwise. The cache is cleared at the start of each build rather than
+    living for the process, because this module is imported and called repeatedly by the
+    test suite and by other tools: a process-lifetime cache answered the second call with
+    the first call's working tree, which is exactly the staleness this function exists to
+    detect.
+
+    This is the fix for a drift check that could not see the thing most likely to have
+    changed: the working tree. `_newer` compared LAST-COMMIT times, so an uncommitted edit
+    to spec.md reported no drift (its commit is old), and an uncommitted re-sync of tasks.md
+    still reported drift (same reason, other direction). Both wrong, and wrong in the
+    direction that says "nothing to do".
+    """
+    if repo in _DIRTY_CACHE:
+        return _DIRTY_CACHE[repo]
+    out = set()
+    try:
+        r = subprocess.run(["git", "-C", repo, "status", "--porcelain", "-z", "--untracked-files=all"],
+                           capture_output=True, text=True, timeout=10)
+        if r.returncode == 0:
+            for entry in r.stdout.split("\0"):
+                if len(entry) > 3:
+                    out.add(entry[3:])
+    except Exception:  # noqa: BLE001
+        pass
+    _DIRTY_CACHE[repo] = out
+    return out
+
+
+def _is_dirty(path, repo):
+    """Does git consider this path modified or untracked?"""
+    d = dirty_paths(repo)
+    if not d:
+        return False
+    try:
+        rel = os.path.relpath(os.path.abspath(path), os.path.abspath(repo))
+    except Exception:  # noqa: BLE001
+        return False
+    return rel.replace(os.sep, "/") in d
+
+
+def last_change(path, repo):
+    """(UTC timestamp, clock) for the last change to a path. git first, mtime as fallback.
+
+    git is the honest clock for COMMITTED files: a fresh checkout gives every file the same
+    mtime, so mtime alone reports either everything drifted or nothing. But a file with
+    uncommitted changes is younger than its last commit, and for that one mtime is the only
+    clock that knows — so a dirty path is read from mtime and labelled `mtime-dirty`.
+    """
+    if _is_dirty(path, repo) and os.path.exists(path):
+        return _mtime_utc(path), "mtime-dirty"
     try:
         out = subprocess.run(["git", "-C", repo, "log", "-1", "--format=%cI", "--", path],
                              capture_output=True, text=True, timeout=10)
         stamp = out.stdout.strip()
         if stamp:
-            return stamp[:19].replace("T", " "), "git"
+            try:
+                return _utc(datetime.datetime.fromisoformat(stamp)), "git"
+            except ValueError:
+                return stamp[:19] + "Z", "git"
     except Exception:  # noqa: BLE001
         pass
     if os.path.exists(path):
-        return datetime.datetime.fromtimestamp(os.path.getmtime(path)).strftime("%Y-%m-%d %H:%M:%S"), "mtime"
+        return _mtime_utc(path), "mtime"
+    return None, None
+
+
+# Directories never worth walking for a "last change" answer.
+_SKIP_DIRS = {".git", "node_modules", "target", "dist", "build", ".venv", "venv",
+              "__pycache__", ".mypy_cache", ".pytest_cache", ".gradle", ".idea", "coverage"}
+
+
+def _max_mtime(root, skip_rel=()):  # noqa: C901
+    """Newest mtime under `root`, skipping build output and the given relative subtrees.
+
+    A DIRECTORY's mtime only moves when an entry is added or removed, so `getmtime(dir)`
+    answers "when was a file last created here", not "when was this feature last touched" —
+    editing spec.md in place left last_activity frozen at the day the directory was made.
+    """
+    newest = None
+    skip_abs = {os.path.abspath(os.path.join(root, p)) for p in skip_rel}
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames
+                       if d not in _SKIP_DIRS
+                       and os.path.abspath(os.path.join(dirpath, d)) not in skip_abs]
+        for fn in filenames:
+            try:
+                m = os.path.getmtime(os.path.join(dirpath, fn))
+            except OSError:
+                continue
+            if newest is None or m > newest:
+                newest = m
+    return newest
+
+
+def last_activity(path, repo):
+    """When was this feature last touched? Falls back to the newest FILE mtime, not the
+    directory's own — see _max_mtime."""
+    when, clock = last_change(path, repo)
+    # In a git repo an uncommitted edit inside the directory is not visible from the
+    # directory's own log, so take the newer of (directory log, newest dirty file inside).
+    newest_dirty = None
+    for rel in dirty_paths(repo):
+        ap = os.path.abspath(os.path.join(repo, rel))
+        if ap.startswith(os.path.abspath(path) + os.sep) and os.path.exists(ap):
+            m = os.path.getmtime(ap)
+            newest_dirty = m if newest_dirty is None or m > newest_dirty else newest_dirty
+    if newest_dirty is not None:
+        cand = _utc(datetime.datetime.fromtimestamp(newest_dirty, datetime.timezone.utc))
+        if when is None or cand > when:
+            return cand, "mtime-dirty"
+    if when is not None:
+        return when, clock
+    m = _max_mtime(path)
+    if m is not None:
+        return _utc(datetime.datetime.fromtimestamp(m, datetime.timezone.utc)), "mtime"
+    return None, None
+
+
+def last_code_change(repo, specs_dir):
+    """(UTC timestamp, clock) of the newest change to CODE — everything outside specs/ and
+    .forge/. This is what makes an eval verdict stale: the report judged a tree that has
+    since moved on.
+
+    Nothing computed this before, although /wellforge:done listed "eval not stale" as a
+    condition — so the condition was documentation only, and an eval-report.md from before
+    a rewrite still counted as a PASS.
+    """
+    rel_specs = os.path.basename(specs_dir.rstrip("/")) or "specs"
+    # Dirty files win: an uncommitted code change is the newest thing there is.
+    newest_dirty = None
+    for rel in dirty_paths(repo):
+        top = rel.split("/", 1)[0]
+        if top in (rel_specs, ".forge") or top in _SKIP_DIRS:
+            continue
+        ap = os.path.join(repo, rel)
+        if os.path.exists(ap):
+            m = os.path.getmtime(ap)
+            newest_dirty = m if newest_dirty is None or m > newest_dirty else newest_dirty
+    if newest_dirty is not None:
+        return _utc(datetime.datetime.fromtimestamp(newest_dirty, datetime.timezone.utc)), "mtime-dirty"
+    try:
+        out = subprocess.run(
+            ["git", "-C", repo, "log", "-1", "--format=%cI", "--",
+             ".", f":(exclude){rel_specs}", ":(exclude).forge"],
+            capture_output=True, text=True, timeout=10)
+        stamp = out.stdout.strip()
+        if stamp:
+            try:
+                return _utc(datetime.datetime.fromisoformat(stamp)), "git"
+            except ValueError:
+                return stamp[:19] + "Z", "git"
+    except Exception:  # noqa: BLE001
+        pass
+    m = _max_mtime(repo, skip_rel=(rel_specs, ".forge"))
+    if m is not None:
+        return _utc(datetime.datetime.fromtimestamp(m, datetime.timezone.utc)), "mtime"
     return None, None
 
 
@@ -191,7 +353,17 @@ def _last_commit(path, repo):
 
 
 def _newer(a_path, b_path, repo, order):
-    """Is a_path's last change strictly newer than b_path's? None when undecidable."""
+    """Is a_path's last change strictly newer than b_path's? None when undecidable.
+
+    If EITHER file has uncommitted changes, commit order cannot answer the question — the
+    dirty file's real age is its mtime and its commit is stale — so both sides fall back to
+    mtime. Without this, an uncommitted spec edit reported no drift and an uncommitted
+    tasks re-sync still reported drift.
+    """
+    if _is_dirty(a_path, repo) or _is_dirty(b_path, repo):
+        if os.path.exists(a_path) and os.path.exists(b_path):
+            return os.path.getmtime(a_path) > os.path.getmtime(b_path)
+        return None
     a, b = _last_commit(a_path, repo), _last_commit(b_path, repo)
     if a and b and a in order and b in order:
         if a == b:
@@ -265,7 +437,45 @@ def resolve_tier(fm, root):
     return project_default_tier(root)
 
 
-def done_gate(kind, tier, tasks, verdicts, has_eval_report, eval_fm, drift):
+# THE done gate. Four documents used to state it and no two agreed: this function checked
+# tasks + QE + security + eval + drift; commands/done.md added "eval not stale" that nothing
+# computed; the spec-driven skill listed tasks + QE + fresh eval with no security and no
+# drift; rigor-tiers never mentioned security at all; and commands/status.md omitted
+# verdicts.security from its envelope, so status printed "→ /wellforge:done" for a feature
+# that /wellforge:done then refused on "security review is absent".
+#
+# This function is now the single definition, and `--explain-gate` prints it so the prose can
+# quote the implementation instead of paraphrasing it. If you change a condition here, re-run
+# `--explain-gate` and paste the table into the docs that reference it.
+GATE_CONDITIONS = [
+    ("tasks.md exists",            "every tier", "a feature with no task list has nothing to have finished"),
+    ("every task checked",         "every tier", "unchecked tasks are unfinished work, not optimism"),
+    ("tasks.md has >0 tasks",      "every tier", "an empty list passes 'all checked' vacuously"),
+    ("verdicts.qe == PASS",        "every tier", "from the run trace — independent verification, not self-report"),
+    ("verdicts.security == PASS",  "production", "every production batch is reviewed, so ABSENT means it never ran"),
+    ("eval-report.md exists",      "production", "the LM-judge half of verification"),
+    ("eval-report.md verdict PASS", "production", "a FAIL or absent verdict is not a pass"),
+    ("eval is not stale",          "production", "an eval that predates the last code change judged a different tree"),
+    ("no drift",                   "every tier", "spec.md/plan.md newer than tasks.md means the list is out of date"),
+]
+
+
+def explain_gate():
+    """Print the gate's conditions. The docs quote THIS, verbatim."""
+    print("The /wellforge:done gate — the single definition, from "
+          "wellforge-plugin/scripts/forge-state.py `done_gate()`.")
+    print()
+    print(f"| {'Condition':30} | {'Applies at':11} | Why |")
+    print(f"|{'-' * 32}|{'-' * 13}|{'-' * 60}|")
+    for cond, tier, why in GATE_CONDITIONS:
+        print(f"| {cond:30} | {tier:11} | {why} |")
+    print()
+    print("`spike` is exempt: a spike closes on prose in brief.md `## Findings`, which no")
+    print("script can judge. The gate reports passes=null there, never a false PASS.")
+    return 0
+
+
+def done_gate(kind, tier, tasks, verdicts, has_eval_report, eval_fm, drift, eval_stale=None):
     """The tier-aware gate from /wellforge:done, computed once so four commands agree."""
     failing = []
     if kind == "spike":
@@ -292,16 +502,57 @@ def done_gate(kind, tier, tasks, verdicts, has_eval_report, eval_fm, drift):
             failing.append("no eval-report.md (needs a PASS)")
         elif (eval_fm or {}).get("verdict") != "PASS":
             failing.append(f"eval-report.md verdict is {(eval_fm or {}).get('verdict') or 'absent'} (needs PASS)")
+        elif eval_stale and eval_stale.get("stale"):
+            # done.md has listed this condition for as long as it has existed, and nothing
+            # computed it — so a PASS from before a rewrite counted as a PASS.
+            failing.append(
+                f"eval is stale: eval-report.md ({eval_stale.get('eval_at')}) predates the last "
+                f"code change ({eval_stale.get('code_at')}) — re-run /wellforge:eval")
     if drift.get("drifted"):
         failing.append(f"drift: {drift['reason']} — re-sync with /wellforge:tasks")
-    return {"tier": tier, "passes": not failing, "failing": failing}
+    return {"tier": tier, "passes": not failing, "failing": failing,
+            "eval_stale": eval_stale}
 
 
 # ── main ─────────────────────────────────────────────────────────────────────────
+def _eval_staleness(d, root, specs_dir, has_eval_report):
+    """Is eval-report.md older than the newest code change?"""
+    if not has_eval_report:
+        return None
+    eval_at, eval_clock = last_change(os.path.join(d, "eval-report.md"), root)
+    code_at, code_clock = last_code_change(root, specs_dir)
+    if not eval_at or not code_at:
+        return {"stale": None, "eval_at": eval_at, "code_at": code_at,
+                "clock": eval_clock or code_clock,
+                "note": "undecidable — no clock for one side"}
+    return {"stale": code_at > eval_at, "eval_at": eval_at, "code_at": code_at,
+            "clock": f"{eval_clock}/{code_clock}"}
+
+
 def build(specs_dir, runs_dir, feature_filter, root):
+    _DIRTY_CACHE.clear()          # see dirty_paths: cached per build, never per process
     rr = _run_report()
     schema = load_schema()
-    all_runs = rr.load_runs(runs_dir, "") if os.path.isdir(runs_dir) else []
+    # A trace that will not load is reported ONCE, at the top level, not silently dropped:
+    # a run that does not load looks exactly like a run that never happened, and its
+    # verdicts then read as absent — which is how one malformed file turned into "QE
+    # verdict is absent" on a feature that had passed QE.
+    rejected = []
+    all_runs = rr.load_runs(runs_dir, "", rejected) if os.path.isdir(runs_dir) else []
+    problems_global = [f".forge/runs/{w}" for w in rejected]
+
+    # pyyaml is an ENVIRONMENT fact, not a property of any feature. Reported per-feature it
+    # put a problem on every one of them, and promote.md refuses on a non-empty problems[] —
+    # so a machine without system pyyaml could never promote anything. It is a warning.
+    warnings = []
+    try:
+        import yaml  # noqa: F401
+        have_yaml = True
+    except ImportError:
+        have_yaml = False
+        warnings.append("pyyaml unavailable — frontmatter not parsed, so status/rigor/verdict "
+                        "fields are unknown (not absent). Re-run with: "
+                        "uv run --with pyyaml python <this script>")
     features = []
 
     for d in sorted(glob.glob(os.path.join(specs_dir, "*/"))):
@@ -328,6 +579,9 @@ def build(specs_dir, runs_dir, feature_filter, root):
             if err:
                 problems.append(f"{name}: {err}")
             problems += validate(sub_fm, name, schema)
+        # See `warnings` above: the absence of a parser is not a defect in these files.
+        if not have_yaml:
+            problems = [p for p in problems if "pyyaml unavailable" not in p]
 
         tier, tier_from = resolve_tier(fm, root)
         tasks = count_tasks(os.path.join(d, "tasks.md"))
@@ -349,11 +603,12 @@ def build(specs_dir, runs_dir, feature_filter, root):
             "tasks": {"total": tasks["total"], "checked": tasks["checked"]},
             "drift": drift,
             "verdicts": verdicts,
-            "done_gate": done_gate(kind, tier, tasks, verdicts, eval_fm is not None, eval_fm, drift),
+            "done_gate": done_gate(kind, tier, tasks, verdicts, eval_fm is not None, eval_fm, drift,
+                                   _eval_staleness(d, root, specs_dir, eval_fm is not None)),
             "superseded_by": (fm or {}).get("superseded_by"),
             "archive_reason": (fm or {}).get("archive_reason"),
             "created": (fm or {}).get("created"),
-            "last_activity": last_change(d, root)[0],
+            "last_activity": last_activity(d, root)[0],
             "runs": len(runs),
             "problems": problems,
         })
@@ -361,6 +616,8 @@ def build(specs_dir, runs_dir, feature_filter, root):
             "generated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "specs_dir": specs_dir, "runs_dir": runs_dir,
             "runs_available": os.path.isdir(runs_dir),
+            "problems": problems_global,
+            "warnings": warnings,
             "features": features}
 
 
@@ -386,6 +643,11 @@ def render(env):
                 print(f"{'':30} · gate: {reason}")
     if not env["runs_available"]:
         print(f"\nnote: {env['runs_dir']} not found — QE/eval verdicts unavailable (not the same as FAIL)")
+    for p in env.get("problems", []):
+        print(f"\n✗ unreadable run trace: {p}")
+        print("  Its verdicts are NOT counted, so a gate may read PASS as absent. Fix or delete it.")
+    for w in env.get("warnings", []):
+        print(f"\n⚠ {w}")
     bad = sum(len(f["problems"]) for f in feats)
     if bad:
         print(f"\n{bad} schema problem(s) — frontmatter does not match "
@@ -399,7 +661,11 @@ def main():
     ap.add_argument("--feature", default=None)
     ap.add_argument("--root", default=".", help="project root (for .forge/ and git dates)")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--explain-gate", action="store_true",
+                    help="print the done-gate conditions (the docs quote this verbatim)")
     args = ap.parse_args()
+    if args.explain_gate:
+        return explain_gate()
     env = build(args.specs_dir, args.runs_dir, args.feature, args.root)
     if args.json:
         print(json.dumps(env, indent=2))

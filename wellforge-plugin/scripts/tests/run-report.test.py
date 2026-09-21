@@ -184,5 +184,59 @@ check("top consumer is the biggest output producer", bt["per_feature"][0]["top_a
 src = open(os.path.join(HERE, "..", "run-report.py")).read()
 check("no embedded fallback pricing table", "_FALLBACK_PRICING" in src, False)
 
+# 10. load_runs is the boundary where untrusted files become objects. Every consumer
+#     (run-report, forge-state, and through it /status /triage /done /promote and the
+#     post-spec-guard hook) used to inherit an AttributeError from one bad file.
+import shutil as _sh
+d = tempfile.mkdtemp()
+cases = {
+    "list.json":      "[1]",
+    "string.json":    '"hello"',
+    "null.json":      "null",
+    "agents.json":    '{"schema":"wellforge-run/v3","feature":"f","agents":"x"}',
+    "agentnull.json": '{"schema":"wellforge-run/v3","feature":"f","agents":[null]}',
+    "verdicts.json":  '{"schema":"wellforge-run/v3","feature":"f","verdicts":"PASS"}',
+    "schema.json":    '{"schema":"wellforge-run/v9","feature":"f"}',
+    "trunc.json":     '{"schema":',
+}
+for name, body in cases.items():
+    open(os.path.join(d, name), "w").write(body)
+good = {"schema": "wellforge-run/v3", "run_id": "good", "feature": "f",
+        "started": "2026-09-01T10:00:00Z", "finished": "2026-09-01T10:30:00Z",
+        "agents": [{"agent": "backend-dev"}], "verdicts": {"qe": "PASS"}}
+json.dump(good, open(os.path.join(d, "good.json"), "w"))
+
+rejected = []
+runs = rr.load_runs(d, "", rejected)
+# Two different outcomes on purpose. A file that is not a trace at all (not an object, or
+# an unknown schema, or unreadable) is DROPPED. A real trace with one malformed container
+# field is KEPT with that field coerced, because dropping it would also discard the
+# verdicts and timings sitting well-formed beside the bad field — and a discarded verdict
+# reads downstream as "absent", which is how a passing gate turns into a refusal.
+check("files that are not traces are dropped",
+      sorted(r.get("run_id") for r in runs if r.get("run_id")), ["good"])
+check("...and traces with one bad field are kept, coerced", len(runs), 4)
+check("every malformed file is reported", len(rejected), len(cases))
+check("the report names the file", any("list.json" in x for x in rejected), True)
+check("a coerced field is reported too, not silently fixed",
+      any("agents.json" in x and "not a list" in x for x in rejected), True)
+
+# The coercions keep a partially-malformed trace usable rather than discarding it.
+open(os.path.join(d, "coerce.json"), "w").write(
+    '{"schema":"wellforge-run/v3","run_id":"c","feature":"f",'
+    '"agents":"nope","verdicts":{"qe":"PASS"}}')
+rej2 = []
+runs2 = rr.load_runs(d, "", rej2)
+c = [r for r in runs2 if r.get("run_id") == "c"][0]
+check("a non-list `agents` becomes []", c["agents"], [])
+check("...and the trace keeps its verdicts", c["verdicts"], {"qe": "PASS"})
+
+# The downstream aggregations must survive the coerced shapes too — this is where
+# `.items()` on a string and `.get()` on None used to raise.
+rr.rework(runs2)
+rr.attribute([], runs2)
+check("rework/attribute run over coerced traces", True, True)
+_sh.rmtree(d, ignore_errors=True)
+
 print(f"\nrun-report: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

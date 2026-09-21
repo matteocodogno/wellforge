@@ -26,6 +26,42 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.46.0 — the done gate gained a condition it had always claimed
+
+**Action: none automatic, but expect some closed features to report a blocked gate.**
+
+`/wellforge:done` has always listed "eval is not stale (newer than the last code change)" as
+a production condition, and nothing computed it — so an `eval-report.md` written before a
+rewrite still counted as a PASS. `forge-state.py` now computes it (eval-report timestamp vs
+the newest change outside `specs/` and `.forge/`, from git, falling back to mtime for files
+with uncommitted changes) and includes it in `done_gate.failing`.
+
+Consequences for an existing project:
+
+- A feature already `status: done` may now show `GATE blocked` in `/wellforge:status`. That
+  is reporting, not a reopening: nothing rewrites a closed feature's status, and the guard
+  refuses any edit that would. It means the eval on record predates the current code.
+- A feature you are about to close may now be refused where it previously passed. Re-run
+  `/wellforge:eval <feature>` and close again. This is the condition doing its job.
+
+Also in this release, and visible to a project:
+
+- **Timestamps are UTC with a `Z`.** `last_activity` and the drift timestamps used to be
+  printed in whatever zone the machine was in, unlabelled, so two people comparing the same
+  feature read times an hour apart. Anything that parsed the old format needs the new one.
+- **Drift now sees the working tree.** An uncommitted `spec.md` edit is drift; an
+  uncommitted `tasks.md` re-sync clears it. Both were previously judged on last-commit time
+  alone, which got each one backwards.
+- **`.forge/runs/` tolerates a malformed trace.** One unreadable file used to raise
+  `AttributeError` and exit 1 in `forge-state.py`/`run-report.py` — which the
+  `post-spec-guard` hook read as "could not evaluate the done gate" and **allowed the edit
+  unverified**. Bad files are now skipped and listed under the envelope's top-level
+  `problems[]`; the hook refuses rather than falls open when the script actually crashes.
+  If `/wellforge:triage` starts naming a trace file, that file has been silently ignored all
+  along — fix or delete it.
+
+---
+
 ## 2.43.1 — the notify hook documents where its token comes from
 
 **Action: none.** A comment-only change to `hooks/scripts/notify.sh`, recorded because the

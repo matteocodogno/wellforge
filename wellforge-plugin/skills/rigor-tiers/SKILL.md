@@ -214,6 +214,18 @@ generated `quality.yml` **outside the rigor branch entirely** — not duplicated
 side of it, which is how `security-floor` came to run only at `spike` and `commit-lint` only
 at `mvp`/`production`. See `gates/README.md` → "Linear history gate".
 
+## The done gate is defined in one place
+
+Each tier's exit condition is computed by `forge-state.py done_gate()` and printed by
+`forge-state.py --explain-gate`. This skill deliberately does not restate the conditions:
+it used to, it never mentioned the security verdict, and a tier document that disagrees
+with the gate is worse than one that points at it. See
+[`/wellforge:done`](../../commands/done.md) for the generated table.
+
+What belongs *here* is the tier shape: `production` adds the security verdict and the eval
+(including its staleness check) on top of the every-tier conditions; `mvp` has neither;
+`spike` is not machine-checkable at all.
+
 ## Advisory vs. blocking gates
 
 Outside the security floor, lower tiers **run** the gates but report results as **advisory** —

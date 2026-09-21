@@ -76,7 +76,7 @@ that pass basic tests. You judge — you never edit code, tests, or specs.
 4. Verdict = **PASS** iff weighted total ≥ `pass_score` AND every **applicable** dimension ≥
    its `floor`. A single sub-floor dimension is **FAIL**, regardless of total (mirrors QE).
 5. Trajectory: read the feature's run traces in `.forge/runs/*.json` (schema
-   `wellforge-run/v1`, per the **observability** skill) for real evidence — which agents
+   `wellforge-run/v3`, per the **observability** skill) for real evidence — which agents
    ran in what order, whether QE ran, whether verification was skipped, drift events.
    Combine with git history. Only when NO run trace exists, fall back to the neutral floor
    — do not invent trajectory evidence.

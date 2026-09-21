@@ -47,7 +47,21 @@ spawn is the deliverable.
 0. **Read the state once**, and take every fact below from it rather than from the files:
 
    ```bash
-   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/forge-state.py --json --feature <token>
+   # Resolve the plugin root ONCE per session, then reuse $WF. ${CLAUDE_PLUGIN_ROOT} is
+   # substituted for HOOKS only — it is NOT exported to the Bash tool (measured: unset), so
+   # interpolating it here silently runs `python3 /scripts/...`.
+   WF=$(python3 -c "import json,os;p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins'];print(next(i['installPath'] for k,v in p.items() if k.startswith('wellforge@') for i in v))" 2>/dev/null)
+   # Running from a checkout (claude --plugin-dir) installs nothing; fall back to the repo.
+   [ -n "$WF" ] || WF="$(pwd)/wellforge-plugin"
+   # A FUNCTION, not a variable holding a command: `WFPY="uv run ... python"` then `wfpy x`
+   # relies on word splitting, which zsh does not do for unquoted parameters — measured, it
+   # fails with `command not found: uv run --quiet --with pyyaml python`.
+   # uv first because forge-state needs pyyaml to read frontmatter and the system python3
+   # usually lacks it; without it every field reads as unknown.
+   wfpy() {
+     if python3 -c "import yaml" 2>/dev/null; then python3 "$@"; else uv run --quiet --with pyyaml python "$@"; fi
+   }
+   wfpy "$WF/scripts/forge-state.py" --json --feature <token>
    ```
 
    It gives the feature's current `rigor` (and `rigor_from`), `status`, `tasks`,
@@ -56,8 +70,17 @@ spawn is the deliverable.
    The `→ production` step below ends by calling `/wellforge:done`, which reads the same
    envelope: the promotion and the close agree because they are looking at one answer.
 
-   Refuse on a non-empty `problems[]` — promoting a feature whose frontmatter does not
-   validate writes a higher tier on top of a broken record.
+   Refuse on a non-empty **`features[].problems[]`** — promoting a feature whose frontmatter
+   does not validate writes a higher tier on top of a broken record.
+
+   Two neighbours of that field are NOT refusal conditions, and confusing them was a real
+   failure. The envelope's top-level **`warnings[]`** carries environment facts — chiefly
+   "pyyaml unavailable" — which used to be reported as a problem on *every* feature, so on a
+   machine without system pyyaml this rule refused every promotion that could ever be
+   attempted. Report a warning, do not refuse on it. (Use the runner in the block above and
+   it will not arise.) The top-level **`problems[]`** lists run traces that would not load;
+   those DO block, because a trace that did not load takes its verdicts with it and the gate
+   then reads a real PASS as absent — say which file, and stop.
 
 1. `git status` clean — require commit/stash first. Promotion must be ONE reviewable,
    revertable commit (no exceptions).
@@ -98,8 +121,12 @@ raising rigor, so agents work at the destination tier's effort, not the source's
 4. **Eval** — run the `/wellforge:eval` procedure (LM-judge). **A PASS is the gate into
    `done`** — QE alone is not enough. FAIL → route failing dimensions to the dev agents
    (same bounded loop), re-eval.
-5. **Close** — only on PASS: set `rigor: production` in the frontmatter (the tier field is
-   yours), then **run the `/wellforge:done` procedure**, which re-verifies the *production*
+5. **Close** — only on PASS. First **write the run trace** (Close §3 below): the production
+   gate reads `verdicts.qe` and `verdicts.security` *from the trace*, so a close that
+   precedes the trace is judged against a feature that appears to have no QE and no security
+   review, and `/wellforge:done` refuses work that just passed both. Then set
+   `rigor: production` in the frontmatter (the tier field is yours), and **run the
+   `/wellforge:done` procedure**, which re-verifies the *production*
    gate against the artifacts on disk and records the close. Do not set `status: done`
    yourself: the feature was already `done` at mvp, so the transition here must be re-earned
    at the new tier — and the production branch also checks **every task is ticked**, which
@@ -141,6 +168,8 @@ uvx copier update --trust --skip-answered --conflict inline \
 2. Frontmatter/manifest now read the target tier (verify; never hand-edit the manifest).
 3. **Record the run** — write `.forge/runs/<run_id>.json` per the **observability** skill:
    `command: promote`, the agents run, QE + eval verdicts, `from`/`to` tiers, `result`.
+   Written in step 5 *before* `/wellforge:done`, not here — it is listed in this section
+   because it belongs to the close, but the gate reads it, so it cannot follow it.
 4. Report: tier delta, debt paid (artifacts, coverage before→after, eval verdict), and what
    (if anything) the user still owns. If a feature reached production, it's now `done`.
 
