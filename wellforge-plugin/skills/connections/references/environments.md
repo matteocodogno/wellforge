@@ -12,6 +12,19 @@ Rule: a fresh clone + `mise trust && mise install` + documented `.mise.local.tom
 must be enough to run the project. Every required local key is listed in the project
 README — names only, never values.
 
+**There is no dotenv layer.** That is not an omission from the table — it is the table. The
+app presets used to ship a committed `frontend/.env` holding the public `VITE_*` defaults,
+which contradicted row one and could not be maintained by an agent anyway, since the
+plugin's guards refuse to read or write a file named `.env`. Those defaults are now row one:
+the root `mise.toml` `[env]` block. Vite reads `VITE_`-prefixed vars from the process
+environment and prefers them over a dotenv file, so `mise run frontend:dev` / `:build` pick
+them up with no `envDir`/`envPrefix` configuration.
+
+Adding a browser-exposed var therefore touches two committed files and no third one:
+`frontend/src/vite-env.d.ts` for the type, root `mise.toml` for the value. Anything
+`VITE_`-prefixed is inlined into the bundle and is public by construction — a secret in that
+block is a secret on your website.
+
 **Verify:** `mise env | grep -E '<EXPECTED_VAR>'` shows the var resolved (value masked
 in your report).
 

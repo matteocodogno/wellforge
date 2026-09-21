@@ -5,13 +5,26 @@
 ### The rule
 Every env var exposed to the browser **must** be prefixed `VITE_`. Vite statically replaces them at build time via `import.meta.env`. Never use `process.env` in frontend code.
 
-### Files — and why NONE of them holds a secret
+### Where the values live — and why NONE of them is a secret
+
+**In a WellForge scaffold there is no dotenv file at all.** Public `VITE_*` defaults live in
+the root `mise.toml` `[env]` block, committed; machine-local overrides go in
+`.mise.local.toml`, gitignored. Vite reads `VITE_`-prefixed vars from the **process
+environment** and prefers them over a dotenv file, so `mise run frontend:dev` / `:build`
+resolve exactly those values (measured, not assumed — process env wins over the file).
+
+This replaced a committed `frontend/.env`, which put the project at odds with itself: this
+skill told the agent to keep it in step with `vite-env.d.ts`, and the plugin's own guards
+refuse to read or write anything named `.env`.
+
+Vite still *supports* the dotenv files below in a non-WellForge project, and the same
+"nothing here is secret" rule applies to them:
 
 ```
-.env                  # committed — public VITE_* defaults only
-.env.local            # git-ignored — local overrides, still public values
-.env.development      # git-ignored — dev-only public values
-.env.production       # git-ignored — prod-only public values
+.env                  # public VITE_* defaults only
+.env.local            # local overrides, still public values
+.env.development      # dev-only public values
+.env.production       # prod-only public values
 ```
 
 **A `VITE_` variable is not a secret store, in any of these files.** Vite *statically

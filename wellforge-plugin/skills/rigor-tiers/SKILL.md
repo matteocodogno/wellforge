@@ -188,17 +188,31 @@ premise.
 These always run and always **block**, regardless of tier. Fast must never mean "leaks
 credentials":
 
-- **Secret scan** (gitleaks / equivalent) — no committed secrets.
-- **No hardcoded credentials** in changed code.
-- **Dependency audit on CRITICAL CVEs** — critical advisories block even a spike.
+- **Secret scan** (gitleaks, pinned and checksum-verified) over the **full git history** —
+  no committed secrets, ever, at any tier. This is also the "no hardcoded credentials"
+  check: a secret scanner is what finds a credential pasted into code.
+
+That is the floor — one automated check, and it is the one that cannot be undone after the
+fact (a leaked credential is rotated, never unpublished).
+
+**Dependency CVEs are NOT in the floor**, although this section used to claim they were.
+`security-floor.yml` is stack-neutral and blocks everywhere, and no CVE tool satisfies both
+today: `pnpm audit` is Node-only, and `osv-scanner` cannot separate dev from production
+dependencies (measured on 2.6.0 — no flag, no group in its JSON), so blocking on it would
+contradict `quality-node.yml`'s own `--prod` policy and red-light every fresh scaffold.
+CVE audits therefore run in `quality-node.yml` / `quality-jvm.yml`, at `mvp` and
+`production` only — see the `quality-gates` skill. **A `spike` has no CVE gate in CI**;
+`/wellforge:spike` checks critical advisories locally, and local is not a gate.
 
 A tier may make coverage/lint/SAST-medium advisory; it may NEVER waive the floor.
 
 **History hygiene is tier-independent too** — for the same reason: it cannot be repaired after
 the fact without rewriting published history. Every WellForge repo, at every tier, keeps a
 **linear history** (no merge commits — rebase, then `--ff-only`) and **Conventional Commits**.
-The `linear-history.yml` gate is called from generated `quality.yml` in the spike branch as
-well; see `gates/README.md` → "Linear history gate".
+`linear-history.yml`, `commit-lint.yml` and `security-floor.yml` are therefore called from
+generated `quality.yml` **outside the rigor branch entirely** — not duplicated into each
+side of it, which is how `security-floor` came to run only at `spike` and `commit-lint` only
+at `mvp`/`production`. See `gates/README.md` → "Linear history gate".
 
 ## Advisory vs. blocking gates
 
