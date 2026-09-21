@@ -196,28 +196,132 @@ def dirty_paths(repo):
     return out
 
 
+def _rel(path, repo):
+    """Repo-relative, slash-separated, symlink-resolved on BOTH sides.
+
+    `compute_drift` passes a RELATIVE path (`specs/001-x/spec.md`), so `os.path.abspath`
+    resolved it against the process cwd — which the OS reports symlink-resolved — while
+    `repo` was whatever string the caller passed, unresolved. On macOS `mktemp -d` returns
+    `/var/folders/...`, a symlink to `/private/var/folders/...`, so the two never matched,
+    `_is_dirty` returned False for every file, and the entire dirty-drift path was dead.
+    Its own test suite passed for that reason, which is why the regression below shipped
+    and only the first Linux CI run found it.
+    """
+    try:
+        return os.path.relpath(os.path.realpath(path), os.path.realpath(repo)).replace(os.sep, "/")
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _is_dirty(path, repo):
     """Does git consider this path modified or untracked?"""
-    d = dirty_paths(repo)
-    if not d:
-        return False
+    rel = _rel(path, repo)
+    return bool(rel) and rel in dirty_paths(repo)
+
+
+# Frontmatter fields that record where a feature IS in its lifecycle, not what it asks for.
+# Editing one of these is bookkeeping — /wellforge:done writes `status` + `done`,
+# /wellforge:promote writes `rigor` — and bookkeeping is not a requirement change, so it
+# must not read as drift. Anything else in the frontmatter (a changed `title`, say) is a
+# change to the spec and is treated exactly like a body change.
+LIFECYCLE_FIELDS = frozenset({"status", "done", "approved", "superseded_by",
+                              "archive_reason", "rigor", "plugin"})
+
+
+def _split_frontmatter(text):
+    """(frontmatter, body). No frontmatter block → ("", whole text)."""
+    if not text.startswith("---"):
+        return "", text
+    parts = text.split("---", 2)
+    return (parts[1], parts[2]) if len(parts) >= 3 else ("", text)
+
+
+def _fm_fields(fm_text):
+    """Top-level `key: value` pairs. Line-based on purpose: this runs without pyyaml (the
+    script degrades to a warning when pyyaml is missing) and must not start needing it."""
+    out = {}
+    for line in fm_text.splitlines():
+        m = re.match(r"^([A-Za-z_][A-Za-z0-9_-]*):(.*)$", line)
+        if m:
+            out[m.group(1)] = m.group(2).strip()
+    return out
+
+
+def _head_text(path, repo):
+    """The committed version of a path, or None when there is no HEAD version."""
+    rel = _rel(path, repo)
+    if not rel:
+        return None
     try:
-        rel = os.path.relpath(os.path.abspath(path), os.path.abspath(repo))
+        out = subprocess.run(["git", "-C", repo, "show", f"HEAD:{rel}"],
+                             capture_output=True, text=True, timeout=10)
     except Exception:  # noqa: BLE001
-        return False
-    return rel.replace(os.sep, "/") in d
+        return None
+    return out.stdout if out.returncode == 0 else None
+
+
+_CLASS_CACHE = {}
+
+
+def change_class(path, repo):
+    """How has this file changed against HEAD? One of:
+
+      clean       — git sees no change (or only changes that mean nothing here)
+      lifecycle   — body identical, and ONLY lifecycle frontmatter fields differ
+      content     — the body differs, or a non-lifecycle frontmatter field differs
+      untracked   — dirty with no HEAD version to compare against
+
+    Only `content` and `untracked` are drift. `lifecycle` is the fix for the regression
+    this function exists for: writing `status: done` into spec.md is the LAST thing
+    /wellforge:done does, so under a plain mtime rule spec.md was always newer than
+    tasks.md and every close reported drift — the done gate refused the transition it had
+    just performed, and post-spec-guard.sh blocked it.
+    """
+    key = (os.path.realpath(path) if os.path.exists(path) else path, repo)
+    if key in _CLASS_CACHE:
+        return _CLASS_CACHE[key]
+    res = _change_class(path, repo)
+    _CLASS_CACHE[key] = res
+    return res
+
+
+def _change_class(path, repo):
+    if not _is_dirty(path, repo):
+        return "clean"
+    head = _head_text(path, repo)
+    if head is None:
+        # No baseline exists, so "newer than tasks.md" is the only honest answer.
+        return "untracked"
+    try:
+        now = open(path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return "content"
+    fm_head, body_head = _split_frontmatter(head)
+    fm_now, body_now = _split_frontmatter(now)
+    if body_head != body_now:
+        return "content"
+    a, b = _fm_fields(fm_head), _fm_fields(fm_now)
+    changed = {k for k in set(a) | set(b) if a.get(k) != b.get(k)}
+    if not changed:
+        return "clean"
+    return "lifecycle" if changed <= LIFECYCLE_FIELDS else "content"
 
 
 def last_change(path, repo):
     """(UTC timestamp, clock) for the last change to a path. git first, mtime as fallback.
 
     git is the honest clock for COMMITTED files: a fresh checkout gives every file the same
-    mtime, so mtime alone reports either everything drifted or nothing. But a file with
-    uncommitted changes is younger than its last commit, and for that one mtime is the only
-    clock that knows — so a dirty path is read from mtime and labelled `mtime-dirty`.
+    mtime, so mtime alone reports either everything drifted or nothing. A file with
+    uncommitted CONTENT changes is younger than its last commit, and for that one mtime is
+    the only clock that knows.
+
+    A `lifecycle` change deliberately reads from git, not mtime: the committed change time
+    is still the last time the spec's requirements moved, which is the question drift asks.
+    The clock says which rule answered — `mtime-dirty`, `mtime-untracked` or `git`.
     """
-    if _is_dirty(path, repo) and os.path.exists(path):
-        return _mtime_utc(path), "mtime-dirty"
+    cls = change_class(path, repo)
+    if cls in ("content", "untracked") and os.path.exists(path):
+        return _mtime_utc(path), ("mtime-untracked" if cls == "untracked" else "mtime-dirty")
     try:
         out = subprocess.run(["git", "-C", repo, "log", "-1", "--format=%cI", "--", path],
                              capture_output=True, text=True, timeout=10)
@@ -360,7 +464,11 @@ def _newer(a_path, b_path, repo, order):
     mtime. Without this, an uncommitted spec edit reported no drift and an uncommitted
     tasks re-sync still reported drift.
     """
-    if _is_dirty(a_path, repo) or _is_dirty(b_path, repo):
+    # Only a REAL change (new content, or a file with no committed baseline) makes mtime
+    # the better clock. A lifecycle-only edit leaves commit order in charge, which is what
+    # keeps closing a feature from counting as drift against its own task list.
+    if change_class(a_path, repo) in ("content", "untracked") \
+       or change_class(b_path, repo) in ("content", "untracked"):
         if os.path.exists(a_path) and os.path.exists(b_path):
             return os.path.getmtime(a_path) > os.path.getmtime(b_path)
         return None
@@ -483,7 +591,7 @@ GATE_CONDITIONS = [
     ("eval-report.md exists",      "production", "the LM-judge half of verification"),
     ("eval-report.md verdict PASS", "production", "a FAIL or absent verdict is not a pass"),
     ("eval is not stale",          "production", "an eval that predates the last code change judged a different tree"),
-    ("no drift",                   "every tier", "spec.md/plan.md newer than tasks.md means the list is out of date"),
+    ("no drift",                   "every tier", "spec/plan BODY newer than tasks.md; lifecycle frontmatter edits are not drift"),
 ]
 
 
@@ -558,6 +666,7 @@ def _eval_staleness(d, root, specs_dir, has_eval_report):
 
 def build(specs_dir, runs_dir, feature_filter, root):
     _DIRTY_CACHE.clear()          # see dirty_paths: cached per build, never per process
+    _CLASS_CACHE.clear()
     rr = _run_report()
     schema = load_schema()
     # A trace that will not load is reported ONCE, at the top level, not silently dropped:

@@ -243,6 +243,61 @@ else
   echo "$out" | sed 's/^/        /'
 fi
 
+# ── 31-33. the refusal must name the RIGHT cause ───────────────────────────────────
+# A malformed file in .forge/runs/ made the guard say "frontmatter in <spec> does not
+# validate" — about frontmatter that was perfectly fine. The author was sent to inspect
+# the wrong file, and the actual cause (a trace whose verdicts never loaded) went unsaid.
+new_project; spec in-progress; tasks 2 2; qe_pass; commit_all
+printf '[1]' > "$REPO/.forge/runs/zz.json"
+spec "done"
+run 2 "a malformed run trace still blocks the close"
+
+out=$(printf '{"tool_input":{"file_path":"%s"}}' "$REPO/specs/001-x/spec.md" \
+      | CLAUDE_PROJECT_DIR="$REPO" bash "$HOOK" 2>&1)
+if echo "$out" | grep -q "lifecycle state cannot be trusted" \
+   && echo "$out" | grep -q "zz.json" \
+   && ! echo "$out" | grep -q "frontmatter in .* does not validate"; then
+  PASS=$((PASS+1))
+else
+  FAIL=$((FAIL+1)); echo "  FAIL: a trace problem must not be reported as a frontmatter problem"
+  echo "$out" | sed 's/^/        /'
+fi
+
+# ...and a REAL frontmatter violation still says so, in the old words.
+new_project; tasks 2 2; qe_pass
+{ echo "---"; echo "id: 001"; echo "slug: x"; echo "status: in-progress"; echo "rigor: production"
+  echo "---"; echo; echo "# X"; } > "$REPO/specs/001-x/spec.md"
+commit_all
+{ echo "---"; echo "id: 001"; echo "slug: x"; echo "status: done"; echo "rigor: production"
+  echo "---"; echo; echo "# X"; } > "$REPO/specs/001-x/spec.md"   # `done:` date missing
+out=$(printf '{"tool_input":{"file_path":"%s"}}' "$REPO/specs/001-x/spec.md" \
+      | CLAUDE_PROJECT_DIR="$REPO" bash "$HOOK" 2>&1)
+if echo "$out" | grep -q "frontmatter in .* does not validate" \
+   && ! echo "$out" | grep -q "lifecycle state cannot be trusted"; then
+  PASS=$((PASS+1))
+else
+  FAIL=$((FAIL+1)); echo "  FAIL: a schema violation of the edited file must still say so"
+  echo "$out" | sed 's/^/        /'
+fi
+
+# ── 34. the regression itself, at the hook level ───────────────────────────────────
+# Closing writes `status: done` into spec.md as its LAST action. Under the mtime rule that
+# made spec.md newer than tasks.md, so the gate reported drift and this hook blocked the
+# transition /wellforge:done had just performed. The spec dir is COMMITTED first and the
+# close is left uncommitted, which is exactly the state the hook sees in real use.
+new_project; spec in-progress; tasks 2 2; qe_pass; commit_all
+sleep 1
+spec "done"
+run 0 "closing a feature is not drift against its own task list"
+
+# ...while a genuine uncommitted spec-body edit still blocks the close.
+new_project; spec in-progress; tasks 2 2; qe_pass; commit_all
+sleep 1
+{ echo "---"; echo "id: 001"; echo "slug: x"; echo "status: done"; echo "done: 2026-09-20"
+  echo "rigor: production"; echo "---"; echo; echo "# X"
+  echo; echo "A NEW REQUIREMENT nobody re-synced."; } > "$REPO/specs/001-x/spec.md"
+run 2 "a spec BODY change with the close still blocks on drift"
+
 echo
 echo "post-spec-guard: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

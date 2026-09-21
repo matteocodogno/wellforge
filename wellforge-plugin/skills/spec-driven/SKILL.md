@@ -251,6 +251,15 @@ The spec is the source of truth. If implementation reveals the spec/plan is wron
 2. Re-run `/wellforge:tasks` to re-sync tasks.md.
 3. Then continue coding.
 
+**Lifecycle frontmatter edits are never drift.** Changing `status`, `done`, `approved`,
+`superseded_by`, `archive_reason`, `rigor` or `plugin` is bookkeeping about where the
+feature *is*, not a change to what it asks for — so do NOT re-run `/wellforge:tasks` after
+a status change. `forge-state.py` compares the spec's BODY (and any non-lifecycle
+frontmatter field) against the committed version, so closing a feature cannot report drift
+against its own task list. It once did: `/wellforge:done` writes `status: done` as its last
+action, which made spec.md newer than tasks.md and the gate refused the transition it had
+just performed.
+
 Enforced mechanically: the Stop hook (`stop-verify.sh`) blocks finishing a session where
 `spec.md`/`plan.md` changed but `tasks.md` did not.
 

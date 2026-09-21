@@ -219,7 +219,10 @@ if any("pyyaml unavailable" in w for w in env.get("warnings", [])) \
 # would read a real QE PASS as absent and refuse for the wrong reason — or, worse, a
 # feature could look gate-clean because the trace carrying a FAIL did not load.
 if env.get("problems"):
-    print("PROBLEMS|" + " ; ".join(env["problems"])); raise SystemExit
+    # TRACE, not PROBLEMS: these come from .forge/runs/, not from the edited file. The
+    # guard used to report both as "frontmatter does not validate", so a malformed trace
+    # sent the author to inspect frontmatter that was perfectly fine.
+    print("TRACE|" + " ; ".join(env["problems"])); raise SystemExit
 if problems:
     print("PROBLEMS|" + " ; ".join(problems)); raise SystemExit
 p = g.get("passes")
@@ -240,6 +243,13 @@ else:
     PROBLEMS)
       refuse "frontmatter in $REL does not validate, so a done status cannot be trusted" \
         "$DETAIL" "Fix the frontmatter first (config/spec-frontmatter.schema.json mirrors the spec-driven skill)." ;;
+    TRACE)
+      refuse "the lifecycle state cannot be trusted: $DETAIL" \
+        "This is NOT a problem with $REL — its frontmatter is fine. One or more files in" \
+        ".forge/runs/ could not be read, so the verdicts they carry are missing from the" \
+        "gate: a feature that really did pass QE reads as 'QE verdict is absent', and a" \
+        "FAIL that never loaded reads as nothing at all." \
+        "Fix or delete the named file, then retry the edit." ;;
     SKIP)
       echo "post-spec-guard: $SLUG not found in forge-state output — gate unverified (advisory)" >&2 ;;
     *)

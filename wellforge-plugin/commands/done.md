@@ -132,7 +132,7 @@ script checks, not a second implementation to run:
 | eval-report.md exists          | production  | the LM-judge half of verification |
 | eval-report.md verdict PASS    | production  | a FAIL or absent verdict is not a pass |
 | eval is not stale              | production  | an eval that predates the last code change judged a different tree |
-| no drift                       | every tier  | spec.md/plan.md newer than tasks.md means the list is out of date |
+| no drift                       | every tier  | spec/plan BODY newer than tasks.md; lifecycle frontmatter edits are not drift |
 
 > **This table is generated.** It is the output of
 > `<plugin>/scripts/forge-state.py --explain-gate`, which prints `GATE_CONDITIONS` from the
@@ -144,6 +144,13 @@ script checks, not a second implementation to run:
 > condition, change it in `done_gate()` and paste this table again.
 
 Notes the table cannot carry:
+
+- **A lifecycle frontmatter edit is never drift.** `status`, `done`, `approved`,
+  `superseded_by`, `archive_reason`, `rigor` and `plugin` record where the feature *is*,
+  not what it asks for. This matters here more than anywhere: THIS command writes
+  `status: done` as its last action, which once made spec.md newer than tasks.md and
+  refused the transition it had just performed. Do not re-run `/wellforge:tasks` after a
+  status change.
 
 - **`mvp`** applies the "every tier" rows only — no security verdict, no eval. mvp's bar is
   QE, not the LM-judge.

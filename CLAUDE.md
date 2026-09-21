@@ -92,9 +92,9 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/plans/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v13` (gate
-  workflow pin series), `plugin-v2.49.0` (plugin series) and `cli-v1.5.0` (the `wellforge`
+  workflow pin series), `plugin-v2.49.1` (plugin series) and `cli-v1.5.0` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.49.0`, CLI `1.5.0`. **This is the one line in this file that states current
+  plugin `2.49.1`, CLI `1.5.0`. **This is the one line in this file that states current
   versions**; `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and
   `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
   the docs. Every other version in this file is history and stays as written. A self-CI workflow

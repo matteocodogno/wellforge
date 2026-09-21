@@ -11,6 +11,7 @@ import importlib.util
 import json
 import os
 import shutil
+import time
 import subprocess
 import sys
 import tempfile
@@ -346,6 +347,128 @@ time.sleep(1.1)
 open(os.path.join(r, "specs", "001-d", "tasks.md"), "a").write("\n- [x] T2: resynced\n")
 check("UNCOMMITTED tasks re-sync clears the drift",
       one(state(r), "001-d")["drift"]["drifted"], False)
+shutil.rmtree(r, ignore_errors=True)
+
+# ── drift is about CONTENT, not about the file having been touched ──────────
+# The regression this guards: /wellforge:done writes `status: done` into spec.md's
+# frontmatter as its LAST action, so under a plain mtime rule spec.md was always newer
+# than tasks.md, the production gate reported drift, and post-spec-guard.sh blocked the
+# transition /wellforge:done had just performed.
+#
+# These ran green on macOS before the fix for a second reason worth knowing: _is_dirty
+# compared abspath(path) against abspath(repo) while compute_drift passes a RELATIVE
+# path, so on a symlinked /var/folders temp dir nothing was ever dirty and the whole
+# code path was dead. Both halves are fixed; these cells fail against either bug.
+SPEC_BODY = "\n\n# X\n\nThe requirement.\n"
+
+
+def spec_text(status="in-progress", extra="", title="Thing", body=SPEC_BODY):
+    fm = f"id: 001\nslug: x\nstatus: {status}\nrigor: production\ntitle: {title}"
+    return f"---\n{fm}{extra}\n---{body}"
+
+
+def drift_fixture():
+    r = repo()
+    d = os.path.join(r, "specs", "001-x")
+    os.makedirs(d, exist_ok=True)
+    open(os.path.join(d, "spec.md"), "w").write(spec_text())
+    open(os.path.join(d, "tasks.md"), "w").write("---\nspec: 001\nsynced: 2026-09-01\n---\n\n- [x] T1\n")
+    commit(r)
+    time.sleep(1.05)
+    return r, d
+
+
+def drifted(r, d):
+    # getattr, so this file can also be run against an OLDER forge-state.py (the mutation
+    # check) and report clean FAILs instead of an AttributeError.
+    fs._DIRTY_CACHE.clear()
+    getattr(fs, "_CLASS_CACHE", {}).clear()
+    return fs.compute_drift(d, r)
+
+
+# cell 1 — spec dirty, BODY changed: drift, on the mtime clock
+r, d = drift_fixture()
+open(os.path.join(d, "spec.md"), "w").write(spec_text(body="\n\n# X\n\nA DIFFERENT requirement.\n"))
+res = drifted(r, d)
+check("spec dirty / body changed is drift", res["drifted"], True)
+check("...on the mtime-dirty clock", res["sources"][0]["clock"], "mtime-dirty")
+shutil.rmtree(r, ignore_errors=True)
+
+# cell 2 — spec dirty, LIFECYCLE frontmatter only: NOT drift. This is the close.
+r, d = drift_fixture()
+open(os.path.join(d, "spec.md"), "w").write(spec_text(status="done", extra="\ndone: 2026-09-20"))
+check("spec dirty / lifecycle frontmatter only is NOT drift", drifted(r, d)["drifted"], False)
+shutil.rmtree(r, ignore_errors=True)
+
+# ...but a non-lifecycle frontmatter field is a spec change like any other.
+r, d = drift_fixture()
+open(os.path.join(d, "spec.md"), "w").write(spec_text(title="Something Else"))
+check("spec dirty / `title` changed IS drift (not a lifecycle field)",
+      drifted(r, d)["drifted"], True)
+shutil.rmtree(r, ignore_errors=True)
+
+# cell 3 — tasks dirty: an uncommitted re-sync clears drift left by a committed spec move
+r, d = drift_fixture()
+open(os.path.join(d, "spec.md"), "w").write(spec_text(body="\n\n# X\n\nNEW requirement.\n"))
+commit(r)
+check("committed spec body change, tasks not re-synced → drift", drifted(r, d)["drifted"], True)
+time.sleep(1.05)
+open(os.path.join(d, "tasks.md"), "a").write("- [x] T2: resynced\n")
+check("tasks dirty / uncommitted re-sync clears drift", drifted(r, d)["drifted"], False)
+shutil.rmtree(r, ignore_errors=True)
+
+# cell 4 — BOTH dirty. Order decides, and it must decide the same way round both ways.
+r, d = drift_fixture()
+open(os.path.join(d, "spec.md"), "w").write(spec_text(body="\n\n# X\n\nNEW requirement.\n"))
+time.sleep(1.05)
+open(os.path.join(d, "tasks.md"), "a").write("- [x] T2: resynced\n")
+check("both dirty / tasks re-synced last → no drift", drifted(r, d)["drifted"], False)
+shutil.rmtree(r, ignore_errors=True)
+
+r, d = drift_fixture()
+open(os.path.join(d, "tasks.md"), "a").write("- [x] T2\n")
+time.sleep(1.05)
+open(os.path.join(d, "spec.md"), "w").write(spec_text(body="\n\n# X\n\nNEW requirement.\n"))
+check("both dirty / spec changed last → drift", drifted(r, d)["drifted"], True)
+shutil.rmtree(r, ignore_errors=True)
+
+# UNTRACKED: no HEAD version, so there is no baseline and mtime is the only honest answer.
+r, d = drift_fixture()
+open(os.path.join(d, "plan.md"), "w").write("---\nstatus: approved\n---\n\n# plan\n")
+res = drifted(r, d)
+check("an untracked plan.md is drift", res["drifted"], True)
+check("...and says which clock answered", res["sources"][0]["clock"], "mtime-untracked")
+shutil.rmtree(r, ignore_errors=True)
+
+# The path bug itself, asserted directly: compute_drift passes a RELATIVE path.
+r, d = drift_fixture()
+open(os.path.join(d, "spec.md"), "a").write("edited\n")
+_prev = os.getcwd()
+os.chdir(r)
+fs._DIRTY_CACHE.clear()
+check("_is_dirty works on a RELATIVE path (what compute_drift passes)",
+      fs._is_dirty(os.path.join("specs", "001-x", "spec.md"), r), True)
+os.chdir(_prev)
+shutil.rmtree(r, ignore_errors=True)
+
+# The close, end to end through the gate — the shape post-spec-guard evaluates.
+r = repo()
+p = feature(r, "001-close",
+            spec_fm={"id": 1, "slug": "close", "status": "in-progress", "rigor": "production"},
+            tasks=[True], eval_fm={"spec": "001", "verdict": "PASS", "score": 90})
+trace(r, "001-close", verdicts={"qe": "PASS", "security": "PASS", "eval": "PASS"})
+commit(r)
+time.sleep(1.05)
+# Derive the new frontmatter from the old one, touching ONLY the lifecycle fields — that
+# is exactly what /wellforge:done does. (A first draft of this fixture also retyped
+# `id: 1` as `id: 001`; the gate correctly called that a spec change, because `id` is not
+# a lifecycle field. The fixture was wrong, not the rule.)
+_orig = open(os.path.join(p, "spec.md")).read()
+_fm, _body = _orig.split("---", 2)[1], _orig.split("---", 2)[2]
+_fm = _fm.replace("status: in-progress", "status: done\ndone: 2026-09-20")
+open(os.path.join(p, "spec.md"), "w").write("---" + _fm + "---" + _body)
+check("closing a production feature leaves the gate passing",
+      one(state(r), "001-close")["done_gate"]["passes"], True)
 shutil.rmtree(r, ignore_errors=True)
 
 # ── last_activity: a directory mtime does not move when a file is edited ─────
