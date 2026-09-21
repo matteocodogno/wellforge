@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# pre-push — refuse to push a RELEASE TAG from a tree whose self-tests are red.
+#
+# plugin-v2.49.0 and cli-v1.5.0 were tagged and pushed with post-spec-guard.test.sh failing
+# and the CLI matrix failing six cases. Nobody weakened a gate; the gates were simply not
+# all run. This repo's thesis is that a rule enforced by remembering is not enforced, and
+# that thesis had not been applied to the repo itself.
+#
+# Scope is deliberately narrow: BRANCH pushes stay fast and are untouched. The check runs
+# only when the push carries a ref matching one of the four release series, because that is
+# the moment a mistake becomes permanent — a pushed tag is what other people install.
+#
+# Installed by scripts/setup-git-policy.sh, alongside commit-msg and pre-merge-commit.
+# Bypassable with `git push --no-verify`, like every git hook; CI's release-guard job is the
+# copy that cannot be skipped.
+#
+# stdin: <local-ref> <local-sha> <remote-ref> <remote-sha> per ref being pushed.
+set -uo pipefail
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+CHECK="$ROOT/scripts/check-all.sh"
+[ -x "$CHECK" ] || exit 0          # not the wellforge repo, or an older checkout
+
+# The four series, exactly as docs/VERSIONING.md defines them. `v[0-9]*` is the TEMPLATE
+# series; the other three carry their own prefix.
+is_release_tag() { # <refname>
+  case "$1" in
+    refs/tags/plugin-v[0-9]*|refs/tags/cli-v[0-9]*|refs/tags/gates-v[0-9]*|refs/tags/v[0-9]*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+tags=""
+while read -r local_ref _local_sha _remote_ref _remote_sha; do
+  [ -z "${local_ref:-}" ] && continue
+  # A DELETION pushes the zero sha with an empty local ref; nothing to test, and refusing
+  # to delete a bad tag would be precisely backwards (see docs/VERSIONING.md: a tag whose
+  # CI is red must be deleted and re-cut).
+  [ "$local_ref" = "(delete)" ] && continue
+  if is_release_tag "$local_ref"; then
+    tags="$tags ${local_ref#refs/tags/}"
+  fi
+done
+
+[ -z "$tags" ] && exit 0           # branches only — nothing to do, stay fast
+
+printf '\n\033[1mpre-push: release tag(s) detected —%s\033[0m\n' "$tags"
+printf 'Running scripts/check-all.sh before this becomes permanent.\n'
+printf '(Push branches freely; only release tags pay this cost.)\n\n'
+
+# --quick: the scaffold gates need a toolchain and minutes, and CI runs them on the tag
+# anyway via generated-gates. What must not reach a tag is a red unit/guard/matrix, which
+# is what the default set covers. Use `scripts/check-all.sh --preset <p>` by hand for the
+# full sweep before cutting.
+if ! "$CHECK" --quick; then
+  cat >&2 <<'MSG'
+
+╭──────────────────────────────────────────────────────────────────────────╮
+│  PUSH REFUSED — a release tag must not leave a machine with red tests.   │
+╰──────────────────────────────────────────────────────────────────────────╯
+
+  Fix the failures above, amend or re-cut the tag, and push again.
+
+  If this is a genuine emergency:  git push --no-verify
+  ...and say so in the release notes. CI's release-guard job will still fail,
+  and docs/VERSIONING.md says a tag whose CI is red is deleted and re-cut —
+  never left in place.
+MSG
+  exit 1
+fi
+
+printf '\npre-push: self-tests green — releasing %s\n\n' "$tags"
+exit 0

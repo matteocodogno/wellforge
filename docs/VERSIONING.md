@@ -12,6 +12,50 @@ explanation; the enforcement rules live in
 | `plugin-vX.Y.Z` | the **Claude Code plugin** (commands, agents, skills, hooks) | the plugin marketplace, when a teammate installs or updates | semver | git tag **and** `wellforge-plugin/.claude-plugin/plugin.json` **and** the `ref` in `.claude-plugin/marketplace.json` |
 | `cli-vX.Y.Z` | the **`wellforge` CLI** (`scripts/wellforge` + `Formula/wellforge.rb`) | Homebrew, on install and `brew upgrade` | semver | git tag **and** `WELLFORGE_CLI_VERSION` in `scripts/wellforge` **and** the `url`/`version` in the Formula |
 
+## Before ANY tag: `scripts/check-all.sh`
+
+Every release in every series has one precondition, and it is not a checklist item:
+
+```sh
+mise run check              # scripts/check-all.sh — every self-test, one exit code
+mise run check:full         # ...plus one preset's OWN gates on a fresh scaffold
+```
+
+**Red means no tag.** This is enforced in four places, deliberately overlapping, because the
+first three are all bypassable by one flag:
+
+| Where | What it does | Bypass |
+|---|---|---|
+| `scripts/release-cli.sh` | runs it before writing anything | `--skip-checks`, which prints a banner and records the skip in the commit body AND the tag |
+| `gates/hooks/pre-push` | runs it when the push carries a `v*` / `plugin-v*` / `gates-v*` / `cli-v*` tag; branch pushes are untouched | `git push --no-verify` |
+| `/wellforge:release` | the procedure's first step | it is a prompt |
+| **`release-guard` in ci.yml** | requires **every** other job green, on tag pushes only | **none** |
+
+`release-guard` also reads `needs.formula.result` explicitly: the `formula` job is
+`continue-on-error` so that a 10x macOS runner never blocks an ordinary push, which means
+`needs:` alone would be satisfied by a FAILED formula. Advisory on a branch, blocking on a
+tag.
+
+### A tag whose CI is red is deleted and re-cut — never left
+
+A tag is what other people install. Leaving a red one in place and "fixing it forward"
+means the artifact named by that version is permanently not the artifact that was tested.
+
+```sh
+git push origin :refs/tags/<tag>     # delete the remote tag FIRST
+git tag -d <tag>                     # then the local one
+# fix, commit, and cut the tag again
+```
+
+Do not move a tag with `git tag -f` and force-push: anyone who already fetched it keeps the
+old object and no command they run will tell them. Delete, then re-cut.
+
+**This rule exists because it was broken.** `plugin-v2.49.0` and `cli-v1.5.0` were tagged
+from a tree where `post-spec-guard.test.sh` had one failure and the CLI matrix had six.
+Nothing was weakened; the suites were simply not all run, because running them meant
+remembering nine commands in four directories. The repo tells every project it generates
+that a rule enforced by remembering is not enforced — this is that rule applied to itself.
+
 ## Why the template and the gates are separate series
 
 Because they change at different rates, for different reasons, and reach projects through

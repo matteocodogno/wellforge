@@ -40,13 +40,14 @@ say() { printf '%s\n' "$*"; }
 # interrupted release says where it stopped.
 step() { printf '\n[%s/8] %s\n' "$1" "$2"; }
 
-BUMP=""; EXECUTE=0; FORMULA_ONLY=0
+BUMP=""; EXECUTE=0; FORMULA_ONLY=0; SKIP_CHECKS=0
 while [ $# -gt 0 ]; do
   case "$1" in
     patch|minor|major) BUMP="$1"; shift ;;
     [0-9]*.[0-9]*.[0-9]*) BUMP="$1"; shift ;;
     --execute) EXECUTE=1; shift ;;
     --formula-only) FORMULA_ONLY=1; shift ;;
+    --skip-checks) SKIP_CHECKS=1; shift ;;
     -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "unknown argument: $1 (want patch|minor|major|X.Y.Z [--execute])" ;;
   esac
@@ -115,13 +116,15 @@ fi
 say "checklist (docs/RELEASING-CLI.md):"
 if [ "$FORMULA_ONLY" -eq 1 ]; then
   say "  --formula-only: steps 5-7 alone, against a tag that already exists"
+  say "  0. prove   scripts/check-all.sh runs first here too — the formula is a release"
   say "  5. fetch   $url, compute its sha256"
   say "  6. rewrite the Formula's url/version/sha256, commit 'chore(cli): formula for $tag'"
   say "  7. smoke   brew install --build-from-source + brew test"
 else
-  say "  1. decide  $BUMP -> $next"
+  say "  1. prove   scripts/check-all.sh — EVERY self-test, and a hard precondition"
+  say "     decide  $BUMP -> $next"
   say "  2. bump    WELLFORGE_CLI_VERSION=\"$next\" in scripts/wellforge"
-  say "  3. prove   test suite, shellcheck, brew style  (before the tag)"
+  say "  3. brew    brew style / brew audit on the formula  (before the tag)"
   say "  4. commit  'chore(cli): release $next'  +  tag $tag"
   say "  5. push    main and $tag            ← the tarball does not exist before this"
   say "  6. sha     fetch $url, rewrite the Formula, commit, push"
@@ -141,6 +144,32 @@ say ""
 printf 'This PUSHES a tag and two commits to %s. Type the version to confirm: ' "$REMOTE_URL"
 read -r confirm
 [ "$confirm" = "$next" ] || die "not confirmed (expected '$next')"
+
+# ── the precondition ─────────────────────────────────────────────────────────
+# cli-v1.5.0 was tagged and pushed while the CLI's own matrix failed six cases and
+# post-spec-guard.test.sh failed one. This script printed "3. prove test suite, shellcheck,
+# brew style (before the tag)" as a CHECKLIST LINE — a reminder, which is exactly the kind
+# of enforcement this repo tells other projects not to rely on. It is a precondition now.
+step 1 "running scripts/check-all.sh (every self-test in the repo)"
+if [ "$SKIP_CHECKS" -eq 1 ]; then
+  cat <<'BANNER'
+
+╭───────────────────────────────────────────────────────────────────────────╮
+│  ⚠  --skip-checks: THE SELF-TESTS WERE NOT RUN FOR THIS RELEASE.          │
+│                                                                           │
+│  This is for emergencies. The skip is recorded in the release notes, the   │
+│  pre-push hook will object, and CI's release-guard job will fail the tag.  │
+│  docs/VERSIONING.md: a tag whose CI is red is deleted and re-cut.          │
+╰───────────────────────────────────────────────────────────────────────────╯
+
+BANNER
+  SKIP_NOTE="⚠ released with --skip-checks: scripts/check-all.sh was NOT run."
+  say "  recorded for the release notes: $SKIP_NOTE"
+else
+  "$ROOT/scripts/check-all.sh" --quick \
+    || die "self-tests are red — refusing to cut a release. Fix them, or re-run with --skip-checks and expect CI to fail the tag."
+  SKIP_NOTE=""
+fi
 
 if [ "$FORMULA_ONLY" -eq 0 ]; then
 step 2 "bumping WELLFORGE_CLI_VERSION to $next"
@@ -167,8 +196,16 @@ fi
 
 step 4 "committing and tagging $tag"
 git -C "$ROOT" add scripts/wellforge || die "git add failed"
-git -C "$ROOT" commit -qm "chore(cli): release $next" || die "commit failed"
-git -C "$ROOT" tag "$tag" || die "tag failed"
+# The skip is recorded where a reader of the release will see it — in the commit body and
+# in the annotated tag — not only in the terminal of whoever ran this. A release that
+# skipped its own tests must say so from inside the artifact.
+if [ -n "${SKIP_NOTE:-}" ]; then
+  git -C "$ROOT" commit -qm "chore(cli): release $next" -m "$SKIP_NOTE" || die "commit failed"
+  git -C "$ROOT" tag -a "$tag" -m "wellforge CLI $next" -m "$SKIP_NOTE" || die "tag failed"
+else
+  git -C "$ROOT" commit -qm "chore(cli): release $next" || die "commit failed"
+  git -C "$ROOT" tag -a "$tag" -m "wellforge CLI $next" || die "tag failed"
+fi
 # One series per commit: a second tag makes `git describe` answer with the wrong one.
 [ "$(git -C "$ROOT" tag --points-at HEAD | wc -l | tr -d ' ')" -eq 1 ] \
   || die "HEAD now carries more than one tag — never two series on one commit"

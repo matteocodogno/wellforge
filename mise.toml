@@ -17,3 +17,16 @@ run         = "scripts/format-templates.sh --check"
 [tasks."test:cli"]
 description = "Regression matrix for scripts/wellforge"
 run         = "scripts/tests/wellforge.test.sh"
+
+# THE entry point. Every release path takes this as a precondition (release-cli.sh, the
+# /wellforge:release procedure, docs/VERSIONING.md), the pre-push hook runs it for release
+# tags, and /wellforge:doctor --tests calls it rather than keeping its own list — which is
+# how that list came to be missing security-triggers.test.py. Add a suite to
+# scripts/check-all.sh and all of them pick it up.
+[tasks.check]
+description = "Every self-test in this repo, one exit code (add --preset <p> for scaffold gates)"
+run         = "scripts/check-all.sh"
+
+[tasks."check:full"]
+description = "check, plus one preset's OWN gates on a fresh scaffold (slow, needs mise+uvx)"
+run         = "scripts/check-all.sh --preset spring-kotlin-react"

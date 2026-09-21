@@ -10,6 +10,14 @@ name: ci
 on:
   push:
     branches: [main]
+    # The four release series (docs/VERSIONING.md). Every job below runs on a tag push too,
+    # so `release-guard` can require them — a tag is the moment a mistake becomes something
+    # other people install.
+    tags:
+      - 'v[0-9]*'          # template
+      - 'plugin-v[0-9]*'
+      - 'gates-v[0-9]*'
+      - 'cli-v[0-9]*'
   pull_request:
 
 permissions:
@@ -743,3 +751,56 @@ jobs:
       - uses: actions/checkout@v7
       - name: Run terse-mode fixture regression suite
         run: specs/001-terse-mode/fixtures/run-all.sh
+
+  # ── the release guard ───────────────────────────────────────────────────────────────
+  # plugin-v2.49.0 and cli-v1.5.0 were tagged from a tree with seven failing cases across
+  # two suites. The local defences (scripts/check-all.sh, the pre-push hook) are both
+  # bypassable — `git push --no-verify` is one flag away — so this is the copy that is not.
+  #
+  # It does no work of its own: it requires every other job, and it only exists on tag
+  # pushes. If it is red, the tag is wrong. docs/VERSIONING.md says what to do then, and it
+  # is not "leave it": a tag is deleted and re-cut, because people install tags and a
+  # mutable one is worse than a missing one.
+  release-guard:
+    name: release guard (every job green on a release tag)
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    needs:
+      - adapter-smoke
+      - cli
+      - commits
+      - formula
+      - gate-callable
+      - generated-gates
+      - hook-fixtures
+      - linear
+      - rendered-gates
+      - routing
+      - rubric-sync
+      - sast-selftest
+      - scaffold
+      - services-selftest
+      - terse-mode-fixtures
+      - worktree-isolation
+    steps:
+      - name: Confirm
+        env:
+          # `formula` is continue-on-error: on an ordinary push a 10x macOS runner must not
+          # hold up unrelated work. `needs:` is therefore satisfied even when it FAILED, so
+          # depending on it alone would have left the guard green while the Homebrew package
+          # was broken — the one job a `cli-v*` tag most needs. Read its result explicitly.
+          FORMULA_RESULT: ${{ needs.formula.result }}
+        run: |
+          set -euo pipefail
+          tag="${{ github.ref_name }}"
+          echo "$tag" | grep -qE '^(v|plugin-v|gates-v|cli-v)[0-9]' || {
+            echo "::error::$tag does not match any documented series (docs/VERSIONING.md)"
+            exit 1
+          }
+          # Advisory everywhere else, blocking here.
+          if [ "$FORMULA_RESULT" != "success" ]; then
+            echo "::error::the formula job is ${FORMULA_RESULT} — it is advisory on a branch"
+            echo "::error::push but BLOCKING on a release tag. Delete $tag, fix, re-cut."
+            exit 1
+          fi
+          echo "::notice::every CI job is green for ${tag} — this tag is safe to install from"
