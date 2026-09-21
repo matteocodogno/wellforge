@@ -20,7 +20,7 @@ new_project() {
 spec() {  # spec <status> [rigor]
   local status="$1" rigor="${2:-production}"
   { echo "---"; echo "id: 001"; echo "slug: x"; echo "status: $status"; echo "rigor: $rigor"
-    [ "$status" = done ] && echo "done: 2026-09-20"
+    [ "$status" = "done" ] && echo "done: 2026-09-20"
     echo "---"; echo; echo "# X"; } > "$REPO/specs/001-x/spec.md"
 }
 
@@ -61,11 +61,11 @@ new_project; spec approved; commit_all; spec in-progress
 run 0 "approved → in-progress is allowed"
 
 # 3. in-progress → done with the gate MET
-new_project; spec in-progress; tasks 2 2; qe_pass; commit_all; spec done
+new_project; spec in-progress; tasks 2 2; qe_pass; commit_all; spec "done"
 run 0 "in-progress → done with a passing gate is allowed"
 
 # 4. in-progress → done with the gate FAILING (unchecked tasks, no QE)
-new_project; spec in-progress; tasks 1 3; commit_all; spec done
+new_project; spec in-progress; tasks 1 3; commit_all; spec "done"
 run 2 "in-progress → done with a failing gate is blocked"
 
 # 4b. Production reviews every batch, so an ABSENT security verdict is a failing gate —
@@ -76,7 +76,7 @@ import json, sys, glob, os
 for p in glob.glob(os.path.join(sys.argv[1], ".forge", "runs", "*.json")):
     r = json.load(open(p)); r["verdicts"].pop("security", None); json.dump(r, open(p, "w"))
 PYFIX
-commit_all; spec done
+commit_all; spec "done"
 run 2 "in-progress → done without a security verdict is blocked at production"
 
 # 5. rigor lowered
@@ -88,13 +88,13 @@ new_project; spec in-progress mvp; commit_all; spec in-progress production
 run 0 "rigor mvp → production is allowed"
 
 # 7. done → superseded (a sanctioned retirement)
-new_project; spec done; tasks 1 1; qe_pass; commit_all
+new_project; spec "done"; tasks 1 1; qe_pass; commit_all
 { echo "---"; echo "id: 001"; echo "slug: x"; echo "status: superseded"
   echo "rigor: production"; echo "superseded_by: 002-y"; echo "---"; } > "$REPO/specs/001-x/spec.md"
 run 0 "done → superseded is allowed"
 
 # 8. done → draft (reopening by edit)
-new_project; spec done; tasks 1 1; qe_pass; commit_all; spec draft
+new_project; spec "done"; tasks 1 1; qe_pass; commit_all; spec draft
 run 2 "done → draft is blocked"
 
 # 9. a brand-new spec file (untracked, status draft) must never be blocked
@@ -144,7 +144,7 @@ printf -- '---\nid: 003\nslug: legacy\nstatus: done\ndone: 2026-01-01\nrigor: pr
 run 0 "a NEW spec created already done is allowed (record, not transition)" "$REPO/specs/003-legacy/spec.md"
 
 # 17. ...but the same status on an EXISTING spec is still the gated transition.
-new_project; spec in-progress; tasks 0 2; commit_all; spec done
+new_project; spec in-progress; tasks 0 2; commit_all; spec "done"
 run 2 "an existing spec moving to done still faces the gate"
 
 # 18. The refusal must carry the actual failing reasons, not a generic message: the numbers
@@ -169,7 +169,7 @@ run 2 "archived → in-progress is blocked"
 new_project; spec superseded; commit_all; spec draft
 run 2 "superseded → draft is blocked"
 
-new_project; spec done; tasks 2 2; qe_pass; commit_all; spec archived
+new_project; spec "done"; tasks 2 2; qe_pass; commit_all; spec archived
 run 0 "done → archived is still allowed (a sanctioned retirement)"
 
 # ── 22-24. rigor: a spec with no `rigor:` is at the project default, i.e. production ──
@@ -231,7 +231,7 @@ run 2 "status:done (no space) still faces the gate"
 # unparseable file silently switched the done gate off.
 new_project; spec in-progress; tasks 2 2; qe_pass; commit_all
 printf '[1]' > "$REPO/.forge/runs/broken.json"
-spec done
+spec "done"
 run 2 "a malformed run trace refuses the edit instead of failing open"
 
 out=$(printf '{"tool_input":{"file_path":"%s"}}' "$REPO/specs/001-x/spec.md" \

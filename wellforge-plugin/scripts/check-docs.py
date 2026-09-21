@@ -172,6 +172,51 @@ else:
                         fail.append(f"{rel}:{lineno} names `{found}` but the observability "
                                     f"skill's current schema is `{current}`")
 
+# ── gates/README.md's pin numbers vs the workflows that actually pin them ───────────
+# The README is where a human looks up what the gates run. It said osv-scanner v2.0.0 and
+# semgrep 1.172.0 while the workflows pinned v2.5.1 and 1.173.0 — numbers that had drifted
+# behind the thing they describe, which is the same failure class as the plugin version
+# living in four files. A wrong pin in the README is worse than no pin: it is the number
+# someone copies into a new gate.
+_WORKFLOWS = os.path.join(ROOT, ".github", "workflows")
+_readme_path = os.path.join(ROOT, "gates", "README.md")
+if os.path.exists(_readme_path) and os.path.isdir(_WORKFLOWS):
+    _readme = open(_readme_path, encoding="utf-8").read()
+    _env = {}
+    for wf in ("quality-node.yml", "quality-jvm.yml"):
+        p = os.path.join(_WORKFLOWS, wf)
+        if not os.path.exists(p):
+            continue
+        for line in open(p, encoding="utf-8"):
+            m = re.match(r"\s*(SEMGREP_VERSION|OSV_SCANNER_VERSION):\s*(\S+)\s*$", line)
+            if m:
+                _env.setdefault(m.group(1), set()).add(m.group(2))
+
+    for var, label in (("SEMGREP_VERSION", "semgrep"), ("OSV_SCANNER_VERSION", "osv-scanner")):
+        vals = _env.get(var)
+        if not vals:
+            continue
+        if len(vals) > 1:
+            fail.append(f"the gate workflows pin different {label} versions: {sorted(vals)}")
+            continue
+        pinned = next(iter(vals))
+        bare = pinned.lstrip("v")
+        # Any OTHER version of this tool mentioned in the README is drift. Matching on the
+        # tool name keeps this from tripping over unrelated numbers in the prose.
+        for lineno, line in enumerate(_readme.splitlines(), 1):
+            # TABLE ROWS ONLY. The prose deliberately names OLD versions — the section on
+            # keeping the pin current cites semgrep 1.96.0 as the release that stopped
+            # starting on newer runner Pythons, and that sentence is history, not a pin.
+            # Flagging it would push someone to "fix" a worked example into nonsense.
+            if not line.lstrip().startswith("|"):
+                continue
+            if label not in line.lower():
+                continue
+            for found in re.findall(rf"{label}[^0-9\n]{{0,4}}v?(\d+\.\d+\.\d+)", line, re.I):
+                if found != bare:
+                    fail.append(f"gates/README.md:{lineno} says {label} {found} but the gate "
+                                f"workflows pin {pinned} — the README is the number people copy")
+
 if fail:
     print("✗ docs drift:")
     for f in fail:
