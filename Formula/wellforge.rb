@@ -26,19 +26,17 @@ class Wellforge < Formula
   desc "Reproducible, AI-assisted project setup platform"
   homepage "https://github.com/matteocodogno/wellforge"
   url "https://github.com/matteocodogno/wellforge/archive/refs/tags/cli-v1.5.1.tar.gz"
-  # PLACEHOLDER — not a real hash. The tarball does not exist until cli-v1.5.1 is pushed, and
-  # GitHub's generated archive is not byte-reproducible locally (release-cli.sh's header
-  # records the measurement). Fill it with:
-  #     scripts/release-cli.sh 1.5.1 --formula-only --execute
-  # An all-zero sha fails `brew install` loudly. The previous value was real and pinned the
-  # TEMPLATE tag v0.9.0, so brew installed a year-old CLI successfully and only `brew test`
-  # noticed — silent-wrong, which is the worse of the two.
-  sha256 "0000000000000000000000000000000000000000000000000000000000000000"
-  # EXPLICIT version, because the tag is `cli-vX.Y.Z` and Homebrew cannot parse a version
-  # out of that shape. The `test do` block asserts `version` against what the script
-  # prints; with no version line brew guessed 0.9.0 from the old url and compared it to
-  # "wellforge 1.5.1".
+  # EXPLICIT, and BEFORE sha256 — `brew style` (FormulaAudit/ComponentsOrder) rejects the
+  # other order, which is how the first attempt at this release failed. Explicit because
+  # the tag is `cli-vX.Y.Z` and Homebrew cannot parse a version out of that shape: with no
+  # version line it guessed 0.9.0 from the url, while the `test do` block below asserts
+  # `version` against what the script prints.
   version "1.5.1"
+  # Filled by `scripts/release-cli.sh <v> --formula-only --execute`, never by hand: the
+  # tarball only exists once the tag is pushed, and GitHub's generated archive is not
+  # byte-reproducible locally. check-docs.py fails if this is left as a placeholder once
+  # the matching cli-v tag is on the remote.
+  sha256 "8c2d0a25404128f556b0eae7b6d0d77a7a4fb36db9992a6a59490133d9a6ce9d"
   license "MIT"
   head "https://github.com/matteocodogno/wellforge.git", branch: "main"
 
