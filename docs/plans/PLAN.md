@@ -511,6 +511,35 @@ as scheduled agents:
   opens/updates the issue) still needs a real generated repo → pairs with the Phase 7 pilot. Chose
   "all three checks + weekly" per user; coverage runs too since reusing the whole gate is more DRY
   than a bespoke subset.
+- ☑ **14c — The heartbeat was actually EXERCISED** (2026-09-22). 14a and 14b were both
+  released and neither had ever run: `template-drift.yml` and `heartbeat-report.yml` are
+  `workflow_call`-only, nothing in CI calls them, and no generated project had reached a
+  scheduled cycle — so the first real run would have been the test, in somebody else's
+  repository, of a report job whose job is to CLOSE issues. Added `workflow_dispatch` to
+  `template-drift.yml` and ran it against this repo:
+
+  **https://github.com/matteocodogno/wellforge/actions/runs/35690889113** — green.
+
+  What it proves, which is the part that matters:
+  - `check` took the "no `.forge/manifest.json` — not a WellForge scaffold" branch and
+    emitted `behind=false`, as intended for a non-scaffold.
+  - `report` ran and reached `Heartbeat green and no open tracking issue — nothing to do.`
+    That is heartbeat-report's **no-op branch** — the one that decides whether to close a
+    tracking issue, and the branch that was wrong until `gates-v13` (a crashed `check`
+    produced no outputs, `'' == 'true'` was false, and the drift issue was closed as
+    "green again").
+  - `heartbeat-failed` was correctly **skipped**, because `check` succeeded.
+  - **`uses: ./.github/workflows/heartbeat-report.yml` resolved.** The local-path form was
+    questioned in review on the theory that a consumer's runner resolves `./` against the
+    consumer repo; it does not — GitHub resolves it against the repository containing the
+    calling workflow, at the same commit. Keeping `./` is also the only maintainable
+    choice, because `uses:` accepts no expressions and a fully-qualified form would need a
+    hardcoded `@gates-vN` bumped by hand every release.
+
+  Still not covered: the failing path (an actually-behind manifest opening an issue) and a
+  real scheduled trigger in a generated repo. Both need the Phase 7 pilot, as 14a already
+  says.
+
 - ☑ **14b — Template-drift heartbeat** (Pillar 6 — the WellForge-native standout, deterministic,
   built 2026-07-06). New reusable `template-drift.yml`: reads `.forge/manifest.json`, resolves the
   latest `vX.Y.Z` of the source repo (`git ls-remote`, version-aware count), and files/updates ONE
