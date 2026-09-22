@@ -749,17 +749,44 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Path-based, so it builds THIS commit's formula rather than whatever the tap has.
-      # `brew audit --strict` is deliberately absent: it refuses a path and needs the repo
-      # tapped, which is steps 3 and 8 of docs/RELEASING-CLI.md, by hand.
+      # `brew style` still takes a path.
       - name: brew style
         run: brew style Formula/wellforge.rb
 
+      # Homebrew 7 REFUSES a formula given by path — "Homebrew requires formulae to be in a
+      # tap, rejecting" — so `brew install Formula/wellforge.rb` stopped working and this
+      # job went red on every push. It is `continue-on-error`, so nothing complained; what
+      # it would have done is fail the first release tag, because release-guard reads
+      # needs.formula.result explicitly.
+      #
+      # The repo IS a tap (it has Formula/), so tap THIS CHECKOUT from its own path and then
+      # pin the tap to the exact commit under test. The pin matters: actions/checkout leaves
+      # a detached HEAD, and what `git clone` makes of that is not something to rely on.
+      # This also exercises the path a user actually takes (`brew tap` then `brew install
+      # <tap>/wellforge`) rather than a path-based mode no user has.
+      - name: Tap this checkout at this commit
+        run: |
+          set -euo pipefail
+          brew tap matteocodogno/wellforge "$GITHUB_WORKSPACE"
+          tap="$(brew --repository matteocodogno/wellforge)"
+          git -C "$tap" fetch --quiet origin "$GITHUB_SHA"
+          git -C "$tap" checkout --quiet --detach FETCH_HEAD
+          git -C "$tap" log --oneline -1
+          diff -u Formula/wellforge.rb "$tap/Formula/wellforge.rb" \
+            || { echo "::error::the tap does not hold this commit's formula"; exit 1; }
+          # Third-party taps need trusting before brew will load them.
+          brew trust --tap matteocodogno/wellforge
+
       - name: brew install --build-from-source
-        run: brew install --build-from-source Formula/wellforge.rb
+        run: brew install --build-from-source matteocodogno/wellforge/wellforge
 
       - name: brew test
         run: brew test wellforge
+
+      # Now possible, and it is documented step 8 of docs/RELEASING-CLI.md — the step that
+      # caught the redundant `version` line. It needed the repo tapped, which it now is.
+      - name: brew audit --strict --online
+        run: brew audit --strict --online matteocodogno/wellforge/wellforge
 
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible
   # only by hand, referenced by no runner/CI. run-all.sh wires t8/t11/t12 into one exit code.

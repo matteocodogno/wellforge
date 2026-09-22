@@ -36,6 +36,18 @@ done
 SUITE="$(mktemp -d)"
 trap 'rm -rf "$SUITE"' EXIT
 
+# The suite must not inherit the developer's git config — the whole "green here, red on the
+# maintainer's Mac and in CI" episode was one leaked setting. This machine has
+# `init.defaultBranch = main` in ~/.gitconfig; CI and a stock Mac do not, so the fixture's
+# bare origin came up with its HEAD on an unborn `master`, the upstream silently refused to
+# advance, and two cases blamed the CLI for it.
+#
+# `gitf` pins the settings a fixture depends on, but pinning is a list to keep in sync with
+# whatever git decides to read next. Neutralise the config files instead, so the only git
+# settings in play are the ones this file states. /dev/null is a readable, empty config.
+export GIT_CONFIG_GLOBAL=/dev/null
+export GIT_CONFIG_SYSTEM=/dev/null
+
 pass=0 fail=0 xfail=0 xpass=0
 CASE=""
 
@@ -264,7 +276,22 @@ SH
 # and the suite failed for reasons that had nothing to do with the CLI. A global
 # core.hooksPath would be just as bad — this repo's own commit-msg hook would reject
 # "fixture" as a non-conventional commit message.
+#
+# init.defaultBranch is the one that bit SILENTLY, and only on other people's machines.
+# The fixture pushes HEAD to refs/heads/main but creates the bare origin with plain
+# `git init --bare`, so that repo's HEAD follows the HOST's init.defaultBranch. Where that
+# is unset — git's own default, `master`, which is CI and most Macs — the bare origin's HEAD
+# names a branch that never gets created, `advance_upstream`'s clone says "remote HEAD
+# refers to nonexistent ref, unable to checkout" and hands back an EMPTY repo, its commits
+# land on an unrelated root, and the push is rejected as a non-fast-forward. The upstream
+# therefore never advances, so `doctor` correctly reports 0 commits behind and the case
+# asserting 3 fails — pointing at the CLI, which was never involved.
+#
+# This machine has init.defaultBranch=main in ~/.gitconfig, which is exactly why the suite
+# was green here and red on the maintainer's Mac and in CI. Pin it: a fixture must not ask
+# the host what it thinks a default branch is called.
 gitf() { git -c commit.gpgsign=false -c tag.gpgsign=false -c init.templateDir= \
+             -c init.defaultBranch=main \
              -c core.hooksPath="$SUITE/nohooks" -c user.email=t@t -c user.name=t "$@"; }
 
 # A real checkout with a real bare upstream: "N commits behind" is measured, not mocked.
@@ -290,7 +317,9 @@ make_checkout() { # <dir> <plugin-version> [tag]
   gitf -C "$dir" tag "$tag"
   gitf init -q --bare "$origin"
   gitf -C "$dir" remote add origin "$origin"
-  gitf -C "$dir" push -q -u origin HEAD:refs/heads/main 2>/dev/null
+  # CHECKED. An unchecked fixture push is how a broken fixture gets read as a broken CLI.
+  gitf -C "$dir" push -q -u origin HEAD:refs/heads/main \
+    || { echo "fixture: push to the bare origin failed — the fixture is broken, not the CLI" >&2; return 1; }
   gitf -C "$dir" branch --set-upstream-to=origin/main >/dev/null 2>&1
 }
 
@@ -302,14 +331,43 @@ set_checkout_cli_version() { # <checkout-dir> <version>  — rewrite the fixture
 
 advance_upstream() { # <checkout-dir> <n>  — put N commits on the bare origin only
   local dir="$1" n="$2" work; work="$(mktemp -d)"
-  gitf clone -q "$dir.origin" "$work"
+  gitf clone -q "$dir.origin" "$work" \
+    || { echo "fixture: clone of $dir.origin failed" >&2; rm -rf "$work"; return 1; }
+  # The clone must have landed ON the fixture commit. When it does not (a bare origin whose
+  # HEAD names a branch that was never created), the commits below start a SECOND root and
+  # the push is rejected — leaving the upstream un-advanced and every "N commits behind"
+  # assertion reading as a CLI bug. Say so here instead.
+  gitf -C "$work" rev-parse --verify -q HEAD >/dev/null \
+    || { echo "fixture: clone of $dir.origin has no HEAD — the origin's default branch is not 'main'" >&2
+         rm -rf "$work"; return 1; }
   local i
   for i in $(seq 1 "$n"); do
     echo "$i" >> "$work/upstream.txt"
     gitf -C "$work" add -A >/dev/null; gitf -C "$work" commit -qm "upstream $i" >/dev/null
   done
-  gitf -C "$work" push -q origin HEAD:main
+  gitf -C "$work" push -q origin HEAD:main \
+    || { echo "fixture: could not advance the upstream of $dir — the fixture is broken, not the CLI" >&2
+         rm -rf "$work"; return 1; }
   rm -rf "$work"
+}
+
+# `stat` has two incompatible spellings and — measured, not assumed — a `bsd || gnu` chain
+# does NOT fall through between them:
+#
+#   macOS/BSD:  stat -c '%a' F   -> "illegal option -- c", exit 1        (detectable)
+#   Linux:      stat -f '%Lp' F  -> -f is --file-system, so '%Lp' is read as a PATH; the
+#                                   error goes to STDERR and the command still EXITS 0
+#                                   with EMPTY stdout                    (NOT detectable)
+#
+# So the old `stat -f … || stat -c …` compared "" against "600" on every Linux box and the
+# permissions case failed in CI while passing on this Mac. Ask for the mode, then check that
+# what came back actually IS a mode; never trust the exit code to tell them apart.
+file_mode() { # <path> -> octal mode, or empty if neither spelling worked
+  local m
+  m=$(stat -c '%a' "$1" 2>/dev/null)
+  case "$m" in ''|*[!0-7]*) m=$(stat -f '%Lp' "$1" 2>/dev/null) ;; esac
+  case "$m" in ''|*[!0-7]*) m='' ;; esac
+  printf '%s' "$m"
 }
 
 # Telegram wizard inputs: the token line and the Enter after "send a message". Stdin is a
@@ -840,12 +898,10 @@ new_sandbox "${ALL_TOOLS[@]}"
 tg_stdin; tg_canned
 run_cli "$SANDBOX/nowhere" telegram
 assert_exists "$HOME_DIR/.config/wellforge/telegram.env"
-[ "$(stat -f '%Lp' "$HOME_DIR/.config/wellforge/telegram.env" 2>/dev/null \
-     || stat -c '%a' "$HOME_DIR/.config/wellforge/telegram.env" 2>/dev/null)" = "600" ] \
-  || _bad "env file is not mode 600"
-[ "$(stat -f '%Lp' "$HOME_DIR/.config/wellforge" 2>/dev/null \
-     || stat -c '%a' "$HOME_DIR/.config/wellforge" 2>/dev/null)" = "700" ] \
-  || _bad "config dir is not mode 700"
+[ "$(file_mode "$HOME_DIR/.config/wellforge/telegram.env")" = "600" ] \
+  || _bad "env file is not mode 600, got '$(file_mode "$HOME_DIR/.config/wellforge/telegram.env")'"
+[ "$(file_mode "$HOME_DIR/.config/wellforge")" = "700" ] \
+  || _bad "config dir is not mode 700, got '$(file_mode "$HOME_DIR/.config/wellforge")'"
 finish
 
 # An earlier run wired the shell. Offer to undo it — non-interactively, print the line.
