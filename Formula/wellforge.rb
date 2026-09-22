@@ -26,12 +26,16 @@ class Wellforge < Formula
   desc "Reproducible, AI-assisted project setup platform"
   homepage "https://github.com/matteocodogno/wellforge"
   url "https://github.com/matteocodogno/wellforge/archive/refs/tags/cli-v1.5.1.tar.gz"
-  # EXPLICIT, and BEFORE sha256 — `brew style` (FormulaAudit/ComponentsOrder) rejects the
-  # other order, which is how the first attempt at this release failed. Explicit because
-  # the tag is `cli-vX.Y.Z` and Homebrew cannot parse a version out of that shape: with no
-  # version line it guessed 0.9.0 from the url, while the `test do` block below asserts
-  # `version` against what the script prints.
-  version "1.5.1"
+  # NO explicit `version` line, deliberately. Homebrew scans the version out of the url —
+  # including out of a `cli-vX.Y.Z` tag (`brew info` reports "derived version: 1.5.1"), so an
+  # explicit one is REDUNDANT and `brew audit --strict` fails on it. The first attempt at this
+  # release carried `version "1.5.1"` on the belief that brew could not parse this tag shape;
+  # that belief was wrong. The real bug it was papering over was a url that still named the
+  # TEMPLATE tag v0.9.0, from which brew correctly derived 0.9.0.
+  #
+  # So the url IS the version, and check-docs.py asserts exactly that: the url must name
+  # cli-v<the version scripts/wellforge prints>, because `test do` below asserts the derived
+  # version against that same string.
   # Filled by `scripts/release-cli.sh <v> --formula-only --execute`, never by hand: the
   # tarball only exists once the tag is pushed, and GitHub's generated archive is not
   # byte-reproducible locally. check-docs.py fails if this is left as a placeholder once

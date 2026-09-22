@@ -118,7 +118,7 @@ if [ "$FORMULA_ONLY" -eq 1 ]; then
   say "  --formula-only: steps 5-7 alone, against a tag that already exists"
   say "  0. prove   scripts/check-all.sh runs first here too — the formula is a release"
   say "  5. fetch   $url, compute its sha256"
-  say "  6. rewrite the Formula's url/version/sha256, commit 'chore(cli): formula for $tag'"
+  say "  6. rewrite the Formula's url + sha256 (the url IS the version), commit 'chore(cli): formula for $tag'"
   say "  7. smoke   brew install --build-from-source + brew test"
 else
   say "  1. prove   scripts/check-all.sh — EVERY self-test, and a hard precondition"
@@ -247,19 +247,24 @@ rm -f "$tarball"
 tmp="$(mktemp)"
 sed -e "s|^  url \".*\"|  url \"$url\"|" \
     -e "s|^  sha256 \".*\"|  sha256 \"$sha\"|" "$FORMULA" > "$tmp" || die "sed failed"
-# `version` is stated explicitly rather than parsed out of the url. Two reasons: brew's
-# guess at "cli-v1.0.0.tar.gz" is not something to rely on, and the version must stay
-# MONOTONIC across the switch of series — the formula used to resolve 0.9.0 from the
-# template tag, so anything below that would make `brew upgrade` a silent no-op for
-# everyone who already installed it.
-if grep -q '^  version "' "$tmp"; then
-  sed -i.bak "s|^  version \".*\"|  version \"$next\"|" "$tmp" && rm -f "$tmp.bak"
-else
-  sed -i.bak "s|^  url \(.*\)\$|  url \1\n  version \"$next\"|" "$tmp" && rm -f "$tmp.bak"
-fi
+# NO explicit `version` line is written. This script used to insert one, on the premise that
+# brew's guess at a "cli-vX.Y.Z.tar.gz" url was not something to rely on. That premise was
+# measured and found FALSE: brew scans the version straight out of that url (`brew info`
+# prints "derived version: 1.5.1"), and `brew audit --strict` — documented step 8 of this
+# release — FAILS with "version 1.5.1 is redundant with version scanned from URL".
+#
+# The bug the explicit line was really hiding was a url that still named the TEMPLATE tag
+# v0.9.0, from which brew derived 0.9.0 perfectly correctly. Rewriting the url above fixes
+# that at the source, and monotonicity holds because cli-v1.x > 0.9.0.
+#
+# So: if a stale `version` line is present, REMOVE it rather than update it.
+sed -i.bak '/^  version "[0-9][0-9.]*"$/d' "$tmp" && rm -f "$tmp.bak"
 cat "$tmp" > "$FORMULA"; rm -f "$tmp"
-grep -q "$sha" "$FORMULA"         || die "the sha did not take — check $FORMULA by hand"
-grep -q "^  version \"$next\"\$" "$FORMULA" || die "the version line did not take — check $FORMULA by hand"
+grep -q "$sha" "$FORMULA" || die "the sha did not take — check $FORMULA by hand"
+grep -q "^  url \"$url\"\$" "$FORMULA" \
+  || die "the url did not take — check $FORMULA by hand"
+! grep -q '^  version "' "$FORMULA" \
+  || die "a version line survived in $FORMULA — brew audit --strict calls it redundant with the url"
 
 if command -v brew >/dev/null 2>&1; then
   brew style "$FORMULA" || die "brew style rejected the formula — fix it before pushing"

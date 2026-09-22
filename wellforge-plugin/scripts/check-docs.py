@@ -234,17 +234,31 @@ if os.path.exists(_cli_path):
 
 if cli_version and os.path.exists(_formula_path):
     ftext = open(_formula_path).read()
-    fm = re.search(r'^\s*version "([0-9]+\.[0-9]+\.[0-9]+)"', ftext, re.M)
-    if not fm:
-        fail.append("Formula/wellforge.rb has no explicit `version` line — Homebrew will guess "
-                    "it from the url, and a cli-vX.Y.Z tag is not a shape it can parse")
-    elif fm.group(1) != cli_version:
-        fail.append(f"Formula/wellforge.rb pins version {fm.group(1)} but scripts/wellforge is "
-                    f"{cli_version} — `brew test` asserts these agree")
-    um = re.search(r"archive/refs/tags/([^.]+(?:\.[^.]+)*)\.tar\.gz", ftext)
-    if um and not um.group(1).startswith("cli-v"):
+    # The URL's tag is what Homebrew derives the version FROM, so it is the thing to check.
+    #
+    # This used to demand an explicit `version` line on the theory that "a cli-vX.Y.Z tag is
+    # not a shape Homebrew can parse". That was wrong, and `brew audit --strict` says so:
+    # "`version 1.5.1` is redundant with version scanned from URL", with `brew info`
+    # reporting a derived version of 1.5.1. The original bug was never a parsing failure —
+    # the url simply pointed at the TEMPLATE tag v0.9.0, so brew parsed 0.9.0 perfectly well
+    # from the wrong tag. Fixing the url fixed the version.
+    um = re.search(r'archive/refs/tags/([^\s"]+)\.tar\.gz', ftext)
+    if not um:
+        fail.append("Formula/wellforge.rb has no recognisable archive url — nothing to derive "
+                    "a version from")
+    elif not um.group(1).startswith("cli-v"):
         fail.append(f"Formula/wellforge.rb url points at {um.group(1)!r}, which is not a cli-v "
                     f"tag — the CLI ships in its own series (docs/VERSIONING.md)")
+    elif um.group(1) != f"cli-v{cli_version}":
+        fail.append(f"Formula/wellforge.rb url names {um.group(1)} but scripts/wellforge is "
+                    f"{cli_version} — brew derives the version from that url, and `brew test` "
+                    f"asserts it against what the script prints")
+    # An explicit `version` is allowed but must agree; `brew audit --strict` calls it
+    # redundant, so the formula does not carry one.
+    fm = re.search(r'^\s*version "([0-9]+\.[0-9]+\.[0-9]+)"', ftext, re.M)
+    if fm and fm.group(1) != cli_version:
+        fail.append(f"Formula/wellforge.rb pins version {fm.group(1)} but scripts/wellforge is "
+                    f"{cli_version}")
     # The sha is a placeholder until the tag is pushed and release-cli.sh fills it in. That
     # is a WARNING, not a failure: it is a true statement about an unreleased formula, and
     # failing CI for it would block every unrelated change until someone cuts a release.

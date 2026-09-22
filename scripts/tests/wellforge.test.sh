@@ -697,16 +697,30 @@ else
 fi
 finish
 
-# No longer xfail. The url now names the CLI series and the formula carries an explicit
-# `version`; only the SHA still waits on a pushed tag (GitHub generates the tarball and its
-# bytes are not reproducible locally, so release-cli.sh fetches it after pushing). Pointing
-# at the series does not need the tarball — that conflation is why the formula sat on the
-# template tag v0.9.0 while the CLI shipped four releases in its own series.
-reset_fakes; begin "release: the Formula points at the CLI series, not the template's"
-grep -q 'archive/refs/tags/cli-v' "$ROOT/Formula/wellforge.rb" \
-  || _bad "Formula url still names a non-cli tag: $(grep -o 'refs/tags/[^"]*' "$ROOT/Formula/wellforge.rb")"
-grep -q "^  version \"$const\"\$" "$ROOT/Formula/wellforge.rb" \
-  || _bad "Formula has no 'version \"$const\"' line matching the constant"
+# No longer xfail. The url names the CLI series; only the SHA still waits on a pushed tag
+# (GitHub generates the tarball and its bytes are not reproducible locally, so
+# release-cli.sh fetches it after pushing). Pointing at the series does not need the
+# tarball — that conflation is why the formula sat on the template tag v0.9.0 while the CLI
+# shipped four releases in its own series.
+#
+# THE URL IS THE VERSION. This case used to also require an explicit `version "$const"`
+# line, which is why it turned red: brew derives the version from the url (`brew info`:
+# "derived version: 1.5.1") and `brew audit --strict` — documented step 8 of the release —
+# rejects the explicit line as redundant. So the assertion is on the tag in the url, which
+# is the string brew actually reads and which `test do` asserts against the CLI's output.
+reset_fakes; begin "release: the Formula url names cli-v<the CLI's own version>"
+url_tag=$(grep -o 'archive/refs/tags/[^"]*\.tar\.gz' "$ROOT/Formula/wellforge.rb" \
+          | sed -e 's|archive/refs/tags/||' -e 's|\.tar\.gz$||')
+[ -n "$url_tag" ] || _bad "Formula has no recognisable archive url"
+case "$url_tag" in
+  cli-v*) ;;
+  *) _bad "Formula url names '$url_tag', not a cli-v tag — brew would derive the wrong version" ;;
+esac
+[ "$url_tag" = "cli-v$const" ] \
+  || _bad "Formula url names $url_tag but WELLFORGE_CLI_VERSION is $const"
+# And the redundant line must stay gone, or the next `brew audit --strict` fails.
+! grep -q '^  version "' "$ROOT/Formula/wellforge.rb" \
+  || _bad "Formula carries an explicit version line — brew audit --strict calls it redundant with the url"
 finish
 
 # ── 12. telegram wizard, fully canned ─────────────────────────────────────────
