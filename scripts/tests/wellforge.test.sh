@@ -70,17 +70,35 @@ finish() {
   if [ "$CASE_FAILED" -eq 0 ]; then pass=$((pass + 1)); printf '  ok    %s\n' "$CASE"
   else fail=$((fail + 1)); fi
 }
-_bad() { # <detail>
+_bad() { # <detail…>  — several arguments are joined with spaces, so a diagnosis can be
+         # assembled from parts without building the string at every call site.
   [ "$CASE_FAILED" -eq 0 ] && [ "$EXPECT" != "xfail" ] && printf '  FAIL  %s\n' "$CASE"
   CASE_FAILED=1
-  [ "$EXPECT" != "xfail" ] && printf '          %s\n' "$1"
+  [ "$EXPECT" != "xfail" ] && printf '          %s\n' "$*"
   return 0
 }
 assert_rc()        { [ "$1" = "$2" ] || _bad "expected rc=$2, got rc=$1"; }
 assert_has()       { printf '%s' "$1" | grep -qF -- "$2" || _bad "output is missing: $2"; }
 assert_has_re()    { printf '%s' "$1" | grep -qE -- "$2" || _bad "output does not match /$2/"; }
 assert_lacks()     { printf '%s' "$1" | grep -qF -- "$2" && _bad "output should NOT contain: $2"; return 0; }
-assert_file_has()  { grep -qF -- "$2" "$1" 2>/dev/null || _bad "$1 is missing: $2"; }
+# NOT a one-liner, and the `2>/dev/null` is gone. It used to swallow grep's own diagnosis,
+# so an unreadable path, a missing file, a directory passed as a file and a genuine absence
+# all printed the same four words — "<file> is missing: <text>" — and left you re-running the
+# case by hand to learn which. A file assertion that cannot show the file it read is a dead
+# end. On failure this prints grep's exit status and stderr, whether the path exists and is
+# readable, how many lines it holds, and its tail.
+assert_file_has() { # <file> <literal>
+  local f="$1" pat="$2" err rc
+  err="$(grep -qF -- "$pat" "$f" 2>&1)"; rc=$?
+  [ "$rc" -eq 0 ] && return 0
+  _bad "$f is missing: $pat"
+  [ -n "$err" ] && _bad "    grep(rc=$rc) said: $err"
+  _bad "    file: exists=$([ -e "$f" ] && echo yes || echo no)" \
+       "readable=$([ -r "$f" ] && echo yes || echo no)" \
+       "lines=$(wc -l "$f" 2>/dev/null | awk '{print $1}')"
+  _bad "    tail: $(tail -5 "$f" 2>/dev/null | tr '\n' '|')"
+  return 0
+}
 assert_called()    { grep -qE "^$1( |\$)" "$SHIM_LOG" 2>/dev/null || _bad "expected a call to '$1'"; }
 assert_not_called(){ grep -qE "^$1( |\$)" "$SHIM_LOG" 2>/dev/null && _bad "'$1' should not have been called"; return 0; }
 assert_exists()    { [ -e "$1" ] || _bad "expected to exist: $1"; }
@@ -465,30 +483,103 @@ run_cli() { # <wellforge-home> <args…> ; stdin from $RUN_STDIN (default /dev/n
   # its token loop (read fails, token is empty, `continue`). Without this a single such
   # regression hangs CI until the job limit instead of failing in seconds. `timeout(1)` is
   # not on a bare macOS, so poll a background job.
-  local out_file="$SANDBOX/out.$$"
+  # mktemp, not "out.$$". `$$` is the PID of the SUITE, so it is one constant for the whole
+  # run: every run_cli in a given sandbox wrote to the same path, and any straggler from a
+  # killed case that still held that name could be writing to it. A per-call name costs
+  # nothing and removes the question.
+  local out_file; out_file="$(mktemp "$SANDBOX/out.XXXXXX")"
+  # Both flags are named after THIS call's out_file, so they are unique per run_cli. Keying
+  # them to the sandbox instead meant two calls in one sandbox shared them — and clearing
+  # them at the top of the second call would hand the first call's watchdog, possibly still
+  # inside its sleep, a world with no stand-down signal in it.
+  local dog_flag="$out_file.timed-out" done_flag="$out_file.done"
   env -i "${envs[@]}" bash "${RUN_CLI:-$CLI}" "$@" < "$stdin_file" > "$out_file" 2>&1 &
-  local pid=$! i
-  for i in $(seq 1 "${RUN_TIMEOUT:-30}"); do
-    kill -0 "$pid" 2>/dev/null || break
-    sleep 1
-  done
-  if kill -0 "$pid" 2>/dev/null; then
-    kill -9 "$pid" 2>/dev/null
-    wait "$pid" 2>/dev/null
-    OUT="$(cat "$out_file" 2>/dev/null)"; RC="timeout"
+  local pid=$!
+  # A watchdog, replacing a `kill -0` poll. The poll had two defects. It could only notice
+  # the child had finished once a second, so every case paid up to a second it did not owe.
+  # Worse, `kill -0 $pid` does not answer "is my child alive?", it answers "does SOMETHING
+  # hold that pid?" — once the child is reaped the number is free to be recycled, and a
+  # recycled pid makes the poll wait out the whole budget and then `kill -9` a process that
+  # has nothing to do with this suite. On a busy host that is a real event, and it is
+  # order-dependent, which is exactly the shape of a case that fails only in a full run.
+  #
+  # `wait` returns the moment the child exits, and it guarantees the child is REAPED — so
+  # every byte the CLI wrote to $SHIM_LOG is on disk before any assertion reads it.
+  # The watchdog stands DOWN on a flag rather than being killed. Killing it is the obvious
+  # thing and it is wrong twice: the shell announces the death of a job it started
+  # ("Terminated: 15  sleep ...") straight into this suite's output, and `kill $dog` cannot
+  # reach the `sleep` inside the subshell, which then lingers. Watching for a flag costs one
+  # file and leaves nothing to announce.
+  #
+  # It also closes the pid-reuse hole for good: the watchdog only ever signals while the
+  # child is UNREAPED, so the pid it holds still belongs to that child.
+  ( local_i=0
+    while [ "$local_i" -lt "${RUN_TIMEOUT:-30}" ]; do
+      [ -e "$done_flag" ] && exit 0
+      # …and stand down if the sandbox itself is gone. The suite's EXIT trap removes $SUITE,
+      # which takes the stand-down flag with it; a watchdog still inside its sleep would then
+      # never see the signal, wait out its whole budget and complain into a terminal whose
+      # run finished a minute ago. Observed, not hypothetical.
+      [ -d "$SANDBOX" ] || exit 0
+      sleep 1; local_i=$((local_i + 1))
+    done
+    { [ -e "$done_flag" ] || [ ! -d "$SANDBOX" ]; } && exit 0
+    : > "$dog_flag"
+    # Children first: once the parent is -9'd its children are reparented and no longer
+    # findable by PPID, which is how a hung shim outlived the case that spawned it.
+    pkill -9 -P "$pid" 2>/dev/null
+    kill -9 "$pid" 2>/dev/null ) &
+  wait "$pid"; RC=$?
+  : > "$done_flag"   # stand down
+  OUT="$(cat "$out_file" 2>/dev/null)"
+  if [ -e "$dog_flag" ]; then
+    RC="timeout"
     _bad "timed out after ${RUN_TIMEOUT:-30}s — the CLI did not exit"
-  else
-    wait "$pid"; RC=$?
-    OUT="$(cat "$out_file" 2>/dev/null)"
   fi
-  rm -f "$out_file"
+  # $done_flag is deliberately NOT removed. It is the watchdog's stand-down signal, and the
+  # watchdog may still be inside its `sleep` when this returns; deleting it here put every
+  # watchdog back to sleep, so all of them ran their full budget and fired LONG after their
+  # case had finished — writing into a torn-down sandbox and -9'ing a pid that by then
+  # belonged to something else. It costs one empty file per case and the sandbox takes it
+  # away at the end of the run.
+  rm -f "$out_file" "$dog_flag"   # NOT $done_flag — see above
 }
+
+# Every RUN_* knob run_cli reads, in ONE array for the same reason FAKE_VARS is one array.
+# The hand-written unset list DID drift: RUN_MARKETPLACE was added to run_cli and never added
+# to the list, so a case setting it on a line of its own — the way RUN_REPO and RUN_SHELL are
+# set — would have leaked a contributor's marketplace path into every later case, and the
+# case that broke would be some unrelated one further down the file.
+#
+# (Measured, before assuming the worst: the one existing call site uses the command-prefix
+# form `RUN_MARKETPLACE=… run_cli …`, and bash does not preserve an assignment prefix past a
+# function call — not in 3.2, not in 5.2, not under `--posix`. So nothing leaks TODAY. The
+# list is still wrong, and the next author to write it on its own line inherits the bug.)
+RUN_VARS=(RUN_STDIN RUN_REPO RUN_CLI RUN_TIMEOUT RUN_SHELL RUN_MARKETPLACE)
 
 reset_fakes() {
   local v
   for v in "${FAKE_VARS[@]}"; do unset "$v"; done
-  unset RUN_STDIN RUN_REPO RUN_CLI RUN_TIMEOUT RUN_SHELL
+  for v in "${RUN_VARS[@]}"; do unset "$v"; done
 }
+
+# A list you must remember to update is not a mechanism, so this checks itself: every
+# RUN_*/FAKE_* name mentioned anywhere in this file must appear in its array. Adding a knob
+# to run_cli and forgetting reset_fakes is now a startup failure with the name in it, not a
+# mystery in an unrelated case forty cases later.
+_check_var_lists() {
+  local n missing="" known
+  known=" ${RUN_VARS[*]} ${FAKE_VARS[*]} RUN_VARS FAKE_VARS "
+  for n in $(grep -oE '\b(RUN|FAKE)_[A-Z0-9_]+' "$0" | sort -u); do
+    case "$known" in *" $n "*) ;; *) missing="$missing $n" ;; esac
+  done
+  [ -z "$missing" ] || {
+    echo "harness bug: these are used but not in RUN_VARS/FAKE_VARS, so reset_fakes leaves" >&2
+    echo "them set and they leak into every later case:$missing" >&2
+    exit 1
+  }
+}
+_check_var_lists
 
 ALL_TOOLS=(brew claude gh docker uvx mise uv npx node npm open xdg-open curl uname)
 
@@ -1118,6 +1209,40 @@ reset_fakes; begin "doctor points at the same spelling setup uses"
 new_sandbox brew claude gh docker uvx uv npx node npm open curl mise git
 run_cli "$SANDBOX/nowhere" doctor
 assert_has "$OUT" "claude plugin marketplace add matteocodogno/wellforge"
+finish
+
+# ── harness self-checks ───────────────────────────────────────────────────────
+# These assert on the HARNESS, not on the CLI. They exist because the harness is what broke
+# last time — a case can only be as trustworthy as the thing that runs it, and nothing here
+# was watching that. Both would have failed if the corresponding defect were present.
+
+# If a shim ever wrote to a stale $SHIM_LOG, the symptom would be exactly the one reported:
+# an assertion that cannot find a line the CLI demonstrably wrote, in a full run only,
+# because only a full run has a previous sandbox to leak into.
+reset_fakes; begin "harness: SHIM_LOG follows the CURRENT sandbox, not the previous one"
+new_sandbox brew claude gh docker uvx uv npx node npm open curl mise git
+first_log="$SHIM_LOG"
+run_cli "$SANDBOX/nowhere" setup
+assert_file_has "$first_log" "plugin marketplace add"
+first_lines=$(wc -l < "$first_log" | tr -d ' ')
+
+new_sandbox brew claude gh docker uvx uv npx node npm open curl mise git
+[ "$SHIM_LOG" != "$first_log" ] || _bad "new_sandbox reused the log path $SHIM_LOG"
+[ -s "$SHIM_LOG" ] && _bad "a fresh sandbox's log is not empty: $(cat "$SHIM_LOG")"
+run_cli "$SANDBOX/nowhere" setup
+assert_file_has "$SHIM_LOG" "plugin marketplace add"
+[ "$(wc -l < "$first_log" | tr -d ' ')" = "$first_lines" ] \
+  || _bad "the PREVIOUS sandbox's log grew during this case — a shim is writing to a stale path"
+finish
+
+# reset_fakes's unset list was hand-written and had already drifted once.
+reset_fakes; begin "harness: reset_fakes clears every RUN_* knob"
+_v=""
+for _v in "${RUN_VARS[@]}"; do eval "$_v=leaked"; done
+reset_fakes
+for _v in "${RUN_VARS[@]}"; do
+  [ -z "${!_v+set}" ] || _bad "reset_fakes left $_v set to '${!_v}' — it leaks into every later case"
+done
 finish
 
 printf '\nwellforge CLI: %d passed, %d failed, %d expected-fail' "$pass" "$fail" "$xfail"

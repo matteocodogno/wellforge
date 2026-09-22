@@ -50,11 +50,51 @@ git tag -d <tag>                     # then the local one
 Do not move a tag with `git tag -f` and force-push: anyone who already fetched it keeps the
 old object and no command they run will tell them. Delete, then re-cut.
 
-**This rule exists because it was broken.** `plugin-v2.49.0` and `cli-v1.5.0` were tagged
-from a tree where `post-spec-guard.test.sh` had one failure and the CLI matrix had six.
-Nothing was weakened; the suites were simply not all run, because running them meant
-remembering nine commands in four directories. The repo tells every project it generates
-that a rule enforced by remembering is not enforced — this is that rule applied to itself.
+**This rule exists because it was broken, twice.**
+
+`plugin-v2.49.0` and `cli-v1.5.0` were tagged from a tree where `post-spec-guard.test.sh`
+had one failure and the CLI matrix had six. Nothing was weakened; the suites were simply
+not all run, because running them meant remembering nine commands in four directories. The
+repo tells every project it generates that a rule enforced by remembering is not enforced —
+this is that rule applied to itself.
+
+**`cli-v1.5.1` and `plugin-v2.49.2` were then tagged from a red tree as well**, which is
+worse, because by then `scripts/check-all.sh` existed and was printing `1 check(s) FAILED —
+this tree must not be tagged`. The gate was built and the tag was cut past it. Both tags
+stay where they are: deleting a tag other people may already have fetched trades a recorded
+mistake for an unrecorded one, and this paragraph is the honest version.
+
+What was actually red at those two commits, reproduced on Linux afterwards:
+
+| Case | Cause |
+|---|---|
+| `doctor, 3 commits behind` | the fixture's bare origin took its default branch from the HOST's `init.defaultBranch`; where that is unset (git's own default `master` — CI and a stock Mac) the upstream silently never advanced |
+| `a pull that fails shows git's reason` | same cause |
+| `telegram: env file 600, its directory 700` | the BSD and GNU spellings of `stat` do not fall through to one another: on Linux the BSD form exits 0 with empty stdout, so the assertion compared `""` against `"600"` |
+
+All three were host-dependence in the harness, not defects in the CLI, and all three are
+fixed — the suite now neutralises the global and system git config outright rather than
+pinning one setting at a time.
+
+Two further cases, `setup registers the GIT marketplace, not the local checkout` and
+`WELLFORGE_MARKETPLACE overrides it`, were reported red in a full run on two Linux hosts
+while passing in isolation. **They could not be reproduced here**: 58/58 green on macOS,
+Debian, Ubuntu 24.04, GitHub's runner, under CPU starvation, run twice consecutively, and
+with the two cases moved to the top of the file. Rather than guess at a fix, the harness
+defects that could produce that shape were removed and the next occurrence was made
+self-diagnosing — see the `harness:` self-check cases and `assert_file_has`, which now
+prints grep's own exit status and stderr instead of hiding them behind `2>/dev/null`.
+
+### Why it cannot happen again by remembering
+
+Three layers, none of which is a checklist item:
+
+- `scripts/release-cli.sh` runs `check-all.sh` before it writes anything (`--skip-checks`
+  prints a banner and records the skip in the commit body *and* the tag).
+- `gates/hooks/pre-push` runs it when the push carries a `v*` / `plugin-v*` / `gates-v*` /
+  `cli-v*` tag, so a red tree cannot reach the remote along with its tag.
+- CI's `release-guard` requires every other job green and only exists on tag pushes. It is
+  the copy that skipping the local hooks cannot reach.
 
 ## Why the template and the gates are separate series
 
