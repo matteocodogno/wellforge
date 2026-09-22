@@ -99,8 +99,13 @@ wellforge/
   `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
   the docs. Every other version in this file is history and stays as written. A self-CI workflow
   (`.github/workflows/ci.yml`) lints the repo's own commits + smoke-tests all three presets;
-  it runs on `origin` (`github.com/matteocodogno/wellforge`, public) and has been green on
-  `main` since 2026-08-17.
+  it runs on `origin` (`github.com/matteocodogno/wellforge`, public). It was green on `main`
+  from 2026-08-17 until 2026-09-21, then **red for four consecutive pushes without anyone
+  noticing**, because the only two jobs failing were the two that do not block a branch push:
+  the advisory `formula` job and, briefly, a `cli` job nobody reads on a green-looking PR.
+  `release-guard` reads `needs.formula.result` explicitly, so the next tag would have been
+  the first time either was heard — which is the failure mode this repo exists to prevent.
+  Green again since `9fa14c3` (2026-09-22). **Check the run, do not assume the streak.**
   The four series move independently: a `vX.Y.Z` release does NOT carry a `gates_ref` bump to
   existing projects (recorded answer + `--skip-answered`) — `/wellforge:upgrade` bumps it as
   an explicit, raise-only step. Read `docs/VERSIONING.md` before cutting any release: it

@@ -139,7 +139,17 @@ actually install.
 | shellcheck | `cli` job, ubuntu | every push, `-f gcc` |
 | constant == newest `cli-v*` tag | CLI matrix | needs `fetch-depth: 0` |
 | `brew install --build-from-source` + `brew test` | `formula` job, macos-latest | **non-blocking** (`continue-on-error`) — a macOS runner is billed at 10× and this only needs to be right at release time |
-| `brew audit --strict` | nowhere | needs the repo tapped; step 3 and step 8 above |
+| `brew audit --strict --online` | `formula` job, macos-latest | every push, same job, same caveat |
 
 The formula job being advisory is deliberate: it tells you the package is broken without
 making every unrelated push wait on a 10×-cost runner. Read it before you tag.
+
+**Advisory does not mean unread.** It was red for four pushes in a row and said nothing:
+Homebrew 7 stopped accepting a formula by path (*"Homebrew requires formulae to be in a tap,
+rejecting"*), so `brew install Formula/wellforge.rb` had not run at all. The job now taps the
+checkout at `GITHUB_SHA` and installs by name, which is both what a user does and what lets
+`brew audit` run — it needs a tap, which is why the table used to say "nowhere".
+
+So step 3 and step 8 below are now **confirmations**, not discoveries: if CI is green on the
+commit you are tagging, both have already passed on a macOS runner. Run them anyway at step
+8, because the tap is the copy teammates install.
