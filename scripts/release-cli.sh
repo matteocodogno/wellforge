@@ -150,7 +150,19 @@ read -r confirm
 # post-spec-guard.test.sh failed one. This script printed "3. prove test suite, shellcheck,
 # brew style (before the tag)" as a CHECKLIST LINE — a reminder, which is exactly the kind
 # of enforcement this repo tells other projects not to rely on. It is a precondition now.
-step 1 "running scripts/check-all.sh (every self-test in the repo)"
+# WHEN the gate runs differs by mode, and both placements are forced:
+#
+#   full release   BEFORE the version bump. After it, WELLFORGE_CLI_VERSION names a tag
+#                  that does not exist yet, and check-docs correctly fails on exactly that.
+#   --formula-only AFTER the rewrite (below). Before it, the Formula still carries the
+#                  placeholder sha, which check-docs correctly fails on once the tag is on
+#                  the remote — so the gate would block the one command that clears it.
+#                  Measured: `--formula-only --execute` for cli-v1.5.1 died on its own
+#                  precondition. Running it after the rewrite also checks the better
+#                  thing: the tree that is about to be committed.
+#
+# Either way the gate runs before anything is COMMITTED, which is the property that matters.
+run_gate() {
 if [ "$SKIP_CHECKS" -eq 1 ]; then
   cat <<'BANNER'
 
@@ -170,8 +182,11 @@ else
     || die "self-tests are red — refusing to cut a release. Fix them, or re-run with --skip-checks and expect CI to fail the tag."
   SKIP_NOTE=""
 fi
+}
 
 if [ "$FORMULA_ONLY" -eq 0 ]; then
+step 1 "running scripts/check-all.sh (every self-test in the repo)"
+run_gate
 step 2 "bumping WELLFORGE_CLI_VERSION to $next"
 tmp="$(mktemp)"
 sed "s/^WELLFORGE_CLI_VERSION=\".*\"/WELLFORGE_CLI_VERSION=\"$next\"/" "$CLI" > "$tmp" || die "sed failed"
@@ -251,6 +266,11 @@ if command -v brew >/dev/null 2>&1; then
 fi
 
 git -C "$ROOT" add Formula/wellforge.rb || die "git add failed"
+# The gate, here rather than at the top — see run_gate's comment. The Formula now holds a
+# real sha, so check-docs' placeholder rule is satisfied and this validates the exact tree
+# about to be committed.
+step 1 "running scripts/check-all.sh against the rewritten Formula"
+run_gate
 git -C "$ROOT" commit -qm "chore(cli): formula for $tag" || die "commit failed"
 git -C "$ROOT" push -q origin main || die "push failed — the formula commit is local"
 
