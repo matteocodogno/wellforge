@@ -20,6 +20,17 @@ on:
       - 'cli-v[0-9]*'
   pull_request:
 
+  # Manual runs exist for one reason: release-guard is the check that only ever fires on a
+  # tag, which makes it the check nobody can test without minting a public tag. This input
+  # lets it run against a branch so a change to the guard can be proven before it is relied
+  # on. It only ever ADDS a check run; nothing here can make the guard laxer.
+  workflow_dispatch:
+    inputs:
+      simulate_release_tag:
+        description: 'Run release-guard as if this ref were a release tag (proof of the guard)'
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
@@ -799,17 +810,30 @@ jobs:
         run: specs/001-terse-mode/fixtures/run-all.sh
 
   # ── the release guard ───────────────────────────────────────────────────────────────
-  # plugin-v2.49.0 and cli-v1.5.0 were tagged from a tree with seven failing cases across
-  # two suites. The local defences (scripts/check-all.sh, the pre-push hook) are both
-  # bypassable — `git push --no-verify` is one flag away — so this is the copy that is not.
+  # plugin-v2.49.0 / cli-v1.5.0 and then cli-v1.5.1 / plugin-v2.49.2 were all tagged from a
+  # red tree. The local defences (scripts/check-all.sh, gates/hooks/pre-push) are both one
+  # flag away from being skipped, so this is the copy that is not.
   #
-  # It does no work of its own: it requires every other job, and it only exists on tag
-  # pushes. If it is red, the tag is wrong. docs/VERSIONING.md says what to do then, and it
-  # is not "leave it": a tag is deleted and re-cut, because people install tags and a
-  # mutable one is worse than a missing one.
+  # It does no work of its own: it requires every other job and only exists on a release
+  # tag. If it is red, the tag is wrong — and docs/VERSIONING.md says what to do then, which
+  # is not "leave it".
   release-guard:
     name: release guard (every job green on a release tag)
-    if: startsWith(github.ref, 'refs/tags/')
+    # `always()` is the whole point, and its absence was the bug. Without it a job that
+    # FAILS does not satisfy `needs:`, so this job is SKIPPED — and a skipped job is not a
+    # red one. A skipped required check satisfies branch protection under the default
+    # settings, so the guard that exists to stop a red tag said nothing at all on exactly
+    # the run it was built for. Measured on a throwaway branch carrying one deliberately
+    # failing assertion: without always() the guard SKIPPED while `cli` was red; with it,
+    # the guard FAILS. Run URLs in docs/VERSIONING.md.
+    #
+    # `always()` means `needs:` no longer gates anything, so the step below must read every
+    # result itself. That is not a duplicate of `needs:` — it is now the only check.
+    if: >-
+      always() && (
+        startsWith(github.ref, 'refs/tags/')
+        || (github.event_name == 'workflow_dispatch' && inputs.simulate_release_tag)
+      )
     runs-on: ubuntu-latest
     needs:
       - adapter-smoke
@@ -829,24 +853,62 @@ jobs:
       - terse-mode-fixtures
       - worktree-isolation
     steps:
-      - name: Confirm
+      - name: Every job must be green
         env:
-          # `formula` is continue-on-error: on an ordinary push a 10x macOS runner must not
-          # hold up unrelated work. `needs:` is therefore satisfied even when it FAILED, so
-          # depending on it alone would have left the guard green while the Homebrew package
-          # was broken — the one job a `cli-v*` tag most needs. Read its result explicitly.
-          FORMULA_RESULT: ${{ needs.formula.result }}
+          # The whole needs context as JSON: {"cli":{"result":"failure",...},...}. Read as
+          # data so that adding a job to `needs:` above is all it takes — there is no second
+          # list here to forget, which is a mistake this repo has already made once.
+          NEEDS: ${{ toJSON(needs) }}
+          # Jobs allowed to be SKIPPED, by name, space separated. Empty, deliberately: no job
+          # in this workflow carries an `if:`, so on a tag push every one of them runs, and a
+          # skipped job means a dependency chain broke — a failure, not a pass. `formula` is
+          # NOT optional: it is continue-on-error so a 10x macOS runner cannot hold up an
+          # ordinary push, which is exactly why `needs:` reports it as satisfied when it
+          # failed. Read as data below, its real result is what counts.
+          OPTIONAL_JOBS: ''
+          SIMULATED: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           set -euo pipefail
-          tag="${{ github.ref_name }}"
-          echo "$tag" | grep -qE '^(v|plugin-v|gates-v|cli-v)[0-9]' || {
-            echo "::error::$tag does not match any documented series (docs/VERSIONING.md)"
-            exit 1
-          }
-          # Advisory everywhere else, blocking here.
-          if [ "$FORMULA_RESULT" != "success" ]; then
-            echo "::error::the formula job is ${FORMULA_RESULT} — it is advisory on a branch"
-            echo "::error::push but BLOCKING on a release tag. Delete $tag, fix, re-cut."
+
+          if [ "$SIMULATED" = "true" ]; then
+            echo "::notice::simulated release tag (workflow_dispatch) — proving the guard"
+          else
+            tag="${{ github.ref_name }}"
+            echo "$tag" | grep -qE '^(v|plugin-v|gates-v|cli-v)[0-9]' || {
+              echo "::error::$tag does not match any documented series (docs/VERSIONING.md)"
+              exit 1
+            }
+          fi
+
+          # A guard that silently checks nothing is worse than no guard: an empty or
+          # truncated needs context is a failure, not a clean sweep.
+          count=$(printf '%s' "$NEEDS" | jq -r 'length')
+          if [ "${count:-0}" -lt 16 ]; then
+            echo "::error::the needs context held ${count:-0} jobs, expected at least 16 —"
+            echo "::error::release-guard cannot confirm a tag it cannot see the jobs for"
             exit 1
           fi
-          echo "::notice::every CI job is green for ${tag} — this tag is safe to install from"
+
+          bad=0
+          # Process substitution, not a pipe: a pipe runs the loop in a subshell and `bad`
+          # would be discarded, leaving the guard green with failures printed above it.
+          while read -r job result; do
+            [ -n "$job" ] || continue
+            case " $OPTIONAL_JOBS " in
+              *" $job "*) printf '  %-22s %-9s (optional)\n' "$job" "$result"; continue ;;
+            esac
+            if [ "$result" = "success" ]; then
+              printf '  %-22s %s\n' "$job" "$result"
+            else
+              printf '  %-22s %s  <== NOT GREEN\n' "$job" "$result"
+              echo "::error::job '$job' is '$result' — a release tag requires every job green"
+              bad=1
+            fi
+          done < <(printf '%s' "$NEEDS" | jq -r 'to_entries[] | "\(.key) \(.value.result)"')
+
+          [ "$bad" -eq 0 ] || {
+            echo "::error::this ref is NOT safe to tag. docs/VERSIONING.md: delete the remote"
+            echo "::error::tag, then the local one, fix, and re-cut it."
+            exit 1
+          }
+          echo "::notice::all $count jobs green — this ref is safe to tag and install from"

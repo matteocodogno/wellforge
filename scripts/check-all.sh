@@ -111,7 +111,11 @@ fi
 
 # ── 3. python suites (plugin + gates) ───────────────────────────────────────────────
 printf '\n%spython suites%s\n' "$BOLD" "$RST"
-py_tests=(wellforge-plugin/scripts/tests/*.test.py gates/scripts/tests/*.test.py)
+# scripts/tests/ is in the list because release-guard.test.py lives there: the CI job that
+# only fires on a tag, and therefore the one job no ordinary run ever exercises. Leaving it
+# out of the glob would have been the same gap as the adapter smoke tests below.
+py_tests=(wellforge-plugin/scripts/tests/*.test.py gates/scripts/tests/*.test.py
+          scripts/tests/*.test.py)
 if [ ${#py_tests[@]} -eq 0 ]; then
   skip "python suites" "none found — did the layout move?"
   FAILED=$((FAILED + 1))
