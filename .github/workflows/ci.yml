@@ -639,6 +639,12 @@ jobs:
       # run-eval never clamped a score, so a judge answering 9 on every 1-5 dimension printed
       # `TOTAL 180.0/100 ... PASS`.
       - run: uv run --with pyyaml python gates/scripts/tests/gates.test.py
+      # release-guard is the only job in this file that fires on a tag and nowhere else, so
+      # it is the only job no ordinary run exercises — which is how it shipped without
+      # `always()`, skipping instead of failing, for its whole life. This suite extracts its
+      # step script from ci.yml and runs it against synthetic `needs` payloads, so the guard
+      # is proven on every push rather than by cutting a tag and hoping.
+      - run: uv run --with pyyaml python scripts/tests/release-guard.test.py
 
   # Adapter outputs. Both generators print a healthy summary whether or not what they wrote
   # is usable — they count files, and every failure in this class is invisible in a count:

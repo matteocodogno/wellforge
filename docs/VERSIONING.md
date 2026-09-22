@@ -92,9 +92,62 @@ Three layers, none of which is a checklist item:
 - `scripts/release-cli.sh` runs `check-all.sh` before it writes anything (`--skip-checks`
   prints a banner and records the skip in the commit body *and* the tag).
 - `gates/hooks/pre-push` runs it when the push carries a `v*` / `plugin-v*` / `gates-v*` /
-  `cli-v*` tag, so a red tree cannot reach the remote along with its tag.
+  `cli-v*` tag, so a red tree cannot reach the remote along with its tag. **Proven**: with
+  one deliberately failing assertion in the CLI matrix, `git push <remote> refs/tags/
+  cli-v0.0.0-guardtest` printed `2 check(s) FAILED — this tree must not be tagged` and
+  `PUSH REFUSED`, and the tag did not leave the machine.
 - CI's `release-guard` requires every other job green and only exists on tag pushes. It is
   the copy that skipping the local hooks cannot reach.
+
+### `release-guard` did not work, and here is the proof that it does now
+
+It had no `if: always()`. A job that **fails** does not satisfy `needs:`, so `release-guard`
+was **skipped**, not failed — and a skipped required check satisfies branch protection under
+the default settings. The guard built to stop a red tag was silent on precisely the run it
+existed for. The job's own comment had the mechanism backwards: `needs:` is satisfied by a
+failed job only when that job is `continue-on-error`, which is why `formula` was the single
+result read back explicitly.
+
+Proven end to end on a throwaway branch (`guard-proof`, since deleted) carrying one
+deliberately failing assertion in `scripts/tests/wellforge.test.sh`. The only difference
+between the two runs is `ci.yml`:
+
+| | `cli` job | `release-guard` | Run |
+|---|---|---|---|
+| **Before** — no `always()` | failure | **skipped** | [35739924614](https://github.com/matteocodogno/wellforge/actions/runs/35739924614) |
+| **After** — `always()` + every result read | failure | **failure** | [35740358933](https://github.com/matteocodogno/wellforge/actions/runs/35740358933) |
+
+Both runs were started with `workflow_dispatch` and its `simulate_release_tag` input, which
+exists so the guard can be exercised without minting a public tag. It only ever *adds* a
+check run: a simulated run still fails on a red job.
+
+`scripts/tests/release-guard.test.py` keeps it honest from then on. It extracts the step
+script from `ci.yml` rather than restating it, and asserts that a failed, skipped or
+cancelled job fails the guard, that a failed `continue-on-error` job does too, that an empty
+or truncated `needs` context fails rather than reading as a clean sweep, and that the job
+still carries `always()` and still lists every other job under `needs:`.
+
+### Branch protection: require `release-guard` and nothing else
+
+For tag protection, **`release-guard` is the single required status check**. The individual
+jobs do **not** need to be required separately:
+
+- It lists every other job under `needs:` and reads each one's `result` back by name, so
+  requiring it requires all of them transitively.
+- It treats `skipped` and `cancelled` as failures, not just `failure`, so a job that never
+  ran cannot pass for one that passed.
+- It fails if the `needs` context arrives empty or short, so it cannot quietly check nothing.
+- It reads `continue-on-error` jobs' real results, which `needs:` alone reports as satisfied.
+
+Requiring the individual jobs as well is not harmful, but it is a second list to keep in
+sync with `needs:` — and a list that must be remembered is the thing this document exists to
+argue against. Add a job to `needs:` and `release-guard` covers it; `release-guard.test.py`
+fails if you forget.
+
+One property to keep in mind when configuring it: `release-guard` only runs on tag pushes
+(and manual simulated runs). On an ordinary branch push it does not appear at all, so it
+belongs in **tag** protection, not in a rule that would block every branch push waiting for
+a check that will never report.
 
 ## Why the template and the gates are separate series
 
