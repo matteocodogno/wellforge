@@ -1,0 +1,39 @@
+{
+  "schema": "wellforge-run/v3",
+  "feature": "003-order-history",
+  "rigor_recorded": "production",
+  "agents": [
+    {
+      "agent": "backend-dev",
+      "tasks": [
+        "T1"
+      ],
+      "outcome": "completed",
+      "commits": [
+        "aaaaaaa"
+      ]
+    },
+    {
+      "agent": "frontend-dev",
+      "tasks": [
+        "T2"
+      ],
+      "outcome": "completed",
+      "commits": [
+        "bbbbbbb"
+      ]
+    },
+    {
+      "agent": "quality-engineer",
+      "tasks": [
+        "T3"
+      ],
+      "outcome": "PASS"
+    }
+  ],
+  "verdicts": {
+    "qe": "PASS"
+  },
+  "started": "2026-09-23T09:00:00Z",
+  "finished": "2026-09-23T11:00:00Z"
+}

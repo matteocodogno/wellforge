@@ -39,6 +39,12 @@ claude --version && mise --version && uvx copier --version && gh auth status && 
 
 ## 2. Get the WellForge repo
 
+> **Contributing rather than just installing?** [CONTRIBUTING.md](../CONTRIBUTING.md) is the
+> guide for people working *on* WellForge: run `./scripts/setup-git-policy.sh` once per clone
+> and `mise run check` before every push. [SECURITY.md](../SECURITY.md) carries the threat
+> model for the plugin you are about to enable on your own machine — worth reading once
+> before step 3.
+
 ```bash
 git clone https://github.com/matteocodogno/wellforge.git ~/.ai/wellforge
 ```

@@ -21,3 +21,7 @@ __pycache__/
 # the human-readable verdicts already live in specs/NNN-slug/eval-report.md. The traces stay
 # on disk, so /wellforge:status and run-report.py keep working locally.
 .forge/runs/
+
+# Eval runs write scores, traces and an HTML report here. That is per-run OUTPUT, not
+# source: the cases and the fixture project are versioned, what a given run scored is not.
+wellforge-plugin/evals/results/

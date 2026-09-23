@@ -26,12 +26,15 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 1
 
 PRESET=""
-QUICK=0
+QUICK=0; WITH_EVALS=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --preset) PRESET="${2:-}"; shift 2 ;;
     --preset=*) PRESET="${1#*=}"; shift ;;
     --quick) QUICK=1; shift ;;
+    # OFF by default and that is the point: each case is N full agent runs against the API.
+    # The default sweep must stay free, or people stop running it.
+    --with-evals) WITH_EVALS=1; shift ;;
     -h|--help)
       sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
       exit 0 ;;
@@ -163,6 +166,26 @@ if [ -x scripts/tests/wellforge.test.sh ]; then
 else
   skip "wellforge.test.sh" "not executable"
   FAILED=$((FAILED + 1))
+fi
+
+# ── 4b. prompt-layer evals (opt-in: they cost tokens) ───────────────────────────────
+# Every script and hook in this repo has a matrix; commands/ and agents/ — most of what the
+# plugin actually IS — had none, because a prompt cannot be asserted with grep. These are
+# behavioural: a real Claude runs the command against a frozen fixture project and graders
+# score what it did.
+printf '\n%sprompt evals%s\n' "$BOLD" "$RST"
+if [ "$WITH_EVALS" -eq 0 ]; then
+  skip "prompt evals" "off by default (they call the API and cost money) — pass --with-evals"
+elif ! have claude; then
+  skip "prompt evals" "the claude CLI is not on PATH"
+else
+  # --scaffold: each case copies the fixture project into its run dir, which is the only way
+  #   a case gets a project to act on (runs start in an empty directory).
+  # --trust-plugin: answers the first-run trust prompt, which has no answer in CI.
+  # --threshold 0.8: an LLM judge is not a unit test. Demanding 1.0 from three judge votes
+  #   per grader buys a flaky suite that people learn to ignore, which is worse than no suite.
+  run "prompt evals" claude plugin eval ./wellforge-plugin \
+    --scaffold --trust-plugin --no-publish --threshold 0.8
 fi
 
 # ── 5. shellcheck — the SAME file set AND severity ci.yml uses ──────────────────────

@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: status-rows
+tags: [wellforge]
+context:
+  scaffold_script: scaffold.sh

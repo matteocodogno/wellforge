@@ -17,6 +17,15 @@ Gates are the deterministic half of verification (the LM-judge eval is the other
 code passes**: thresholds live centrally, in the gate workflows' `env` blocks under
 `gates/`, and change only by PR to that directory.
 
+The gates are also not the whole security story. What they cover, what the security floor
+blocks at every tier, and — more usefully — what is **not** covered (there is no content
+sanitisation, so an agent asked to implement a file will follow instructions found inside it)
+is written down in [SECURITY.md](https://github.com/matteocodogno/wellforge/blob/main/SECURITY.md)
+— an absolute link on purpose: this skill is also generated into the Copilot and
+OpenCode adapters, where the repo root is not above it and a relative path dangles.
+Read it before telling anyone the
+gates make a repository safe to point agents at.
+
 ## The catalogue
 
 | Gate | What it runs |

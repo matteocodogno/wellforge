@@ -168,8 +168,16 @@ four independent series that move
 independently, see [versioning](docs/VERSIONING.md).
 Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/plans/PLAN.md).
 
-Built for any team. **[MIT licensed](LICENSE).** Contributions: PRs to `templates/` and gate
-thresholds — that review is the single discretion point of the quality system.
+Built for any team. **[MIT licensed](LICENSE).**
+
+**Contributing:** start with [CONTRIBUTING.md](CONTRIBUTING.md) — setup, where each kind of
+change goes, which of the four tag series it bumps, and what a PR must show. PRs to
+`templates/` and gate thresholds are especially welcome: that review is the single discretion
+point of the quality system.
+
+**Security:** [SECURITY.md](SECURITY.md) — how to report a vulnerability privately, and the
+threat model for the plugin as installed on a developer's machine (what the hooks run, what
+the MCP servers are, and what the plugin does and does not do about prompt injection).
 
 ```
        ___________

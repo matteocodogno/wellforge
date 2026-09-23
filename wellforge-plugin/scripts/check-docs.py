@@ -358,6 +358,48 @@ if cli_version:
     except Exception:  # noqa: BLE001
         pass
 
+# ── every npx-launched MCP server must name an EXACT version ────────────────────────
+# `npx -y pkg@latest` (or with no version at all) resolves at launch, on the developer's
+# machine, with network access and whatever the registry serves that minute. That is an
+# unreviewed dependency running inside the session: a compromised or merely broken release
+# reaches every teammate the moment it is published, and nothing in this repo records what
+# they actually ran. The pin does not make the package trustworthy — it makes the version
+# a reviewable fact and a bump an ordinary plugin patch release, which is what SECURITY.md
+# promises.
+#
+# context-hub was already pinned (@0.1.4), so the pattern was known and the other two were
+# simply missed. This is the check that notices.
+_mcp = os.path.join(ROOT, "wellforge-plugin", ".mcp.json")
+if os.path.exists(_mcp):
+    try:
+        with open(_mcp) as _f:
+            _servers = json.load(_f).get("mcpServers", {})
+    except (OSError, ValueError) as e:
+        fail.append(f"wellforge-plugin/.mcp.json could not be read as JSON: {e}")
+        _servers = {}
+    for _name, _cfg in sorted(_servers.items()):
+        if _cfg.get("command") != "npx":
+            continue                      # http servers carry no version to pin
+        _args = _cfg.get("args", [])
+        # The package spec is the last argument that is not a flag and not the bare binary
+        # name that follows `--package`. Handle both shapes actually in use:
+        #   ["-y", "pkg@1.2.3"]                     and
+        #   ["-y", "--package", "pkg@1.2.3", "bin"]
+        if "--package" in _args:
+            _i = _args.index("--package")
+            _spec = _args[_i + 1] if _i + 1 < len(_args) else ""
+        else:
+            _spec = next((a for a in reversed(_args) if not a.startswith("-")), "")
+        _at = _spec.rfind("@")
+        _ver = _spec[_at + 1:] if _at > 0 else ""    # > 0 so a leading @scope is not the sep
+        if not _ver:
+            fail.append(f".mcp.json server '{_name}' runs `npx {_spec}` with NO version — it "
+                        f"resolves at launch to whatever the registry serves. Pin it to an "
+                        f"exact version (see SECURITY.md, 'MCP servers').")
+        elif _ver in ("latest", "next", "beta", "canary") or not _ver[0].isdigit():
+            fail.append(f".mcp.json server '{_name}' is pinned to '{_ver}', which is a moving "
+                        f"tag, not a version. Pin an exact version (see SECURITY.md).")
+
 # ── no document may claim a version that does not exist yet ─────────────────────────
 # The brief for this check asked that EVERY plugin version mention equal plugin.json. It
 # cannot: CLAUDE.md legitimately cites plugin 2.26.0 and 2.27.0 as the releases that shipped

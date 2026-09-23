@@ -186,12 +186,26 @@ something a guard once got wrong — add yours there rather than only widening a
 
 ## MCP servers
 
-| Server | Transport | Auth |
-|---|---|---|
-| `sequential-thinking` | stdio | none |
-| `playwright` | stdio | none |
-| `github` | HTTP | OAuth via `/mcp` on first use |
-| `context-hub` | stdio | none |
+| Server | Transport | Auth | Pinned version |
+|---|---|---|---|
+| `sequential-thinking` | stdio | none | `@modelcontextprotocol/server-sequential-thinking@2026.8.31` |
+| `playwright` | stdio | none | `@playwright/mcp@0.0.82` |
+| `github` | HTTP | OAuth via `/mcp` on first use | n/a (hosted) |
+| `context-hub` | stdio | none | `@aisuite/chub@0.1.4` |
+
+**Versions checked against the npm registry on 2026-09-23** (`npm view <pkg> version`). This
+table is the record because `.mcp.json` is JSON and cannot carry a comment.
+
+Every stdio server is launched with `npx`, and every one of them names an **exact version**.
+`@latest` — which `playwright` and `sequential-thinking` used to carry — resolves on the
+developer's machine, at launch, to whatever the registry serves that minute: an unreviewed
+dependency running inside the session, where a bad release reaches every teammate the moment
+it is published and nothing records what they actually ran. `context-hub` was already pinned,
+so the pattern was established and the other two were simply missed; `check-docs.py` now
+fails if any npx server carries a moving tag or no version at all. See SECURITY.md.
+
+**Bumping a pin is a plugin PATCH release** (`plugin-vX.Y.Z`), not a silent edit — the
+version people run is part of what the plugin is.
 
 `telegram` is managed by `telegram@claude-plugins-official` — install separately via `/plugin`.
 

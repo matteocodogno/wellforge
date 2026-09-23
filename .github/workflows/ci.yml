@@ -815,6 +815,48 @@ jobs:
       - name: Run terse-mode fixture regression suite
         run: specs/001-terse-mode/fixtures/run-all.sh
 
+  # Prompt-layer evals. Behavioural tests for commands/ and agents/ — the half of the plugin
+  # that no grep can assert. They call the Anthropic API, so they cost money and need a key.
+  #
+  # NON-BLOCKING, and deliberately not in release-guard's `needs:` yet: an LLM judge is a
+  # noisy instrument, and a gate that fails for reasons nobody can reproduce teaches people
+  # to ignore gates. Watch the scores first; promote it to required once it has earned it.
+  # Until then it reports, and a human reads it.
+  plugin-evals:
+    name: prompt evals (commands + agents, advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Claude Code
+        run: npm i -g @anthropic-ai/claude-code
+      - name: Run the eval suite
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "::notice::ANTHROPIC_API_KEY is not set — prompt evals skipped."
+            echo "::notice::Add the secret to run them; see wellforge-plugin/evals/README.md"
+            exit 0
+          fi
+          claude plugin eval ./wellforge-plugin \
+            --scaffold --trust-plugin --no-publish \
+            --threshold 0.8 --json evals-result.json
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prompt-evals
+          path: |
+            evals-result.json
+            wellforge-plugin/evals/results/
+          if-no-files-found: ignore
+
   # ── the release guard ───────────────────────────────────────────────────────────────
   # plugin-v2.49.0 / cli-v1.5.0 and then cli-v1.5.1 / plugin-v2.49.2 were all tagged from a
   # red tree. The local defences (scripts/check-all.sh, gates/hooks/pre-push) are both one

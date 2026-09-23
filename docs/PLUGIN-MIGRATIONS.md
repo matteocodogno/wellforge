@@ -26,6 +26,26 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.50.0 — MCP servers are pinned to exact versions
+
+`wellforge-plugin/.mcp.json` launched `@playwright/mcp@latest` and
+`@modelcontextprotocol/server-sequential-thinking` (no version at all) through `npx`. Both
+now name an exact version, checked against the npm registry on 2026-09-23:
+
+| Server | Was | Now |
+|---|---|---|
+| `playwright` | `@playwright/mcp@latest` | `@playwright/mcp@0.0.82` |
+| `sequential-thinking` | `@modelcontextprotocol/server-sequential-thinking` | `…@2026.8.31` |
+
+**Nothing to do on upgrade.** `npx` fetches the pinned version on next use; no session
+config changes and no project file is touched. If you had one of these cached at a newer
+version, npx will fetch the pinned one instead — that is the point.
+
+`check-docs.py` now fails CI if any npx-launched server in `.mcp.json` carries a moving tag
+(`@latest`, `@next`, …) or no version. Bumping a pin is a plugin patch release; see
+SECURITY.md for why the pin exists and CONTRIBUTING.md for how to bump one.
+
+
 ## 2.47.0 — the security review now actually runs where the gate demands it
 
 **Action: none automatic. Expect more reviews to be dispatched, and one previously

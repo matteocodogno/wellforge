@@ -1,0 +1,15 @@
+{
+  "template": "hono-react",
+  "version": "0.11.0",
+  "gates_ref": "gates-v14",
+  "plugin": {
+    "name": "wellforge",
+    "version": "2.50.0"
+  },
+  "rigor": "production",
+  "answers": {
+    "preset": "hono-react",
+    "project_name": "fixture",
+    "rigor": "production"
+  }
+}

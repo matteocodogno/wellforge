@@ -3,12 +3,18 @@
     "sequential-thinking": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking@2026.8.31"
+      ]
     },
     "playwright": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.82"
+      ]
     },
     "github": {
       "type": "http",
@@ -17,7 +23,12 @@
     "context-hub": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "--package", "@aisuite/chub@0.1.4", "chub-mcp"]
+      "args": [
+        "-y",
+        "--package",
+        "@aisuite/chub@0.1.4",
+        "chub-mcp"
+      ]
     }
   }
 }

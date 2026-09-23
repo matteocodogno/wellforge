@@ -86,14 +86,31 @@ else:
          "release-guard has no always() — a red dependency will SKIP it, and a skipped "
          "required check reads as green")
 
-# always() means `needs:` gates nothing, so every job must be read back by name.
-if len(NEEDS_LIST) == len(wf["jobs"]) - 1:
-    _ok(f"needs: lists every other job ({len(NEEDS_LIST)})")
+# Jobs a release tag deliberately does NOT require. Every name here is a decision someone
+# made on purpose, and writing it down is the point: an omission from `needs:` then reads as
+# a mistake rather than as "probably intentional".
+#
+#   plugin-evals — the prompt-layer eval suite. It is an LLM judge, which is a noisy
+#   instrument, and it costs money per run. A gate that fails for reasons nobody can
+#   reproduce teaches people to ignore gates, so it reports and a human reads it. Promote it
+#   into `needs:` (and delete this line) once its scores have been stable for a while.
+NOT_REQUIRED = {"plugin-evals"}
+
+expected = set(wf["jobs"]) - {"release-guard"} - NOT_REQUIRED
+missing = sorted(expected - set(NEEDS_LIST))
+unexpected = sorted(set(NEEDS_LIST) - expected - NOT_REQUIRED)
+if not missing and not unexpected:
+    _ok(f"needs: lists every job a tag requires ({len(NEEDS_LIST)}; "
+        f"{len(NOT_REQUIRED)} deliberately excluded)")
 else:
-    missing = sorted(set(wf["jobs"]) - {"release-guard"} - set(NEEDS_LIST))
-    _bad("needs: lists every other job",
-         f"not in release-guard's needs: {missing} — the guard cannot require a job it "
-         f"does not depend on")
+    detail = []
+    if missing:
+        detail.append(f"not in release-guard's needs: {missing} — the guard cannot require "
+                      f"a job it does not depend on. If that is deliberate, add it to "
+                      f"NOT_REQUIRED here with the reason.")
+    if unexpected:
+        detail.append(f"in needs: but not a job in the workflow: {unexpected}")
+    _bad("needs: lists every job a tag requires", " ".join(detail))
 
 # ── the script's logic ────────────────────────────────────────────────────────
 run("all green on a release tag", needs(), want_fail=False)
