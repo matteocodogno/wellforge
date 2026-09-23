@@ -262,6 +262,13 @@ if cli_version and os.path.exists(_formula_path):
     # The sha is a placeholder until the tag is pushed and release-cli.sh fills it in. That
     # is a WARNING, not a failure: it is a true statement about an unreleased formula, and
     # failing CI for it would block every unrelated change until someone cuts a release.
+    # Needed by both branches below (placeholder and mismatch), so it is defined before
+    # either. It used to live inside the placeholder branch, and the mismatch branch's
+    # reference to it raised NameError — which the broad `except Exception` below then
+    # reported as "offline or unreachable". A check that reassures you when its own code is
+    # broken is worse than no check; that is the exact failure this rule exists to catch,
+    # committed by the rule itself.
+    fix = f"scripts/release-cli.sh {cli_version} --formula-only --execute"
     if re.search(r'sha256 "0{64}"', ftext):
         # WARN while the tag is unpushed — an unreleased formula is a true state and must
         # not block unrelated work. FAIL once the tag EXISTS on the remote, because from
@@ -277,7 +284,6 @@ if cli_version and os.path.exists(_formula_path):
             reachable = (r.returncode == 0)
         except Exception:  # noqa: BLE001
             on_remote, reachable = False, False
-        fix = (f"scripts/release-cli.sh {cli_version} --formula-only --execute")
         if on_remote:
             fail.append(f"Formula/wellforge.rb still carries a placeholder sha256 although "
                         f"{tag} is on the remote — run: {fix}")
@@ -289,6 +295,55 @@ if cli_version and os.path.exists(_formula_path):
             print(f"⚠ Formula/wellforge.rb carries a placeholder sha256 — {tag} is not pushed "
                   f"yet, so there is no tarball to hash. After pushing it, run: {fix}",
                   file=sys.stderr)
+    else:
+        # ── the third state: a sha that is PRESENT is not the same as a sha that is RIGHT ──
+        # A wrong hash is worse than a placeholder. A placeholder announces itself — brew
+        # refuses it loudly and this script says so. A plausible-looking wrong one passes
+        # every check that only looks at the file, and fails later on someone else's
+        # machine as "SHA256 mismatch", which reads like a corrupted download or a
+        # compromised tarball rather than a release cut wrong. The only way to tell the two
+        # apart is to fetch the tarball the url actually names and hash it.
+        #
+        # Verified with urllib + hashlib rather than `curl … | shasum -a 256`: same bytes,
+        # same digest, but no dependency on which of curl/wget and shasum/sha256sum this
+        # machine has, and a pipeline's exit status hides a failed download behind a
+        # perfectly good hash of an error page.
+        #
+        # FAIL only on a definite mismatch. Anything that merely prevents the check —
+        # offline, proxied, rate-limited, tag not pushed — is a WARNING: it is a statement
+        # about the network, not about the formula, and must not fail an unrelated change.
+        sm = re.search(r'sha256 "([0-9a-f]{64})"', ftext)
+        um2 = re.search(r'url "(https://[^"]+\.tar\.gz)"', ftext)
+        if os.environ.get("WELLFORGE_SKIP_SHA_VERIFY"):
+            print("⚠ Formula sha256 not verified against the tarball "
+                  "(WELLFORGE_SKIP_SHA_VERIFY is set)", file=sys.stderr)
+        elif sm and um2:
+            import hashlib
+            import urllib.error
+            import urllib.request
+            declared, url = sm.group(1), um2.group(1)
+            try:
+                h = hashlib.sha256()
+                with urllib.request.urlopen(url, timeout=60) as resp:
+                    for chunk in iter(lambda: resp.read(1 << 16), b""):
+                        h.update(chunk)
+                actual = h.hexdigest()
+                if actual != declared:
+                    fail.append(
+                        f"Formula/wellforge.rb's sha256 does not match the tarball it names.\n"
+                        f"    url       {url}\n"
+                        f"    declared  {declared}\n"
+                        f"    actual    {actual}\n"
+                        f"    Every `brew install` from this tap fails with a checksum "
+                        f"mismatch. Re-cut it: {fix}")
+            # NARROW, deliberately. These are the errors that mean "the network did not
+            # cooperate"; anything else is a bug in this file and must crash loudly rather
+            # than print a calm warning and exit 0.
+            except (urllib.error.URLError, OSError, TimeoutError, ValueError) as e:
+                print(f"⚠ could not verify Formula/wellforge.rb's sha256 against {url} "
+                      f"(offline or unreachable: {type(e).__name__}) — the hash is present "
+                      f"and well-formed, but nothing here has confirmed it is the right one",
+                      file=sys.stderr)
 
 # Tag agreement, only when tags are actually present — a shallow CI checkout has none, and
 # "no tags" must not read as "the tags disagree".

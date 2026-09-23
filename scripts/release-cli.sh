@@ -33,6 +33,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CLI="$ROOT/scripts/wellforge"
 FORMULA="$ROOT/Formula/wellforge.rb"
 REMOTE_URL="https://github.com/matteocodogno/wellforge"
+TAP_NAME="matteocodogno/wellforge"
 
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*"; }
@@ -276,21 +277,49 @@ git -C "$ROOT" add Formula/wellforge.rb || die "git add failed"
 # about to be committed.
 step 1 "running scripts/check-all.sh against the rewritten Formula"
 run_gate
-git -C "$ROOT" commit -qm "chore(cli): formula for $tag" || die "commit failed"
-git -C "$ROOT" push -q origin main || die "push failed — the formula commit is local"
+# Idempotent, deliberately. `--formula-only` is the documented RECOVERY path — you reach
+# for it when you are not sure the formula ever got its sha — so running it against a
+# formula that is already correct must be a no-op with a clear message, not a failure.
+# `git commit` exits 1 when nothing is staged, so the old unconditional `|| die "commit
+# failed"` turned "there was nothing to do" into "the release broke", which is the most
+# expensive possible answer to a question asked out of caution.
+if git -C "$ROOT" diff --cached --quiet -- Formula/wellforge.rb; then
+  say "  the Formula already names $tag with this exact sha — nothing to commit"
+  say "  (re-running --formula-only is safe; this is the no-op path)"
+else
+  git -C "$ROOT" commit -qm "chore(cli): formula for $tag" || die "commit failed"
+  git -C "$ROOT" push -q origin main || die "push failed — the formula commit is local"
+fi
 
 step 7 "smoke the PACKAGE, not just the script"
+# Homebrew 7 REFUSES a formula given by path — "Homebrew requires formulae to be in a tap,
+# rejecting" — so `brew install --build-from-source "$FORMULA"` stopped working entirely and
+# this smoke could only ever print its WARNING. It had become a step that reported failure
+# about being unable to start. Go through the tap, which is also the path a user takes.
 if command -v brew >/dev/null 2>&1; then
-  say "  brew install --build-from-source $FORMULA && brew test wellforge"
+  say "  brew install --build-from-source $TAP_NAME/wellforge && brew test wellforge"
   say "  ${SKIP_SMOKE:+skipped by SKIP_SMOKE}"
   if [ -z "${SKIP_SMOKE:-}" ]; then
-    brew install --build-from-source "$FORMULA" \
+    if ! brew tap | grep -qx "$TAP_NAME"; then
+      say "  tapping $TAP_NAME"
+      brew tap "$TAP_NAME" "$REMOTE_URL" >/dev/null 2>&1 || say "  (could not tap)"
+    fi
+    # The tap is a separate clone: without this it smokes whatever it cloned, not the
+    # formula just pushed.
+    tap_dir="$(brew --repository "$TAP_NAME" 2>/dev/null || true)"
+    if [ -n "$tap_dir" ] && [ -d "$tap_dir/.git" ]; then
+      git -C "$tap_dir" fetch -q origin 2>/dev/null || true
+      git -C "$tap_dir" reset -q --hard origin/main 2>/dev/null || true
+    fi
+    brew trust --tap "$TAP_NAME" >/dev/null 2>&1 || true
+    brew install --build-from-source "$TAP_NAME/wellforge" \
       && brew test wellforge \
       || say "  WARNING: the package smoke failed — the tag and formula are pushed, so fix
            it forward with another patch release rather than moving the tag."
   fi
 else
-  say "  (brew not installed — run it on a Mac before telling anyone to upgrade)"
+  say "  (brew not installed — the macos-latest \`formula\` job in ci.yml is the proof;
+       see docs/RELEASING-CLI.md)"
 fi
 
 say ""
