@@ -69,5 +69,30 @@ MSG
   exit 1
 fi
 
+# ── a plugin-v tag additionally needs FRESH prompt evals ────────────────────────────
+# commands/, agents/ and skills/ have no other test, and the CI eval job is OPTIONAL (it
+# needs an ANTHROPIC_API_KEY this repo does not have and no fork should need). Optional in
+# CI plus nothing on the release path would mean the plugin's largest surface ships untested
+# — so the freshness check lives here, where it costs nothing on a branch push and cannot be
+# walked past at a tag.
+case " $tags " in
+  *" plugin-v"*)
+    printf '\n\033[1mpre-push: plugin release — checking the prompt evals are fresh\033[0m\n'
+    if ! "$ROOT/scripts/check-evals-fresh.sh"; then
+      cat >&2 <<'MSG'
+
+╭──────────────────────────────────────────────────────────────────────────╮
+│  PUSH REFUSED — the prompt layer changed since the last recorded eval.   │
+╰──────────────────────────────────────────────────────────────────────────╯
+
+  Run them:      scripts/check-all.sh --with-evals
+  Or override:   WELLFORGE_SKIP_EVALS=1 git push …   (prints a banner)
+
+MSG
+      exit 1
+    fi
+    ;;
+esac
+
 printf '\npre-push: self-tests green — releasing %s\n\n' "$tags"
 exit 0

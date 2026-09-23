@@ -85,6 +85,28 @@ defects that could produce that shape were removed and the next occurrence was m
 self-diagnosing — see the `harness:` self-check cases and `assert_file_has`, which now
 prints grep's own exit status and stderr instead of hiding them behind `2>/dev/null`.
 
+### A `plugin-v` tag needs fresh prompt evals
+
+`commands/`, `agents/` and `skills/` are most of what the plugin is, and the **only** tests
+they have are the prompt evals in `wellforge-plugin/evals/`. Those are optional in CI by
+design — they need an `ANTHROPIC_API_KEY` this repo does not have and no fork should need —
+so "optional in CI" plus nothing else would mean the plugin's largest surface ships untested.
+
+The check therefore lives on the release path, where it costs nothing on an ordinary push:
+
+```sh
+scripts/check-evals-fresh.sh          # prints the last recorded run, refuses if stale
+```
+
+**Fresh** means the SHA recorded in `wellforge-plugin/evals/LAST-RUN` is the last commit that
+touched the prompt layer, or a descendant of it. `scripts/check-all.sh --with-evals` records
+it for you after a green run, from a clean tree only. `gates/hooks/pre-push` runs the check
+for any `plugin-v*` tag; `WELLFORGE_SKIP_EVALS=1` (or `--skip-evals`) overrides it and prints
+a banner saying the evals were not confirmed.
+
+There is deliberately no recorded SHA yet: the suite has never been run in full, so claiming
+one would be a lie. The gate refusing a plugin tag today is the correct state.
+
 ### Why it cannot happen again by remembering
 
 Three layers, none of which is a checklist item:

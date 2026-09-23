@@ -58,7 +58,8 @@ Four independent series — template `vX.Y.Z`, `gates-vN`, `plugin-vX.Y.Z`, `cli
 [docs/VERSIONING.md](docs/VERSIONING.md); read it before cutting anything. Short version of
 the part people get wrong:
 
-- plugin prompt/skill/command/hook change → `plugin-v*`
+- plugin prompt/skill/command/hook change → `plugin-v*`, and the prompt evals must be
+  fresh (`scripts/check-evals-fresh.sh`; the pre-push hook enforces it)
 - a template file a generated project receives → `vX.Y.Z`, and a
   [PLUGIN-MIGRATIONS](docs/PLUGIN-MIGRATIONS.md) or TEMPLATE-MIGRATIONS entry if a project
   must absorb it
@@ -96,6 +97,35 @@ behaviour — one file, next to the cases already there:
 **Write the case so it fails first.** Every check in this repo has at some point passed
 while the thing it guarded was broken; a case you have not seen fail is a case you have not
 tested. Mutation-test it: break the behaviour, watch the case go red, restore.
+
+### The evals are OPTIONAL in CI, on purpose
+
+They need an `ANTHROPIC_API_KEY`. **This repo deliberately does not have one**, and no fork
+or downstream team should need one: the whole of CI must pass, PRs must merge and tags must
+cut without it. When the secret is absent the `plugin-evals` job reports **skipped** — not a
+green tick for a job that ran nothing, which is the false signal `release-guard` exists to
+catch, and which this job was itself producing until it was fixed.
+
+`release-guard` therefore names `plugin-evals` in its optional set: **skipped is accepted, a
+failure is not.** Optional means it may not run; it does not mean its red results can be
+ignored.
+
+If anyone enables it: it is **billed to whoever owns the key**, so use a dedicated one with
+a spend limit rather than a personal or production key. Measured 2026-09-23, a full pass is
+roughly **$10–15** at `--runs 1` and **$30–45** at the default `--runs 3`. CI pins `--runs 1`
+and only runs the job when `wellforge-plugin/{commands,agents,skills,evals}` changed; a full
+pre-release pass is the `workflow_dispatch` route with the `eval_runs` input. Details and
+per-case costs: [evals/README.md](wellforge-plugin/evals/README.md).
+
+**The local path needs no key at all** and is the primary one:
+
+```sh
+scripts/check-all.sh --with-evals     # uses your own Claude Code login
+```
+
+A green local run records the tree it passed against in `wellforge-plugin/evals/LAST-RUN`,
+and `scripts/check-evals-fresh.sh` refuses a `plugin-v` tag whose prompt layer has moved
+since — because `commands/`, `agents/` and `skills/` have no other test.
 
 ## What a PR must show
 

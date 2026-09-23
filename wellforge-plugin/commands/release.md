@@ -138,6 +138,18 @@ would report the wrong one and mislabel a scaffold's template version):
    on the tag — that last one cannot be bypassed. If it goes red, **delete the tag and
    re-cut it**; see `docs/VERSIONING.md`.
 
+   **And the prompt evals must be fresh.** `commands/`, `agents/` and `skills/` have no
+   other test, and the CI eval job is optional (it needs an `ANTHROPIC_API_KEY` this repo
+   does not have). So:
+
+   ```bash
+   scripts/check-evals-fresh.sh     # prints the last recorded run; refuses if stale
+   scripts/check-all.sh --with-evals   # run them (your own Claude Code login, no key) and record
+   ```
+
+   The pre-push hook runs this check for any `plugin-v*` tag. `WELLFORGE_SKIP_EVALS=1`
+   overrides it and prints a banner — say so in the release notes if you use it.
+
 5. **Commit, then tag that commit** — in this order, because the manifest must point at its
    own tag:
 

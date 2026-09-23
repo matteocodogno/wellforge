@@ -186,6 +186,18 @@ else
   #   per grader buys a flaky suite that people learn to ignore, which is worse than no suite.
   run "prompt evals" claude plugin eval ./wellforge-plugin \
     --scaffold --trust-plugin --no-publish --threshold 0.8
+  # Record the tree they passed against, so the release path can tell whether the prompt
+  # layer has moved since. Only on a green run, and only from a clean tree: recording HEAD
+  # while files are modified would claim the evals covered code that was never committed.
+  if [ "${OUTCOMES[$((${#OUTCOMES[@]} - 1))]}" = "ok" ]; then
+    if [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ]; then
+      printf '    %s(not recorded: the tree is dirty, so HEAD is not what was tested)%s\n' \
+        "$DIM" "$RST"
+    elif "$ROOT/scripts/check-evals-fresh.sh" --record \
+           "$(git -C "$ROOT" rev-parse HEAD)" >/dev/null 2>&1; then
+      printf '    %srecorded in wellforge-plugin/evals/LAST-RUN%s\n' "$DIM" "$RST"
+    fi
+  fi
 fi
 
 # ── 5. shellcheck — the SAME file set AND severity ci.yml uses ──────────────────────

@@ -1,6 +1,6 @@
 {
   "name": "wellforge",
-  "version": "2.50.0",
+  "version": "2.50.1",
   "description": "Full-stack AI-assisted development: spec-driven workflow, role-based agent team, orchestrator, scaffolder, lifecycle upgrades, quality-gate and eval enforcement.",
   "author": {
     "name": "WellForge"

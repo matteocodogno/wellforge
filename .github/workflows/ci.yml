@@ -30,6 +30,10 @@ on:
         description: 'Run release-guard as if this ref were a release tag (proof of the guard)'
         type: boolean
         default: false
+      eval_runs:
+        description: 'Prompt evals: runs per case (3 = the suite default, for a pre-release pass)'
+        type: string
+        default: '3'
 
 permissions:
   contents: read
@@ -815,18 +819,95 @@ jobs:
       - name: Run terse-mode fixture regression suite
         run: specs/001-terse-mode/fixtures/run-all.sh
 
-  # Prompt-layer evals. Behavioural tests for commands/ and agents/ — the half of the plugin
-  # that no grep can assert. They call the Anthropic API, so they cost money and need a key.
+  # ── the optional eval pair ──────────────────────────────────────────────────────────
+  # WHY TWO JOBS. A job-level `if:` cannot read the `secrets` context — only `github`,
+  # `needs`, `vars` and `inputs`. So the decision is made in a tiny job that CAN read it and
+  # published as an output the real job branches on.
   #
-  # NON-BLOCKING, and deliberately not in release-guard's `needs:` yet: an LLM judge is a
-  # noisy instrument, and a gate that fails for reasons nobody can reproduce teaches people
-  # to ignore gates. Watch the scores first; promote it to required once it has earned it.
-  # Until then it reports, and a human reads it.
-  plugin-evals:
-    name: prompt evals (commands + agents, advisory)
+  # The alternative, which this replaces, was a single job that ran, found no key, printed a
+  # notice and `exit 0`. That reports **success** — a green check that tested nothing, which
+  # is precisely the false signal release-guard exists to catch. It was doing it in
+  # release-guard's own workflow.
+  #
+  # Not having a key is the EXPECTED state: for a fork, for a contributor, and for any team
+  # using WellForge. The whole CI must pass, tags must cut and PRs must merge without one.
+  evals-preflight:
+    name: prompt evals — preflight (key present? prompts touched?)
     runs-on: ubuntu-latest
-    continue-on-error: true
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    outputs:
+      should_run: ${{ steps.decide.outputs.should_run }}
+      reason: ${{ steps.decide.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: decide
+        env:
+          # A secret cannot be read in a job `if:`, but it can be compared here. Only the
+          # BOOLEAN leaves this step — the key itself is never exposed as an output.
+          HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          decide() { echo "should_run=$1" >> "$GITHUB_OUTPUT"
+                     echo "reason=$2"     >> "$GITHUB_OUTPUT"
+                     echo "::notice::prompt evals: $1 — $2"; }
+
+          if [ "$HAS_KEY" != "true" ]; then
+            decide false "ANTHROPIC_API_KEY is not set. The evals are OPTIONAL: this is the
+          expected state for forks and for anyone without a key, the rest of CI is unaffected,
+          and release-guard accepts this job as skipped. Run them locally instead with
+          scripts/check-all.sh --with-evals, which uses your own Claude Code login."
+            exit 0
+          fi
+
+          # A deliberate manual run always runs: that is what the button is for.
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            decide true "workflow_dispatch — running on request"
+            exit 0
+          fi
+
+          # Otherwise only when the prompt layer actually moved. These evals score prompts;
+          # a change to the CLI or a template cannot alter what they measure, and paying for
+          # a full pass on every push is how a costly job gets switched off for good.
+          base=""
+          case "$EVENT" in
+            pull_request) base="$PR_BASE" ;;
+            push) base="$BEFORE" ;;
+          esac
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            decide true "cannot determine what changed (new branch or shallow history) — running rather than skipping silently"
+            exit 0
+          fi
+
+          changed="$(git diff --name-only "$base" "$SHA" || true)"
+          if printf '%s\n' "$changed" | grep -qE '^wellforge-plugin/(commands|agents|skills|evals)/'; then
+            decide true "the prompt layer changed in this range"
+          else
+            decide false "no change under wellforge-plugin/{commands,agents,skills,evals} — nothing these evals measure has moved"
+          fi
+
+  # Behavioural tests for commands/ and agents/ — the half of the plugin no grep can assert.
+  #
+  # COST, measured on 2026-09-23 with the real suite: a single case, one run, one arm, cost
+  # $0.41 (status-rows) and $1.23 (done-production-refuses). Nine cases in BOTH arms (the
+  # default ablation) at --runs 1 is therefore roughly $10-15 per pass, and at --runs 3
+  # roughly $30-45. CI pins --runs 1; the workflow_dispatch `eval_runs` input exists for a
+  # deliberate full pass before a plugin-v release.
+  #
+  # Deliberately NOT continue-on-error. Optionality here means "did not run at all", which
+  # shows as SKIPPED and which release-guard accepts. If it DOES run, its result is real and
+  # a failure blocks a release tag — an advisory job that can only ever report success is not
+  # a test.
+  plugin-evals:
+    name: prompt evals (commands + agents, optional)
+    needs: evals-preflight
+    if: ${{ needs.evals-preflight.outputs.should_run == 'true' }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
@@ -837,16 +918,15 @@ jobs:
       - name: Run the eval suite
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RUNS: ${{ github.event_name == 'workflow_dispatch' && inputs.eval_runs || '1' }}
         run: |
           set -euo pipefail
-          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "::notice::ANTHROPIC_API_KEY is not set — prompt evals skipped."
-            echo "::notice::Add the secret to run them; see wellforge-plugin/evals/README.md"
-            exit 0
-          fi
+          echo "::notice::prompt evals: --runs $RUNS over both arms. See the cost note in ci.yml."
           claude plugin eval ./wellforge-plugin \
             --scaffold --trust-plugin --no-publish \
-            --threshold 0.8 --json evals-result.json
+            --runs "$RUNS" --threshold 0.8 --json evals-result.json
+          echo "::notice::evals passed for ${{ github.sha }} — record that SHA in"
+          echo "::notice::wellforge-plugin/evals/LAST-RUN before cutting a plugin-v tag."
       - name: Upload the report
         if: always()
         uses: actions/upload-artifact@v4
@@ -886,12 +966,14 @@ jobs:
     needs:
       - adapter-smoke
       - cli
+      - evals-preflight
       - commits
       - formula
       - gate-callable
       - generated-gates
       - hook-fixtures
       - linear
+      - plugin-evals
       - rendered-gates
       - routing
       - rubric-sync
@@ -913,7 +995,15 @@ jobs:
           # NOT optional: it is continue-on-error so a 10x macOS runner cannot hold up an
           # ordinary push, which is exactly why `needs:` reports it as satisfied when it
           # failed. Read as data below, its real result is what counts.
-          OPTIONAL_JOBS: ''
+          # Jobs that may be SKIPPED without blocking a release tag. This is NOT a licence
+          # to fail: a skipped optional job is accepted, a FAILED one is not — see the loop.
+          #
+          # plugin-evals is optional because it needs an ANTHROPIC_API_KEY that this repo
+          # deliberately does not have, and that no fork or downstream team should need. A
+          # team using WellForge must be able to run all of CI, merge PRs and cut tags
+          # without one. It is also skipped when nothing under commands/agents/skills/evals
+          # changed, because these evals score prompts and nothing else moves them.
+          OPTIONAL_JOBS: 'plugin-evals'
           SIMULATED: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           set -euo pipefail
@@ -931,8 +1021,8 @@ jobs:
           # A guard that silently checks nothing is worse than no guard: an empty or
           # truncated needs context is a failure, not a clean sweep.
           count=$(printf '%s' "$NEEDS" | jq -r 'length')
-          if [ "${count:-0}" -lt 16 ]; then
-            echo "::error::the needs context held ${count:-0} jobs, expected at least 16 —"
+          if [ "${count:-0}" -lt 18 ]; then
+            echo "::error::the needs context held ${count:-0} jobs, expected at least 18 —"
             echo "::error::release-guard cannot confirm a tag it cannot see the jobs for"
             exit 1
           fi
@@ -942,8 +1032,21 @@ jobs:
           # would be discarded, leaving the guard green with failures printed above it.
           while read -r job result; do
             [ -n "$job" ] || continue
+            # An optional job may be SKIPPED — that is what optional means here. It may not
+            # FAIL: a job that ran and reported a real failure is a real failure, and
+            # "optional" must not become a place where red results go to be ignored.
             case " $OPTIONAL_JOBS " in
-              *" $job "*) printf '  %-22s %-9s (optional)\n' "$job" "$result"; continue ;;
+              *" $job "*)
+                if [ "$result" = "skipped" ] || [ "$result" = "success" ]; then
+                  printf '  %-22s %-9s (optional)\n' "$job" "$result"
+                  continue
+                fi
+                printf '  %-22s %s  <== optional, but it RAN and did not pass\n' "$job" "$result"
+                echo "::error::optional job '$job' is '$result' — optional means it may be"
+                echo "::error::skipped, not that a failure is acceptable"
+                bad=1
+                continue
+                ;;
             esac
             if [ "$result" = "success" ]; then
               printf '  %-22s %s\n' "$job" "$result"

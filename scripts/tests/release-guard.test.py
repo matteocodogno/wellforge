@@ -29,7 +29,13 @@ CI = ROOT / ".github" / "workflows" / "ci.yml"
 wf = yaml.safe_load(CI.read_text())
 guard = wf["jobs"]["release-guard"]
 NEEDS_LIST = list(guard["needs"])
-SCRIPT = guard["steps"][0]["run"]
+STEP = guard["steps"][0]
+SCRIPT = STEP["run"]
+# The guard's own declared optional set, read from the workflow rather than restated here —
+# a second copy of it would be one more thing to keep in sync, which is the mistake this
+# file exists to catch elsewhere.
+OPTIONAL = STEP.get("env", {}).get("OPTIONAL_JOBS", "") or ""
+OPTIONAL_SET = set(OPTIONAL.split())
 
 passed = failed = 0
 
@@ -63,7 +69,7 @@ def run(name, needs_json, want_fail, ref_name="cli-v9.9.9", simulated="false"):
         _bad(name, "the step still holds an unsubstituted ${{ }} expression — this test "
                    "would be proving nothing")
         return
-    env = dict(os.environ, NEEDS=needs_json, OPTIONAL_JOBS="", SIMULATED=simulated)
+    env = dict(os.environ, NEEDS=needs_json, OPTIONAL_JOBS=OPTIONAL, SIMULATED=simulated)
     p = subprocess.run(["bash", "-c", body], env=env, capture_output=True, text=True)
     if (p.returncode != 0) == want_fail:
         _ok(name)
@@ -86,15 +92,11 @@ else:
          "release-guard has no always() — a red dependency will SKIP it, and a skipped "
          "required check reads as green")
 
-# Jobs a release tag deliberately does NOT require. Every name here is a decision someone
-# made on purpose, and writing it down is the point: an omission from `needs:` then reads as
-# a mistake rather than as "probably intentional".
-#
-#   plugin-evals — the prompt-layer eval suite. It is an LLM judge, which is a noisy
-#   instrument, and it costs money per run. A gate that fails for reasons nobody can
-#   reproduce teaches people to ignore gates, so it reports and a human reads it. Promote it
-#   into `needs:` (and delete this line) once its scores have been stable for a while.
-NOT_REQUIRED = {"plugin-evals"}
+# Nothing is outside `needs:` any more. An optional job is DEPENDED ON and declared optional
+# in OPTIONAL_JOBS, which is a different thing from being left out: left out means the guard
+# cannot see it at all, so it could fail unnoticed. Depended on + optional means a SKIP is
+# accepted and a FAILURE is not.
+NOT_REQUIRED = set()
 
 expected = set(wf["jobs"]) - {"release-guard"} - NOT_REQUIRED
 missing = sorted(expected - set(NEEDS_LIST))
@@ -130,6 +132,26 @@ run("workflow_dispatch does not check the ref name", needs(), want_fail=False,
     ref_name="guard-proof", simulated="true")
 run("workflow_dispatch does NOT excuse a red job", needs(cli="failure"), want_fail=True,
     ref_name="guard-proof", simulated="true")
+
+# ── optional jobs: skipped is fine, failed is not ─────────────────────────────
+# The whole point of the rework. `plugin-evals` needs an ANTHROPIC_API_KEY this repo does
+# not have and no fork should need, so it is normally SKIPPED and a release must still cut.
+# But "optional" must not become the drawer red results get filed in.
+if not OPTIONAL_SET:
+    _bad("an optional job is declared", "OPTIONAL_JOBS is empty — if nothing is optional, "
+                                        "the optional path below is untested in practice")
+else:
+    for _job in sorted(OPTIONAL_SET):
+        _k = _job.replace("-", "_")
+        run(f"optional '{_job}' SKIPPED still passes", needs(**{_k: "skipped"}),
+            want_fail=False)
+        run(f"optional '{_job}' SUCCESS passes", needs(**{_k: "success"}), want_fail=False)
+        run(f"optional '{_job}' FAILURE still fails", needs(**{_k: "failure"}),
+            want_fail=True)
+        run(f"optional '{_job}' CANCELLED still fails", needs(**{_k: "cancelled"}),
+            want_fail=True)
+    # …and a job that is NOT optional must not benefit from the optional path.
+    run("a non-optional job skipped still fails", needs(cli="skipped"), want_fail=True)
 
 print(f"\nrelease-guard: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

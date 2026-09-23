@@ -23,7 +23,7 @@ mise run check -- --with-evals
 `--runs 3` in two arms (with and without the plugin). Measured on 2026-09-23: one case at
 `--runs 1 --ablation none` cost **$0.41** (`status-rows`) and **$1.23** (`done-production-refuses`).
 That is why `check-all.sh` leaves them off unless you pass `--with-evals`, and why the CI job
-is separate and advisory.
+is separate and optional — see below.
 
 Why the flags:
 
@@ -36,6 +36,39 @@ Why the flags:
 
 `evals/results/` is gitignored: the cases and the fixture are source, what a given run scored
 is not.
+
+## Optional in CI, and why
+
+They need an `ANTHROPIC_API_KEY`. **This repo deliberately does not have one**, and no fork
+or downstream team should need one: the whole of CI must pass, PRs must merge and tags must
+cut without it. When the secret is absent the `plugin-evals` job reports **skipped** — not a
+green tick for a job that ran nothing, which is the false signal `release-guard` exists to
+catch, and which this job was itself producing until it was fixed.
+
+`release-guard` therefore names `plugin-evals` in its optional set: **skipped is accepted, a
+failure is not.** Optional means it may not run; it does not mean its red results can be
+ignored.
+
+If anyone does enable it, three things are worth knowing before they do:
+
+- **It is billed to whoever owns the key.** Measured 2026-09-23: one case, one run, one arm
+  cost $0.41 and $1.23. The nine cases in both arms at `--runs 1` is roughly **$10–15 per
+  pass**; at the suite default `--runs 3`, roughly **$30–45**.
+- **Use a dedicated key with a spend limit**, not a personal or production one. A workflow
+  that spends money on every push is one bad loop away from an unpleasant invoice.
+- CI pins `--runs 1` and only runs the job when something under
+  `wellforge-plugin/{commands,agents,skills,evals}` actually changed. A full pass before a
+  plugin release is the `workflow_dispatch` route, with the `eval_runs` input.
+
+**The local path needs no key at all** and is the primary one:
+
+```sh
+scripts/check-all.sh --with-evals     # uses your own Claude Code login
+```
+
+A green local run records the tree it passed against in `wellforge-plugin/evals/LAST-RUN`,
+and `scripts/check-evals-fresh.sh` refuses a `plugin-v` tag whose prompt layer has moved
+since — because `commands/`, `agents/` and `skills/` have no other test.
 
 ## The fixture project
 

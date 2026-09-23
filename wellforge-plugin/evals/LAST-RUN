@@ -1,0 +1,13 @@
+# The tree the prompt evals last PASSED against, in full.
+#
+# Written by `scripts/check-evals-fresh.sh --record <sha>`, which `scripts/check-all.sh
+# --with-evals` calls for you after a green run. Read by the same script on the release path:
+# a plugin-v tag is refused when the prompt layer has moved since this SHA.
+#
+# THERE IS DELIBERATELY NO `sha:` LINE YET. The suite has never been run in full — when it
+# was written, two of its nine cases were run singly to validate the format (status-rows and
+# done-production-refuses, both 1.0). Recording a SHA for that would claim a pass that did
+# not happen, and this file's only job is to be true. The gate therefore refuses a plugin-v
+# tag until someone runs them, which is the correct state and not a bug.
+#
+# To fill it in:  scripts/check-all.sh --with-evals
