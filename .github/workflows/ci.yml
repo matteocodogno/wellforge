@@ -852,15 +852,27 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          decide() { echo "should_run=$1" >> "$GITHUB_OUTPUT"
-                     echo "reason=$2"     >> "$GITHUB_OUTPUT"
-                     echo "::notice::prompt evals: $1 — $2"; }
+          # $GITHUB_OUTPUT is a FILE of `key=value` lines, and a value containing a newline
+          # is not a longer value — it is a syntax error that fails the step:
+          #   ##[error]Unable to process file command 'output' successfully.
+          #   ##[error]Invalid format '<the second line of my message>'
+          # That is how this job failed the first time it ran. Flattening here rather than
+          # trusting every future caller to remember: prose belongs in the log, not in an
+          # output variable.
+          decide() { # <true|false> <one-line reason>
+            local run="$1" why
+            why="$(printf '%s' "$2" | tr '\n\r' '  ' | sed 's/  */ /g')"
+            { echo "should_run=$run"; echo "reason=$why"; } >> "$GITHUB_OUTPUT"
+            echo "::notice::prompt evals: should_run=$run — $why"
+          }
 
           if [ "$HAS_KEY" != "true" ]; then
-            decide false "ANTHROPIC_API_KEY is not set. The evals are OPTIONAL: this is the
-          expected state for forks and for anyone without a key, the rest of CI is unaffected,
-          and release-guard accepts this job as skipped. Run them locally instead with
-          scripts/check-all.sh --with-evals, which uses your own Claude Code login."
+            echo "ANTHROPIC_API_KEY is not set. The evals are OPTIONAL and this is the"
+            echo "expected state for forks and for anyone without a key: the rest of CI is"
+            echo "unaffected, PRs merge, tags cut, and release-guard accepts this job as"
+            echo "skipped. Run them locally instead — no key needed:"
+            echo "    scripts/check-all.sh --with-evals"
+            decide false "ANTHROPIC_API_KEY is not set (optional job, skipping)"
             exit 0
           fi
 
