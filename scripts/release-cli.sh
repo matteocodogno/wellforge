@@ -80,7 +80,22 @@ note() { PROBLEMS="${PROBLEMS}  $*
 "; problems=$((problems + 1)); }
 
 [ "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)" = "main" ] || note "not on main"
-[ -z "$(git -C "$ROOT" status --porcelain)" ] || note "working tree is dirty — commit or stash first"
+# TRACKED changes block; untracked files do not. The distinction is not pedantry: this
+# script stages exactly one path (Formula/wellforge.rb), so an untracked file cannot enter
+# the release commit and cannot change the released artifact — which is built from the
+# tarball of an already-pushed tag, not from this working tree. A MODIFIED TRACKED file can
+# matter, because `check-all.sh` runs against the working tree and its verdict would then
+# describe a tree that is not the one being committed.
+#
+# It was `git status --porcelain`, which counts untracked files, so a stray scratch file
+# anywhere in the checkout refused the release — and the advice it printed, "commit or
+# stash first", is advice you must not take for a file that has no business being committed.
+[ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ] \
+  || note "tracked files are modified — commit or stash first (check-all.sh would be
+           validating a different tree than the one this commits)"
+_untracked="$(git -C "$ROOT" ls-files --others --exclude-standard | head -5 | tr '\n' ' ')"
+[ -z "$_untracked" ] \
+  || say "  note: untracked files present, ignored by the release: $_untracked"
 if [ "$FORMULA_ONLY" -eq 1 ]; then
   git -C "$ROOT" rev-parse -q --verify "refs/tags/$tag" >/dev/null \
     || note "tag $tag does not exist — --formula-only points the formula at an EXISTING tag"
