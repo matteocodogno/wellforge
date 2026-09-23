@@ -96,31 +96,83 @@ tarball to hash.
 
 ### 6 — point the Formula at it
 
-`url` (the `cli-vX.Y.Z` tarball), `version` (explicit — see below), `sha256`. Then:
+`url` (the `cli-vX.Y.Z` tarball) and `sha256`. There is **no `version` line**. Then:
 
 ```bash
 git commit -m "chore(cli): formula for cli-vX.Y.Z"
 git push origin main
 ```
 
-`version` is stated explicitly rather than parsed out of the url, for two reasons: brew's
-guess at `cli-v1.0.0.tar.gz` is not something to depend on, and the number must stay
-**monotonic** across the change of series — the Formula used to resolve `0.9.0` from the
-template tag, so anything lower would make `brew upgrade` a silent no-op for everyone who
-had already installed it. That is why the series starts at 1.0.0.
+**The url IS the version.** This section used to say the opposite — that `version` is stated
+explicitly because "brew's guess at `cli-v1.0.0.tar.gz` is not something to depend on". That
+was measured and found false: brew scans the version straight out of that url (`brew info`
+reports `derived version: 1.5.1`), and `brew audit --strict` — step 8 below — *fails* on an
+explicit line as redundant. The bug the explicit line was really hiding was a url that still
+named the **template** tag `v0.9.0`, from which brew derived `0.9.0` perfectly correctly.
+Monotonicity across the change of series still holds, because `cli-v1.x` > `0.9.0`.
+
+`release-cli.sh` deletes a stale `version` line rather than updating one, and both
+`check-docs.py` and the CLI matrix assert that the url names `cli-v<the constant>`.
+
+### 6b — the sha must be RIGHT, not merely present
+
+`check-docs.py` distinguishes three states, because they need three different answers:
+
+| Formula state | Verdict |
+|---|---|
+| placeholder sha **and** the `cli-v*` tag is on the remote | **FAIL**, naming the `release-cli.sh` command |
+| placeholder sha and no such tag | WARN — an unreleased formula is a true state and must not block unrelated work |
+| a real sha | fetch the tarball the url names and compare |
+
+The third is the one that matters. A wrong hash is worse than a placeholder: a placeholder
+announces itself — brew refuses it loudly and this script says so — while a plausible wrong
+one passes every check that only reads the file, and then fails on someone else's machine as
+`SHA256 mismatch`, which reads like a corrupted download or a tampered tarball rather than a
+release cut wrong. A definite mismatch FAILs; offline, proxied or rate-limited is a WARNING,
+because that is a statement about the network and not about the formula.
+`WELLFORGE_SKIP_SHA_VERIFY=1` skips the fetch.
 
 ### 7 — smoke the package, not just the script
 
 ```bash
-brew install --build-from-source Formula/wellforge.rb
-brew test wellforge
-brew uninstall wellforge        # if you were not already a user
+brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge   # once
+git -C "$(brew --repository matteocodogno/wellforge)" pull --ff-only          # get this release
+brew reinstall --build-from-source matteocodogno/wellforge/wellforge
+brew test matteocodogno/wellforge/wellforge
 ```
 
+**Not `brew install --build-from-source Formula/wellforge.rb`.** Homebrew 7 refuses a
+formula given by a path outright — *"Homebrew requires formulae to be in a tap, rejecting"* —
+so that command, which this page printed for a long time, cannot succeed. `release-cli.sh`
+used it too, which meant its step-7 smoke could only ever print its own warning: a step
+reporting failure about being unable to start. Going through the tap is also what a user
+does, so it tests the path that matters. `reinstall` rather than `install`, because `install`
+answers "already installed and up-to-date" and builds nothing.
+
 `brew test` is where the packaged CLI is exercised: `help` mentions doctor, `version`
-matches the Formula's version, `doctor` with an empty HOME prints its full report and exits
-**1**, and an unknown subcommand exits non-zero. The repo's own suite covers the script;
-this covers the script *as installed*.
+matches the version brew derived from the url, `doctor` with an empty HOME prints its full
+report and exits **1**, and an unknown subcommand exits non-zero. The repo's own suite covers
+the script; this covers the script *as installed*.
+
+> **`missing test dependencies: uv` does not mean missing.** It means **outdated**. If
+> `brew test` refuses with that, the named dependency is installed and linked — `brew missing`
+> will report nothing — but homebrew/core has moved past it, usually because `brew` just
+> auto-updated. `brew upgrade uv` and run it again. This cost a confused half hour once; the
+> word "missing" is Homebrew's, not ours.
+
+**Proof for cli-v1.5.1**, on macOS 15 / Homebrew 7.0.6:
+`brew reinstall --build-from-source matteocodogno/wellforge/wellforge` then
+`brew test matteocodogno/wellforge/wellforge` — both clean, and the installed CLI reports
+`wellforge 1.5.1 (brew)`. The sha256 in the Formula was independently recomputed from the
+pushed tarball and matches.
+
+**And on every push**, without anyone remembering to: the `formula` job in `ci.yml`
+(macos-latest) taps the checkout at `GITHUB_SHA` and runs `brew style`,
+`brew install --build-from-source`, `brew test` and `brew audit --strict --online`. That job
+is the standing proof — for example
+[run 35741076487](https://github.com/matteocodogno/wellforge/actions/runs/35741076487/job/106790680978),
+all four steps green. It is `continue-on-error` so a 10x macOS runner cannot hold up an
+ordinary push, but `release-guard` reads its real result, so it blocks a release tag.
 
 ### 8 — after the tap catches up
 
