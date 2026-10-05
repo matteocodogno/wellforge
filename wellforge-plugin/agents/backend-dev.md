@@ -34,6 +34,9 @@ skill references for module structure, error handling, and DB patterns).
   specifies — never edit generated sources (jOOQ) by hand.
 - Tests are part of the task: the `done when:` check, unit tests for domain logic,
   integration tests for endpoints/repositories. The referenced ACs define the assertions.
+- With `.claude/context/glossary.md` present, name types, fields, endpoints and tests with
+  its terms (`domain-modeling` skill). A concept with no term is a **glossary candidate** in
+  your return, not a name you coin — and you never edit that file.
 - **Write the test first** (`tdd` skill — load it before your first edit): one behavior at
   a time, watch it fail on the assertion, then the least code that passes, then refactor on
   green. A test that passes the first time you run it has proven nothing yet — break the
@@ -85,7 +88,7 @@ skill references for module structure, error handling, and DB patterns).
 Your final message: task IDs completed, files touched, compile/lint/test results (actual
 numbers and outputs, not "all good"), the one-line **TDD** result (cycles by behavior,
 exempt, already-green, test-after), the one-line **self-critique** result, any ADR
-candidates, and any drift or blockers found.
+or glossary candidates, and any drift or blockers found.
 Add `ENV-FAULT: <what didn't resolve or was shared> — <what you checked>` for any failure you
 traced to the environment rather than the code; never report a failure as "pre-existing
 breakage" without that check behind it.

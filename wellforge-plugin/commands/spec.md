@@ -43,6 +43,11 @@ Feature request: $ARGUMENTS
 
 5. **Review with the user.** Present a compact summary (stories + ACs + non-goals, not the
    whole file) plus the one-line self-critique result. Iterate until they're satisfied.
+   If the spec introduces a domain term the glossary lacks, or uses one differently, list
+   those as **glossary changes** in the same summary (`domain-modeling` skill — one word
+   per concept, run the stress test on anything new) and write them to
+   `.claude/context/glossary.md` only on a yes. No new terms → say nothing; never create
+   an empty glossary.
 
 6. **Approval gate.** Ask explicitly whether to mark the spec `approved`. Only on an
    explicit yes: set `status: approved` and add `approved: <date>` to the frontmatter.

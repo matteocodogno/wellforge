@@ -1,10 +1,9 @@
 ---
 name: tdd
 description: >
-  WellForge test-first discipline for implementation — red, green, refactor, one behavior at
-  a time. Use when a dev agent implements a task from tasks.md at the mvp or production
-  tier, or makes a QE reproduction test pass. Authoritative for the right-red rule, the
-  exemption list, the tier gating and the one-line TDD report. Off at the spike tier.
+  WellForge test-first discipline — red, green, refactor, one behavior at a time. Use when
+  a dev agent implements a task at the mvp or production tier, or makes a QE reproduction
+  test pass. Off at the spike tier.
 ---
 
 # Test-driven development — the test exists before the code that passes it

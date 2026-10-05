@@ -281,6 +281,14 @@ failure then surfaces deep in app code looking exactly like a bug — that is an
 fault, reported as one, never fixed with a default or a guard. Full process:
 `.github/wf-skills/systematic-debugging/SKILL.md`.
 
+## Domain language
+If `.claude/context/glossary.md` exists, its terms are binding: use them in specs, plans,
+type names, endpoints and tests, and never a synonym it lists under "Avoid". A concept it
+has no word for is something to raise with the human, not a name to coin. Before adding a
+term, test its definition against concrete edge cases (when does it start and stop being
+one, are two look-alikes the same, zero or two where one was assumed, it changes later, it
+exists without its usual partner). Format and rules: `.github/wf-skills/domain-modeling/SKILL.md`.
+
 ## Grilling (only when asked)
 When the human asks to be grilled on an idea, spec or plan: read the repo first and never
 ask what it already answers, then ask ONE question at a time — the decision others depend

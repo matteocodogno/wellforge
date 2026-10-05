@@ -103,7 +103,8 @@ never blocks and never says so).
 - **Settings to merge** into `~/.claude/settings.json` — see
   `wellforge-plugin/settings-snippet.jsonc` (companion plugins, attribution).
 - **Domain glossary** — create `.claude/context/glossary.md` in any project; the
-  session-start hook injects it automatically.
+  session-start hook injects it automatically. `/wellforge:grill-me --docs` builds it for
+  you during an interview (`domain-modeling` skill).
 
 ## Updating
 

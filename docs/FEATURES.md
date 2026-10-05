@@ -45,6 +45,14 @@ Key properties:
   could change the artifact or the user stops. It ends in a decision ledger (Decided /
   Delegated / Found / Assumed / Open). Main loop only; it approves nothing, and against an
   approved artifact it yields proposed amendments rather than edits.
+- **A shared domain language** (`domain-modeling` skill, `/wellforge:grill-me --docs`): the
+  project glossary (`.claude/context/glossary.md`, injected into every session) is where a
+  concept gets exactly one word. A new term is stress-tested against concrete edge cases —
+  boundary, identity, cardinality, time, absence — before it is written, and a case the
+  definition cannot answer goes to the user, not to the author's best guess. The main loop
+  writes the file; the PO, architect and dev agents use its terms and return **glossary
+  candidates** instead of editing it. `--docs` on a grilling session also collects
+  decisions with a rejected alternative and offers them to `adr-writer`.
 - **Self-critique before the gate** (`self-critique` skill): whoever writes an artifact
   runs **one** bounded pass over it — against a per-artifact checklist of known failure
   modes (an AC a QE couldn't test, a contract written as prose, a `touch:` list that lies,

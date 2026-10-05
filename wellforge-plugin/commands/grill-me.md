@@ -1,6 +1,6 @@
 ---
 description: Grill an idea, spec or plan — one question at a time, each with a recommendation, until its decisions are made
-argument-hint: <idea in a sentence or two> | <NNN-slug of an existing feature>
+argument-hint: <idea in a sentence or two> | <NNN-slug of an existing feature> [--docs]
 ---
 
 Interview the user about the target below until its decision tree is resolved, following the
@@ -29,6 +29,13 @@ Target: $ARGUMENTS
    with every question, branch-closed progress, the ledger restated every five decisions.
    Stop on any of the skill's three stop conditions.
 
+   **With `--docs`**, also load the **domain-modeling** skill and maintain the docs as you
+   go (grilling skill, *Grilling with docs*): challenge a term the moment it is used
+   against the glossary, stress-test a new one before writing it, and write
+   `.claude/context/glossary.md` as each term resolves — creating it on the first resolved
+   term if the project has none. Collect decisions that name a rejected alternative as ADR
+   candidates; do not write them.
+
 4. **Close with the ledger, then route it — by what was grilled:**
    - **Free-form idea** → print the ledger and propose
      `/wellforge:spec <one-line summary>`; the ledger above it in the conversation is that
@@ -41,12 +48,21 @@ Target: $ARGUMENTS
      consequences are **proposed amendments**: present them as drift and route them to the
      artifact's own command (`/wellforge:spec NNN-slug` or `/wellforge:plan NNN-slug`).
 
+5. **With `--docs`: ADR dispatch.** If the ledger lists ADR candidates, show them and ask
+   once which to record. For each yes, spawn `wellforge:adr-writer` with the decision, the
+   rejected alternative and the reason the user gave — it writes `docs/adr/NNNN-slug.md`
+   and appends the index line to `AGENTS.md` itself. A decision with no rejected
+   alternative is not an ADR; leave it in the ledger. If a term written this session
+   contradicts an approved spec or plan, say so here as a proposed amendment.
+
 ## Hard rules
 
 - Main loop only. Never dispatch an agent to do the interviewing, and never answer your
   own question to keep the session moving.
 - This command never sets `status:`, never approves, and never writes a new artifact — a
-  spec is `/wellforge:spec`'s to create.
+  spec is `/wellforge:spec`'s to create. With `--docs` it writes the glossary, and ADRs
+  only through `adr-writer` after an explicit yes; nothing else, and nothing without the
+  flag.
 - The user saying stop ends it at once: unresolved branches go under **Open**, not into a
   guess.
 - A delegated answer ("you pick") is recorded as **Delegated**, never as the user's

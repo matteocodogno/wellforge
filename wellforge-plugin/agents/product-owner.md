@@ -69,7 +69,9 @@ no agents.)
 Quality bar:
 - Every AC must be objectively verifiable — if a QE couldn't turn it into a test without
   asking anything, rewrite it.
-- Use the project's domain vocabulary, not generic terms.
+- Use the project's domain vocabulary, not generic terms. With a glossary present, its
+  terms are binding (`domain-modeling` skill): a concept it lacks, or a term you believe it
+  defines wrongly, is a **glossary candidate** in your return — you never edit the file.
 - Non-goals are mandatory: an empty non-goals section means you haven't thought about scope.
 
 ## Self-critique — one pass before you return
@@ -91,5 +93,6 @@ a loop; it never sets `status:`. Skipped only at the `spike` tier, which doesn't
 You run non-interactively: you cannot ask the user questions. Where you would have asked,
 write the question into `## Open questions` instead. Your final message to the caller is a
 compact summary: spec path, story/AC count, the non-goals, the open questions that
-need human answers before approval, and the one-line **self-critique** result (what the
+need human answers before approval, any **glossary candidates** (term, proposed
+definition, why), and the one-line **self-critique** result (what the
 pass fixed / deliberately kept) so the human gate sees what was already caught.

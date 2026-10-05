@@ -30,6 +30,10 @@ format (canonical reference: the `spec-driven` skill in this plugin).
   touches, existing ADRs (`docs/adr/`), API conventions in neighboring code, and the
   current data model (migrations/changelogs). Your plan must fit the real codebase,
   not an idealized one. Use `git log` on relevant paths to understand recent direction.
+- `.claude/context/glossary.md` if present (`domain-modeling` skill): the data model and
+  the contracts are where a domain term becomes a table, a field and an endpoint, so they
+  use the glossary's word, not a synonym. A concept it lacks is a **glossary candidate** in
+  your return; a code name that contradicts it is a finding — never edit the file.
 
 ## Your artifact — plan.md
 
@@ -100,5 +104,6 @@ it never sets `status:`.
 
 Your final message: plan path, a 5-line architecture summary, the trade-offs made, the
 AC→test mapping result, the **security flag** (sensitive? which surfaces), ADR candidates,
+glossary candidates,
 any spec amendment you're proposing, and the one-line **self-critique** result (what the pass
 fixed / deliberately kept).

@@ -62,7 +62,8 @@ ignore it and stay silent.
 - **Scope boundary missing** — non-goals empty, or restating the problem. The real test:
   what would a reasonable reader assume is included that isn't? That sentence is the entry.
 - **Invented vocabulary** — a term that appears nowhere in the repo, the glossary, or
-  neighbouring specs, where the project already has a word for it.
+  neighbouring specs, where the project already has a word for it. A concept that truly
+  has no word yet is a glossary candidate ([`domain-modeling`](../domain-modeling/SKILL.md)), not a coinage.
 - **Assumption smuggled in** — you could not ask, so you guessed, and the guess is now
   phrased as a fact in an AC. It belongs in `## Open questions` with the assumption named.
   (So does a decision the user *delegated* in a [`grilling`](../grilling/SKILL.md) session, if the AC now

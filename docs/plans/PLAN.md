@@ -917,6 +917,57 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 32 — A domain language with an owner (added 2026-10-05)
+
+Goal: make the four names of one concept the same name. The product-owner names a concept
+in an AC, the architect names its table, a dev agent its type, QE its test — and nothing
+made those agree. The plugin already had a glossary (`.claude/context/glossary.md`,
+injected by the session-start hook, read by the PO) and a self-critique item for *invented
+vocabulary*, but no rule for what a term is, nobody responsible for writing one, and three
+of the four authors never read the file.
+
+Third idea from the `mattpocock/skills` review: `domain-modeling` and `grill-with-docs`.
+Theirs keeps a `CONTEXT.md`; this keeps the glossary path the hook and the PO already use.
+The text is written here.
+
+- ☑ **`domain-modeling` skill** (plugin `2.53.0`) — the authority for the file and for a
+  term: one word per concept (synonyms listed under `_Avoid:_`), one concept per word (an
+  overloaded word lives under `## Open ambiguities` with an owner until it is split), a
+  definition that says where the thing begins and ends, domain terms only, and **the code
+  is evidence that can lose** — a code name that contradicts the team's word is a conflict
+  put to the user, never a quiet edit in either direction. The existing flat
+  `- **term**: definition` format stays valid.
+- ☑ **The stress test** — five probes run with concrete, invented scenarios before a term
+  is written: boundary, identity, cardinality, time, absence. A scenario the definition
+  cannot answer is the valuable result, and the author never settles it: it is the next
+  grilling question or an open ambiguity.
+- ☑ **A narrow write path**, because it is one shared file read by every session. The main
+  loop writes; `product-owner`, `architect`, `frontend-dev` and `backend-dev` use the terms
+  and return **glossary candidates** (the ADR-candidate pattern, reused). `orchestrate`
+  applies accepted candidates at its gates; `/wellforge:spec` proposes a spec's new terms at
+  the review and writes on a yes. Created lazily — never scaffolded empty.
+- ☑ **`/wellforge:grill-me --docs`** — `grill-with-docs` as a flag, not a command. The
+  session challenges a term the moment it is used against the glossary, stress-tests a new
+  one, writes the glossary **as each term resolves** (so a session cut short keeps what it
+  settled — the answer Phase 31 lacked for the ledger, for this part of it), and collects
+  decisions that name a rejected alternative as ADR candidates, offered to `adr-writer`
+  once at the close. The ADR bar is `/wellforge:plan`'s own; no second definition.
+
+**The budget ceiling did not move up.** Phase 31 said the next description should be paid
+for, and it was: `tdd` (346 → 210) and `grilling` (336 → 208) lost the "authoritative
+for…" clauses that restated their bodies, and `grill-with-docs` became a flag. The ceiling
+ratchets to the new total.
+
+**Deliberately not done.** No template change: the glossary is created on first use, so no
+`vX.Y.Z` bump and no `copier update` for anyone. No size limit enforced on the glossary —
+the skill says "a screen or two" and a hook that counted lines would be guessing at what a
+domain needs. `quality-engineer`, `designer` and `devops` are not wired.
+
+**Unproven.** Prompt-authored, no eval. The real risk is the opposite of neglect: a
+glossary injected into every session that grows without anyone pruning it. Watch its size
+in the pilot. Falsification test: count of distinct names for one concept across a
+feature's spec, plan, schema and code, with and without a glossary.
+
 ## Phase 31 — Grilling: the interview that follows the answer (added 2026-10-05)
 
 Goal: give WellForge a deep interview next to its cheap one. `/wellforge:spec` and

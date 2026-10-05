@@ -2,9 +2,8 @@
 name: grilling
 description: >
   WellForge grilling — the one-question-at-a-time interview that walks an idea, spec or plan
-  down its decision tree until nothing load-bearing is left to assume. Use for
-  /wellforge:grill-me and /wellforge:spec --grill. Main loop only, never in a subagent.
-  Authoritative for the question rules, the stop conditions and the decision ledger.
+  down its decision tree. Use for /wellforge:grill-me and /wellforge:spec --grill. Main loop
+  only, never in a subagent.
 ---
 
 # Grilling — every load-bearing decision made out loud, by the person who owns it
@@ -85,6 +84,16 @@ Open (unresolved — each needs an owner):
 - O1 <question> — owner: <who>
 ```
 
+With `--docs` ([`domain-modeling`](../domain-modeling/SKILL.md)) the ledger gains two sections, and they are the
+only ones that describe something already written or about to be:
+
+```
+Terms (written to the glossary during the session):
+- T1 **<term>** — <definition> [(delegated)]
+ADR candidates (a decision with a rejected alternative — offered, not yet written):
+- R1 <decision> — rejected: <alternative>
+```
+
 **Decided and Delegated are different, and the difference is the point.** "You pick" is an
 honest answer, and it is not the same as the user having an opinion. A delegated decision
 is the first place to look when the feature turns out wrong, so it is never recorded as the
@@ -93,6 +102,25 @@ user's choice.
 Where the ledger goes is the calling command's business: `/wellforge:spec --grill` writes
 the spec from it (Open → `## Open questions`, constraints verbatim under `## Constraints`);
 `/wellforge:grill-me` prints it and proposes the next command.
+
+## Grilling with docs
+
+Plain grilling reads the glossary and the ADR index and leaves them as it found them. With
+`--docs` the session also **maintains** them, per the [`domain-modeling`](../domain-modeling/SKILL.md) skill:
+
+- **Language is challenged as it is used.** The user says a word the glossary defines
+  differently, or uses two words for what looks like one concept: that is the next
+  question, asked at once, with both usages quoted.
+- **A new term is stress-tested before it is written** — the boundary, identity,
+  cardinality, time and absence probes. A scenario the definition cannot answer is the
+  next question, not a gap you close yourself.
+- **The glossary is written as each term resolves**, not at the end, so it survives a
+  session that is cut short.
+- **Decisions with a rejected alternative are collected as ADR candidates** and offered to
+  the `adr-writer` agent when the session closes. Never written inline.
+
+The eight rules and the stop conditions are unchanged; `--docs` adds what is written, not
+how questions are asked.
 
 ## Where it does not run
 
@@ -118,4 +146,4 @@ the spec from it (Open → `## Open questions`, constraints verbatim under `## C
 
 Related: [`spec-driven`](../spec-driven/SKILL.md) (the artifacts, the WHAT/HOW line and the drift rule),
 [`self-critique`](../self-critique/SKILL.md) (the smuggled-assumption failure this prevents upstream), [`rigor-tiers`](../rigor-tiers/SKILL.md)
-(why a spike does not interview).
+(why a spike does not interview), [`domain-modeling`](../domain-modeling/SKILL.md) (what `--docs` maintains).

@@ -83,7 +83,7 @@ Inside Claude Code:
 | `commands/spike.md` | `/wellforge:spike` — main-loop build from a one-paragraph brief, advisory gates, no agents (rigor: spike) |
 | `commands/promote.md` | `/wellforge:promote` — graduate a feature (or the project) up a rigor tier, paying the deferred debt |
 | `commands/release.md` | `/wellforge:release` — version bump + CHANGELOG from Conventional Commits, tag, GitHub release |
-| `commands/grill-me.md` | `/wellforge:grill-me` — one-question-at-a-time interview of an idea, spec or plan; ends in a decision ledger |
+| `commands/grill-me.md` | `/wellforge:grill-me` — one-question-at-a-time interview of an idea, spec or plan; ends in a decision ledger. `--docs` also maintains the glossary and offers ADRs |
 | `commands/terse.md` | `/wellforge:terse` — toggle terse conversational output for this run |
 | `commands/terse-compress.md` | `/wellforge:terse-compress` — one-way compression of a WellForge-owned file, behind a fact-preservation gate |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
@@ -164,6 +164,7 @@ something a guard once got wrong — add yours there rather than only widening a
 | `config/model-routing.yml` | Tool-neutral: agent → tier (frontier/mid/cheap) — the portable routing policy |
 | `config/model-tiers.yml` | Per-tool: tier → concrete model (claude aliases, opencode provider/model) |
 | `skills/connections/` | Standardized tool-connection checklists (GitHub, MCP, environments) — each ends with a verification command |
+| `skills/domain-modeling/` | the project glossary — one word per concept, the edge-case stress test, who may write it |
 | `skills/frontend-design/` | visual direction for NEW product surfaces — the surface-class gate and two-pass token system |
 | `skills/git-policy/` | Linear history + Conventional Commits — the format, the four enforcement layers, what to do when a gate rejects you |
 | `skills/quality-gates/` | What CI enforces, where thresholds live, and the rule that they change only by PR to `gates/` |
@@ -248,3 +249,10 @@ Create `.claude/context/glossary.md` in your project — injected into every ses
 - **<term>**: <one-line definition the AI should know for this project>
 - **<acronym>**: <what it expands to and means in your domain>
 ```
+
+You do not have to write it by hand. `/wellforge:grill-me --docs` builds and sharpens it
+during an interview, and `/wellforge:spec` proposes the terms a new spec introduces. The
+`domain-modeling` skill defines the format (the flat list above stays valid; `_Avoid:_`
+synonyms, `## Relationships` and `## Open ambiguities` are optional) and the rules: one word
+per concept, a definition that survives its edge cases, and agents that use the terms but
+never edit the file.

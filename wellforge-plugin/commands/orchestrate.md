@@ -75,6 +75,10 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 3. **HUMAN GATE 1** → present the spec summary (stories, ACs, non-goals). Ask: approve /
    iterate / abort. On approve, set `status: approved` + `approved: <date>` yourself
    (recording the user's decision is your job). On iterate, loop the PO with the feedback.
+   - If the PO returned **glossary candidates**, show them with the spec summary and write
+     the accepted ones to `.claude/context/glossary.md` yourself (`domain-modeling` skill —
+     agents never edit it). Do the same for the architect's at gate 2 and for any a dev
+     agent reports, alongside its ADR candidates.
 4. **Architect** → spawn `wellforge:architect` with the spec path. Artifact: `plan.md`.
 5. **HUMAN GATE 2** → present architecture, trade-offs, AC→test mapping. approve /
    iterate / abort. Record approval as in gate 1.

@@ -46,7 +46,13 @@ session_injection:
   # floor, nothing existing trimmed, ceiling at exactly the new total. Two moves in one day
   # is the pattern the closing note below warns about — the next new description should be
   # paid for by retiring one, or by revisiting ADR 0001.
-  max_chars: 20332
+  #
+  # 2026-10-05, later: the `domain-modeling` skill (263 chars) was paid for, as the line
+  # above asked — by cutting the two descriptions added earlier the same day, `tdd`
+  # (346 → 210) and `grilling` (336 → 208), which had restated what their bodies say.
+  # `grill-with-docs` shipped as a flag on `/wellforge:grill-me`, not as a command, for the
+  # same reason. Net -1; the ceiling follows the total down, as a ratchet should.
+  max_chars: 20331
 
   # Estimated tokens = chars / 4. Stated, not implied: the true count is tokenizer-specific
   # (Claude 4.7+ uses a different one than earlier models), so the CHARACTER count is what
