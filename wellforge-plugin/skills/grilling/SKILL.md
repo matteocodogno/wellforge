@@ -2,8 +2,8 @@
 name: grilling
 description: >
   WellForge grilling — the one-question-at-a-time interview that walks an idea, spec or plan
-  down its decision tree. Use for /wellforge:grill-me and /wellforge:spec --grill. Main loop
-  only, never in a subagent.
+  down its decision tree. Used by /wellforge:grill-me and /wellforge:spec --grill. Main
+  loop only, never in a subagent.
 ---
 
 # Grilling — every load-bearing decision made out loud, by the person who owns it

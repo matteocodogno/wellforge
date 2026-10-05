@@ -1,9 +1,9 @@
 ---
 name: domain-modeling
 description: >
-  WellForge domain modeling — the project glossary (.claude/context/glossary.md): one term
-  per concept, stress-tested against edge cases. Use when a spec, plan or grilling session
-  introduces, renames or contradicts a domain term, and for /wellforge:grill-me --docs.
+  WellForge domain modeling — the project glossary: one term per concept, stress-tested
+  against edge cases. Use when a spec, plan or grilling session introduces, renames or
+  contradicts a domain term.
 ---
 
 # Domain modeling — one word per concept, and a definition that survives its edge cases

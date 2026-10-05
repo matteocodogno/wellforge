@@ -70,7 +70,7 @@ for the human pass this script is the mechanical half of.
 
 ## Status
 
-Validated: **10 agents · 21 commands · 24 skills · 4 MCP servers · enforcement plugin**
+Validated: **10 agents · 22 commands · 24 skills · 4 MCP servers · enforcement plugin**
 (valid ESM, guard parity 13/13), provider swap working.
 
 CI regenerates this adapter on every push and asserts four things about the output —

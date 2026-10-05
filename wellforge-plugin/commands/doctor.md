@@ -268,7 +268,7 @@ One table, `OK` / `WARN` / `FAIL` per check, then:
 - End with the **command index** — what this plugin offers here, grouped: spec flow
   (`spec` → `plan` → `design` → `tasks` → `implement` → `eval` → `done`), orchestration
   (`orchestrate`, `spike`, `promote`), lifecycle (`new`, `upgrade`, `adopt`,
-  `extract-template`, `release`), visibility (`status`, `triage`, `doctor`), interview
+  `extract-template`, `release`), visibility (`status`, `triage`, `doctor`, `retro`), interview
   (`grill-me`), output control (`terse`, `terse-compress`). One line each, so `/wellforge:doctor` doubles as the help the
   plugin otherwise lacks.
 

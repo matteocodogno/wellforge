@@ -84,6 +84,7 @@ Inside Claude Code:
 | `commands/promote.md` | `/wellforge:promote` — graduate a feature (or the project) up a rigor tier, paying the deferred debt |
 | `commands/release.md` | `/wellforge:release` — version bump + CHANGELOG from Conventional Commits, tag, GitHub release |
 | `commands/grill-me.md` | `/wellforge:grill-me` — one-question-at-a-time interview of an idea, spec or plan; ends in a decision ledger. `--docs` also maintains the glossary and offers ADRs |
+| `commands/retro.md` | `/wellforge:retro` — look back at a session or feature; at most five ranked, evidence-backed fixes to the environment, applied only on a yes |
 | `commands/terse.md` | `/wellforge:terse` — toggle terse conversational output for this run |
 | `commands/terse-compress.md` | `/wellforge:terse-compress` — one-way compression of a WellForge-owned file, behind a fact-preservation gate |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |

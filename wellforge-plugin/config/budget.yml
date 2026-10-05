@@ -52,7 +52,13 @@ session_injection:
   # (346 → 210) and `grilling` (336 → 208), which had restated what their bodies say.
   # `grill-with-docs` shipped as a flag on `/wellforge:grill-me`, not as a command, for the
   # same reason. Net -1; the ceiling follows the total down, as a ratchet should.
-  max_chars: 20331
+  #
+  # 2026-10-05, later still: `/wellforge:retro` (91 chars), paid for the same way — from
+  # the descriptions added that day, by removing what the calling command already
+  # guarantees: `domain-modeling` lost the glossary path and the `--docs` trigger
+  # (263 → 197), `tdd` its "off at spike" (210 → 187), `grill-me` nine characters. Net -7.
+  # That well is now dry: those four are at their routing logic too.
+  max_chars: 20324
 
   # Estimated tokens = chars / 4. Stated, not implied: the true count is tokenizer-specific
   # (Claude 4.7+ uses a different one than earlier models), so the CHARACTER count is what

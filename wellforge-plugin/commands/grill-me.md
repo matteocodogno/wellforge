@@ -1,5 +1,5 @@
 ---
-description: Grill an idea, spec or plan — one question at a time, each with a recommendation, until its decisions are made
+description: Grill an idea, spec or plan — one question at a time, each with a recommendation, until it is decided
 argument-hint: <idea in a sentence or two> | <NNN-slug of an existing feature> [--docs]
 ---
 

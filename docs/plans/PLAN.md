@@ -917,6 +917,52 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 33 — Retro: the environment as the thing under review (added 2026-10-05)
+
+Goal: give the lessons of a session somewhere to go. WellForge reviews every artifact a
+session produces — self-critique, QE, the evaluator, the human gates — and reviews nothing
+about the conditions it was produced in. An `ENV-FAULT`, a command that needed three tries,
+a correction the user had to make twice: each is handled in the moment and then gone, and
+the next session meets it again. `/wellforge:triage` looks at features that rot; nothing
+looked at friction.
+
+Fourth idea from the `mattpocock/skills` review: its `retro` — suggest environment
+improvements after a session, by severity. Written here, against WellForge's own evidence.
+
+- ☑ **`/wellforge:retro [NNN-slug]`** (plugin `2.54.0`) — a command, no skill: nothing else
+  delegates to it. Two evidence sources — the conversation (corrections, repeats, questions
+  the repo could have answered, stops, detours) and the run traces (`run-report.py` as the
+  index, the `.forge/runs/*.json` files for `drift_events`, `env_faults`,
+  `collision_events`; `--rework` for rework rounds). **No evidence, no finding.**
+- ☑ **The rung ladder** — the part that is ours. A fix is chosen from the strongest rung
+  that fits: remove the cause > a mechanism (mise task, hook, CI check, allowlist entry) >
+  a document read on demand > a line in `CLAUDE.md`/`AGENTS.md`. The last rung is the reflex
+  and the most expensive: paid in every session, and the only one that depends on being
+  read. It is the repo's own thesis — a rule that depends on remembering is not enforced —
+  applied to what a retro is allowed to conclude.
+- ☑ **Ranked by recurrence, capped at five.** Blocker / Friction / Papercut; something that
+  happened once with no structural cause is an anecdote and is left out. Zero findings is
+  a valid result.
+- ☑ **Applies only on a yes, by destination**: project files are edited; user-level
+  settings are shown, never edited; an upstream WellForge finding becomes drafted issue
+  text, filed with `gh` only on an explicit yes. Never commits.
+- ☑ **What it may not propose**: weakening a gate in any form (a miscalibrated threshold is
+  an upstream finding, not a local edit), or re-tiering an agent on the strength of one
+  feature — `model-routing.yml` already says what evidence that takes.
+
+**The budget ceiling went down again** (20,331 → 20,324): the 91-char description was paid
+for out of the three added earlier the same day, and `budget.yml` records that this well
+is now dry.
+
+**Honest limits.** A compacted conversation is a summary, and a retro over a summary
+under-reports — the command says so rather than reconstructing friction it cannot see.
+Unpicked findings are not persisted anywhere: they stay in the report. And the name
+collides with the *retro plan* that `/wellforge:promote` writes; the docs say which is which.
+
+**Unproven.** Prompt-authored, no eval. The failure to watch for is the one the ladder is
+built against: a retro that keeps landing on rung 4 and grows `CLAUDE.md` by a line a
+session. Falsification test: the rung distribution of applied findings over the pilot.
+
 ## Phase 32 — A domain language with an owner (added 2026-10-05)
 
 Goal: make the four names of one concept the same name. The product-owner names a concept

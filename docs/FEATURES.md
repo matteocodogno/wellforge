@@ -53,6 +53,13 @@ Key properties:
   writes the file; the PO, architect and dev agents use its terms and return **glossary
   candidates** instead of editing it. `--docs` on a grilling session also collects
   decisions with a rejected alternative and offers them to `adr-writer`.
+- **Retro** (`/wellforge:retro`): after a session or a feature, look for what in the
+  *environment* — `CLAUDE.md`, the glossary, mise tasks, hooks, permissions, docs, the
+  template, the plugin — made the work slower or more wrong, from evidence only (user
+  corrections, repeated failures, `ENV-FAULT`s, drift, rework rounds in `.forge/runs/`).
+  At most five findings, ranked by recurrence, each fixed at the strongest rung that fits:
+  remove the cause, add a mechanism, write an on-demand doc, and only then a line every
+  session has to read. Nothing is applied without a yes; nothing weakens a gate.
 - **Self-critique before the gate** (`self-critique` skill): whoever writes an artifact
   runs **one** bounded pass over it — against a per-artifact checklist of known failure
   modes (an AC a QE couldn't test, a contract written as prose, a `touch:` list that lies,

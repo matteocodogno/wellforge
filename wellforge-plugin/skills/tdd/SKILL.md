@@ -3,7 +3,7 @@ name: tdd
 description: >
   WellForge test-first discipline — red, green, refactor, one behavior at a time. Use when
   a dev agent implements a task at the mvp or production tier, or makes a QE reproduction
-  test pass. Off at the spike tier.
+  test pass.
 ---
 
 # Test-driven development — the test exists before the code that passes it
