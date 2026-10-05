@@ -87,8 +87,8 @@ for the human pass this script is the mechanical half of.
 
 ## Status
 
-Generator complete: **20 prompts · 10 chat modes · 9 scoped instructions + the full skill
-library (22 skills, refs translated) · 4 MCP servers · git-hook enforcement fallback.**
+Generator complete: **21 prompts · 10 chat modes · 9 scoped instructions + the full skill
+library (23 skills, refs translated) · 4 MCP servers · git-hook enforcement fallback.**
 Provider swap working; all generated frontmatter validated as YAML; ref translation clean
 (0 leftover `/wellforge:`).
 

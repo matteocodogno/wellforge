@@ -38,6 +38,13 @@ Key properties:
   refuses a non-approved plan.
 - **Bidirectional coverage**: every AC covered by ≥1 task, every task serves ≥1 AC
   (taskless work = scope creep, flagged).
+- **Grilling, on request** (`grilling` skill, `/wellforge:grill-me`, `/wellforge:spec
+  --grill`): the default interview is batched and bounded; grilling is the opt-in deep one.
+  It reads the repo before asking, maps the decision tree, then asks one question at a
+  time — parents before children, each with a recommendation — until no remaining question
+  could change the artifact or the user stops. It ends in a decision ledger (Decided /
+  Delegated / Found / Assumed / Open). Main loop only; it approves nothing, and against an
+  approved artifact it yields proposed amendments rather than edits.
 - **Self-critique before the gate** (`self-critique` skill): whoever writes an artifact
   runs **one** bounded pass over it — against a per-artifact checklist of known failure
   modes (an AC a QE couldn't test, a contract written as prose, a `touch:` list that lies,

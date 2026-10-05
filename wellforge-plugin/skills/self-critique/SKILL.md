@@ -65,6 +65,8 @@ ignore it and stay silent.
   neighbouring specs, where the project already has a word for it.
 - **Assumption smuggled in** — you could not ask, so you guessed, and the guess is now
   phrased as a fact in an AC. It belongs in `## Open questions` with the assumption named.
+  (So does a decision the user *delegated* in a [`grilling`](../grilling/SKILL.md) session, if the AC now
+  reads as though they chose it.)
 
 ### plan.md — `architect`, `/wellforge:plan`
 

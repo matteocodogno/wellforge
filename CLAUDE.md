@@ -61,12 +61,12 @@ wellforge/
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, done,
 │   │                         # status, triage, doctor, new, upgrade, adopt, extract-template,
-│   │                         # spike, promote, release, terse, terse-compress (→ /wellforge:*)
+│   │                         # spike, promote, release, grill-me, terse, terse-compress (→ /wellforge:*)
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,
 │   │                         # frontend-design, systematic-debugging, worktree-isolation,
-│   │                         # self-critique, tdd, template-extraction, git-policy,
+│   │                         # self-critique, tdd, grilling, template-extraction, git-policy,
 │   │                         # quality-gates, template-contract,
 │   │                         # connections + stack skills (react-ts-vite, kotlin-springboot,
 │   │                         # hono-ts-backend, mise, springboot-scaffold, pulumi-gcp-ts)
@@ -92,9 +92,9 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/plans/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v14` (gate
-  workflow pin series), `plugin-v2.51.0` (plugin series) and `cli-v1.5.1` (the `wellforge`
+  workflow pin series), `plugin-v2.52.0` (plugin series) and `cli-v1.5.1` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.51.0`, CLI `1.5.1`. **This is the one line in this file that states current
+  plugin `2.52.0`, CLI `1.5.1`. **This is the one line in this file that states current
   versions**; `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and
   `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
   the docs. Every other version in this file is history and stays as written. A self-CI workflow
@@ -131,6 +131,10 @@ wellforge/
   one behavior per cycle, a red that must fail on the assertion before any implementation,
   an explicit exemption list, and a `TDD:` report line that is the agent's own account and
   never evidence the evaluator may credit (plugin `2.51.0`).
+- **Phase 31** (`docs/plans/PLAN.md`) adds the deep interview the batched one cannot be:
+  the `grilling` skill and `/wellforge:grill-me` — one question at a time down the decision
+  tree, a recommendation with each, ending in a decision ledger that keeps what the user
+  *decided* apart from what they *delegated* (plugin `2.52.0`).
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
   and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
   is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),
@@ -186,6 +190,13 @@ wellforge/
   Migrations, generated code and wiring are exempt from their own test, never from being
   exercised by one. Like self-critique it is a discipline, not a gate — the `TDD:` line is
   never evidence in a QE or eval verdict. Off at the `spike` tier; `devops` is not wired.
+- The default interview stays **batched, two rounds at most** (`spec`, `new`). The deep one
+  is opt-in and follows the **`grilling` skill** (the authority; `/wellforge:grill-me` and
+  `/wellforge:spec --grill` delegate to it): read before asking, one question at a time,
+  parents before children, a recommendation with every question, and a decision ledger
+  where *Delegated* is never recorded as *Decided*. Main loop only — never in a subagent,
+  never inside `orchestrate`, not at the `spike` tier. It approves nothing and never edits
+  an approved artifact: there its output is proposed amendments, routed as drift.
 - **Before any tag in any series: `mise run check`** (`scripts/check-all.sh`) — every
   self-test in this repo behind one exit code. **Red means no tag.** It is a precondition in
   `scripts/release-cli.sh` and `/wellforge:release`, the committed `gates/hooks/pre-push`

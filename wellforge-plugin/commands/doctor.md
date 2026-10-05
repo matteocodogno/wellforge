@@ -249,7 +249,7 @@ Report any suite present on disk but absent from the list above as a **WARN** ag
 command, not a silent omission. `security-triggers.test.py` was exactly that for a while.
 
 `check-budget.py` (one of the suites `check-all.sh` runs) is worth reporting even when it
-passes: it prints what this plugin costs every session in this project (~4,900 estimated
+passes: it prints what this plugin costs every session in this project (~5,100 estimated
 tokens of descriptions, loaded before the user types), and that number is invisible
 otherwise. Surface it from the run's output rather than invoking it separately.
 
@@ -268,8 +268,8 @@ One table, `OK` / `WARN` / `FAIL` per check, then:
 - End with the **command index** — what this plugin offers here, grouped: spec flow
   (`spec` → `plan` → `design` → `tasks` → `implement` → `eval` → `done`), orchestration
   (`orchestrate`, `spike`, `promote`), lifecycle (`new`, `upgrade`, `adopt`,
-  `extract-template`, `release`), visibility (`status`, `triage`, `doctor`), output control
-  (`terse`, `terse-compress`). One line each, so `/wellforge:doctor` doubles as the help the
+  `extract-template`, `release`), visibility (`status`, `triage`, `doctor`), interview
+  (`grill-me`), output control (`terse`, `terse-compress`). One line each, so `/wellforge:doctor` doubles as the help the
   plugin otherwise lacks.
 
   **Build this list from `commands/*.md`, not from the grouping above.** The grouping named

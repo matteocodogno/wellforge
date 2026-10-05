@@ -65,7 +65,7 @@ Inside Claude Code:
 | Path | What |
 |---|---|
 | `.mcp.json` | sequential-thinking, playwright, github, context-hub MCP servers |
-| `commands/spec.md` | `/wellforge:spec` — interview → feature spec (step 1 of 3) |
+| `commands/spec.md` | `/wellforge:spec` — interview (`--grill` for one question at a time) → feature spec (step 1 of 3) |
 | `commands/plan.md` | `/wellforge:plan` — approved spec → technical plan (step 2 of 3) |
 | `commands/design.md` | `/wellforge:design` — UX flows, screens & states, component reuse, a11y (UI features) |
 | `commands/tasks.md` | `/wellforge:tasks` — approved plan → dependency-aware task list (step 3 of 3) |
@@ -83,6 +83,7 @@ Inside Claude Code:
 | `commands/spike.md` | `/wellforge:spike` — main-loop build from a one-paragraph brief, advisory gates, no agents (rigor: spike) |
 | `commands/promote.md` | `/wellforge:promote` — graduate a feature (or the project) up a rigor tier, paying the deferred debt |
 | `commands/release.md` | `/wellforge:release` — version bump + CHANGELOG from Conventional Commits, tag, GitHub release |
+| `commands/grill-me.md` | `/wellforge:grill-me` — one-question-at-a-time interview of an idea, spec or plan; ends in a decision ledger |
 | `commands/terse.md` | `/wellforge:terse` — toggle terse conversational output for this run |
 | `commands/terse-compress.md` | `/wellforge:terse-compress` — one-way compression of a WellForge-owned file, behind a fact-preservation gate |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
@@ -167,6 +168,7 @@ something a guard once got wrong — add yours there rather than only widening a
 | `skills/git-policy/` | Linear history + Conventional Commits — the format, the four enforcement layers, what to do when a gate rejects you |
 | `skills/quality-gates/` | What CI enforces, where thresholds live, and the rule that they change only by PR to `gates/` |
 | `skills/template-contract/` | The binding contract every Copier template satisfies — one root copier.yml, the shared questions, the manifest, the two version series |
+| `skills/grilling/` | the one-at-a-time interview — read first, parents before children, a recommendation per question, the decision ledger |
 | `skills/heartbeat/` | Scheduled-automation conventions — surface-never-ship, dedup, deterministic-vs-agentic, cost bound |
 | `skills/hono-ts-backend/` | Hono + TypeScript + Drizzle + Effect — best practices and scaffolding |
 | `skills/kotlin-springboot/` | Spring Boot + Kotlin + jOOQ + Liquibase + Modulith |

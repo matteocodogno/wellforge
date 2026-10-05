@@ -60,7 +60,7 @@ Everything below is the part that needs a human and a running tool. Run the scri
       production code.
 
 ## 4. Skills
-- [ ] `.opencode/skills/` contains all 22 skills with their `references/`.
+- [ ] `.opencode/skills/` contains all 23 skills with their `references/`.
 - [ ] Ask a backend-shaped question in a Kotlin file's context — confirm the
       `kotlin-springboot` conventions are actually pulled in. OpenCode has no `applyTo`
       glob scoping, so skills are loaded on demand rather than automatically: if nothing

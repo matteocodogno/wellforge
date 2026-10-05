@@ -2,8 +2,8 @@
 """Session-injection budget — what the plugin costs before the user types a word.
 
 Claude Code loads every skill, command and agent DESCRIPTION into the session prompt so it
-can decide what to invoke. Bodies are read on demand; descriptions are not. With 22 skills,
-20 commands and 10 agents, that is a fixed toll paid in every project where the plugin is
+can decide what to invoke. Bodies are read on demand; descriptions are not. With 23 skills,
+21 commands and 10 agents, that is a fixed toll paid in every project where the plugin is
 enabled — including repos that have nothing to do with WellForge.
 
 Nobody had measured it. This script does, prints the worst offenders, and fails when the

@@ -40,7 +40,13 @@ session_injection:
   # is routing logic. The new one was written to the floor instead (346 chars, the shortest
   # workflow-skill description in the plugin; the median is ~600). Still a ratchet: the
   # ceiling is exactly the new total.
-  max_chars: 19886
+  #
+  # 2026-10-05: 19,886 → 20,332 (+446), for the `grilling` skill (336) and the
+  # `/wellforge:grill-me` command (110). Same reasoning, same method: both written to the
+  # floor, nothing existing trimmed, ceiling at exactly the new total. Two moves in one day
+  # is the pattern the closing note below warns about — the next new description should be
+  # paid for by retiring one, or by revisiting ADR 0001.
+  max_chars: 20332
 
   # Estimated tokens = chars / 4. Stated, not implied: the true count is tokenizer-specific
   # (Claude 4.7+ uses a different one than earlier models), so the CHARACTER count is what

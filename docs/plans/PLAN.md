@@ -917,6 +917,57 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 31 — Grilling: the interview that follows the answer (added 2026-10-05)
+
+Goal: give WellForge a deep interview next to its cheap one. `/wellforge:spec` and
+`/wellforge:new` batch their questions, two rounds at most. That closes the gaps the author
+noticed; it cannot follow an answer, and the questions that only exist because of how the
+previous one was answered are where a spec's guesses come from — the *assumption smuggled
+in* that `self-critique` then has to catch after the fact.
+
+Second idea taken from the `mattpocock/skills` review (Phase 30 was the first): its
+`grilling` / `grill-me` pair. The shape is theirs — one question at a time, a recommended
+answer with each, explore the codebase instead of asking — the text and everything
+WellForge-specific are written here.
+
+- ☑ **`grilling` skill** (plugin `2.52.0`) — the authority. Eight rules: read before you
+  ask (a repo-answerable question becomes a *finding*), map the decision tree first, one
+  question at a time, parents before children, a recommendation with every question, only
+  load-bearing questions (would the two likely answers produce a different artifact?), no
+  accepting a non-answer or a contradiction, and stay on the artifact's side of the
+  WHAT/HOW line. Three stop conditions, the user's "stop" being unconditional.
+- ☑ **The decision ledger** — Decided / Delegated / Found / Assumed / Open. Keeping
+  **Delegated** apart from **Decided** is the part that is ours: "you pick" is an honest
+  answer and not the same as the user having an opinion, and a delegated decision is the
+  first place to look when a feature turns out wrong.
+- ☑ **`/wellforge:grill-me`** — resolves the target (free-form idea, or a feature's latest
+  artifact) and routes the result by status: an idea is handed to `/wellforge:spec` or
+  `/wellforge:spike`; a `draft` is edited only on a yes and stays `draft`; anything
+  approved or later is never edited — the ledger becomes proposed amendments, as drift.
+- ☑ **`/wellforge:spec --grill`** — swaps the batched rounds for a grilling session and
+  writes the spec from the ledger; a ledger already in the conversation from `grill-me`
+  counts as the interview. Self-critique, review and the approval gate are unchanged.
+- ☑ **No fixed question cap, so the cost is made visible instead**: branch-closed progress
+  ("2 branches left"), and the ledger restated in full every five decisions — a long
+  interview is exactly the session that gets compacted.
+
+**Where it deliberately does not run.** Never in a subagent (agents cannot reach the user,
+so the PO and architect keep returning open questions to the caller), never inside
+`/wellforge:orchestrate` (which batches by design), not started by anything at the `spike`
+tier. `/wellforge:new` keeps its batched interview: its tree is five fixed questions, and
+there is nothing to follow.
+
+**The budget ceiling moved again**, 19,886 → 20,332 (+446: skill 336, command 110). Twice
+in one day is the reflex `budget.yml` warns against, and it says so there: the next new
+description should be paid for by retiring one.
+
+**Unproven.** Prompt-authored, no runtime teeth, no prompt eval — and an interview is the
+hardest thing in the plugin to eval, since the case needs a scripted user. The ledger lives
+in the conversation, not on disk: the periodic restatement is a mitigation, not
+persistence. If the pilot shows ledgers lost to compaction, give it a file.
+Falsification test: human-gate iterate rounds on grilled vs batched specs, and how often a
+*Delegated* decision is the one that gets amended later.
+
 ## Phase 30 — Test-first in the dev agents (added 2026-10-05)
 
 Goal: move the test in front of the code it proves. The dev agents' whole rule was "tests

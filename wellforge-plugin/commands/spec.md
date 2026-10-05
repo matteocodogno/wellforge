@@ -1,6 +1,6 @@
 ---
 description: Write a feature specification (spec-driven workflow, step 1 of 3)
-argument-hint: <feature description> | <NNN-slug to resume>
+argument-hint: <feature description> | <NNN-slug to resume> [--grill]
 ---
 
 Create or resume a feature specification following the **spec-driven** skill conventions
@@ -19,6 +19,14 @@ Feature request: $ARGUMENTS
    explicitly OUT of scope, and any hard constraints (deadline, compatibility, compliance).
    Ask only what you cannot infer from the codebase or existing specs; batch questions
    (max 2 rounds). Read neighboring specs first so terminology stays consistent.
+
+   **With `--grill`**, replace the batched rounds with a grilling session (load the
+   **grilling** skill and follow it verbatim): one question at a time, parents first, a
+   recommendation with every question, until the decision tree is resolved or the user
+   stops. Write the spec from its ledger — *Open* becomes `## Open questions`, and a
+   *Delegated* decision is marked as such where it lands, never presented as the user's
+   choice. If a decision ledger from `/wellforge:grill-me` is already in this conversation
+   for this feature, that **is** the interview: do not ask again, with or without the flag.
 
 3. **Write `specs/NNN-slug/spec.md`** with `status: draft`:
    - Problem: 2–5 sentences, no solutioning.
@@ -47,4 +55,6 @@ Feature request: $ARGUMENTS
   that is `/wellforge:plan`'s job. If the user volunteers technical decisions, capture them
   under a `## Constraints` section verbatim, don't elaborate on them.
 - Never set `approved` yourself; never skip the interview for "obvious" features.
+- `--grill` changes how the questions are asked, nothing after them: self-critique, the
+  review and the approval gate run exactly as without it.
 - Suggest `/wellforge:plan` as the next step after approval.

@@ -281,6 +281,14 @@ failure then surfaces deep in app code looking exactly like a bug — that is an
 fault, reported as one, never fixed with a default or a guard. Full process:
 `.github/wf-skills/systematic-debugging/SKILL.md`.
 
+## Grilling (only when asked)
+When the human asks to be grilled on an idea, spec or plan: read the repo first and never
+ask what it already answers, then ask ONE question at a time — the decision others depend
+on first — each with your recommended answer and why. Stop when no remaining question would
+change the artifact, or the moment they say stop. End with a decision ledger that keeps
+what they decided apart from what they delegated to you. It approves nothing. Full rules:
+`.github/wf-skills/grilling/SKILL.md`.
+
 ## Test-first (when implementing)
 Write the test before the code it proves, one behavior at a time: run it and watch it fail
 on the assertion — not on an import or a typo — then write the least code that passes, then
