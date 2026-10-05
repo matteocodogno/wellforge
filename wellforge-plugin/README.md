@@ -84,11 +84,12 @@ Inside Claude Code:
 | `commands/promote.md` | `/wellforge:promote` — graduate a feature (or the project) up a rigor tier, paying the deferred debt |
 | `commands/release.md` | `/wellforge:release` — version bump + CHANGELOG from Conventional Commits, tag, GitHub release |
 | `commands/grill-me.md` | `/wellforge:grill-me` — one-question-at-a-time interview of an idea, spec or plan; ends in a decision ledger. `--docs` also maintains the glossary and offers ADRs |
+| `commands/improve-architecture.md` | `/wellforge:improve-architecture` — scan for shallow modules: at most five evidenced refactor candidates, design the picked one twice, route it to the refactor pipeline. Changes no code |
 | `commands/retro.md` | `/wellforge:retro` — look back at a session or feature; at most five ranked, evidence-backed fixes to the environment, applied only on a yes |
 | `commands/terse.md` | `/wellforge:terse` — toggle terse conversational output for this run |
 | `commands/terse-compress.md` | `/wellforge:terse-compress` — one-way compression of a WellForge-owned file, behind a fact-preservation gate |
 | `agents/product-owner.md` | PO — spec.md: problem, user stories, ACs, non-goals |
-| `agents/architect.md` | Architect — plan.md: architecture, contracts, AC→test mapping |
+| `agents/architect.md` | Architect — plan.md: architecture, contracts, AC→test mapping; also the architecture review behind `/wellforge:improve-architecture` |
 | `agents/designer.md` | Designer — design.md: flows, screens, component reuse, a11y |
 | `agents/frontend-dev.md` | FE dev — implements tasks per react-ts-vite conventions |
 | `agents/backend-dev.md` | BE dev — implements tasks per stack skill conventions |

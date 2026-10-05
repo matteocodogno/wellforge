@@ -60,6 +60,15 @@ Key properties:
   At most five findings, ranked by recurrence, each fixed at the strongest rung that fits:
   remove the cause, add a mechanism, write an on-demand doc, and only then a line every
   session has to read. Nothing is applied without a yes; nothing weakens a gate.
+- **Architecture review** (`/wellforge:improve-architecture`): agents amplify whatever the
+  codebase already is, so decay is worth looking for on purpose. Evidence comes first and
+  from scripts — which files change together across directories, which tasks collided,
+  where a plan drifted — then the architect reads the code for *shallow modules*:
+  pass-through layers, one concept scattered over many files, callers reaching past an
+  interface, tests that have to mock internals. At most five ranked candidates in
+  `docs/architecture/review-<date>.md`; the one you pick is designed two or three ways,
+  and the refactor runs through the normal refactor pipeline with its gate and invariant
+  check. The command itself changes no code.
 - **Self-critique before the gate** (`self-critique` skill): whoever writes an artifact
   runs **one** bounded pass over it — against a per-artifact checklist of known failure
   modes (an AC a QE couldn't test, a contract written as prose, a `touch:` list that lies,

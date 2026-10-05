@@ -58,7 +58,13 @@ session_injection:
   # guarantees: `domain-modeling` lost the glossary path and the `--docs` trigger
   # (263 → 197), `tdd` its "off at spike" (210 → 187), `grill-me` nine characters. Net -7.
   # That well is now dry: those four are at their routing logic too.
-  max_chars: 20324
+  #
+  # 2026-10-05, last: 20,324 → 20,417 (+93), for `/wellforge:improve-architecture`. A real
+  # raise this time, and the third in total: there was nothing left to trim that is not
+  # routing logic, the feature needs a command a user can type, and it was kept to a
+  # command with no skill (the method lives in the architect's body, which costs nothing
+  # here). Five features landed today for a net +877 chars (~220 tokens per session).
+  max_chars: 20417
 
   # Estimated tokens = chars / 4. Stated, not implied: the true count is tokenizer-specific
   # (Claude 4.7+ uses a different one than earlier models), so the CHARACTER count is what

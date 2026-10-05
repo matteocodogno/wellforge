@@ -82,6 +82,8 @@ ignore it and stay silent.
 - **Risk without a check** — a risk with no mitigation and no early signal is a worry.
 - **Unstated rejection** — you chose a shape and did not say what you rejected. A reviewer
   cannot approve a decision whose alternatives are invisible.
+- **Shallow addition** — a new layer, wrapper or service whose interface is as wide as
+  what it hides. If callers must know everything it knows, it is indirection, not a module.
 - **Buried ADR candidate** — a choice that will constrain future work is sitting in the
   prose instead of `## ADR candidates`.
 

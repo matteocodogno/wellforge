@@ -61,7 +61,8 @@ wellforge/
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, done,
 │   │                         # status, triage, doctor, new, upgrade, adopt, extract-template,
-│   │                         # spike, promote, release, grill-me, retro, terse, terse-compress (→ /wellforge:*)
+│   │                         # spike, promote, release, grill-me, retro, improve-architecture, terse,
+│   │                         # terse-compress (→ /wellforge:*)
 │   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,
@@ -92,9 +93,9 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/plans/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v14` (gate
-  workflow pin series), `plugin-v2.54.0` (plugin series) and `cli-v1.5.1` (the `wellforge`
+  workflow pin series), `plugin-v2.55.0` (plugin series) and `cli-v1.5.1` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.54.0`, CLI `1.5.1`. **This is the one line in this file that states current
+  plugin `2.55.0`, CLI `1.5.1`. **This is the one line in this file that states current
   versions**; `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and
   `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
   the docs. Every other version in this file is history and stays as written. A self-CI workflow
@@ -143,6 +144,11 @@ wellforge/
   `/wellforge:retro` — evidence from the session and the run traces, at most five findings
   ranked by recurrence, each fixed at the strongest rung that fits (remove the cause >
   mechanism > on-demand doc > always-loaded doc), applied only on a yes (plugin `2.54.0`).
+- **Phase 34** (`docs/plans/PLAN.md`) adds the scan for architectural decay:
+  `/wellforge:improve-architecture` — co-change and run-trace evidence first, then the
+  architect in a spec-less *review mode* looking for shallow modules; at most five
+  candidates, the picked one designed twice, the refactor itself routed to
+  `/wellforge:orchestrate` (plugin `2.55.0`).
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
   and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
   is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),
@@ -222,6 +228,16 @@ wellforge/
   for in every session and depends on being read. It never proposes weakening a gate or
   re-tiering an agent on one feature, never commits, and files an upstream issue only on an
   explicit yes. (Not to be confused with the *retro plan* `/wellforge:promote` writes.)
+- **`/wellforge:improve-architecture` proposes refactors; it never performs one.** Evidence
+  is gathered deterministically first (git co-change, `collision_events` / `drift_events`
+  from the run traces) and handed to the `architect`, whose **architecture review mode** is
+  the one case where it works without a spec. The lens is module depth — a small interface
+  over a lot of behavior. At most five candidates, each with evidence; one taken forward at
+  a time and designed two or three ways plus "leave it alone"; the chosen design goes to
+  `/wellforge:orchestrate`'s refactor pipeline and the decision to `adr-writer`. It writes
+  one file, `docs/architecture/review-<date>.md`. A shape an ADR chose is not a candidate
+  unless the ADR's own reasoning no longer holds; no rewrites; no relaxing a boundary to
+  remove friction.
 - **Before any tag in any series: `mise run check`** (`scripts/check-all.sh`) — every
   self-test in this repo behind one exit code. **Red means no tag.** It is a precondition in
   `scripts/release-cli.sh` and `/wellforge:release`, the committed `gates/hooks/pre-push`

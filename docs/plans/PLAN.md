@@ -917,6 +917,59 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 34 — Architecture review: looking for shallow modules on purpose (added 2026-10-05)
+
+Goal: a way to find architectural decay before it is a rewrite. WellForge has a refactor
+pipeline (`orchestrate`), an architect and ADRs — everything needed to *do* a refactor and
+nothing that says *which one*. Meanwhile agents amplify the codebase they are given: a
+shallow seam gets copied, a leaked internal gets depended on, and a dozen features later
+the cost shows up as collisions and plan drift that each look like a one-off.
+
+Fifth and last idea taken from the `mattpocock/skills` review:
+`improve-codebase-architecture`, with the *deep module* lens (Ousterhout) it uses. Their
+version ends in an HTML report and an RFC issue; this one ends in the refactor pipeline
+that already exists here.
+
+- ☑ **`/wellforge:improve-architecture [path]`** (plugin `2.55.0`) — six steps: read the
+  constraints (ADR index, stack skill, glossary), gather evidence, scan, present, design
+  the picked candidate, route it. It writes one file and changes no code.
+- ☑ **Evidence before judgment** — the heartbeat skill's split, applied here. A
+  shell-portable snippet (tested under bash and zsh) reads six months of `git log` for churn
+  and for pairs of files in *different directories* that change together, ignoring commits
+  over 15 files; the run traces contribute `collision_events` and `plan.md`
+  `drift_events`, which are coupling evidence that already cost rework to produce. A repo
+  under ~30 commits is told it has no history to read.
+- ☑ **Architect "architecture review mode"** — the one case where the architect works
+  without an approved spec. Six signals (shallow module, scattered concept, leaked
+  internals, no seam to test through, knowledge in two places, seam in the wrong place), a
+  fixed report format, at most five candidates with evidence, and a `## Not candidates`
+  section for friction that an ADR or the stack skill already settled. The method lives in
+  the agent body, so it costs nothing in the description budget.
+- ☑ **Design it twice** — for the one candidate picked: two or three interfaces that differ
+  in what the caller sees, plus "leave it alone" with its real cost, a recommendation, and
+  a migration made of steps that are each green.
+- ☑ **Routed, not executed** — the chosen design goes to `/wellforge:orchestrate` (refactor
+  pipeline: mini-plan, human gate, behavior-preserving tasks, QE invariant check) and the
+  decision to `adr-writer`. A recorded "leave it alone" is what stops the next scan
+  proposing it again.
+- ☑ **`self-critique`, plan.md checklist** gains *shallow addition* — the same lens applied
+  to a new plan, before the layer exists.
+
+**The budget ceiling moved up**, 20,324 → 20,417 (+93). The earlier descriptions had
+nothing left to give, so this one is a real raise, recorded with its reason.
+
+**Deliberately not done.** No HTML report — markdown in `docs/architecture/` is diffable,
+reviewable in a PR and readable by the next scan. No parallel design agents: one architect
+producing alternatives is a third of the frontier cost, and the alternatives can be
+compared in one context. No skill for the depth vocabulary; if the dev agents turn out to
+need it, that is when it earns a description.
+
+**Unproven.** Prompt-authored, no eval, and never run against a real WellForge project —
+this repository is Markdown and shell, so its own co-change output is dominated by version
+files (`plugin.json` pairs with everything), which is exactly the bookkeeping the command
+tells the reader to drop. Falsification test: do the candidates it names coincide with
+where the pilot's collisions and drift actually occurred?
+
 ## Phase 33 — Retro: the environment as the thing under review (added 2026-10-05)
 
 Goal: give the lessons of a session somewhere to go. WellForge reviews every artifact a
