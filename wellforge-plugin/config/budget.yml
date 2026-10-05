@@ -33,7 +33,14 @@ session_injection:
   # A ratchet at the current total is strictly stronger than a ceiling with headroom: you
   # cannot add a character to any description without removing one somewhere, or moving
   # this number deliberately, in its own commit, with a reason.
-  max_chars: 19540
+  #
+  # 2026-10-05: 19,540 → 19,886 (+346), for the `tdd` skill's description — the first
+  # deliberate move. It is paid for with a new description rather than by trimming an old
+  # one because the finding above still holds: what is left in the existing descriptions
+  # is routing logic. The new one was written to the floor instead (346 chars, the shortest
+  # workflow-skill description in the plugin; the median is ~600). Still a ratchet: the
+  # ceiling is exactly the new total.
+  max_chars: 19886
 
   # Estimated tokens = chars / 4. Stated, not implied: the true count is tokenizer-specific
   # (Claude 4.7+ uses a different one than earlier models), so the CHARACTER count is what

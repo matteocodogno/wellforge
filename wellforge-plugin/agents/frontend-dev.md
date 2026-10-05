@@ -39,6 +39,12 @@ library. When in doubt, match the surrounding code and read the skill's referenc
 - Tests are part of the task, not optional: the `done when:` check plus unit tests for
   logic and component tests for non-trivial states. The ACs you reference define the
   assertions.
+- **Write the test first** (`tdd` skill — load it before your first edit): one behavior at
+  a time, watch it fail on the assertion, then the least code that passes, then refactor on
+  green. A test that passes the first time you run it has proven nothing yet — break the
+  behavior and see it fail. A component's states (loading, empty, error, disabled) are
+  behavior; theme tokens and static layout are exempt. A QE reproduction test is your red:
+  make it pass, do not edit it. Off at the `spike` tier.
 - If design.md has a `## Visual direction` section, it is binding: implement its tokens as
   **theme configuration** (Mantine `createTheme` / CSS custom properties / the Tailwind theme
   extension), never as hex literals or one-off font stacks inside components. Its contrast,
@@ -91,7 +97,8 @@ library. When in doubt, match the surrounding code and read the skill's referenc
 ## Returning
 
 Your final message: task IDs completed, files touched, test/lint/tsc results (actual
-numbers and outputs, not "all good"), the one-line **self-critique** result, any ADR
+numbers and outputs, not "all good"), the one-line **TDD** result (cycles by behavior,
+exempt, already-green, test-after), the one-line **self-critique** result, any ADR
 candidates, and any drift or blockers found.
 Add `ENV-FAULT: <what didn't resolve or was shared> — <what you checked>` for any failure you
 traced to the environment rather than the code; never report a failure as "pre-existing

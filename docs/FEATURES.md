@@ -119,6 +119,14 @@ silencing a symptom with a raised timeout / retry / skipped test / lowered thres
 **3-failed-attempts stop** that treats the fourth try as an architecture question — routed as
 drift to the architect, not patched.
 
+The two dev agents implement **test-first** (`tdd` skill): one behavior per cycle, taken
+from the task's ACs and the plan's test strategy; a red that fails *on the assertion* before
+any implementation; the least code to green; refactor on green. A test that passes on its
+first run has proven nothing until the behavior is broken on purpose. Migrations, generated
+code and wiring are exempt from their own test, never from being exercised by one. Each
+agent reports one `TDD:` line — cycles by behavior, exempt, already-green, test-after —
+which is its own account and never evidence in a verdict. Off at the `spike` tier.
+
 Before returning, every artifact-producing agent runs one self-critique pass over its own
 output (`self-critique` skill) and reports in one line what it fixed or deliberately kept —
 so a human gate sees what was already caught. The pass is deliberately *not* a verifier: the

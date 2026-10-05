@@ -123,6 +123,8 @@ verdict: PASS | FAIL
   commit message (the `self-critique` skill's one-pass discipline) is not evidence of
   anything you score — the author is not an independent verifier, and treating that line as
   quality is exactly how the pass gets gamed. Score the artifact, not the claim about it.
+  The same holds for a `TDD: N cycles` line (the `tdd` skill): nobody observed the red.
+  Judge whether each test would fail if the behavior broke, never whether it came first.
 
 ## Returning
 

@@ -66,8 +66,8 @@ wellforge/
 │   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
 │   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,
 │   │                         # frontend-design, systematic-debugging, worktree-isolation,
-│   │                         # self-critique, template-extraction, git-policy, quality-gates,
-│   │                         # template-contract,
+│   │                         # self-critique, tdd, template-extraction, git-policy,
+│   │                         # quality-gates, template-contract,
 │   │                         # connections + stack skills (react-ts-vite, kotlin-springboot,
 │   │                         # hono-ts-backend, mise, springboot-scaffold, pulumi-gcp-ts)
 │   ├── config/               # model-routing.yml + model-tiers.yml (tool-neutral tiers),
@@ -92,9 +92,9 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/plans/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v14` (gate
-  workflow pin series), `plugin-v2.50.1` (plugin series) and `cli-v1.5.1` (the `wellforge`
+  workflow pin series), `plugin-v2.51.0` (plugin series) and `cli-v1.5.1` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.50.1`, CLI `1.5.1`. **This is the one line in this file that states current
+  plugin `2.51.0`, CLI `1.5.1`. **This is the one line in this file that states current
   versions**; `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and
   `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
   the docs. Every other version in this file is history and stays as written. A self-CI workflow
@@ -127,6 +127,10 @@ wellforge/
   `self-critique` skill — one bounded pass over your own artifact before the gate that
   follows, checklist-driven, never a loop, never self-approving, and explicitly not evidence
   the evaluator may credit (plugin `2.27.0`).
+- **Phase 30** (`docs/plans/PLAN.md`) makes the dev agents test-first: the `tdd` skill —
+  one behavior per cycle, a red that must fail on the assertion before any implementation,
+  an explicit exemption list, and a `TDD:` report line that is the agent's own account and
+  never evidence the evaluator may credit (plugin `2.51.0`).
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
   and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
   is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),
@@ -175,6 +179,13 @@ wellforge/
   authority; agents and commands delegate to it). It is a floor-raiser, not a gate: one pass
   never a loop, it never sets `status:` or checks a box, and it is never evidence in a QE or
   eval verdict — independent verification stays the authority. Off at the `spike` tier.
+- `frontend-dev` and `backend-dev` implement **test-first**, per the **`tdd` skill** (the
+  authority; the agents delegate to it): one behavior per cycle, the test seen to fail *on
+  the assertion* before the code exists, the least code to green, refactor on green. A test
+  that passes on its first run is suspect until the behavior is broken on purpose.
+  Migrations, generated code and wiring are exempt from their own test, never from being
+  exercised by one. Like self-critique it is a discipline, not a gate — the `TDD:` line is
+  never evidence in a QE or eval verdict. Off at the `spike` tier; `devops` is not wired.
 - **Before any tag in any series: `mise run check`** (`scripts/check-all.sh`) — every
   self-test in this repo behind one exit code. **Red means no tag.** It is a precondition in
   `scripts/release-cli.sh` and `/wellforge:release`, the committed `gates/hooks/pre-push`

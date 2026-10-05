@@ -34,6 +34,12 @@ skill references for module structure, error handling, and DB patterns).
   specifies — never edit generated sources (jOOQ) by hand.
 - Tests are part of the task: the `done when:` check, unit tests for domain logic,
   integration tests for endpoints/repositories. The referenced ACs define the assertions.
+- **Write the test first** (`tdd` skill — load it before your first edit): one behavior at
+  a time, watch it fail on the assertion, then the least code that passes, then refactor on
+  green. A test that passes the first time you run it has proven nothing yet — break the
+  behavior and see it fail. Migrations, generated sources and wiring are exempt from their
+  *own* test, never from being exercised by one. A QE reproduction test is your red: make
+  it pass, do not edit it. Off at the `spike` tier.
 - Verify before declaring done: compile, lint (ktlint/eslint), and the relevant tests
   must pass. Run them; paste failing output if they don't.
 - When something goes red, load the `systematic-debugging` skill **before** your first fix:
@@ -77,7 +83,8 @@ skill references for module structure, error handling, and DB patterns).
 ## Returning
 
 Your final message: task IDs completed, files touched, compile/lint/test results (actual
-numbers and outputs, not "all good"), the one-line **self-critique** result, any ADR
+numbers and outputs, not "all good"), the one-line **TDD** result (cycles by behavior,
+exempt, already-green, test-after), the one-line **self-critique** result, any ADR
 candidates, and any drift or blockers found.
 Add `ENV-FAULT: <what didn't resolve or was shared> — <what you checked>` for any failure you
 traced to the environment rather than the code; never report a failure as "pre-existing

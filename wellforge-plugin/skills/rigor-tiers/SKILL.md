@@ -45,6 +45,7 @@ real. The failure mode this design exists to prevent: a spike silently becoming 
 | Eval (LM-judge) | off | off | on — the gate into `done` |
 | Effort cue | minimal (bias to speed) | moderate (pragmatic) | full (deliberate) — see below |
 | Self-critique pass | off (`// SPIKE:` markers instead) | on (checklist) | on (full) — see [`self-critique`](../self-critique/SKILL.md) |
+| Test-first (dev agents) | off | on for the behaviors the ACs name | on for every test-strategy row — see [`tdd`](../tdd/SKILL.md) |
 
 `mvp` gets cheaper not by re-tiering agents (frontmatter `model:` is fixed per agent) but by
 **composition** — it simply never spawns the frontier agents (architect, evaluator). See
@@ -154,6 +155,16 @@ beside the effort cue and is *not* a gate: it never approves, never blocks, and 
 as evidence in a QE or eval verdict — it only stops known, checklist-shaped defects from
 consuming a reviewer's round. `spike` skips it (no agents, shortest path — the `// SPIKE:`
 marker records the cut instead); `mvp` and `production` run it, once.
+
+## Test-first — on wherever a dev agent implements
+
+`frontend-dev` and `backend-dev` write the test before the code it proves ([`tdd`](../tdd/SKILL.md)): one
+behavior per cycle, a red seen to fail on the assertion, then green, then refactor. Like the
+pass above it is a discipline, *not* a gate — the `TDD:` line in an agent's return is its own
+account and never evidence in a QE or eval verdict. `spike` skips it (no agents, and no gate
+there runs tests); `mvp` drives the behaviors the ACs name; `production` drives every row of
+the plan's test strategy. What a spike skipped, `/wellforge:promote` backfills as ordinary
+tests — test-first cannot be applied retroactively, and nobody should claim it was.
 
 ## Budgets — advisory tripwires, per tier
 

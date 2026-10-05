@@ -281,6 +281,14 @@ failure then surfaces deep in app code looking exactly like a bug — that is an
 fault, reported as one, never fixed with a default or a guard. Full process:
 `.github/wf-skills/systematic-debugging/SKILL.md`.
 
+## Test-first (when implementing)
+Write the test before the code it proves, one behavior at a time: run it and watch it fail
+on the assertion — not on an import or a typo — then write the least code that passes, then
+refactor on green. A test that passes on its first run has proven nothing; break the
+behavior and see it fail. Never edit a test to reach green. Migrations, generated code and
+wiring are exempt from their own test, never from being exercised by one. Off for spikes.
+Full discipline: `.github/wf-skills/tdd/SKILL.md`.
+
 ## Self-critique (before you hand anything over)
 One bounded pass over your own artifact before the human sees it — spec, plan, tasks or a
 diff — against the checklist for that artifact type. It matters more here than in Claude

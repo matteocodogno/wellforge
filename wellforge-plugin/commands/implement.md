@@ -84,7 +84,10 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 - Relay each agent's result compactly (files touched, test/lint output — actual numbers,
   and its one-line **self-critique** result: every dev agent runs one bounded pass over its
   own diff before returning (`self-critique` skill). An agent that omits the line skipped
-  the pass; the line is never a substitute for the QE step below.)
+  the pass; the line is never a substitute for the QE step below.) Relay the frontend/backend
+  agents' one-line **TDD** result the same way (`tdd` skill — cycles by behavior, exempt,
+  already-green, test-after): a `test-after` entry is worth the human's eye, and the line is
+  the agent's account of how it worked, not evidence QE may credit.
 - **Drift / blocker** from any agent pauses that track: surface the proposed amendment,
   route it to the owning agent (PO for spec, architect for plan), re-sync via
   `/wellforge:tasks`, then resume. Never let an agent silently work around a wrong spec.

@@ -115,7 +115,8 @@ Green tests are the floor, not the critique. Re-read your own diff before you re
 
 - **Test that cannot fail** — it asserts a mock, restates the implementation, or never
   touches the AC's actual outcome. The check: would this test fail if you broke the
-  behavior? If you cannot say yes, it is not a test.
+  behavior? If you cannot say yes, it is not a test. (Written first and seen red, per
+  [`tdd`](../tdd/SKILL.md), it already answered that.)
 - **Happy path only** — the ACs' error cases and the contract's error shapes are untested.
 - **Shape drift** — a field name, nullability or error case differing from plan.md. The
   consumer is another agent's code; this is drift, not a detail.

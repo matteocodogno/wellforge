@@ -179,6 +179,7 @@ something a guard once got wrong — add yours there rather than only widening a
 | `skills/spec-driven/` | Spec-driven workflow conventions (format, status lifecycle, drift rule) |
 | `skills/springboot-scaffold/` | JVM routing + module conventions — which generator applies, and how to add a service to an existing monorepo by hand |
 | `skills/systematic-debugging/` | root cause before the fix, the 3-attempt architecture stop, never silence a symptom |
+| `skills/tdd/` | test-first for the dev agents — one behavior per cycle, the right-red rule, what is exempt |
 | `skills/template-extraction/` | stack profile, preset gap-check, org-internal template extraction with an IP/secret scrub |
 | `skills/terse/` | token-efficient conversational output — byte-identical invariant, artifact exemption |
 | `skills/visual-companion/` | browser tool the designer uses to show mockups instead of describing them (opt-in, interactive only) |

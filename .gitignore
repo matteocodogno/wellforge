@@ -25,3 +25,6 @@ __pycache__/
 # Eval runs write scores, traces and an HTML report here. That is per-run OUTPUT, not
 # source: the cases and the fixture project are versioned, what a given run scored is not.
 wellforge-plugin/evals/results/
+
+# Local Claude session outputs — never part of the repo.
+Claude outputs/

@@ -917,6 +917,62 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 30 — Test-first in the dev agents (added 2026-10-05)
+
+Goal: move the test in front of the code it proves. The dev agents' whole rule was "tests
+are part of the task", which says nothing about *when* — and a test written after the code
+asserts what the code does and has never been seen to fail. Two things WellForge already
+pays reviewers to find come from there: the **test that cannot fail** (the first item of
+`self-critique`'s code checklist) and the AC with no covering test that QE writes after the
+fact. Test-first was present in exactly one place, QE's bug-reproduction mode.
+
+Prompted by a review of `mattpocock/skills`, whose `tdd` skill is the one idea in that pack
+with no counterpart here. The pack itself was not adopted — half of it is a competing
+spec → tickets → implement pipeline with tracker-based state — and no text was taken from
+it: this skill is written against WellForge's own artifacts (ACs, the plan's test strategy,
+`done when:`, the drift rule).
+
+- ☑ **`tdd` skill** (plugin `2.51.0`) — the authority; `frontend-dev` and `backend-dev`
+  delegate. One behavior per cycle, taken from the task rather than invented; outside-in
+  when `done when:` is itself a test. The load-bearing part is the **right-red rule**: a
+  run that fails is not yet a red — a failure on an import, a fixture or the compiler means
+  the test is not testing the behavior yet, and a test that *passes* on first run must be
+  proven able to fail by breaking the behavior on purpose (then reported as already-green,
+  not counted as a cycle). Never edit a test to reach green; a test that is right against
+  an AC that cannot be satisfied is drift.
+- ☑ **Exemption list**, stated rather than left to judgment: migrations, generated code,
+  wiring/config, pure presentation. Exempt means "not driven by its own test", never
+  "untested" — a migration is proven by the repository test that needs its column.
+- ☑ **Wired** into the two dev agents (one bullet + a `TDD:` line in the return),
+  `/wellforge:implement` (relays the line; a `test-after` entry is worth the human's eye),
+  `rigor-tiers` (a lever row and a section: **off at `spike`**, the ACs' behaviors at `mvp`,
+  every test-strategy row at `production`), `self-critique` (cross-link from the item it
+  feeds) and `systematic-debugging` — which fires "the moment anything goes red" and now
+  says the one red that is not its business: the one written on purpose and predicted.
+  Attempts at green on one test count toward its 3-attempt stop.
+- ☑ **Anti-gaming**, same shape as Phase 17: the evaluator is told a `TDD: N cycles` line is
+  the author's account — nobody observed the red — and to judge whether each test would
+  fail if the behavior broke, never whether it came first. Copilot gets the rule repo-wide
+  in `copilot-instructions.md`; OpenCode picks the skill up through the generic copy.
+
+**The budget ceiling moved for the first time**, 19,540 → 19,886 (+346), and
+`config/budget.yml` says why: the existing descriptions were already compressed to their
+routing logic, so the new one was written to the floor instead of an old one being trimmed.
+
+**Deliberately not done.** `devops` is not wired: Pulumi mock tests and CrossGuard policies
+could be driven test-first, but most of what that agent writes is CI and wiring, which the
+exemption list covers — wire it if the pilot shows infra tests arriving after the fact.
+Red and green are not separate commits: one task stays one commit, and nothing red is
+committed. And there is no hook: a hook cannot tell a real cycle from a line describing
+one, so this is prompt-authored with no runtime teeth, like Phase 17.
+
+**Unproven.** No prompt eval covers it yet (a `backend-dev` case that fails when the
+implementation precedes the test is the obvious one, and it costs API runs), and
+`wellforge-plugin/evals/LAST-RUN` still records no run at all, so the `plugin-v2.51.0` tag
+is refused until the suite is run — unchanged by this phase, and still the correct state.
+Falsification test: QE first-round "AC with no covering test" counts and the evaluator's
+test-quality dimension, before vs after — which needs the Phase 7 pilot.
+
 ## Phase 29 — The CLI gets its own release series (added 2026-09-20)
 
 `Formula/wellforge.rb` pinned the **template** tag, so the CLI could only ship when the

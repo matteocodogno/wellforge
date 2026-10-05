@@ -37,6 +37,11 @@ is the rarest. This skill applies wherever something goes red:
 The iron law holds in **all** of them, including `spike`. What the rigor tier tunes is how
 much you *instrument and document* — never whether you find the cause.
 
+One red is **not** on this list: the test a dev agent just wrote first and predicted would
+fail ([`tdd`](../tdd/SKILL.md)). That is the loop working. This skill starts when that test fails for a
+reason the agent cannot explain, or when green will not come — and every attempt at green
+on the same test counts toward the attempt counter below.
+
 ## Phase 1 — investigate before touching code
 
 - **Read the error completely.** The whole stack trace, the whole gate output, the failing
