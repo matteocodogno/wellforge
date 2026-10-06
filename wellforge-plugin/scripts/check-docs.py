@@ -275,16 +275,39 @@ if cli_version and os.path.exists(_formula_path):
         # that moment the tarball is fetchable, `release-cli.sh --formula-only` can fill
         # the hash in, and a placeholder left behind is simply a broken `brew install`
         # waiting for someone.
+        #
+        # ...with ONE exception, and it is the commit the tag points at. The tarball's hash
+        # cannot be known before the tag is pushed, so the tagged commit can only ever
+        # carry the placeholder; the real sha arrives in the commit after it. Failing here
+        # failed CI on every CLI release tag by construction — `release-guard` then refused
+        # the tag, so the release path could not produce a green tag at all (cli-v1.5.1 was
+        # cut from a red tree for exactly this reason). The failure this rule exists for is
+        # a formula commit that never landed, and that is a HEAD that has moved PAST the
+        # tag — which still fails.
         import subprocess as _sp
         tag = f"cli-v{cli_version}"
+        tag_commit = head = ""
         try:
+            # Both spellings: an annotated tag lists the tag object under refs/tags/<t> and
+            # the commit it points at under refs/tags/<t>^{}; a lightweight one has only
+            # the first, and it IS the commit. Read from the remote so a shallow CI
+            # checkout with no local tags answers the same as a full clone.
             r = _sp.run(["git", "-C", ROOT, "ls-remote", "--tags", "origin",
-                         f"refs/tags/{tag}"], capture_output=True, text=True, timeout=20)
+                         f"refs/tags/{tag}", f"refs/tags/{tag}^{{}}"],
+                        capture_output=True, text=True, timeout=20)
             on_remote = (r.returncode == 0 and bool(r.stdout.strip()))
             reachable = (r.returncode == 0)
+            _refs = dict(reversed(ln.split("\t", 1)) for ln in r.stdout.splitlines() if "\t" in ln)
+            tag_commit = _refs.get(f"refs/tags/{tag}^{{}}") or _refs.get(f"refs/tags/{tag}", "")
+            head = _sp.run(["git", "-C", ROOT, "rev-parse", "HEAD"], capture_output=True,
+                           text=True, timeout=20).stdout.strip()
         except Exception:  # noqa: BLE001
             on_remote, reachable = False, False
-        if on_remote:
+        if on_remote and head and head == tag_commit:
+            print(f"⚠ Formula/wellforge.rb carries a placeholder sha256 and HEAD is the "
+                  f"release commit {tag} points at — the only state that commit can be in. "
+                  f"The formula commit must follow: {fix}", file=sys.stderr)
+        elif on_remote:
             fail.append(f"Formula/wellforge.rb still carries a placeholder sha256 although "
                         f"{tag} is on the remote — run: {fix}")
         elif not reachable:
@@ -352,7 +375,21 @@ if cli_version:
         import subprocess
         tags = subprocess.run(["git", "-C", ROOT, "tag", "-l", "cli-v*", "--sort=-v:refname"],
                               capture_output=True, text=True, timeout=10).stdout.split()
-        if tags and tags[0] != f"cli-v{cli_version}":
+        # ONE exception: release-cli.sh bumps the constant, proves the bumped tree (this
+        # script included), and only then cuts the tag — so mid-release the constant is
+        # ahead of the newest tag by design. It exports WELLFORGE_RELEASING=<that version>;
+        # exactly that version, strictly newer than the newest tag, is accepted. The same
+        # rule, with the same name, as the CLI matrix's release_tag_verdict.
+        def _vt(v):
+            return tuple(int(x) for x in v.split("."))
+        _releasing = os.environ.get("WELLFORGE_RELEASING", "")
+        _mid_release = False
+        if tags and _releasing and _releasing == cli_version:
+            try:
+                _mid_release = _vt(tags[0][len("cli-v"):]) < _vt(cli_version)
+            except ValueError:
+                _mid_release = False
+        if tags and tags[0] != f"cli-v{cli_version}" and not _mid_release:
             fail.append(f"newest cli tag is {tags[0]} but scripts/wellforge is {cli_version} — "
                         f"one of them was bumped without the other")
     except Exception:  # noqa: BLE001

@@ -23,9 +23,24 @@ GitHub   b61eafcb2f37753faea37c836ecce6aa4e53ccd207ef39b719a3d04a09115bc6   ← 
 local    746cc34fd84f6563a3ad4c688b1c195852b3a9d7969e7d8538232b4098010441   ← git archive, same tree
 ```
 
-So the order is forced: **tag first, sha second.** Commit 1 sets the constant and carries
-the tag; commit 2 points the Formula at the tarball that now exists. Anything promising one
-commit is either not pinning a sha or not checking it.
+So the order is forced: **tag first, sha second.** Commit 1 moves the version everywhere it
+is stated — the constant, the Formula's url, CLAUDE.md — and carries the tag; commit 2 writes
+the sha of the tarball that now exists. Anything promising one commit is either not pinning
+a sha or not checking it.
+
+**The tagged commit therefore carries a placeholder sha, and that is correct.** It is the
+one thing commit 1 cannot know. Three checks used to fail on it, which made every CLI tag
+red by construction — `cli-v1.5.1` was cut that way, and the first attempt at `cli-v1.5.2`
+stopped at its own step 3:
+
+| Check | On the release commit | On any later commit with a placeholder |
+|---|---|---|
+| `check-docs.py` | passes, with a warning naming the commit that must follow | **fails** — the formula commit never landed |
+| `formula` CI job | `brew style` only; install/test/audit skipped with a notice | same skip — and `check-docs` is what fails |
+| CLI matrix, mid-release | `WELLFORGE_RELEASING=<version>` accepts exactly the version being cut | n/a |
+
+The package for `cli-vX.Y.Z` is defined by commit 2, and commit 2 is where `brew install`,
+`brew test` and `brew audit` actually run.
 
 ## The checklist
 
@@ -36,18 +51,28 @@ subcommand, flag or check, major = a removed subcommand, a renamed flag, or a ch
 exit-status contract. That last one matters more than it looks: scripts wrap this CLI, and
 `wellforge doctor` returning 1 instead of 0 is an interface change.
 
-### 2 — bump the constant
+### 2 — bump the version, in the three places that state it
 
-`WELLFORGE_CLI_VERSION` at the top of `scripts/wellforge`. It is the single source:
+`WELLFORGE_CLI_VERSION` at the top of `scripts/wellforge` is the single source:
 `wellforge version` prints it, the Formula's `test` block asserts it, and CI asserts it
-equals the newest `cli-v*` tag. Nothing else carries the CLI version.
+equals the newest `cli-v*` tag. Two files must name the same version in the same commit,
+or `check-docs.py` fails it:
+
+- `Formula/wellforge.rb` — the `url` names `cli-vX.Y.Z`; the `sha256` becomes the all-zero
+  placeholder (step 6 replaces it).
+- `CLAUDE.md` — the "Latest tags" paragraph, both mentions (`cli-vX.Y.Z` and CLI `X.Y.Z`).
+
+`release-cli.sh` does all three. This step used to bump only the constant, and the commit
+it produced could not pass its own CI. If the release stops before the commit, the script
+reverts these three files.
 
 ### 3 — prove it before tagging
 
 ```bash
-scripts/tests/wellforge.test.sh
+WELLFORGE_RELEASING=X.Y.Z scripts/tests/wellforge.test.sh   # the tag does not exist yet — say which version is being cut
 shellcheck -s bash --severity=warning -f gcc scripts/wellforge scripts/*.sh
 brew style Formula/wellforge.rb
+python3 wellforge-plugin/scripts/check-docs.py              # the three bumped files agree
 brew audit --strict --online matteocodogno/wellforge/wellforge   # needs the tap, see below
 ```
 
@@ -75,7 +100,7 @@ git -C "$TAP" checkout -- Formula/wellforge.rb        # always restore
 ### 4 — commit and tag
 
 ```bash
-git commit -m "chore(cli): release X.Y.Z"      # the constant only
+git commit -m "chore(cli): release X.Y.Z"      # constant + Formula url/placeholder + CLAUDE.md
 git tag cli-vX.Y.Z
 git tag --points-at HEAD                        # MUST print exactly one tag
 ```
@@ -94,9 +119,10 @@ curl -fsSL https://github.com/matteocodogno/wellforge/archive/refs/tags/cli-vX.Y
 This is the step that cannot be reordered. Until the tag is on the remote there is no
 tarball to hash.
 
-### 6 — point the Formula at it
+### 6 — give the Formula its real sha
 
-`url` (the `cli-vX.Y.Z` tarball) and `sha256`. There is **no `version` line**. Then:
+The `url` already names the `cli-vX.Y.Z` tarball (step 2); this replaces the placeholder
+`sha256` with the hash just computed. There is **no `version` line**. Then:
 
 ```bash
 git commit -m "chore(cli): formula for cli-vX.Y.Z"
@@ -120,7 +146,8 @@ Monotonicity across the change of series still holds, because `cli-v1.x` > `0.9.
 
 | Formula state | Verdict |
 |---|---|
-| placeholder sha **and** the `cli-v*` tag is on the remote | **FAIL**, naming the `release-cli.sh` command |
+| placeholder sha, the `cli-v*` tag is on the remote, and HEAD **is** the tagged commit | WARN — the release commit cannot be in any other state; the formula commit must follow |
+| placeholder sha, the tag is on the remote, and HEAD is **past** it | **FAIL**, naming the `release-cli.sh` command |
 | placeholder sha and no such tag | WARN — an unreleased formula is a true state and must not block unrelated work |
 | a real sha | fetch the tarball the url names and compare |
 
@@ -190,7 +217,8 @@ actually install.
 | CLI regression matrix | `cli` job, ubuntu | every push |
 | shellcheck | `cli` job, ubuntu | every push, `-f gcc` |
 | constant == newest `cli-v*` tag | CLI matrix | needs `fetch-depth: 0` |
-| `brew install --build-from-source` + `brew test` | `formula` job, macos-latest | **non-blocking** (`continue-on-error`) — a macOS runner is billed at 10× and this only needs to be right at release time |
+| `brew install --build-from-source` + `brew test` | `formula` job, macos-latest | **non-blocking** (`continue-on-error`) — a macOS runner is billed at 10× and this only needs to be right at release time. **Skipped on a placeholder sha** (the release commit); runs on the formula commit after it |
+| placeholder-sha rule | `check-docs-formula.test.py` | every push — a real clone with a real remote, all three states |
 | `brew audit --strict --online` | `formula` job, macos-latest | every push, same job, same caveat |
 
 The formula job being advisory is deliberate: it tells you the package is broken without

@@ -847,6 +847,39 @@ finish
 # ── 14. the release contract: the constant, the tag and the Formula must agree ───────
 # These read the REPO, not a sandbox: they are what stops a CLI release from being
 # half-done, which is the failure this whole series exists to fix.
+# The verdict is a function so the one exception can be pinned with fixed inputs below,
+# rather than only ever being exercised against whatever state this repo happens to be in.
+#
+# THE EXCEPTION: release-cli.sh bumps the constant, then runs this suite, then cuts the
+# tag. In that window the constant is ahead of the newest tag BY DESIGN, and this case
+# failed every release at its own step 3 — the full release path had been unrunnable since
+# the case was switched on (found cutting cli-v1.5.2). The script now exports
+# WELLFORGE_RELEASING=<the version it is cutting>; exactly that version, strictly newer
+# than the newest tag, is accepted. Nothing else is.
+release_tag_verdict() { # <constant> <newest cli-v tag> [releasing] → "ok" or the reason
+  local const="$1" newest="$2" releasing="${3:-}" prev
+  [ "$newest" = "cli-v$const" ] && { echo ok; return 0; }
+  prev="${newest#cli-v}"
+  if [ -n "$releasing" ] && [ "$const" = "$releasing" ] && [ "$prev" != "$const" ] \
+     && [ "$(printf '%s\n%s\n' "$prev" "$const" | sort -V | head -1)" = "$prev" ]; then
+    echo ok; return 0
+  fi
+  echo "newest tag is $newest but the constant is $const"
+}
+
+reset_fakes; begin "release verdict: constant == newest tag is ok; ahead of it is not"
+[ "$(release_tag_verdict 1.5.1 cli-v1.5.1)" = "ok" ]            || _bad "equal must be ok"
+[ "$(release_tag_verdict 1.5.2 cli-v1.5.1)" != "ok" ]           || _bad "an untagged bump must fail"
+[ "$(release_tag_verdict 1.5.0 cli-v1.5.1)" != "ok" ]           || _bad "a constant BEHIND the tag must fail"
+finish
+
+reset_fakes; begin "release verdict: mid-release accepts exactly the version being cut"
+[ "$(release_tag_verdict 1.5.2 cli-v1.5.1 1.5.2)" = "ok" ]      || _bad "the version being released must be ok"
+[ "$(release_tag_verdict 1.10.0 cli-v1.9.3 1.10.0)" = "ok" ]    || _bad "1.10.0 is newer than 1.9.3 (version order, not text order)"
+[ "$(release_tag_verdict 1.5.3 cli-v1.5.1 1.5.2)" != "ok" ]     || _bad "a constant that is not the declared release must fail"
+[ "$(release_tag_verdict 1.5.0 cli-v1.5.1 1.5.0)" != "ok" ]     || _bad "releasing a version OLDER than the newest tag must fail"
+finish
+
 reset_fakes; begin "release: WELLFORGE_CLI_VERSION equals the newest cli-v tag"
 const="$(sed -n 's/^WELLFORGE_CLI_VERSION="\([^"]*\)".*/\1/p' "$CLI" | head -1)"
 newest_tag="$(git -C "$ROOT" tag -l 'cli-v*' --sort=v:refname 2>/dev/null | tail -1)"
@@ -858,8 +891,8 @@ if [ -z "$newest_tag" ]; then
     _bad "no cli-v* tag exists, but scripts/wellforge declares $const — an untagged release reaches nobody"
   fi
 else
-  assert_has "$newest_tag" "cli-v$const"
-  [ "$newest_tag" = "cli-v$const" ] || _bad "newest tag is $newest_tag but the constant is $const"
+  verdict="$(release_tag_verdict "$const" "$newest_tag" "${WELLFORGE_RELEASING:-}")"
+  [ "$verdict" = "ok" ] || _bad "$verdict"
 fi
 finish
 

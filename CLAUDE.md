@@ -154,6 +154,12 @@ wellforge/
   invisible in the sandbox, …) and **one real bug found by them**: the Stop hook treated
   the `status: done` write of `/wellforge:done` as drift and blocked every close.
   `stop-verify.sh` now shares `forge-state.py`'s lifecycle rule, asserted by its matrix.
+- **Phase 36** (`docs/plans/PLAN.md`): the CLI release path could not produce a green tag —
+  the tarball's sha cannot exist before the tag is pushed, and three checks failed the
+  placeholder that follows from it. `release-cli.sh` now bumps the constant, the Formula
+  url and this file together, `check-docs.py` accepts a placeholder on the release commit
+  and nowhere after it, and the script restores the tree if it stops. Rehearsed end to end
+  in a throwaway clone before it was run for real.
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
   and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
   is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),

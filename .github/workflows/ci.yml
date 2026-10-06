@@ -785,7 +785,28 @@ jobs:
       # a detached HEAD, and what `git clone` makes of that is not something to rely on.
       # This also exercises the path a user actually takes (`brew tap` then `brew install
       # <tap>/wellforge`) rather than a path-based mode no user has.
+      # THE RELEASE COMMIT CANNOT BE INSTALLED, and that is not a defect. A cli-v tag points
+      # at a commit whose Formula names the new tarball with an all-zero placeholder sha —
+      # the tarball does not exist until that tag is pushed, so its hash cannot be in the
+      # commit the tag names. `brew install` rightly refuses a placeholder, this job went
+      # red, and release-guard (which reads this job's real result) refused every CLI tag.
+      #
+      # So on a placeholder the install/test/audit steps are skipped, visibly. They are not
+      # waived: the very next commit carries the real sha and runs them all, and a
+      # placeholder that outlives the release commit fails check-docs in the `routing` job
+      # (wellforge-plugin/scripts/tests/check-docs-formula.test.py pins both halves).
+      - name: Is this the release commit (placeholder sha)?
+        id: sha
+        run: |
+          if grep -qE '^  sha256 "0{64}"$' Formula/wellforge.rb; then
+            echo "placeholder=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Formula carries the placeholder sha256 — this is a CLI release commit. brew install/test/audit run on the formula commit that follows it."
+          else
+            echo "placeholder=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Tap this checkout at this commit
+        if: steps.sha.outputs.placeholder != 'true'
         run: |
           set -euo pipefail
           brew tap matteocodogno/wellforge "$GITHUB_WORKSPACE"
@@ -799,14 +820,17 @@ jobs:
           brew trust --tap matteocodogno/wellforge
 
       - name: brew install --build-from-source
+        if: steps.sha.outputs.placeholder != 'true'
         run: brew install --build-from-source matteocodogno/wellforge/wellforge
 
       - name: brew test
+        if: steps.sha.outputs.placeholder != 'true'
         run: brew test wellforge
 
       # Now possible, and it is documented step 8 of docs/RELEASING-CLI.md — the step that
       # caught the redundant `version` line. It needed the repo tapped, which it now is.
       - name: brew audit --strict --online
+        if: steps.sha.outputs.placeholder != 'true'
         run: brew audit --strict --online matteocodogno/wellforge/wellforge
 
   # terse-mode (specs/001-terse-mode) fixture regression tests: were previously reproducible

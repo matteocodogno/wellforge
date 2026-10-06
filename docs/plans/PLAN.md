@@ -917,6 +917,54 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 36 — A CLI release path that can actually produce a green tag (added 2026-10-06)
+
+Cutting `cli-v1.5.2` (two `doctor` fixes: `--fix` installs a missing plugin; a claude.ai-synced
+copy standing in for a missing marketplace install is named) showed that
+`scripts/release-cli.sh` could not complete, and that even where it could, the tag it
+produced could not be green. `cli-v1.5.1` had been cut from a red tree for the same reason;
+the checks that would have said so were switched on *after* it, so the full path had been
+unrunnable since.
+
+**The root of it:** the tarball's sha256 cannot exist before the tag is pushed, so the
+commit a `cli-v*` tag points at can only carry a placeholder — and three separate checks
+treated that state, or the moment just before it, as a failure.
+
+- ☑ **The release commit moves the version in all three places** — the constant, the
+  Formula url (with the all-zero placeholder sha), and CLAUDE.md's "Latest tags" paragraph.
+  It used to bump only the constant, and `check-docs.py` and the CLI matrix both reject a
+  constant that the Formula and CLAUDE.md do not match.
+- ☑ **`check-docs.py` accepts a placeholder on the release commit and nowhere after it.**
+  Placeholder + tag on the remote + HEAD *is* the tagged commit → a warning naming the
+  commit that must follow; HEAD *past* it → still a failure. Read from the remote
+  (`ls-remote`, peeled), so a shallow CI checkout answers like a full clone.
+- ☑ **`WELLFORGE_RELEASING=<version>`** — mid-release the constant is ahead of the newest tag
+  by design. The CLI matrix and `check-docs.py` each had that rule; both now accept exactly
+  the version being cut, strictly newer than the newest tag, and nothing else.
+- ☑ **The CI `formula` job** skips install/test/audit on a placeholder, with a notice. Not a
+  waiver: the next commit carries the real sha and runs all three, and a placeholder that
+  outlives the release commit fails `check-docs`.
+- ☑ **The script puts the tree back** when it stops — the bump before its commit, the
+  rewritten Formula before its commit. A stopped release used to leave a modified tracked
+  file, and the recovery command then refused to run because of it.
+- ☑ **shellcheck is probed with `--version`**, as `check-all.sh` does: a mise shim with no
+  version set satisfies `command -v` and then exits 1, which was reported as "shellcheck
+  rejected the scripts".
+
+**How it was verified, which is the part worth keeping.** Not by running the release. The
+whole script was rehearsed four times in a throwaway clone against a local bare remote, with
+`curl` shimmed and the brew smoke skipped. Each of the first three rehearsals stopped
+somewhere new — the second tag-equals-constant rule, the shellcheck shim, a fixture commit
+that is empty on a release commit, a staged Formula blocking recovery — and none of those
+would have been found by reading. The fourth ran `[1/8]` to `[8/8]`: two commits, the tag
+on the first, placeholder then real sha, and `check-docs` plus the CLI matrix green when
+re-run at the tagged commit. `check-docs-formula.test.py` (7 cases, a real clone and a real
+remote) pins the placeholder and mid-release rules; four of them failed before the change.
+
+**Not covered by the rehearsal:** the real tarball download, the sha verification against
+GitHub, the Homebrew build, and CI itself on the tag. Those are first exercised by the
+release.
+
 ## Phase 35 — The prompt evals, run in full for the first time (added 2026-10-06)
 
 The suite existed since `2.50.0` and had never been run end to end — `LAST-RUN` said so, and

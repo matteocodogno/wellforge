@@ -35,7 +35,29 @@ FORMULA="$ROOT/Formula/wellforge.rb"
 REMOTE_URL="https://github.com/matteocodogno/wellforge"
 TAP_NAME="matteocodogno/wellforge"
 
-die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+# Files the release commit rewrites. Named once: step 2 edits them, step 4 stages them, and
+# `die` restores them if the release stops between the two.
+RELEASE_FILES=(scripts/wellforge Formula/wellforge.rb CLAUDE.md)
+UNCOMMITTED_BUMP=0
+UNCOMMITTED_FORMULA=0
+die() {
+  printf 'error: %s\n' "$*" >&2
+  # A release that stops after the bump and before its commit used to leave the bumped
+  # constant in the working tree: `git status` showed a modified scripts/wellforge, and the
+  # next attempt refused with "tracked files are modified". Put the tree back.
+  if [ "$UNCOMMITTED_BUMP" -eq 1 ]; then
+    git -C "$ROOT" checkout -q -- "${RELEASE_FILES[@]}" 2>/dev/null \
+      && printf '       (the uncommitted version bump was reverted — the tree is as it was)\n' >&2
+  fi
+  # Same for step 6: the Formula is rewritten and STAGED before the gate runs against it. If
+  # the gate is red, a staged Formula made the documented recovery (`--formula-only`) refuse
+  # with "tracked files are modified" — the recovery path blocked by the failure it is for.
+  if [ "$UNCOMMITTED_FORMULA" -eq 1 ]; then
+    git -C "$ROOT" restore --staged --worktree -- Formula/wellforge.rb 2>/dev/null \
+      && printf '       (the rewritten Formula was restored — re-run with --formula-only once the cause is fixed)\n' >&2
+  fi
+  exit 1
+}
 say() { printf '%s\n' "$*"; }
 # Same numbering as docs/RELEASING-CLI.md. Printed while the step runs, not after, so an
 # interrupted release says where it stopped.
@@ -81,7 +103,7 @@ note() { PROBLEMS="${PROBLEMS}  $*
 
 [ "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)" = "main" ] || note "not on main"
 # TRACKED changes block; untracked files do not. The distinction is not pedantry: this
-# script stages exactly one path (Formula/wellforge.rb), so an untracked file cannot enter
+# script stages exactly the paths in RELEASE_FILES, so an untracked file cannot enter
 # the release commit and cannot change the released artifact — which is built from the
 # tarball of an already-pushed tag, not from this working tree. A MODIFIED TRACKED file can
 # matter, because `check-all.sh` runs against the working tree and its verdict would then
@@ -139,11 +161,11 @@ if [ "$FORMULA_ONLY" -eq 1 ]; then
 else
   say "  1. prove   scripts/check-all.sh — EVERY self-test, and a hard precondition"
   say "     decide  $BUMP -> $next"
-  say "  2. bump    WELLFORGE_CLI_VERSION=\"$next\" in scripts/wellforge"
-  say "  3. brew    brew style / brew audit on the formula  (before the tag)"
+  say "  2. bump    WELLFORGE_CLI_VERSION=\"$next\", the Formula url (placeholder sha), CLAUDE.md"
+  say "  3. prove   CLI matrix, shellcheck, brew style, check-docs — on the bumped tree"
   say "  4. commit  'chore(cli): release $next'  +  tag $tag"
   say "  5. push    main and $tag            ← the tarball does not exist before this"
-  say "  6. sha     fetch $url, rewrite the Formula, commit, push"
+  say "  6. sha     fetch $url, write the real sha into the Formula, commit, push"
   say "  7. smoke   brew install --build-from-source + brew test"
 fi
 say "  8. audit   brew audit --strict --online, once the tap has the new commit"
@@ -203,18 +225,75 @@ fi
 if [ "$FORMULA_ONLY" -eq 0 ]; then
 step 1 "running scripts/check-all.sh (every self-test in the repo)"
 run_gate
-step 2 "bumping WELLFORGE_CLI_VERSION to $next"
+step 2 "bumping to $next — the constant, the Formula url, and CLAUDE.md, together"
+# THREE files, not one. This step used to touch only scripts/wellforge, and the commit it
+# produced could not be green anywhere: check-docs requires the Formula url and CLAUDE.md's
+# "Latest tags" line to name the same version as the constant, and the CLI matrix asserts
+# the url too. So the tagged commit failed its own CI, by construction, on every release.
+#
+# What the tagged commit CANNOT carry is the tarball's sha256 — the tarball does not exist
+# until the tag is pushed. It gets the all-zero placeholder, which brew refuses loudly and
+# check-docs accepts on the release commit and nowhere after it; step 6 writes the real one.
+UNCOMMITTED_BUMP=1
 tmp="$(mktemp)"
 sed "s/^WELLFORGE_CLI_VERSION=\".*\"/WELLFORGE_CLI_VERSION=\"$next\"/" "$CLI" > "$tmp" || die "sed failed"
 grep -q "^WELLFORGE_CLI_VERSION=\"$next\"\$" "$tmp" || die "the constant did not take — check $CLI by hand"
 cat "$tmp" > "$CLI"; rm -f "$tmp"
 
-step 3 "proving it before the tag — test suite, shellcheck, brew style"
-"$ROOT/scripts/tests/wellforge.test.sh" || die "the CLI test suite failed — not releasing this"
-if command -v shellcheck >/dev/null 2>&1; then
+PLACEHOLDER_SHA="0000000000000000000000000000000000000000000000000000000000000000"
+tmp="$(mktemp)"
+sed -e "s|^  url \".*\"|  url \"$url\"|" \
+    -e "s|^  sha256 \".*\"|  sha256 \"$PLACEHOLDER_SHA\"|" \
+    -e '/^  version "[0-9][0-9.]*"$/d' "$FORMULA" > "$tmp" || die "sed failed on the Formula"
+grep -q "^  url \"$url\"\$" "$tmp" || die "the Formula url did not take — check $FORMULA by hand"
+grep -q "^  sha256 \"$PLACEHOLDER_SHA\"\$" "$tmp" || die "the placeholder sha did not take — check $FORMULA by hand"
+cat "$tmp" > "$FORMULA"; rm -f "$tmp"
+
+# CLAUDE.md states current versions in exactly one paragraph ("- Latest tags: …"), twice per
+# series: as a tag and as a bare version. Only that paragraph is touched — every other
+# version in the file is history and stays as written.
+CLAUDE_MD="$ROOT/CLAUDE.md"
+tmp="$(mktemp)"
+awk -v cur="$cur" -v nxt="$next" '
+  /^- Latest tags:/ { left = 6 }
+  left > 0 {
+    gsub("cli-v" cur, "cli-v" nxt)
+    gsub("CLI `" cur "`", "CLI `" nxt "`")
+    left--
+  }
+  { print }' "$CLAUDE_MD" > "$tmp" || die "awk failed on CLAUDE.md"
+grep -q "cli-v$next" "$tmp" && grep -qF "CLI \`$next\`" "$tmp" \
+  || die "CLAUDE.md's 'Latest tags' paragraph did not take cli-v$next — check it by hand"
+cat "$tmp" > "$CLAUDE_MD"; rm -f "$tmp"
+
+step 3 "proving the bumped tree before the tag — CLI matrix, shellcheck, brew style, check-docs"
+# WELLFORGE_RELEASING tells the matrix which version is being cut. Without it, "the constant
+# equals the newest cli-v tag" fails here every time — the tag is step 4 — and that is what
+# stopped the first attempt at cli-v1.5.2. It accepts exactly this version and nothing else.
+WELLFORGE_RELEASING="$next" "$ROOT/scripts/tests/wellforge.test.sh" \
+  || die "the CLI test suite failed — not releasing this"
+# The three bumped files must agree BEFORE they are committed, not in CI afterwards.
+if python3 -c "import yaml" >/dev/null 2>&1; then
+  WELLFORGE_RELEASING="$next" python3 "$ROOT/wellforge-plugin/scripts/check-docs.py" \
+    || die "check-docs rejected the bumped tree"
+elif command -v uv >/dev/null 2>&1; then
+  WELLFORGE_RELEASING="$next" uv run --quiet --with pyyaml python "$ROOT/wellforge-plugin/scripts/check-docs.py" \
+    || die "check-docs rejected the bumped tree"
+else
+  say "  (no python3+pyyaml and no uv — check-docs skipped, and a skip is not a pass)"
+fi
+# `shellcheck --version`, not `command -v shellcheck`: a mise SHIM is on PATH whether or not
+# a version is set for it, and one with none exits 1 with "No version is set for shim" —
+# which this step reported as "shellcheck rejected the scripts". Same probe and the same
+# mise fallback as check-all.sh, so the two cannot disagree about whether shellcheck exists.
+if shellcheck --version >/dev/null 2>&1; then
   # -f gcc: the default format dies rendering a source line with a non-ASCII character,
   # and these scripts are full of em dashes (docs/RELEASING-CLI.md step 3).
   shellcheck -s bash --severity=warning -f gcc "$CLI" "$ROOT"/scripts/*.sh \
+    || die "shellcheck rejected the scripts"
+elif command -v mise >/dev/null 2>&1; then
+  mise x shellcheck@latest -- \
+    shellcheck -s bash --severity=warning -f gcc "$CLI" "$ROOT"/scripts/*.sh \
     || die "shellcheck rejected the scripts"
 else
   say "  (shellcheck not installed — skipped, and a skip is not a pass)"
@@ -226,7 +305,7 @@ else
 fi
 
 step 4 "committing and tagging $tag"
-git -C "$ROOT" add scripts/wellforge || die "git add failed"
+git -C "$ROOT" add "${RELEASE_FILES[@]}" || die "git add failed"
 # The skip is recorded where a reader of the release will see it — in the commit body and
 # in the annotated tag — not only in the terminal of whoever ran this. A release that
 # skipped its own tests must say so from inside the artifact.
@@ -237,6 +316,7 @@ else
   git -C "$ROOT" commit -qm "chore(cli): release $next" || die "commit failed"
   git -C "$ROOT" tag -a "$tag" -m "wellforge CLI $next" || die "tag failed"
 fi
+UNCOMMITTED_BUMP=0   # committed: from here `die` must not touch the tree
 # One series per commit: a second tag makes `git describe` answer with the wrong one.
 [ "$(git -C "$ROOT" tag --points-at HEAD | wc -l | tr -d ' ')" -eq 1 ] \
   || die "HEAD now carries more than one tag — never two series on one commit"
@@ -260,6 +340,7 @@ rm -f "$tarball"
 [ ${#sha} -eq 64 ] || die "got a $((${#sha}))-char sha, expected 64"
 
 # 6 ─ the formula follows the tag it names.
+UNCOMMITTED_FORMULA=1
 tmp="$(mktemp)"
 sed -e "s|^  url \".*\"|  url \"$url\"|" \
     -e "s|^  sha256 \".*\"|  sha256 \"$sha\"|" "$FORMULA" > "$tmp" || die "sed failed"
@@ -303,8 +384,10 @@ if git -C "$ROOT" diff --cached --quiet -- Formula/wellforge.rb; then
   say "  (re-running --formula-only is safe; this is the no-op path)"
 else
   git -C "$ROOT" commit -qm "chore(cli): formula for $tag" || die "commit failed"
+  UNCOMMITTED_FORMULA=0   # committed: `die` must not undo it from here
   git -C "$ROOT" push -q origin main || die "push failed — the formula commit is local"
 fi
+UNCOMMITTED_FORMULA=0
 
 step 7 "smoke the PACKAGE, not just the script"
 # Homebrew 7 REFUSES a formula given by path — "Homebrew requires formulae to be in a tap,
