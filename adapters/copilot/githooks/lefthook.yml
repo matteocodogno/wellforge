@@ -29,15 +29,38 @@ pre-commit:
         done
 
     # spec-driven drift rule — spec.md/plan.md changed without re-syncing tasks.md
+    #
+    # ...unless the change is BOOKKEEPING. /wf-done writes `status: done` + `done:` into
+    # spec.md and /wf-promote writes `rigor:`; neither changes what the feature asks for,
+    # and tasks.md is rightly untouched. Without the exemption this hook refused the very
+    # commit that closes a feature. The rule and the field list are forge-state.py's
+    # (LIFECYCLE_FIELDS / change_class): body identical, and only these top-level
+    # frontmatter fields differ between HEAD and what is staged. A new file has no HEAD
+    # version and is never exempt. scripts/tests/adapters-drift.test.py keeps this list,
+    # the Claude Code Stop hook's and the OpenCode plugin's identical to forge-state.py's.
     spec-drift:
       glob: "specs/*/{spec,plan}.md"
       run: |
+        LIFECYCLE_FIELDS="status|done|approved|superseded_by|archive_reason|rigor|plugin"
+        # A spec with its lifecycle frontmatter lines removed. Only lines INSIDE the leading
+        # `---` block count: `status: done` typed into the body is a body change.
+        strip_lifecycle() {
+          awk -v re="^(${LIFECYCLE_FIELDS}):" '
+            NR == 1 && $0 == "---" { fm = 1; print; next }
+            fm == 1 && $0 == "---" { fm = 2; print; next }
+            fm == 1 && $0 ~ re     { next }
+            { print }'
+        }
         for f in {staged_files}; do
           d=$(dirname "$f")
-          if [ -f "$d/tasks.md" ] && ! git diff --cached --name-only | grep -q "^$d/tasks.md$"; then
-            echo "$f changed but $d/tasks.md not re-synced. Run /wf-tasks to sync (drift rule)."
-            exit 1
+          [ -f "$d/tasks.md" ] || continue
+          git diff --cached --name-only | grep -q "^$d/tasks.md$" && continue
+          if old=$(git show "HEAD:$f" 2>/dev/null) \
+             && [ "$(printf '%s\n' "$old" | strip_lifecycle)" = "$(git show ":$f" | strip_lifecycle)" ]; then
+            continue
           fi
+          echo "$f changed but $d/tasks.md not re-synced. Run /wf-tasks to sync (drift rule)."
+          exit 1
         done
 
     # post-lint — TypeScript / JS / styles / config

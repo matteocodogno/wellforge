@@ -649,6 +649,16 @@ jobs:
       # step script from ci.yml and runs it against synthetic `needs` payloads, so the guard
       # is proven on every push rather than by cutting a tag and hoping.
       - run: uv run --with pyyaml python scripts/tests/release-guard.test.py
+      # The drift rule exists in FOUR places — forge-state.py, the Stop hook, the Copilot
+      # lefthook and the OpenCode plugin — and three of them were wrong about a lifecycle
+      # edit at one time or another. This drives the two adapters' real artifacts (the
+      # lefthook `run:` script under sh, wellforge.js under node) in real repositories, and
+      # asserts all four field lists are forge-state.py's.
+      - run: uv run --with pyyaml python scripts/tests/adapters-drift.test.py
+      # The placeholder-sha rule a CLI release depends on. It shipped in 61dcca6 with a
+      # comment in the `formula` job saying this suite "pins both halves" — and no line
+      # here running it, so only `check-all.sh` on a developer's machine ever did.
+      - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/check-docs-formula.test.py
 
   # Adapter outputs. Both generators print a healthy summary whether or not what they wrote
   # is usable — they count files, and every failure in this class is invisible in a count:

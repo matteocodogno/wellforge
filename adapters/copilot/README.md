@@ -53,7 +53,7 @@ quality gates (`.github/workflows/`).
 |---|---|---|
 | pre-bash-guard | `lefthook` pre-commit secret-scan (`.env`/`.pem`/`.key`/`secrets.yml`) | ✓ (the security floor; the destructive-shell-command blocks have no commit-time analog) |
 | post-lint | `lefthook` pre-commit lint-ts / lint-kotlin (prettier/eslint/ktlint, `stage_fixed`) | ✓ |
-| stop-verify (spec-drift) | `lefthook` pre-commit spec-drift | ✓ blocks on drift |
+| stop-verify (spec-drift) | `lefthook` pre-commit spec-drift | ✓ blocks on drift; a lifecycle-only edit (`status`, `done`, `rigor`, …) is not drift, same rule and field list as `forge-state.py` |
 | stop-verify (compile) | `lefthook` pre-push typecheck-ts / compile-kotlin | ✓ |
 | post-spec-guard (lifecycle gates) | — | ✗ no PostToolUse event. The `status: done` gate and the raise-only `rigor:` rule are **prompt promises here**, not mechanism: `/wf-done` still evaluates the gate, but nothing stops a hand-edit of the frontmatter. The CI gates remain the durable half |
 | pre-file-guard (secret files) | `lefthook` pre-commit secret-scan | ~ partial. The commit-time scan catches a secret file being COMMITTED; it cannot stop Copilot READING one into the chat transcript, which is the half with no analog |

@@ -73,6 +73,11 @@ def main():
                     "Formula/wellforge.rb", "CLAUDE.md"):
             shutil.copyfile(os.path.join(ROOT, rel), os.path.join(repo, rel))
         subprocess.run(["git", "init", "-q", "--bare", bare], check=True, env=ENV)
+        # CI checks out with depth 1, so the clone above is shallow, and a bare repository
+        # refuses a push from one ("shallow update not allowed") unless told otherwise.
+        # Found before it reached CI, by running this suite from a `--depth 1` clone.
+        subprocess.run(["git", "-C", bare, "config", "receive.shallowUpdate", "true"],
+                       check=True, env=ENV)
         git(repo, "remote", "set-url", "origin", bare)
         git(repo, "checkout", "-q", "-B", "main")
 

@@ -1001,10 +1001,17 @@ last message explaining why the hook was wrong — which is the suite doing exac
   HEAD). Seven new matrix cases, written red first; case 18 asserts the hook's field list
   equals `forge-state.py`'s, so the rule cannot fork again.
 
-**Left undone, same bug.** The Copilot adapter's `lefthook` `spec-drift` and the OpenCode
-adapter's `session.idle` check are separate reimplementations with the same blind spot
-(Copilot blocks the commit that closes a feature; OpenCode only warns). Not fixed here.
-And `forge-state.py` still degrades to "everything unknown" without pyyaml instead of
+**Left undone at the time, same bug — fixed since.** The Copilot adapter's `lefthook`
+`spec-drift` and the OpenCode adapter's `session.idle` check are separate reimplementations
+with the same blind spot (Copilot blocked the commit that closes a feature; OpenCode warned
+on every idle). Both now carry the lifecycle exemption, and
+`scripts/tests/adapters-drift.test.py` drives the real artifacts — the lefthook `run:`
+script under `sh`, `wellforge.js` under node with a fake `$` running real git — through
+seven scenarios each, and asserts that all four copies of the field list (forge-state, the
+Stop hook, lefthook, the OpenCode plugin) are identical. Four copies of one rule is still
+the real defect; the test is what stops them forking until the shared core is extracted.
+Not addressed: OpenCode's check reads `git diff --name-only`, so it sees unstaged changes
+only — the bug the Stop hook's matrix was written for. And `forge-state.py` still degrades to "everything unknown" without pyyaml instead of
 reading flat frontmatter itself — the sandbox finding applies to any user in a
 network-less shell.
 

@@ -12,6 +12,34 @@
 export const WellForge = async ({ $, client }) => {
   const deny = (msg) => { throw new Error(`WellForge: ${msg}`) }
 
+  // Frontmatter fields that record where a feature IS, not what it asks for. /done writes
+  // `status` + `done`, /promote writes `rigor`; editing them is bookkeeping, and bookkeeping
+  // is not drift. The list is forge-state.py's LIFECYCLE_FIELDS, and
+  // scripts/tests/adapters-drift.test.py fails if this copy, the Copilot lefthook's or the
+  // Claude Code Stop hook's ever differs from it. Declared INSIDE the plugin on purpose:
+  // OpenCode treats every export of this module as a plugin.
+  const LIFECYCLE_FIELDS = ["status", "done", "approved", "superseded_by", "archive_reason", "rigor", "plugin"]
+  // A spec with its lifecycle frontmatter lines removed. Only lines inside the leading
+  // `---` block count: `status: done` typed into the body is a body change.
+  const stripLifecycle = (text) => {
+    const re = new RegExp(`^(${LIFECYCLE_FIELDS.join("|")}):`)
+    let fm = 0
+    return String(text).split("\n").filter((line, i) => {
+      if (i === 0 && line === "---") { fm = 1; return true }
+      if (fm === 1 && line === "---") { fm = 2; return true }
+      return !(fm === 1 && re.test(line))
+    }).join("\n").replace(/\n+$/, "")
+  }
+  // True when a spec/plan differs from HEAD ONLY in lifecycle fields. No HEAD version (a
+  // new file) is never exempt.
+  const lifecycleOnly = async (file) => {
+    const head = await $`git show ${"HEAD:" + file}`.quiet().nothrow()
+    if (head.exitCode !== 0) return false
+    const now = await $`cat ${file}`.quiet().nothrow()
+    if (now.exitCode !== 0) return false
+    return stripLifecycle(head.text()) === stripLifecycle(now.text())
+  }
+
   return {
     // ── pre-tool guards — block dangerous calls (throw denies the call) ──
     "tool.execute.before": async (input, output) => {
@@ -77,7 +105,11 @@ export const WellForge = async ({ $, client }) => {
     "session.idle": async () => {
       try {
         const changed = (await $`git diff --name-only`.quiet().nothrow().text()).split("\n")
-        const specChanged = changed.filter((l) => /specs\/[^/]+\/(spec|plan)\.md$/.test(l))
+        const specTouched = changed.filter((l) => /specs\/[^/]+\/(spec|plan)\.md$/.test(l))
+        // Writing `status: done` is the last thing /done does, and it used to earn this
+        // warning on every idle afterwards. Keep only the files that changed in substance.
+        const specChanged = []
+        for (const f of specTouched) if (!(await lifecycleOnly(f))) specChanged.push(f)
         const tasksChanged = changed.some((l) => /specs\/[^/]+\/tasks\.md$/.test(l))
         if (specChanged.length && !tasksChanged) {
           await client.app.log({ body: {
