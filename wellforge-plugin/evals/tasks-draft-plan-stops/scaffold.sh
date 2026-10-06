@@ -7,3 +7,6 @@ cp -R "$here/../fixtures/project/." .
 
 # 001's plan is approved in the fixture; this case needs it in draft.
 sed -i.bak "s/^status: approved$/status: draft/" specs/001-checkout-flow/plan.md && rm -f specs/001-checkout-flow/plan.md.bak
+
+# Last: one commit, so the state layer reads drift from git, not from copy-order mtimes.
+bash "$here/../fixtures/commit.sh"

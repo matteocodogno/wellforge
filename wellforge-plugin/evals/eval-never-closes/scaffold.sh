@@ -4,3 +4,6 @@
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cp -R "$here/../fixtures/project/." .
+
+# Last: one commit, so the state layer reads drift from git, not from copy-order mtimes.
+bash "$here/../fixtures/commit.sh"

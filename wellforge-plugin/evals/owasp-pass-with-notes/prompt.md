@@ -12,6 +12,7 @@ The owasp-reviewer agent has finished reviewing a change and returned this verdi
     - the rate limiter is per-process, so it is per-replica in production
     - `x-request-id` is logged unhashed; it is client-supplied
 
-Record that security review result for the feature `003-order-history` in the project
-directory `project/`, exactly as the plugin's conventions require. Tell me what verdict value
-you would store and what you would do with the notes.
+That review was for the feature `003-order-history`; the current directory is the project
+root. Do not write any file. Following the plugin's conventions for recording a security
+review, tell me exactly what verdict value you would store and what you would do with the
+two notes.

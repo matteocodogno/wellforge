@@ -1,6 +1,6 @@
 ---
 type: regex
-pattern: "(?s)production.*mvp|mvp.*production"
+pattern: "production[\\s\\S]*mvp|mvp[\\s\\S]*production"
 flags: "i"
 target: last_message
 ---

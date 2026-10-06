@@ -178,14 +178,36 @@ if [ "$WITH_EVALS" -eq 0 ]; then
   skip "prompt evals" "off by default (they call the API and cost money) — pass --with-evals"
 elif ! have claude; then
   skip "prompt evals" "the claude CLI is not on PATH"
+elif ! python3 -s -c "import yaml" >/dev/null 2>&1; then
+  # A FAILURE, not a skip, and before a cent is spent. Eval sessions run their shell in a
+  # sandbox with no network AND a throwaway $HOME, so neither the commands' usual `uv run
+  # --with pyyaml` fallback nor a `pip install --user` copy is visible there, and
+  # forge-state.py reads every frontmatter field as unknown. The cases that depend on it
+  # (done, status) then fail for a reason that has nothing to do with the prompts — which is
+  # what a full, paid run measured on 2026-10-05.
+  #
+  # `-s` is the point of this check: it ignores the per-user site-packages, which is exactly
+  # what a different $HOME does. Measured with a probe case: same interpreter, same PATH,
+  # HOME=/private/tmp/e-…/home, PYTHONPATH not inherited.
+  printf '  prompt evals… %sFAILED%s (python3 -s cannot import yaml)\n' "$RED" "$RST"
+  printf '    Eval sessions run with no network and a throwaway HOME. pyyaml must be importable\n'
+  printf '    by `python3 -s` — the interpreter'"'"'s own site-packages, not a --user install.\n'
+  printf '    See wellforge-plugin/evals/README.md.\n'
+  record "prompt evals" failed ""
+  FAILED=$((FAILED + 1))
 else
   # --scaffold: each case copies the fixture project into its run dir, which is the only way
   #   a case gets a project to act on (runs start in an empty directory).
   # --trust-plugin: answers the first-run trust prompt, which has no answer in CI.
   # --threshold 0.8: an LLM judge is not a unit test. Demanding 1.0 from three judge votes
   #   per grader buys a flaky suite that people learn to ignore, which is worse than no suite.
+  # --allow-tools Bash Write Edit: the runner GATES those three behind an operator grant; a
+  #   case's own `allowed_tools` only narrows what the operator already allowed. Without the
+  #   grant every session ran with no shell and no way to write a file, so nothing that calls
+  #   forge-state.py or writes tasks.md could pass — the first full run (2026-10-05) scored
+  #   done-mvp-passes 0.00 for exactly that, with the agent correctly declining to guess.
   run "prompt evals" claude plugin eval ./wellforge-plugin \
-    --scaffold --trust-plugin --no-publish --threshold 0.8
+    --scaffold --trust-plugin --no-publish --allow-tools Bash Write Edit --threshold 0.8
   # Record the tree they passed against, so the release path can tell whether the prompt
   # layer has moved since. Only on a green run, and only from a clean tree: recording HEAD
   # while files are modified would claim the evals covered code that was never committed.

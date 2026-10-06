@@ -25,3 +25,6 @@ export async function getOrderHistory(repo: { findByCustomer: (id: string) => Pr
   return [...rows].reverse();
 }
 TS
+
+# Last: one commit, so the state layer reads drift from git, not from copy-order mtimes.
+bash "$here/../fixtures/commit.sh"

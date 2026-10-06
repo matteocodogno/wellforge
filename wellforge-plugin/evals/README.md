@@ -9,11 +9,12 @@ fixture project, and graders score what it *did*.
 
 ```sh
 # everything (costs money — see below)
-claude plugin eval ./wellforge-plugin --scaffold --trust-plugin --no-publish --threshold 0.8
+claude plugin eval ./wellforge-plugin --scaffold --trust-plugin --no-publish \
+  --allow-tools Bash Write Edit --threshold 0.8
 
 # one case, one run, cheapest useful signal while authoring
 claude plugin eval ./wellforge-plugin --case done-mvp-passes --runs 1 --ablation none \
-  --scaffold --trust-plugin --no-publish
+  --scaffold --trust-plugin --no-publish --allow-tools Bash Write Edit
 
 # through the repo's own entry point
 mise run check -- --with-evals
@@ -25,12 +26,28 @@ mise run check -- --with-evals
 That is why `check-all.sh` leaves them off unless you pass `--with-evals`, and why the CI job
 is separate and optional — see below.
 
+**Prerequisite: `python3 -s -c "import yaml"` must succeed.** Eval sessions run their shell
+in a sandbox with no network **and a throwaway `$HOME`** (measured: same interpreter and
+`PATH` as yours, `HOME=/private/tmp/e-…/home`, `PYTHONPATH` not inherited). So the commands'
+usual `uv run --with pyyaml` fallback cannot fetch anything, and a `pip install --user`
+copy is invisible because the per-user site-packages lives under `$HOME`. Without pyyaml
+`forge-state.py` reads every status, tier and verdict as unknown, and the `done` and
+`status` cases fail for a reason that is not the prompt. pyyaml has to be in the
+interpreter's **own** site-packages; `-s` is how you test for that from a normal shell.
+`check-all.sh --with-evals` checks it first and fails before spending anything.
+
 Why the flags:
 
 - `--scaffold` — every case's `scaffold.sh` copies `fixtures/project/` into the run's working
   directory. Runs start in an **empty** throwaway directory, so without it there is no project
   to act on. It runs author-supplied bash, which is why the runner makes you ask for it.
 - `--trust-plugin` — answers the first-run trust prompt, which has no answer in CI.
+- `--allow-tools Bash Write Edit` — the runner gates those three behind an **operator**
+  grant. `allowed_tools` in a case's `prompt.md` only narrows what the operator allowed; it
+  cannot grant anything by itself. Leave the flag off and every session runs with no shell
+  and no way to write a file, and any case that calls `forge-state.py` or writes an artifact
+  fails while the agent, correctly, declines to guess. That is what the first full run
+  measured.
 - `--threshold 0.8` — an LLM judge is not a unit test. Demanding 1.0 from three judge votes
   per grader buys a flaky suite that people learn to ignore, which is worse than no suite.
 
@@ -97,8 +114,15 @@ all, and a run trace whose `schema` and `agents` shape were both wrong, which si
 a fiction.
 
 A case that needs a *different* state edits its own copy in `scaffold.sh` — see
-`tasks-draft-plan-stops` (flips 001's plan to draft) and `done-mvp-passes` (drops 003 to mvp).
-Never edit the shared fixture for one case.
+`tasks-draft-plan-stops` (flips 001's plan to draft), `done-mvp-passes` (drops 003 to mvp)
+and `implement-announces-downgrade` (gives 001 a `tasks.md`, so the command gets past its
+first gate). Never edit the shared fixture for one case.
+
+**Every `scaffold.sh` ends with `fixtures/commit.sh`**, which commits the scaffolded project
+into a throwaway git repository. `forge-state.py` reads drift from git and only falls back
+to file mtimes where there is no repository — and a `cp -R` hands out mtimes in copy order,
+so outside git `003-order-history` read as drifted and its done gate was blocked for a
+reason no case intended. Do your edits first, commit last.
 
 ## Adding a case
 

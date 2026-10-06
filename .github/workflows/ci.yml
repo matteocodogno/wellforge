@@ -927,6 +927,12 @@ jobs:
           node-version: '22'
       - name: Install Claude Code
         run: npm i -g @anthropic-ai/claude-code
+      # Eval sessions run their shell sandboxed: no network and a throwaway $HOME. The
+      # commands' `uv run --with pyyaml` fallback cannot fetch anything there, a --user
+      # install is invisible, and forge-state.py then reads every frontmatter field as
+      # unknown. pyyaml must be in the interpreter's own site-packages — hence `-s`.
+      - name: pyyaml for the sandboxed sessions
+        run: python3 -s -c "import yaml" || sudo python3 -m pip install --quiet --break-system-packages pyyaml
       - name: Run the eval suite
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -935,7 +941,7 @@ jobs:
           set -euo pipefail
           echo "::notice::prompt evals: --runs $RUNS over both arms. See the cost note in ci.yml."
           claude plugin eval ./wellforge-plugin \
-            --scaffold --trust-plugin --no-publish \
+            --scaffold --trust-plugin --no-publish --allow-tools Bash Write Edit \
             --runs "$RUNS" --threshold 0.8 --json evals-result.json
           echo "::notice::evals passed for ${{ github.sha }} — record that SHA in"
           echo "::notice::wellforge-plugin/evals/LAST-RUN before cutting a plugin-v tag."

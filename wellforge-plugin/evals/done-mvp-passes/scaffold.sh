@@ -7,3 +7,6 @@ cp -R "$here/../fixtures/project/." .
 
 # Same feature, one tier lower: the mvp gate does not ask for an eval.
 sed -i.bak "s/^rigor: production$/rigor: mvp/" specs/003-order-history/spec.md && rm -f specs/003-order-history/spec.md.bak
+
+# Last: one commit, so the state layer reads drift from git, not from copy-order mtimes.
+bash "$here/../fixtures/commit.sh"
