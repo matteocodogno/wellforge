@@ -100,6 +100,7 @@ In a hurry? **`/wellforge:spike <idea>`** gets a working prototype in minutes.
 /wellforge:new          idea → interview → stack pick → scaffold → verified build → connections
 /wellforge:spike        fast lane — main-loop build from a brief, advisory gates (PoC in minutes)
 /wellforge:spec|plan|design|tasks   the spec-driven feature workflow (2 human gates)
+/wellforge:grill-me     one question at a time until an idea, spec or plan is decided  ·  --docs
 /wellforge:orchestrate  the full agent team on a goal   ·   --mode spike|mvp|production
 /wellforge:implement    build a feature's tasks — parallel dev agents, QE-verified
 /wellforge:eval         LM-judge score against the central rubric (the gate into "done")
@@ -110,8 +111,16 @@ In a hurry? **`/wellforge:spike <idea>`** gets a working prototype in minutes.
 /wellforge:upgrade      re-template a project to a newer release, AI-resolved conflicts
 /wellforge:status       where every feature stands + the exact next command to run
 /wellforge:triage       spec-health digest — what's rotting (stale, drifted, never eval'd)
+/wellforge:retro        after a session or feature: ranked, evidence-backed fixes to the environment
+/wellforge:improve-architecture   find shallow modules → refactor candidates (changes no code)
 /wellforge:doctor       health check: tools, MCP, hooks, guards — and the command index
 ```
+
+`/wellforge:spec --grill` swaps the batched interview for the one-at-a-time one, and
+`/wellforge:grill-me --docs` also builds the project glossary
+(`.claude/context/glossary.md` — one word per concept) and offers ADRs for the decisions it
+turns up. The dev agents implement **test-first**: one behavior per cycle, the test seen to
+fail before the code exists.
 
 `--dry-run` on `upgrade`, `promote`, `adopt` and `release` shows the plan of record —
 files, commands, what's irreversible, and what it honestly cannot predict — and changes

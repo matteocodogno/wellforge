@@ -377,6 +377,7 @@
           <p>The full spec → plan → tasks flow with a human gate at each step. A design stage kicks in for UI.</p>
 <pre><span class="p">/wellforge:spec</span> <span class="arrow">→</span> <span class="p">:plan</span> <span class="arrow">→</span> <span class="p">:tasks</span> <span class="arrow">→</span> <span class="p">:implement</span> <span class="arrow">→</span> <span class="p">:done</span>
 <span class="c"># UI feature? add /wellforge:design after :plan</span>
+<span class="c"># devs work test-first: red, green, refactor</span>
 <span class="c"># shortcut, end-to-end:</span>
 <span class="p">/wellforge:orchestrate</span> <span class="c">"add password reset"</span></pre>
         </div>
@@ -412,6 +413,15 @@
         </div>
 
         <div class="play">
+          <span class="when">Before you build</span>
+          <h3>Decide an idea</h3>
+          <p>One question at a time, each with a recommendation, until nothing load-bearing is left to assume. Ends in a decision ledger that keeps what you decided apart from what you delegated.</p>
+<pre><span class="p">/wellforge:grill-me</span> <span class="c">"offline mode for field techs"</span>
+<span class="p">/wellforge:grill-me</span> --docs  <span class="c"># + glossary &amp; ADRs</span>
+<span class="p">/wellforge:spec</span> --grill      <span class="c"># same interview, then the spec</span></pre>
+        </div>
+
+        <div class="play">
           <span class="when">Quality check</span>
           <h3>Evaluate an existing project</h3>
           <p>Score a feature against the rubric, or take the pulse of the whole repo.</p>
@@ -427,6 +437,15 @@
           <p>The fast lane — build from a one-paragraph brief, advisory gates, no agents, no approval. May be thrown away.</p>
 <pre><span class="p">/wellforge:spike</span> <span class="c">"stream LLM tokens over SSE?"</span>
 <span class="c"># raise it later with /wellforge:promote</span></pre>
+        </div>
+
+        <div class="play">
+          <span class="when">Keep it healthy</span>
+          <h3>Improve what you work in</h3>
+          <p>Look back for what slowed a session down, and scan for modules that make every change expensive. Both propose from evidence and change nothing without your yes.</p>
+<pre><span class="p">/wellforge:retro</span>  <span class="c"># fixes to the environment, ranked</span>
+<span class="p">/wellforge:improve-architecture</span>
+<span class="c"># shallow modules → refactor candidates</span></pre>
         </div>
 
         <div class="play">

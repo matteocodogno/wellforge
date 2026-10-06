@@ -81,7 +81,7 @@ For work you intend to keep, run the standard flow. Either drive the steps yours
 
 ```
 /wellforge:spec contractors can accept or reject an assigned work order
-# review → approve
+# review → approve      (add --grill for a one-question-at-a-time interview instead of the batched one)
 /wellforge:plan
 # review architecture + AC→test mapping → approve
 /wellforge:design        # UI features only — flows, screens, component reuse, a11y (optional)
@@ -109,6 +109,11 @@ Rules worth knowing on day one:
 - If code and spec disagree, the spec gets amended first (a Stop hook blocks sessions
   that change a spec without re-syncing tasks).
 - Commits reference tasks: `feat(orders): accept endpoint (T3, specs/001)`.
+- The dev agents work **test-first**: one behavior at a time, the test seen to fail before
+  the code exists. Each reports a `TDD:` line; a `test-after` entry in it is worth a look.
+- Domain words live in `.claude/context/glossary.md` — one word per concept. Agents use its
+  terms and propose new ones; only you (via `/wellforge:grill-me --docs` or the spec
+  review) put them in.
 
 ## 3. Day-2 routine
 
@@ -118,8 +123,11 @@ Rules worth knowing on day one:
 | fast experiment / PoC | `/wellforge:spike <goal>` — main-loop build, advisory gates, no agents |
 | graduate a spike/mvp | `/wellforge:promote <feature> --to mvp` · `--to production` (pays the deferred rigor) |
 | new feature | `/wellforge:spec` → `:plan` → `:design` (UI only) → `:tasks` → `:implement` (or `:orchestrate` for all of it) |
+| an idea that isn't decided yet | `/wellforge:grill-me <idea or NNN-slug>` — one question at a time, each with a recommendation, ending in a decision ledger · `--docs` also maintains the glossary and offers ADRs |
 | implement a feature's tasks | `/wellforge:implement <feature> T3,T5` · `<feature> next` · `all` |
 | where am I / what's next | `/wellforge:status` (all features + next command each) |
+| the session was harder than it should have been | `/wellforge:retro` (or `/wellforge:retro <feature>`) — at most five evidence-backed fixes to the *environment* (tasks, hooks, docs), applied only on your yes |
+| the codebase is getting harder to change | `/wellforge:improve-architecture [path]` — ranked refactor candidates from co-change and run-trace evidence; the one you pick goes through `/wellforge:orchestrate` as a refactor |
 | bugfix | `/wellforge:orchestrate <bug>` → QE writes the failing repro test first |
 | CI red on the quality gate | the gate report names the exact threshold; thresholds are central — fix the code, don't look for a config to weaken (there isn't one in your repo) |
 | cut a release | `/wellforge:release` — version bump + `CHANGELOG.md` from your Conventional Commits, tag, GitHub release (release-it); dry-run preview first |
