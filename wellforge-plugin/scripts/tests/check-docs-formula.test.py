@@ -67,11 +67,19 @@ def main():
         repo, bare = os.path.join(tmp, "repo"), os.path.join(tmp, "origin.git")
         subprocess.run(["git", "clone", "-q", "--no-tags", ROOT, repo], check=True, env=ENV,
                        capture_output=True)
-        # The clone is HEAD; the code under test is the WORKING TREE's check-docs.py and the
-        # files it reads, so carry the uncommitted versions across.
-        for rel in ("wellforge-plugin/scripts/check-docs.py", "scripts/wellforge",
-                    "Formula/wellforge.rb", "CLAUDE.md"):
-            shutil.copyfile(os.path.join(ROOT, rel), os.path.join(repo, rel))
+        # The clone is HEAD; the code under test is the WORKING TREE. Overlay EVERY
+        # uncommitted file, not a hand-picked few: check-docs reads a dozen files and
+        # cross-checks them, so carrying only some of an uncommitted change (CLAUDE.md with
+        # its new version, but not the plugin.json that matches it) fails the suite for a
+        # reason that has nothing to do with what it tests. A clean tree overlays nothing.
+        dirty = subprocess.run(["git", "-C", ROOT, "ls-files", "--modified", "--others",
+                                "--exclude-standard"], capture_output=True, text=True,
+                               env=ENV).stdout.splitlines()
+        for rel in dirty:
+            src, dst = os.path.join(ROOT, rel), os.path.join(repo, rel)
+            if os.path.isfile(src):
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copyfile(src, dst)
         subprocess.run(["git", "init", "-q", "--bare", bare], check=True, env=ENV)
         # CI checks out with depth 1, so the clone above is shallow, and a bare repository
         # refuses a push from one ("shallow update not allowed") unless told otherwise.

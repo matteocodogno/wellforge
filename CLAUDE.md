@@ -93,9 +93,9 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/plans/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v14` (gate
-  workflow pin series), `plugin-v2.55.0` (plugin series) and `cli-v1.5.2` (the `wellforge`
+  workflow pin series), `plugin-v2.56.0` (plugin series) and `cli-v1.5.2` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.55.0`, CLI `1.5.2`. **This is the one line in this file that states current
+  plugin `2.56.0`, CLI `1.5.2`. **This is the one line in this file that states current
   versions**; `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and
   `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
   the docs. Every other version in this file is history and stays as written. A self-CI workflow
@@ -160,6 +160,10 @@ wellforge/
   url and this file together, `check-docs.py` accepts a placeholder on the release commit
   and nowhere after it, and the script restores the tree if it stops. Rehearsed end to end
   in a throwaway clone before it was run for real.
+- **Phase 37** (`docs/plans/PLAN.md`): the grilling decision ledger is a file
+  (`.forge/grill/<slug>.md`, then `specs/NNN-slug/ledger.md`), written as each decision
+  resolves, and `/wellforge:spec` / `/wellforge:orchestrate` take it with `--ledger` — the
+  missing route from `grill-me` into the agent pipeline (plugin `2.56.0`).
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
   and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
   is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),
@@ -222,6 +226,10 @@ wellforge/
   where *Delegated* is never recorded as *Decided*. Main loop only — never in a subagent,
   never inside `orchestrate`, not at the `spike` tier. It approves nothing and never edits
   an approved artifact: there its output is proposed amendments, routed as drift.
+  **The ledger is a file**, written as each decision resolves: `.forge/grill/<slug>.md` for
+  an idea, `specs/NNN-slug/ledger.md` for a feature, and moved beside the spec once one
+  exists. `/wellforge:spec --ledger` and `/wellforge:orchestrate --ledger` read it — a
+  path is the only thing an agent that cannot see the conversation can be handed.
 - **The domain glossary is `.claude/context/glossary.md`, governed by the
   `domain-modeling` skill** (the authority): one word per concept, one concept per word, a
   definition that states where the thing begins and ends, and a stress test (boundary,

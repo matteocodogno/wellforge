@@ -917,6 +917,46 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 37 — The decision ledger gets a file (added 2026-10-06)
+
+Phase 31 left this open in so many words: *"The ledger lives in the conversation, not on
+disk… If the pilot shows ledgers lost to compaction, give it a file."* It did not take a
+pilot. The first real `/wellforge:grill-me` session ended with the natural question — can I
+run `/wellforge:orchestrate` now? — and the honest answer was no: orchestrate hands the
+goal to the `product-owner` agent, an agent sees only what it is handed, and a conversation
+cannot be handed. Every grilled decision would have been re-derived, and the questions
+asked again as open questions.
+
+- ☑ **The ledger is a file** (plugin `2.56.0`): `.forge/grill/<slug>.md` for a free-form
+  idea, `specs/NNN-slug/ledger.md` for an existing feature. Created when the decision map is
+  shown and rewritten **as each decision resolves** — which replaces "restate the ledger
+  every five decisions" as the answer to compaction, and is a better one. A small
+  frontmatter records `topic`, `grilled`, `target` and `complete`.
+- ☑ **One way to consume it**, stated once in the `grilling` skill and followed by every
+  reader: Decided and Found are inputs, not reopened; Delegated is used and stays marked
+  `(delegated — ledger D4)`; Open becomes `## Open questions`; `complete: false` means
+  branches were never visited, and the reader says so rather than finishing the interview
+  by guessing.
+- ☑ **`/wellforge:spec --ledger <path>`** and **`/wellforge:orchestrate --ledger <path>`**
+  (feature and mvp pipelines). Orchestrate passes the PO the **path** — the handoff
+  contract's own rule — and does not re-ask what the ledger settles. Without the flag, a
+  `.forge/grill/` ledger whose topic matches is offered once, never picked up silently.
+- ☑ **`product-owner`** accepts a ledger path as input and reports which entries it used
+  and any it could not honor. A spec that contradicts its ledger's Decided entries is wrong.
+- ☑ **The ledger moves beside the spec** once one exists, and the spec links it. Until then
+  `.forge/grill/` is, by construction, the list of ideas nobody has specced yet.
+  `grill-me` never allocates a `specs/NNN-slug/` for an idea: numbering is `spec`'s.
+
+**Deliberately not done.** No `status:` on the ledger and nothing in `forge-state.py`
+about it — it is evidence beside a feature, not a lifecycle stage, and a third thing to
+approve would be ceremony. No template change: `.forge/grill/` is created on first use.
+
+**Unproven.** Prompt-authored, no eval, and this changes the prompt layer, so `LAST-RUN`
+is stale again and `plugin-v2.56.0` needs a fresh eval pass before it can be tagged. An
+eval case is finally cheap to write for this one — a fixture ledger, `orchestrate
+--ledger`, and a grader that fails if the spec contradicts a Decided entry — and is the
+obvious next addition to the suite.
+
 ## Phase 36 — A CLI release path that can actually produce a green tag (added 2026-10-06)
 
 Cutting `cli-v1.5.2` (two `doctor` fixes: `--fix` installs a missing plugin; a claude.ai-synced

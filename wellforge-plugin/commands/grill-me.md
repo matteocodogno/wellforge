@@ -26,8 +26,13 @@ Target: $ARGUMENTS
 
 3. **Map the tree, then grill.** Show the branches and their order, then run the interview
    exactly as the skill defines: one question at a time, parents first, a recommendation
-   with every question, branch-closed progress, the ledger restated every five decisions.
-   Stop on any of the skill's three stop conditions.
+   with every question, branch-closed progress. Stop on any of the skill's three stop
+   conditions.
+
+   **Write the ledger file as you go** (grilling skill, *The decision ledger*): create it
+   when you show the map and rewrite it each time a decision resolves —
+   `.forge/grill/<slug>.md` for a free-form idea, `specs/NNN-slug/ledger.md` for an existing
+   feature. The file is the result; the conversation is not.
 
    **With `--docs`**, also load the **domain-modeling** skill and maintain the docs as you
    go (grilling skill, *Grilling with docs*): challenge a term the moment it is used
@@ -37,10 +42,15 @@ Target: $ARGUMENTS
    candidates; do not write them.
 
 4. **Close with the ledger, then route it — by what was grilled:**
-   - **Free-form idea** → print the ledger and propose
-     `/wellforge:spec <one-line summary>`; the ledger above it in the conversation is that
-     command's interview, already done. For something the user called throwaway, propose
-     `/wellforge:spike` instead.
+   - **Free-form idea** → print the ledger, its path, and the exact next command. Either
+     works, in this session or a later one, because both read the file:
+     - `/wellforge:spec <one-line summary> --ledger .forge/grill/<slug>.md` — write the spec
+       yourself and review it;
+     - `/wellforge:orchestrate <one-line summary> --ledger .forge/grill/<slug>.md` — hand the
+       whole pipeline the ledger; the product-owner writes the spec from it.
+
+     For something the user called throwaway, propose `/wellforge:spike` instead and point
+     at the ledger as its brief's starting material.
    - **`status: draft` artifact** → list the edits the ledger implies and ask before
      applying them. On yes, apply them to the draft and nothing else: `status:` stays
      `draft`.
@@ -59,10 +69,12 @@ Target: $ARGUMENTS
 
 - Main loop only. Never dispatch an agent to do the interviewing, and never answer your
   own question to keep the session moving.
-- This command never sets `status:`, never approves, and never writes a new artifact — a
-  spec is `/wellforge:spec`'s to create. With `--docs` it writes the glossary, and ADRs
-  only through `adr-writer` after an explicit yes; nothing else, and nothing without the
-  flag.
+- This command never sets `status:`, never approves, and never writes a spec, plan or task
+  list — a spec is `/wellforge:spec`'s to create. It writes exactly one file of its own, the
+  ledger. With `--docs` it also writes the glossary, and ADRs only through `adr-writer`
+  after an explicit yes; nothing else, and nothing without the flag.
+- Never allocate a `specs/NNN-slug/` directory for an idea: numbering is `/wellforge:spec`'s,
+  and an idea's ledger waits in `.forge/grill/` until a spec exists to move it beside.
 - The user saying stop ends it at once: unresolved branches go under **Open**, not into a
   guess.
 - A delegated answer ("you pick") is recorded as **Delegated**, never as the user's

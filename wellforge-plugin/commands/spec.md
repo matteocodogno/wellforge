@@ -1,6 +1,6 @@
 ---
 description: Write a feature specification (spec-driven workflow, step 1 of 3)
-argument-hint: <feature description> | <NNN-slug to resume> [--grill]
+argument-hint: <feature description> | <NNN-slug to resume> [--grill] [--ledger <path>]
 ---
 
 Create or resume a feature specification following the **spec-driven** skill conventions
@@ -25,8 +25,15 @@ Feature request: $ARGUMENTS
    recommendation with every question, until the decision tree is resolved or the user
    stops. Write the spec from its ledger — *Open* becomes `## Open questions`, and a
    *Delegated* decision is marked as such where it lands, never presented as the user's
-   choice. If a decision ledger from `/wellforge:grill-me` is already in this conversation
-   for this feature, that **is** the interview: do not ask again, with or without the flag.
+   choice.
+
+   **A decision ledger is the interview, already done** — do not ask again, with or without
+   `--grill`. Look for one in this order: the file named by `--ledger <path>`;
+   `specs/NNN-slug/ledger.md` when resuming a feature; a ledger from `/wellforge:grill-me`
+   earlier in this conversation (its file is the authority, re-read it). Consume it exactly
+   as the grilling skill's *How a ledger is consumed* says. If it is marked
+   `complete: false`, say which branches were never visited and carry them as open
+   questions — one batched round to close them is fine, a second interview is not.
 
 3. **Write `specs/NNN-slug/spec.md`** with `status: draft`:
    - Problem: 2–5 sentences, no solutioning.
@@ -34,6 +41,10 @@ Feature request: $ARGUMENTS
      objectively verifiable — if you can't picture the test, rewrite the AC.
    - Non-goals: anything a reasonable reader might assume is included but isn't.
    - Open questions: what you still don't know, each with an owner.
+
+   If the spec was written from a ledger under `.forge/grill/`, **move it** to
+   `specs/NNN-slug/ledger.md` now (`git mv` when tracked) and add one line under the spec's
+   title: ``Decision ledger: `ledger.md` `` (plain text, in the same directory). It travels with the feature from here.
 
 4. **Self-critique — one pass** (`self-critique` skill, spec.md checklist). Re-read the
    draft against the checklist and fix what it catches (unverifiable ACs, hidden ANDs,

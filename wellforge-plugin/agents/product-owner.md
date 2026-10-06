@@ -24,6 +24,17 @@ Your single artifact is `specs/NNN-slug/spec.md` following the WellForge spec-dr
 ## Inputs you expect
 
 - A feature request or change description from the caller.
+- **Optionally, the path to a decision ledger** (`.forge/grill/<slug>.md` or
+  `specs/NNN-slug/ledger.md`, written by `/wellforge:grill-me`). When the caller gives you
+  one, read it first: it is the interview you cannot run yourself, already answered by the
+  user. Consume it as the `grilling` skill's *How a ledger is consumed* says —
+  **Decided** and **Found** are inputs you do not reopen; a **Delegated** decision is used
+  and marked `(delegated — ledger D4)` where it lands, never written as the user's choice;
+  **Assumed** stays an assumption; **Open** becomes `## Open questions` with its owners;
+  volunteered technical decisions go verbatim under `## Constraints`. `complete: false`
+  means branches were never visited: list them as open questions, do not fill them in.
+  Add the line ``Decision ledger: `ledger.md` `` under the title — the caller moves the file
+  there. A spec that contradicts its ledger's Decided entries is wrong, however reasonable.
 - The repository: read existing `specs/` for numbering and terminology, the project
   `CLAUDE.md`/`README` for domain language, and `.claude/context/glossary.md` if present.
 
@@ -93,6 +104,7 @@ a loop; it never sets `status:`. Skipped only at the `spike` tier, which doesn't
 You run non-interactively: you cannot ask the user questions. Where you would have asked,
 write the question into `## Open questions` instead. Your final message to the caller is a
 compact summary: spec path, story/AC count, the non-goals, the open questions that
-need human answers before approval, any **glossary candidates** (term, proposed
+need human answers before approval, **which ledger entries you used** when you were given
+one (and any you could not honor, with why), any **glossary candidates** (term, proposed
 definition, why), and the one-line **self-critique** result (what the
 pass fixed / deliberately kept) so the human gate sees what was already caught.

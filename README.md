@@ -116,6 +116,8 @@ In a hurry? **`/wellforge:spike <idea>`** gets a working prototype in minutes.
 /wellforge:doctor       health check: tools, MCP, hooks, guards — and the command index
 ```
 
+`/wellforge:grill-me` saves its decisions to a ledger file; pass it on with
+`/wellforge:spec --ledger <path>` or `/wellforge:orchestrate --ledger <path>`.
 `/wellforge:spec --grill` swaps the batched interview for the one-at-a-time one, and
 `/wellforge:grill-me --docs` also builds the project glossary
 (`.claude/context/glossary.md` — one word per concept) and offers ADRs for the decisions it

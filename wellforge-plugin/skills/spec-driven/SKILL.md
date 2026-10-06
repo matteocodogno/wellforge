@@ -34,6 +34,7 @@ in the manual flow, `/wellforge:plan` and `/wellforge:tasks` nudge you to it.
 specs/
 ├── 001-user-auth/
 │   ├── spec.md      # WHAT & WHY — problem, user stories, acceptance criteria
+│   ├── ledger.md    # optional — the decision ledger from /wellforge:grill-me (who decided what)
 │   ├── plan.md      # HOW — architecture, data model, API contracts, test strategy
 │   ├── design.md    # optional, UI features only — flows, screens, component reuse, a11y
 │   ├── tasks.md     # ordered, dependency-aware task list

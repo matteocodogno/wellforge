@@ -123,7 +123,7 @@ Rules worth knowing on day one:
 | fast experiment / PoC | `/wellforge:spike <goal>` — main-loop build, advisory gates, no agents |
 | graduate a spike/mvp | `/wellforge:promote <feature> --to mvp` · `--to production` (pays the deferred rigor) |
 | new feature | `/wellforge:spec` → `:plan` → `:design` (UI only) → `:tasks` → `:implement` (or `:orchestrate` for all of it) |
-| an idea that isn't decided yet | `/wellforge:grill-me <idea or NNN-slug>` — one question at a time, each with a recommendation, ending in a decision ledger · `--docs` also maintains the glossary and offers ADRs |
+| an idea that isn't decided yet | `/wellforge:grill-me <idea or NNN-slug>` — one question at a time, each with a recommendation, ending in a decision ledger file · then `/wellforge:spec --ledger <path>` or `/wellforge:orchestrate --ledger <path>` · `--docs` also maintains the glossary and offers ADRs |
 | implement a feature's tasks | `/wellforge:implement <feature> T3,T5` · `<feature> next` · `all` |
 | where am I / what's next | `/wellforge:status` (all features + next command each) |
 | the session was harder than it should have been | `/wellforge:retro` (or `/wellforge:retro <feature>`) — at most five evidence-backed fixes to the *environment* (tasks, hooks, docs), applied only on your yes |

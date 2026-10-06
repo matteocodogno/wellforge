@@ -1,6 +1,6 @@
 ---
 description: Orchestrate the full agent team on a goal (spec → plan → tasks → implementation → QE verdict)
-argument-hint: <goal> [--mode spike|mvp|production] [--terse|--no-terse] — feature request, bug report, refactor, or infra change
+argument-hint: <goal> [--mode spike|mvp|production] [--ledger <path>] [--terse|--no-terse] — feature request, bug report, refactor, or infra change
 ---
 
 Drive the WellForge agent team end-to-end on this goal, following the **spec-driven** skill
@@ -70,8 +70,19 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
 ## Pipeline: feature
 
 1. **PO** → spawn `wellforge:product-owner` with the goal. Artifact: `specs/NNN-slug/spec.md`.
+   - **With `--ledger <path>`** (a decision ledger from `/wellforge:grill-me` — the
+     **grilling** skill defines it): strip the flag from the goal, check the file exists,
+     and pass the PO its **path** alongside the goal. The user has already answered those
+     questions; this is how their answers reach an agent that cannot see this conversation.
+     Once the spec exists, move a `.forge/grill/` ledger to `specs/NNN-slug/ledger.md`
+     yourself (`git mv` when tracked) — the PO has no shell.
+   - No flag, but `.forge/grill/` holds a ledger whose topic plainly matches this goal →
+     name it and ask once whether to use it. Never pick one up silently, and never guess
+     between two.
 2. **Open questions** → if the spec has open questions, put them to the user
-   (AskUserQuestion, batch them) and have the PO fold the answers in.
+   (AskUserQuestion, batch them) and have the PO fold the answers in. With a ledger these
+   are only its **Open** entries and anything the PO found it did not cover — a question
+   the ledger records as Decided or Delegated is not asked again.
 3. **HUMAN GATE 1** → present the spec summary (stories, ACs, non-goals). Ask: approve /
    iterate / abort. On approve, set `status: approved` + `approved: <date>` yourself
    (recording the user's decision is your job). On iterate, loop the PO with the feedback.
@@ -178,6 +189,8 @@ contract and disk-based artifacts, fewer stages. **Never spawn the frontier agen
 
 1. **PO** → spawn `wellforge:product-owner` with the goal. Artifact: `specs/NNN-slug/spec.md`
    with `rigor: mvp` in frontmatter. Fold any open questions into one AskUserQuestion round.
+   `--ledger <path>` works exactly as in the feature pipeline: pass the path to the PO, move
+   the ledger beside the spec afterwards, and do not re-ask what it already settles.
 2. **HUMAN GATE (the only one)** → present the spec summary. approve / iterate / abort;
    record approval as usual.
 3. **Tasks** → run the `/wellforge:tasks` procedure yourself (main loop) directly against the

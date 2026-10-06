@@ -44,7 +44,11 @@ Key properties:
   time — parents before children, each with a recommendation — until no remaining question
   could change the artifact or the user stops. It ends in a decision ledger (Decided /
   Delegated / Found / Assumed / Open). Main loop only; it approves nothing, and against an
-  approved artifact it yields proposed amendments rather than edits.
+  approved artifact it yields proposed amendments rather than edits. The ledger is a file,
+  written as the interview goes (`.forge/grill/<slug>.md`, then `specs/NNN-slug/ledger.md`),
+  so `/wellforge:spec --ledger <path>` or `/wellforge:orchestrate --ledger <path>` can pick
+  it up in this session or another — and the product-owner agent, which cannot see the
+  conversation, gets the user's answers instead of re-deriving them.
 - **A shared domain language** (`domain-modeling` skill, `/wellforge:grill-me --docs`): the
   project glossary (`.claude/context/glossary.md`, injected into every session) is where a
   concept gets exactly one word. A new term is stress-tested against concrete edge cases —
