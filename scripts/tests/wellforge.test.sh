@@ -158,7 +158,24 @@ case "$*" in
     for m in ${FAKE_CLAUDE_MARKETPLACES:-}; do echo "  ❯ $m"; echo "    Source: Directory (/tmp/x)"; done ;;
   "plugin list")
     echo "Installed plugins:"; echo
-    for pl in ${FAKE_CLAUDE_PLUGINS:-}; do echo "  ❯ $pl"; echo "    Version: 1.0.0"; echo "    Scope: user"; done ;;
+    for pl in ${FAKE_CLAUDE_PLUGINS:-}; do echo "  ❯ $pl"; echo "    Version: 1.0.0"; echo "    Scope: user"; done
+    # A plugin uploaded on claude.ai is listed in its OWN section, as `name@synced`, with a
+    # Path and no Scope. Captured from the real CLI (2.1.291) on the machine where a synced
+    # 2.26.1 stood in for a missing marketplace install for two weeks.
+    if [ -n "${FAKE_CLAUDE_SYNCED:-}" ]; then
+      echo; echo "Synced from claude.ai:"; echo
+      for pl in $FAKE_CLAUDE_SYNCED; do
+        # With a same-named plugin installed locally the real CLI does NOT list the synced
+        # one — it prints this notice instead (also captured verbatim).
+        case " ${FAKE_CLAUDE_PLUGINS:-} " in
+          *" ${pl%%@*}@wellforge "*)
+            echo "  ⚠ \"${pl%%:*}\" from claude.ai not loaded — \"${pl%%@*}@wellforge\" on this machine has the same name and takes precedence"
+            continue ;;
+        esac
+        echo "  ❯ ${pl%%:*}"; echo "    Version: ${pl##*:}"
+        echo "    Path: $HOME/.claude/plugins/synced/x/${pl%%@*}"; echo "    Status: ✔ loaded"
+      done
+    fi ;;
   "plugin marketplace add"*)   exit "${FAKE_CLAUDE_MKT_ADD_RC:-0}" ;;
   "plugin install"*)
     [ "${FAKE_CLAUDE_INSTALL_RC:-0}" = "0" ] || { echo "Error: install refused" >&2; exit 1; } ;;
@@ -448,7 +465,7 @@ new_sandbox() { # <tool…>  → sets HOME_DIR, BIN, SHIM_LOG, SANDBOX, SYSBIN
 FAKE_VARS=(FAKE_BREW_VERSION FAKE_BREW_OUTDATED FAKE_BREW_OUTDATED_PKG_RC
            FAKE_BREW_INSTALL_RC FAKE_BREW_INSTALL_ERR FAKE_BREW_UPGRADE_RC
            FAKE_BREW_UPGRADE_ERR FAKE_BREW_UPDATE_RC FAKE_BREW_LIST_VERSION
-           FAKE_CLAUDE_VERSION FAKE_CLAUDE_MARKETPLACES FAKE_CLAUDE_PLUGINS
+           FAKE_CLAUDE_VERSION FAKE_CLAUDE_MARKETPLACES FAKE_CLAUDE_PLUGINS FAKE_CLAUDE_SYNCED
            FAKE_CLAUDE_MKT_ADD_RC FAKE_CLAUDE_INSTALL_RC
            FAKE_CLAUDE_UPDATE_RC FAKE_CLAUDE_UPDATE_ERR FAKE_CLAUDE_UPDATE_TO
            FAKE_GH_AUTH_RC FAKE_DOCKER_INFO_RC FAKE_COPIER_RC
@@ -1099,6 +1116,88 @@ FAKE_CLAUDE_PLUGINS="wellforge-extras@wellforge"     # the real one is NOT insta
 run_cli "$SANDBOX/wf" doctor
 assert_has "$OUT" "claude plugin install wellforge@wellforge"   # reported missing, correctly
 assert_lacks "$OUT" "✓ plugin             wellforge installed"
+finish
+
+# ── doctor --fix installs a missing plugin ────────────────────────────────────
+# `doctor` said "✗ plugin — run: claude plugin install …", `doctor --fix` printed the same
+# line and "Some issues need manual action", and only `setup` would actually install it.
+# A --fix that reports the one thing it could have fixed is the loop this tool exists to end.
+reset_fakes; begin "doctor --fix, plugin missing: installs it"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS=""
+run_cli "$SANDBOX/wf" doctor --fix
+assert_rc "$RC" 0
+assert_has "$(cat "$SHIM_LOG")" "claude plugin install wellforge@wellforge --scope user"
+assert_has_re "$OUT" "✓ plugin +installed"
+assert_lacks "$OUT" "need manual action"
+finish
+
+reset_fakes; begin "doctor --fix, plugin install fails: says why, rc!=0"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="" FAKE_CLAUDE_INSTALL_RC=1
+run_cli "$SANDBOX/wf" doctor --fix
+[ "$RC" != "0" ] || _bad "expected a non-zero rc when the install fails"
+assert_has "$OUT" "install failed: Error: install refused"
+finish
+
+reset_fakes; begin "doctor without --fix, plugin missing: installs nothing, points at --fix"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS=""
+run_cli "$SANDBOX/wf" doctor
+assert_lacks "$(cat "$SHIM_LOG")" "plugin install"
+assert_has "$OUT" "wellforge doctor --fix"
+assert_has "$OUT" "claude plugin install wellforge@wellforge"
+finish
+
+# The marketplace is setup's to register (it decides between the git source and a local
+# checkout). With none, an install has nothing to resolve against — do not try.
+reset_fakes; begin "doctor --fix, no marketplace: does not attempt the install, names setup"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+FAKE_CLAUDE_MARKETPLACES="" FAKE_CLAUDE_PLUGINS=""
+run_cli "$SANDBOX/wf" doctor --fix
+assert_lacks "$(cat "$SHIM_LOG")" "plugin install"
+assert_has_re "$OUT" "✗ plugin .*wellforge setup"
+finish
+
+# ── a claude.ai-synced copy standing in for the marketplace plugin ────────────
+# On the maintainer's machine a synced wellforge 2.26.1 kept every /wellforge: command
+# working for two weeks after the marketplace install had gone, 29 minor versions behind.
+# doctor said "collisions: none". Nothing is wrong with a synced plugin as such; what must
+# be said out loud is that it is ANOTHER copy, and which version it is.
+reset_fakes; begin "a synced copy with NO marketplace install: doctor says where the commands come from"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="" FAKE_CLAUDE_SYNCED="wellforge@synced:2.26.1"
+run_cli "$SANDBOX/wf" doctor
+assert_has_re "$OUT" "! synced copy .*2\.26\.1"
+assert_has "$OUT" "not from this marketplace"
+assert_lacks "$OUT" "✓ plugin             wellforge installed"    # a synced copy is not an install
+finish
+
+# Once the marketplace plugin is installed, Claude Code itself shadows the synced copy and
+# says so. There is no duplicate to warn about, and doctor must not invent one.
+reset_fakes; begin "a synced copy shadowed by the marketplace install: nothing to report"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge" FAKE_CLAUDE_SYNCED="wellforge@synced:2.26.1"
+run_cli "$SANDBOX/wf" doctor
+assert_rc "$RC" 0
+assert_has "$OUT" "environment ready."
+assert_lacks "$OUT" "synced copy"
+finish
+
+reset_fakes; begin "another plugin synced from claude.ai is none of doctor's business"
+new_sandbox "${ALL_TOOLS[@]}"
+make_checkout "$SANDBOX/wf" "2.43.0"
+mkdir -p "$HOME_DIR/.claude/plugins/cache/wellforge/wellforge/2.43.0"
+FAKE_CLAUDE_MARKETPLACES="wellforge" FAKE_CLAUDE_PLUGINS="wellforge@wellforge" FAKE_CLAUDE_SYNCED="wellforge-extras@synced:1.0.0"
+run_cli "$SANDBOX/wf" doctor
+assert_lacks "$OUT" "synced copy"
 finish
 
 reset_fakes; begin "the real plugin alongside the decoy is recognised"

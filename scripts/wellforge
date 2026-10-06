@@ -145,6 +145,23 @@ plugin_is_installed() {
     | sed -n 's/^[^A-Za-z0-9]*\([A-Za-z0-9._-]*@[A-Za-z0-9._-]*\).*/\1/p' \
     | grep -qx "wellforge@wellforge"
 }
+# Version of a `wellforge` plugin synced from claude.ai, or "" when there is none.
+# `claude plugin list` prints those in their own section, as `name@synced`:
+#     Synced from claude.ai:
+#       ❯ wellforge@synced
+#         Version: 2.26.1
+# It is a second copy of the plugin, and it keeps every /wellforge: command working when
+# the marketplace install is gone — which is how a machine ran 2.26.1 for two weeks while
+# the checkout said 2.55.0. Once the marketplace plugin IS installed the entry disappears:
+# Claude Code prints a one-line "not loaded … takes precedence" notice instead, which has
+# no `❯ name@synced` line and so yields "" here.
+synced_plugin_version() {
+  claude plugin list 2>/dev/null | awk '
+    { tok = $0; sub(/^[^A-Za-z0-9]*/, "", tok); sub(/[^A-Za-z0-9._@-].*$/, "", tok) }
+    tok == "wellforge@synced" { hit = 1; next }
+    hit && /^[[:space:]]*Version:/ { print $2; exit }
+    hit && tok ~ /@/ { exit }'
+}
 marketplace_is_registered() {
   claude plugin marketplace list 2>/dev/null \
     | sed -n 's/^[^A-Za-z0-9]*\([A-Za-z0-9._-]*\).*/\1/p' \
@@ -422,16 +439,40 @@ plugin_cache_state() {
   else printf 'stale %s %s' "$cached_ver" "$src_ver"; fi
 }
 
-check_plugin() {
+check_plugin() { # [fix]
+  local fix="${1:-}" mkt_ok="" installed="" err
   command -v claude >/dev/null || { skip "plugin" "skipped — claude not installed"; return 0; }
-  if marketplace_is_registered; then ok "marketplace" "WellForge registered"; else
+  if marketplace_is_registered; then mkt_ok=1; ok "marketplace" "WellForge registered"; else
     # The same spelling `wellforge setup` uses, so doctor never tells you to undo what
     # setup did. It used to name $WELLFORGE_HOME — a local path — while every other
     # document said the git repo.
     bad "marketplace" "run: claude plugin marketplace add ${WELLFORGE_MARKETPLACE:-matteocodogno/wellforge}"; FAILURES=$((FAILURES+1))
   fi
-  if plugin_is_installed; then ok "plugin" "wellforge installed"; else
-    bad "plugin" "run: claude plugin install wellforge@wellforge --scope user"; FAILURES=$((FAILURES+1))
+  if plugin_is_installed; then installed=1; ok "plugin" "wellforge installed"
+  elif [ -z "$mkt_ok" ]; then
+    # Nothing to install FROM. Registering the marketplace is setup's decision (git source
+    # or a local checkout), so --fix does not guess one here.
+    bad "plugin" "not installed, and no marketplace to install it from — run: wellforge setup"; FAILURES=$((FAILURES+1))
+  elif [ -n "$fix" ]; then
+    # --fix used to print the install command and "Some issues need manual action" — for
+    # the one failure on the page it could fix itself. The call is the one setup makes.
+    if err=$(claude plugin install wellforge@wellforge --scope user 2>&1 >/dev/null); then
+      installed=1; ok "plugin" "installed (it was missing) — run /reload-plugins or start a new session"
+    else
+      bad "plugin" "install failed: $(err_tail "$err") — retry: claude plugin install wellforge@wellforge --scope user"; FAILURES=$((FAILURES+1))
+    fi
+  else
+    bad "plugin" "not installed — run: wellforge doctor --fix (or: claude plugin install wellforge@wellforge --scope user)"; FAILURES=$((FAILURES+1))
+  fi
+  # A copy synced from claude.ai is a SECOND plugin, not this one. With no marketplace
+  # install it silently answers every /wellforge: command from whatever version it froze
+  # at, so that case is said out loud. With the marketplace plugin installed there is
+  # nothing to say: Claude Code itself refuses to load the synced one ("…has the same name
+  # and takes precedence") and lists no `wellforge@synced` entry — verified on 2.1.291.
+  local synced src; synced="$(synced_plugin_version)"
+  if [ -n "$synced" ] && [ -z "$installed" ]; then
+    src="$(plugin_json_version "$WELLFORGE_HOME/wellforge-plugin/.claude-plugin/plugin.json")"
+    warn "synced copy" "your /wellforge: commands come from a claude.ai-synced wellforge v$synced, not from this marketplace${src:+ (v$src)}"
   fi
   # Loaded-plugin freshness, from the one place that computes it.
   local state; state="$(plugin_cache_state)"
@@ -738,7 +779,7 @@ cmd_doctor() {
   say "wellforge:"
   check_repo
   check_cli
-  check_plugin
+  check_plugin "$fix"
   check_collisions "$fix"
   if telegram_configured; then ok "telegram" "configured ($TELEGRAM_ENV_FILE)"; else
     warn "telegram" "not configured (optional) — run: wellforge telegram"
