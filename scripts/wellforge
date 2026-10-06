@@ -31,7 +31,7 @@ set -uo pipefail
 # Bumped only by scripts/release-cli.sh, which also updates Formula/wellforge.rb and cuts
 # the tag. The Formula's test block asserts this string, and CI asserts it equals the
 # newest `cli-v*` tag — an unbumped release and an untagged bump are both caught.
-WELLFORGE_CLI_VERSION="1.5.1"
+WELLFORGE_CLI_VERSION="1.5.2"
 
 WELLFORGE_REPO="${WELLFORGE_REPO:-https://github.com/matteocodogno/wellforge.git}"
 CONFIG_DIR="$HOME/.config/wellforge"

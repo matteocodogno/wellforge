@@ -25,7 +25,7 @@
 class Wellforge < Formula
   desc "Reproducible, AI-assisted project setup platform"
   homepage "https://github.com/matteocodogno/wellforge"
-  url "https://github.com/matteocodogno/wellforge/archive/refs/tags/cli-v1.5.1.tar.gz"
+  url "https://github.com/matteocodogno/wellforge/archive/refs/tags/cli-v1.5.2.tar.gz"
   # NO explicit `version` line, deliberately. Homebrew scans the version out of the url —
   # including out of a `cli-vX.Y.Z` tag (`brew info` reports "derived version: 1.5.1"), so an
   # explicit one is REDUNDANT and `brew audit --strict` fails on it. The first attempt at this
@@ -40,7 +40,7 @@ class Wellforge < Formula
   # tarball only exists once the tag is pushed, and GitHub's generated archive is not
   # byte-reproducible locally. check-docs.py fails if this is left as a placeholder once
   # the matching cli-v tag is on the remote.
-  sha256 "8c2d0a25404128f556b0eae7b6d0d77a7a4fb36db9992a6a59490133d9a6ce9d"
+  sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   license "MIT"
   head "https://github.com/matteocodogno/wellforge.git", branch: "main"
 
