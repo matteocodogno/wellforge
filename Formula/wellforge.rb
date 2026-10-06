@@ -40,7 +40,7 @@ class Wellforge < Formula
   # tarball only exists once the tag is pushed, and GitHub's generated archive is not
   # byte-reproducible locally. check-docs.py fails if this is left as a placeholder once
   # the matching cli-v tag is on the remote.
-  sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+  sha256 "4a555a7393faa0a06f7de451f25e2b1853fe439b3b2e0a05e6df8b3c0edfe3a1"
   license "MIT"
   head "https://github.com/matteocodogno/wellforge.git", branch: "main"
 
