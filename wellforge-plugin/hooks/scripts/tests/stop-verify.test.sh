@@ -147,6 +147,59 @@ else
   FAIL=$((FAIL+1)); echo "  FAIL: hint must name /wellforge:tasks, the branch scope and the synced stamp"; echo "$out" | sed 's/^/        /'
 fi
 
+# ── lifecycle edits are not drift ────────────────────────────────────────────────
+# Found by the prompt evals (done-mvp-passes, 2026-10-06), not by this matrix: /wellforge:done
+# writes `status: done` into spec.md as its LAST step, tasks.md is untouched, and this hook
+# blocked the close it had just watched succeed — while forge-state.py, asked the same
+# question, said "no drift". The two must agree, and forge-state.py's rule is the right one.
+lifecycle_repo() {
+  new_repo
+  printf -- '---\nid: 001\ntitle: X\nstatus: in-progress\nrigor: production\n---\n# Spec\n- AC-1: a thing\n' > specs/001-x/spec.md
+  git commit -qam "docs: spec with a lifecycle"
+}
+
+# 12. the close: `status: done` + `done: <date>`, uncommitted, tasks.md untouched → pass
+lifecycle_repo
+sed -i.bak 's/^status: in-progress$/status: done/' specs/001-x/spec.md && rm -f specs/001-x/spec.md.bak
+awk '{print} /^rigor:/{print "done: 2026-10-06"}' specs/001-x/spec.md > spec.tmp && mv spec.tmp specs/001-x/spec.md
+grep -q '^done: 2026-10-06$' specs/001-x/spec.md || { FAIL=$((FAIL+1)); echo "  FAIL: case 12 fixture did not write done:"; }
+run 0 "status: done + done: written by /wellforge:done is not drift"
+
+# 13. the same close, COMMITTED on a feature branch → pass
+lifecycle_repo
+git switch -qc feat/close
+sed -i.bak 's/^status: in-progress$/status: done/' specs/001-x/spec.md && rm -f specs/001-x/spec.md.bak
+git commit -qam "docs: close the feature"
+run 0 "a committed lifecycle-only edit is not drift"
+
+# 14. promote: `rigor:` changes, nothing else → pass
+lifecycle_repo
+sed -i.bak 's/^rigor: production$/rigor: mvp/' specs/001-x/spec.md && rm -f specs/001-x/spec.md.bak
+run 0 "a rigor-only edit is not drift"
+
+# 15. a status edit that ALSO changes the body is still drift → block
+lifecycle_repo
+sed -i.bak 's/^status: in-progress$/status: done/' specs/001-x/spec.md && rm -f specs/001-x/spec.md.bak
+echo "- AC-2: another thing" >> specs/001-x/spec.md
+run 2 "a lifecycle edit plus a body change still blocks"
+
+# 16. a NON-lifecycle frontmatter field is a spec change → block
+lifecycle_repo
+sed -i.bak 's/^title: X$/title: Y/' specs/001-x/spec.md && rm -f specs/001-x/spec.md.bak
+run 2 "a changed non-lifecycle frontmatter field blocks"
+
+# 17. a lifecycle-looking line in the BODY is body, not bookkeeping → block
+lifecycle_repo
+echo "status: done" >> specs/001-x/spec.md
+run 2 "'status:' appended to the body is a body change and blocks"
+
+# 18. the hook's lifecycle list is forge-state.py's list — one rule, two readers
+FS="$(cd "$(dirname "$HOOK")/../.." && pwd)/scripts/forge-state.py"
+want=$(sed -n '/^LIFECYCLE_FIELDS = /,/})/p' "$FS" | grep -o '"[a-z_]*"' | tr -d '"' | sort | tr '\n' ' ')
+got=$(sed -n 's/^LIFECYCLE_FIELDS="\(.*\)"$/\1/p' "$HOOK" | tr '|' '\n' | sort | tr '\n' ' ')
+if [ -n "$want" ] && [ "$want" = "$got" ]; then PASS=$((PASS+1));
+else FAIL=$((FAIL+1)); echo "  FAIL: lifecycle fields differ — forge-state.py: [$want] hook: [$got]"; fi
+
 echo
 echo "stop-verify: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

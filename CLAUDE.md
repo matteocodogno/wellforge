@@ -149,6 +149,11 @@ wellforge/
   architect in a spec-less *review mode* looking for shallow modules; at most five
   candidates, the picked one designed twice, the refactor itself routed to
   `/wellforge:orchestrate` (plugin `2.55.0`).
+- **Phase 35** (`docs/plans/PLAN.md`): the prompt evals were run in full for the first
+  time. Six suite/environment defects fixed (tool grant, fixture not a git repo, pyyaml
+  invisible in the sandbox, …) and **one real bug found by them**: the Stop hook treated
+  the `status: done` write of `/wellforge:done` as drift and blocked every close.
+  `stop-verify.sh` now shares `forge-state.py`'s lifecycle rule, asserted by its matrix.
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
   and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
   is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),

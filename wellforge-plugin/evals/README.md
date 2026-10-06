@@ -70,7 +70,9 @@ If anyone does enable it, three things are worth knowing before they do:
 
 - **It is billed to whoever owns the key.** Measured 2026-09-23: one case, one run, one arm
   cost $0.41 and $1.23. The nine cases in both arms at `--runs 1` is roughly **$10–15 per
-  pass**; at the suite default `--runs 3`, roughly **$30–45**.
+  pass**; at the suite default `--runs 3`, roughly **$30–45** — an estimate that turned out
+  about 3x high: the two full passes at `--runs 3` on 2026-10-05/06 cost **$10.79** and
+  **$13.10** (26 and 31 minutes, sequential).
 - **Use a dedicated key with a spend limit**, not a personal or production one. A workflow
   that spends money on every push is one bad loop away from an unpleasant invoice.
 - CI pins `--runs 1` and only runs the job when something under

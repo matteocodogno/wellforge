@@ -917,6 +917,53 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 35 — The prompt evals, run in full for the first time (added 2026-10-06)
+
+The suite existed since `2.50.0` and had never been run end to end — `LAST-RUN` said so, and
+the eval-freshness gate had therefore refused every plugin tag since, which is why
+`plugin-v2.50.0` and `plugin-v2.50.1` were bumped in the manifest and never cut. Cutting
+`plugin-v2.55.0` meant running it.
+
+**First full run (2026-10-05): 5 of 9 cases below the 0.8 threshold, none of them a prompt
+defect.** Six causes, all in the suite or its environment:
+
+- ☑ **No tool grant** — the runner gates Bash/Write/Edit behind an operator flag; a case's
+  `allowed_tools` only narrows it. `--allow-tools Bash Write Edit` in `check-all.sh` and CI.
+- ☑ **The fixture was not a git repository** — `forge-state.py` fell back to copy-order
+  mtimes and reported `003` as drifted. `fixtures/commit.sh`, called last by every scaffold.
+- ☑ **pyyaml invisible in the sandbox** — eval sessions have no network and a throwaway
+  `$HOME` (probed, not assumed), so neither `uv run --with` nor a `--user` install is
+  reachable. `check-all.sh` now fails on `python3 -s -c "import yaml"` before spending
+  anything.
+- ☑ An invalid `(?s)` regex; a case run against a feature with no `tasks.md`; two prompts
+  that could not be satisfied.
+- ☑ `status-rows`' state grader went from `llm` to `regex`: the judge voted 0/3 on two
+  answers and 3/3 on a third that differed by one word in an unrelated column.
+
+**Second full run (2026-10-06): 8 of 9 — and the ninth was a real bug.** With the fixture
+now a git repo, `done-mvp-passes` showed that **the Stop hook blocked every
+`/wellforge:done`**: the command's last step writes `status: done` into `spec.md`,
+`tasks.md` is untouched, and `stop-verify.sh` called that drift and told the user to re-run
+`/wellforge:tasks`. `forge-state.py` had carried the lifecycle exemption since `2.49.1`; the
+hook never got it. The agent in the eval closed the feature correctly and then spent its
+last message explaining why the hook was wrong — which is the suite doing exactly its job.
+
+- ☑ **`stop-verify.sh` ignores lifecycle-only edits** — body identical and only
+  `LIFECYCLE_FIELDS` differing in the frontmatter, compared against the merge base (or
+  HEAD). Seven new matrix cases, written red first; case 18 asserts the hook's field list
+  equals `forge-state.py`'s, so the rule cannot fork again.
+
+**Left undone, same bug.** The Copilot adapter's `lefthook` `spec-drift` and the OpenCode
+adapter's `session.idle` check are separate reimplementations with the same blind spot
+(Copilot blocks the commit that closes a feature; OpenCode only warns). Not fixed here.
+And `forge-state.py` still degrades to "everything unknown" without pyyaml instead of
+reading flat frontmatter itself — the sandbox finding applies to any user in a
+network-less shell.
+
+**Cost of finding this:** two full runs ($10.79 and $13.10) plus about $6 of single-case
+and probe runs. The README's estimate of $30–45 per full pass at `--runs 3` was high by
+about 3x.
+
 ## Phase 34 — Architecture review: looking for shallow modules on purpose (added 2026-10-05)
 
 Goal: a way to find architectural decay before it is a rewrite. WellForge has a refactor

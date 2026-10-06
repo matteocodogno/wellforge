@@ -55,7 +55,45 @@ CHANGED=$(
 
 # ── Spec drift check (WellForge spec-driven workflow) ───────────────────────────
 # spec.md/plan.md changed without re-syncing tasks.md → block (drift rule)
-SPECS_CHANGED=$(echo "$CHANGED" | grep -E 'specs/[^/]+/(spec|plan)\.md')
+#
+# ...unless the change is BOOKKEEPING. /wellforge:done writes `status: done` + `done:` into
+# spec.md as its last step and /wellforge:promote writes `rigor:`; neither changes what the
+# feature asks for, and tasks.md is rightly untouched. Without this exemption the hook
+# blocked every close in a git project and told the user to re-run /wellforge:tasks for a
+# status change — while forge-state.py, asked the same question, answered "no drift".
+# The rule and the field list are forge-state.py's (LIFECYCLE_FIELDS / change_class), kept
+# identical by case 18 of tests/stop-verify.test.sh: body identical, and only these
+# top-level frontmatter fields differ.
+LIFECYCLE_FIELDS="status|done|approved|superseded_by|archive_reason|rigor|plugin"
+
+# Print a spec with its lifecycle frontmatter lines removed. Only lines INSIDE the leading
+# `---` block count: `status: done` typed into the body is a body change.
+strip_lifecycle() {
+  awk -v re="^(${LIFECYCLE_FIELDS}):" '
+    NR == 1 && $0 == "---" { fm = 1; print; next }
+    fm == 1 && $0 == "---" { fm = 2; print; next }
+    fm == 1 && $0 ~ re     { next }
+    { print }'
+}
+
+# lifecycle_only <repo-relative path> → 0 when the file differs from its baseline ONLY in
+# lifecycle fields. Baseline = the merge base when the branch has commits ahead (the drift
+# check spans the branch), else HEAD. No baseline version → a new file → not exempt.
+lifecycle_only() {
+  local f="$1" ref="${BASE:-HEAD}" old new
+  [ -f "$PROJECT_DIR/$f" ] || return 1
+  old=$(git -C "$PROJECT_DIR" show "$ref:$f" 2>/dev/null) || return 1
+  old=$(printf '%s\n' "$old" | strip_lifecycle)
+  new=$(strip_lifecycle < "$PROJECT_DIR/$f")
+  [ "$old" = "$new" ]
+}
+
+SPECS_CHANGED=$(
+  echo "$CHANGED" | grep -E 'specs/[^/]+/(spec|plan)\.md' | while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    lifecycle_only "$f" || echo "$f"
+  done
+)
 TASKS_CHANGED=$(echo "$CHANGED" | grep -E 'specs/[^/]+/tasks\.md')
 if [ -n "$SPECS_CHANGED" ] && [ -z "$TASKS_CHANGED" ]; then
   # Only block if the changed spec dir actually has a tasks.md to drift from
