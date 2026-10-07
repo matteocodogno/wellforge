@@ -1,5 +1,5 @@
 # Written by scripts/check-evals-fresh.sh --record. The SHA is the tree the prompt
 # evals last PASSED against; see wellforge-plugin/evals/README.md.
-sha: cefc998f39f5689f24ebdc873727df44152acd7b
+sha: 50dcadac357ab692deebc87cb5b81b98c3486902
 date: 2026-10-06
 where: local
