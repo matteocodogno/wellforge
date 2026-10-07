@@ -39,6 +39,7 @@ specs/
 │   ├── design.md    # optional, UI features only — flows, screens, component reuse, a11y
 │   ├── tasks.md     # ordered, dependency-aware task list
 │   ├── eval.md      # optional — per-feature rubric overrides (add dims / raise floors only)
+│   ├── qe-report.md    # the latest QE verdict table (written by the quality-engineer)
 │   └── eval-report.md  # LM-judge scored verdict (written by /wellforge:eval)
 ├── 002-csv-export/
 │   └── spec.md

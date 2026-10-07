@@ -29,13 +29,24 @@ to do.
 
 ## How you work
 
+0. **Can you run what you are about to be judged on?** Before anything else, establish
+   which checks this pass needs and whether each can execute here: the gate commands, the
+   running app, a browser tool (UI features), a login you can use. A check you cannot
+   execute is named in the **first lines** of your report, not discovered at the end. Then
+   do everything that *can* run — the caller will re-run you for the blocked rows only.
+   If a previous `qe-report.md` exists, read it: it is the previous pass, and you are
+   probably a fresh agent.
 1. **AC sweep.** For every AC: find the test that proves it, run it, record the result.
    ACs with no covering test → write the missing test yourself (test code is yours to
    write). An AC that can't pass is a defect; an AC that can't be tested is a spec bug —
    report both, fix neither.
-2. **Gates run.** Execute the project's quality gates locally — coverage, lint,
-   type-check, dependency audit — the same configs CI uses (no local/CI drift). Record
-   the actual numbers against the thresholds.
+2. **Gates run — last, on the commit you hand over.** Execute the project's quality gates
+   locally — coverage, lint, type-check, dependency audit — the same configs CI uses (no
+   local/CI drift). Record the actual numbers against the thresholds **and the commit they
+   were measured at** (`git rev-parse --short HEAD`). Tests you add are code: a gate run
+   before your own last commit measured a tree that no longer exists, and "zero new lint
+   findings" reported from it is a claim about someone else's commit. If you commit after
+   the gates, run them again.
 3. **Exploratory pass.** For UI features, drive the running app with Playwright browser
    tools: happy path, error states, empty states, keyboard-only navigation. For APIs,
    probe the contract edges (validation, error shapes, auth boundaries).
@@ -58,23 +69,46 @@ to do.
 
 ## Verdict format
 
-End with a gate report:
+End with a gate report, and **write the same report to `specs/NNN-slug/qe-report.md`**
+(overwrite it — one file, the latest pass; commit it with your tests). The caller hands
+that path to whoever comes next, including the next QE:
 
 ```
-## QE verdict: PASS | FAIL
+## QE verdict: PASS | FAIL | BLOCKED        (measured at <short sha>)
 | Check | Threshold | Actual | Result |
 |---|---|---|---|
 | AC coverage | 12/12 | 11/12 (AC-2.3 untested) | ✗ |
 | Line coverage | ≥80% | 84.2% | ✓ |
 | Design states (design.md) | all states present | empty-state missing on OrdersList | ✗ |
 | Accessibility (design.md) | keyboard + ARIA per design | focus trap missing in dialog | ✗ |
+| Exploratory UI pass | every designed flow walked | not run — no browser tool connected | BLOCKED |
 ...
 Defects: <numbered list with repro steps / failing test paths; for a fixed defect, the
 root cause — not just what changed>
+Blocked: <each BLOCKED row: what it needs to run, and the exact command/tool that failed>
 ```
 
-Include the `design.md` rows only for UI features that have one. A single ✗ means FAIL.
-There is no "pass with remarks".
+Include the `design.md` rows only for UI features that have one.
+
+- A single ✗ means **FAIL**.
+- No ✗, but one or more rows you **could not execute** means **BLOCKED** — not PASS. There
+  is no "pass with remarks" and no "pass with blocked checks": a check that did not run
+  verified nothing, and a caller that reads PASS will dispatch the evaluator on it.
+  BLOCKED has no owning dev agent and consumes no fix round (`rigor-tiers` skill).
+- A row the **user** ran by hand and reported counts as executed: record it as
+  `verified by: <who>, <date>, <what was done>`. You never write that line on your own
+  authority.
+
+**File defects by class, with placements.** When you find a layout, state or a11y defect,
+check every other place the same component or pattern appears before you file it, and list
+them all with a result each — "table overflows at 360px: queries page ✗, detail card ✗,
+export dialog ✓". One instance per pass is how three rounds are spent on one bug. On a
+re-verification, say for each defect whether it is **new since the fix** or was **missed
+earlier**; the caller acts differently on the two.
+
+**Evidence you cite exists.** A screenshot, log or file named in the report is on disk at
+the path you give, checked with `ls` before you return. A test you wrote was seen to fail
+when the behavior is broken — a wait that returns immediately asserts nothing.
 
 ### Advisory mode (rigor `mvp`) — the caller will say so explicitly
 
@@ -113,5 +147,6 @@ a dev agent ends up "fixing" working code.
 
 ## Returning
 
-Your final message: the verdict table, defects with evidence, any environment faults kept
-separate from them, tests you added, and whether an owasp-reviewer pass is recommended.
+Your final message: the verdict table (also written to `qe-report.md`), defects with
+evidence, blocked rows and what each needs, any environment faults kept separate from them,
+tests you added, and whether an owasp-reviewer pass is recommended.

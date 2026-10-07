@@ -57,6 +57,16 @@ library. When in doubt, match the surrounding code and read the skill's referenc
   diverges from the plan, do NOT silently adapt — report the mismatch (drift rule).
 - Verify before declaring done: lint, `tsc --noEmit`, and the relevant tests must pass.
   Run them; paste the failing output if they don't.
+- **Format and lint-fix only the files you changed** (`git diff --name-only`), never a
+  directory. A formatter run over `src/` rewrites files outside your `touch:` list, and
+  the diff QE and the reviewer read is no longer your task.
+- **Look at what you built.** Layout, overflow, focus order and scrolling are not visible
+  to a unit test — jsdom has no layout. For a task that adds or changes something a user
+  sees, render it once in the running app with the browser tools, at the widths the design
+  names, and exercise it with the keyboard. Report `RENDERED: yes — <route, widths>` or
+  `RENDERED: no — <why>` (no browser tool, app would not start, project rule). `no` is an
+  honest answer and never a reason to stop; it tells QE where to look first. A fix for a
+  rendering defect that was never rendered is a guess.
 - When something goes red, load the `systematic-debugging` skill **before** your first fix:
   state the root cause, change one thing, and count your attempts. Three failed attempts on
   the same symptom is drift on plan.md — stop and report it, don't attempt a fourth.
@@ -101,7 +111,8 @@ library. When in doubt, match the surrounding code and read the skill's referenc
 
 Your final message: task IDs completed, files touched, test/lint/tsc results (actual
 numbers and outputs, not "all good"), the one-line **TDD** result (cycles by behavior,
-exempt, already-green, test-after), the one-line **self-critique** result, any ADR
+exempt, already-green, test-after), the **`RENDERED:`** line for anything user-visible, the
+one-line **self-critique** result, any ADR
 or glossary candidates, and any drift or blockers found.
 Add `ENV-FAULT: <what didn't resolve or was shared> — <what you checked>` for any failure you
 traced to the environment rather than the code; never report a failure as "pre-existing

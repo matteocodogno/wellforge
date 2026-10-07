@@ -917,6 +917,75 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 38 — Loops that end: preflight, a third verdict, a cap that counts (added 2026-10-07)
+
+The first long `production` run on a real feature did not converge, and its own account is
+the evidence: 73 commits, ~60 agent invocations, 10 QE invocations against a cap of 2 fix
+rounds, 2 eval FAILs, the spec grown from 49 ACs to 103 after approval, and three agents
+resumed to ~900k tokens of context. Nothing was weakened and no rule was broken on purpose —
+which is the finding. Each loop had a rule that was either missing or could not be counted
+against.
+
+What the run showed, by cause rather than by symptom:
+
+- **The environment was discovered by agents stopping.** Four false starts (worktrees cut
+  from `main`, a red baseline twice) and three blocked QE passes (no browser tool, secrets,
+  no test user). Each cost a dispatch and was knowable before the first one.
+- **"Pass with blocked checks" had nowhere to go.** The QE agent's own text forbids "pass
+  with remarks"; it returned one seven times because the only other verdict was FAIL and
+  nothing had failed. The eval then ran on work known to be unverified and failed on that.
+- **The cap was a sentence, not a count.** It did not say per what, so every user reply
+  started a new pair of rounds.
+- **QE found one instance per pass.** The last three defects were one bug in three
+  placements; nothing was rendered until QE's fifth invocation.
+- **Scope had no boundary after gate 1.** Three adjacent defects, two security fixes and an
+  11-commit lint refactor (the red baseline, repaired in-branch) joined the feature.
+
+Shipped, all in existing files — the session-injection budget is a ratchet, so no new skill:
+
+- ☑ **Run preflight** (`rigor-tiers`, called by `orchestrate` Step 1b and `implement`
+  Step 3): baseline, commit/signing, worktree base, app starts, browser, test identity —
+  each a command and its output, red rows put to the user once, no proceeding at
+  `production`.
+- ☑ **`BLOCKED` is QE's third verdict.** No fix round, no owning agent, nothing downstream;
+  `verdicts.qe` stays absent (no `forge-state.py` change — the gate already reads absent as
+  not-a-pass). A check the user ran by hand is recorded as such and counts.
+- ☑ **Eval only on a QE PASS.**
+- ☑ **The fix-round cap is per feature** and survives sessions (`fix_rounds` in the trace,
+  additive). A reply to an escalation grants one round; the escalation offers one more
+  round · split · stop.
+- ☑ **A defect the last pass missed** switches the next QE to a full sweep by a fresh
+  agent; QE files defects by class with placements; fix briefs carry QE's text verbatim.
+- ☑ **Fresh dispatches, not resumed agents**, made possible by `specs/NNN-slug/qe-report.md`
+  — QE's verdict had been the one stage artifact that lived only in the conversation.
+- ☑ **QE runs the gates last and records the sha**; cited evidence must exist on disk.
+- ☑ **Scope is frozen at gate 1**: drift corrects, it does not grow; an addition is a new
+  spec by default. Drift items are batched per stage, with one re-sync.
+- ☑ **`product-owner`** verifies every claim about current behavior against the code
+  (`path:line` or an open question) and proposes a split past ~20 ACs. It always had Read
+  and Grep; it was never told the premise was its to check.
+- ☑ **`frontend-dev`** renders what it builds when it can and reports `RENDERED:`; formats
+  only the files it changed.
+
+**Deliberately not done**, each a decision rather than an omission:
+
+- **Design before the plan.** Three design findings became plan drift in this run. But the
+  designer reads the plan for the API it may assume, `/wellforge:design` and
+  `/wellforge:status` both encode the current order, and one run is one data point.
+- **A single-agent amendment path** and a stop hook that knows a re-sync is in flight. The
+  batching rule above removes most of the cost; a second writer for `spec.md` is a bigger
+  change than the evidence supports yet.
+- **An incremental run trace.** The `observability` skill rejects it for a stated reason
+  (a half-written trace at the moment the gate reads it). What the run actually lacked — a
+  count that survives — is `fix_rounds`.
+- **A hard cap on agent context.** The harness does not expose it to the orchestrator;
+  fresh dispatch per round is the rule that can be followed.
+
+**Unproven.** All of this is prose, checked only by the repo's static suites. No prompt
+eval covers it yet: the cases worth writing are *orchestrate-stops-on-red-baseline*,
+*qe-returns-blocked-without-browser* and *implement-continues-the-round-count*. The ~20-AC
+figure is a judgment from one run, not a calibration. Plugin `2.57.0`.
+
 ## Phase 37 — The decision ledger gets a file (added 2026-10-06)
 
 Phase 31 left this open in so many words: *"The ledger lives in the conversation, not on

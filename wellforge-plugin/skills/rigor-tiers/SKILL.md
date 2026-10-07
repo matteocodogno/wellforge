@@ -123,6 +123,45 @@ Per-command deviations, and nothing else:
 | `/wellforge:orchestrate` | hand off to the `/wellforge:spike` procedure and stop, forwarding any terse token unchanged |
 | `/wellforge:promote` | n/a — the tier is the *source*; agents work at the **target** tier's effort cue |
 
+## Run preflight — before the first agent is spent
+
+Defined once here for `orchestrate`, `implement` and `promote` at `mvp` and `production`
+(`spike` skips it — no agents, nothing to strand). An agent that discovers the environment
+is broken does so by stopping and reporting, which costs a dispatch each time and teaches
+the next agent nothing. Every row below is a command and its output, run by the main loop
+**before** anything is dispatched; a belief is not a row.
+
+| Row | When | The check | Red means |
+|---|---|---|---|
+| **baseline** | always | the project's own gate command (`mise run check`, or lint + typecheck + tests) on the commit the feature branch starts from | **stop.** A red baseline is its own piece of work, on its own branch (bugfix pipeline). It is never repaired inside the feature. |
+| **commit** | always | `git status` clean; when `commit.gpgsign` is true, a signing probe that touches no ref: `git commit-tree -S 'HEAD^{tree}' -p HEAD -m probe` | stop — the user fixes signing; an agent cannot. |
+| **worktree base** | a batch of ≥2 will be dispatched | `worktree.baseRef` is `"head"` in the effective settings ([`worktree-isolation`](../worktree-isolation/SKILL.md)) | set it, or the batch runs sequentially in the main tree. A worktree cut from the default branch has no spec in it. |
+| **app starts** | QE will need the running app (any UI feature; an API it must probe live) | start it the way the project documents and hit its health/landing route; every secret the start reads resolved to non-empty | stop — an environment fault now is one line; at QE it is a blocked verdict. |
+| **browser** | UI feature | one real call to the browser tool against the running app (navigate + snapshot) | stop, or the user states now that the UI pass will be done by hand (see BLOCKED below). |
+| **test identity** | the feature sits behind a login | the credentials QE will use, proven by signing in once — a seeded user, not a registration QE has to be permitted to perform | stop — the user seeds one. |
+
+State the result compactly before the first dispatch, like the worktree preflight:
+
+```
+run preflight — 012-export, production, UI: yes
+  baseline       green   mise run check @ 4f1c2aa (2m10s)
+  commit         green   signed probe ok
+  worktree base  green   baseRef: head
+  app starts     green   :5173 → 200, 6/6 secrets resolved
+  browser        green   navigate + snapshot ok
+  test identity  RED     no seeded user; POST /register denied by permissions
+```
+
+**A red row is put to the user, once, never routed to an agent** and never worked around.
+The two honest answers are *fix it and re-run the preflight* or *stop*. There is no
+"proceed anyway" at `production`: every red row here is a check the done gate will need
+green, so proceeding only moves the stop to the most expensive point in the run. At `mvp` a
+red **app starts / browser / test identity** row may be accepted — QE-light does not need
+them — and is recorded in `env_faults`; **baseline** and **commit** are never accepted.
+
+Rows that depend on the spec (is there a UI? a login?) are answered as soon as the spec
+says so — at the latest before the first dev agent, when fixing them is still free.
+
 ## Routing a QE FAIL — triage before you loop
 
 Also defined once here, because all three commands loop on a QE verdict and a copy of this
@@ -138,6 +177,72 @@ everything to a dev:
 | Missing designed state or a11y requirement | `wellforge:designer` | Only when a `design.md` exists. |
 
 Then re-run QE. **Maximum 2 fix rounds**, then stop and escalate with the verdict table.
+
+### What a round is, and what does not reset it
+
+A **fix round** is one dispatch of the owning agents for a QE verdict's defects, followed by
+one QE re-run. The count belongs to **the feature**, for as long as it is `in-progress` —
+not to the command invocation, the session, or the last thing the user said. Read it back
+from the run traces (`fix_rounds.used`, [`observability`](../observability/SKILL.md)) when a run resumes.
+
+- **A user instruction does not reset the counter.** "Go on" after an escalation grants
+  **one** further round, for the defects named in the escalation, and is recorded as an
+  extension (`fix_rounds.extensions[]`). The next FAIL escalates again. A cap that an
+  ordinary reply clears is not a cap; five rounds reached two at a time is this rule absent.
+- **A new defect does not reset it either** — see the next section, because it is the more
+  important signal.
+- The escalation is one question with real exits, not a status report: **one more round**
+  for named defects · **split** — the open defects become a follow-up spec and this feature's
+  scope is amended to exclude them, through the PO and gate 1 again (never by editing an AC
+  until it passes) · **stop** and leave the feature `in-progress`. Lowering the bar is not on
+  the list at any tier.
+
+### A defect the last pass missed is a finding about QE, not about the code
+
+When a re-run reports a defect that **the fix did not introduce** — it was there at the
+previous pass and nobody saw it — the loop is not converging on the code, it is discovering
+the feature one instance at a time. Another incremental "check the fix" pass will find
+exactly one more. Instead:
+
+- The next QE dispatch is a **full sweep by a fresh agent** — every AC, every `design.md`
+  state and placement — told to list *everything* before anything is fixed. It costs more
+  than a fix check and less than three of them.
+- QE files defects **by class, with placements**: "column overflows at 360px — queries
+  table ✗, detail card ✗, export dialog ✓", never the first instance it met. The fix brief
+  says *fix the class, verify every placement listed*.
+- **Hand the dev QE's defect text, verbatim, plus the failing test path. Add no scoping of
+  your own.** "Leave the detail card unchanged" in a brief is an instruction the agent will
+  follow straight past the same bug.
+- A fix to something only visible when rendered is not fixed until it has been rendered.
+  A dev agent that could not render it says so (`RENDERED: no`), and QE checks it first.
+
+### BLOCKED — the third verdict
+
+QE returns `PASS`, `FAIL` or **`BLOCKED`**: one or more required checks **could not be
+executed** (no browser tool, the app would not start, no test identity) and nothing that
+did run failed. It is not a pass with remarks — that verdict does not exist — and it is not
+a FAIL: there is no defect and no owning agent.
+
+- BLOCKED **consumes no fix round** and is recorded in `env_faults`; `verdicts.qe` stays
+  **absent** in the trace, which the done gate already reads as not-a-pass.
+- Its exit is the environment: fix what the blocked rows name, then re-run QE **for those
+  rows only**. It is a run-preflight row that was skipped or went red afterwards — add the
+  row if the preflight had none.
+- **Nothing downstream runs on BLOCKED.** No evaluator: an eval of unverified work fails on
+  the missing evidence, which was known before it was dispatched, and spends a frontier
+  agent to learn nothing.
+- **A check a human performed is evidence; a check nobody performed is not.** When a row
+  genuinely cannot be automated here, the user may run it by hand and report the result;
+  QE records it in `qe-report.md` as `verified by: <user>, <date>, <what was done>` and the
+  row counts. "Waive it" without anyone having looked is not available at `production`.
+
+### Fresh agents, not resumed ones
+
+Every round is a **fresh dispatch** handed file paths: the spec dir, `qe-report.md`, the
+defect list. Resume an agent only to ask about the output it has *just* returned. An agent
+resumed across rounds carries every earlier round in its context — a QE at 900k tokens is
+slower, costlier and measurably less careful than a new one reading a 200-line report — and
+it is the handoff contract's own rule: what the next stage needs is on disk, or it is lost.
 
 This cap **composes** with the `systematic-debugging` skill's **3-attempts-on-one-symptom**
 stop — whichever trips first, stop. An agent reporting three failed attempts is an

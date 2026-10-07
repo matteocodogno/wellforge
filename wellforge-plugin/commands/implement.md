@@ -66,6 +66,9 @@ The argument is `[feature] [tasks]` — both optional, feature first.
 
 ## Step 3 — Dispatch
 
+- **Run preflight first** — the **rigor-tiers** skill's *"Run preflight — before the first
+  agent is spent"* section, verbatim, unless `/wellforge:orchestrate` already printed it for
+  this run. A red row goes to the user, not to an agent.
 - Set spec `status: in-progress` if it isn't already.
 - For each task, pick the agent by domain: `wellforge:frontend-dev`, `wellforge:backend-dev`, or `wellforge:devops`
   (infra/CI tasks). Each agent receives ONLY the spec dir path and its task ID(s) —
@@ -188,7 +191,12 @@ the cost of being wrong in that direction; an unreviewed auth change is the cost
 - On FAIL, follow the **rigor-tiers** skill's *"Routing a QE FAIL — triage before you loop"*
   section: the owner-per-defect table (an environment fault owns nobody), the **2-round cap**,
   and how it composes with `systematic-debugging`'s 3-attempt stop. Do not restate it here —
-  one copy is the point.
+  one copy is the point. The cap is **per feature**: read `fix_rounds.used` from this
+  feature's earlier traces and continue the count — a second `/wellforge:implement` on the
+  same FAIL is round two, not round one.
+- On **BLOCKED** (same section): a required check could not run. No fix round, no dev agent,
+  and do not suggest `/wellforge:eval` — name the environment row to fix and re-run QE for
+  the blocked rows.
 - The **security floor** (secret scan, no hardcoded creds, critical-CVE audit) blocks in BOTH
   tiers — never waived.
 - QE may still recommend a security pass beyond what Step 3b matched (it reads the code, the

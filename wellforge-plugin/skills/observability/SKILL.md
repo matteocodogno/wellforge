@@ -62,6 +62,7 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
     { "agent": "frontend-dev", "class": "secret env", "detail": "VITE_API_BASE_URL empty in worktree, set in main tree", "resolved_by": "carried .mise.local.toml in, re-ran" }
   ],
   "verdicts": { "qe": "PASS", "security": "PASS", "eval": "PASS" },
+  "fix_rounds": { "used": 1, "cap": 2, "extensions": [] },
   "security": { "matched_rules": ["**/auth/**", "token"], "dispatched": true, "notes": [] },
   "result": "completed | escalated | partial",
   "tokens": null,
@@ -107,6 +108,20 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   batch is reviewed (`config/security-triggers.yml`), so an absent verdict there means the
   review did not run, which is a failing done-gate condition rather than a silent pass.
   Record the matched rules alongside it so a later reader can see *why* it ran.
+- **`verdicts.qe`** holds `PASS` or `FAIL`. QE's third verdict, **`BLOCKED`** (a required
+  check could not be executed — `rigor-tiers` skill), is **not written here**: no verdict
+  was reached, so the key stays **absent**, which the done gate already reads as
+  not-a-pass. Record the QE agent's `outcome` as `"BLOCKED"` in `agents[]` and each blocked
+  row in `env_faults` (`class`: what was missing — `browser`, `app start`, `test identity`).
+  Written through as `"BLOCKED"` it would be a third value in a two-value field, and
+  `forge-state.py` reports that as a malformed trace.
+- **`fix_rounds`** (additive, schema id unchanged) is the QE fix-loop count **for the
+  feature**, carried across runs: `used` = the highest `used` in this feature's earlier
+  traces plus the rounds this run spent; `cap` = 2; `extensions[]` = one entry per round
+  granted past the cap, `{ "round": 3, "granted": "<date>", "defects": ["…"] }`. A BLOCKED
+  re-run adds nothing. Omit the field on runs that had no QE FAIL. It exists because the
+  cap was a sentence nobody could count against: a run reached five rounds by being
+  re-authorised two at a time, and no artifact said so until a human added them up.
 - **Every earlier schema stays readable.** v2 added `plugin_version`, v3 added
   `verdicts.security`; no field ever changed meaning. Consumers accept v1, v2 and v3 and
   treat a missing field as unknown — never as an error, never as a reason to skip a run.

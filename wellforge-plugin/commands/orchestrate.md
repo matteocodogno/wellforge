@@ -40,6 +40,21 @@ ask the user anything and must never self-approve.
 - An agent reporting drift (spec/plan wrong) PAUSES the pipeline: surface the proposed
   amendment to the user, apply it via the owning agent (PO for spec, architect for plan),
   re-sync tasks (`/wellforge:tasks` re-sync mode), then resume.
+  - **Batch it.** One agent's return usually carries several drift items; a stage's worth
+    goes to the owner in **one** dispatch, and tasks re-sync **once** after all owners have
+    returned — not one PO → architect → re-sync chain per item.
+- **Scope is frozen at gate 1.** After approval, drift may *correct* the spec — a wrong
+  premise, an untestable AC, a contract the code contradicts. It may not *grow* it. When a
+  stage surfaces something new that no approved AC requires (an adjacent defect, a
+  hardening idea, a refactor the baseline wants), record it and ask the user once, with the
+  default first: **new spec / bugfix after this one** (recommended) · add it here, which
+  re-opens gate 1 and is said in those words. Every accepted addition is re-planned,
+  re-tasked, re-verified and re-evaluated; a feature that doubles its ACs after approval
+  has stopped being the thing that was approved. State the running count when you ask
+  ("spec approved at 49 ACs, now 61").
+- **Every dispatch is a fresh agent handed paths.** Resume an agent only to question the
+  output it has just returned; a new round of work — a fix round, a re-verification, an
+  amendment — is a new dispatch (rigor-tiers skill, *"Fresh agents, not resumed ones"*).
 - Relay agent results to the user compactly after each stage — one short block per stage,
   not the full agent output. Include each agent's one-line **self-critique** result
   (`self-critique` skill — every artifact-producing agent runs one bounded pass before
@@ -66,6 +81,16 @@ ask the user anything and must never self-approve.
 
 Classify the goal as **feature** / **bugfix** / **refactor** / **infra**. If genuinely
 ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
+
+## Step 1b — Run preflight
+
+Before the first agent, run the **rigor-tiers** skill's *"Run preflight — before the first
+agent is spent"* section verbatim (`mvp` and `production`, every pipeline): baseline green,
+commits and signing work, worktrees branch from HEAD — and, as soon as the spec says the
+feature has a UI or sits behind a login, the app starts, a browser tool answers and a test
+identity exists. Print the table. A red row goes to the user, never to an agent, and at
+`production` there is no proceeding past one. Every row here is something an agent would
+otherwise report by stopping, one dispatch at a time.
 
 ## Pipeline: feature
 
@@ -144,12 +169,18 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
    only thing standing between an auth change and a review. Findings ≥ medium are defects.
    Record `verdicts.security` in the run trace with the matched rules.
 
-   Then spawn `wellforge:quality-engineer` with the spec dir.
+   Then spawn `wellforge:quality-engineer` with the spec dir. Its verdict is also on disk
+   at `specs/NNN-slug/qe-report.md` — that path, not your summary, is what later agents get.
    On any FAIL, follow the **rigor-tiers** skill's *"Routing a QE FAIL — triage before you
-   loop"* section: the owner-per-defect table, the **2-round cap**, and its composition with
-   `systematic-debugging`'s 3-attempt stop. It is defined there, once, for this command,
-   `/wellforge:implement` and `/wellforge:promote` alike.
-10. **Eval** → spawn `wellforge:evaluator` with the spec dir (LM-judge against the central
+   loop"* section: the owner-per-defect table, the **2-round cap** (per feature — a user
+   instruction grants one round, it does not reset the count), what to do when a re-run
+   finds a defect the last pass missed, and its composition with `systematic-debugging`'s
+   3-attempt stop. It is defined there, once, for this command, `/wellforge:implement` and
+   `/wellforge:promote` alike.
+   On **BLOCKED** (a required check could not run), same section: no fix round, no dev
+   agent, **no eval** — fix the environment row it names and re-run QE for the blocked rows.
+10. **Eval — only on a QE PASS.** A FAIL or BLOCKED QE verdict means the evaluator is not
+    dispatched: it would fail on evidence known to be missing. Spawn `wellforge:evaluator` with the spec dir (LM-judge against the central
     rubric, which the agent resolves itself — a scaffolded project has no `gates/`, so it
     falls back to the plugin's bundled copy). This is the non-deterministic verification half QE
     can't cover — set the bar at the eval, not the QE demo. FAIL → **triage each failing
@@ -162,7 +193,7 @@ ambiguous, ask with AskUserQuestion (one round). Then run the matching pipeline.
     move with that version)
     capturing the full pipeline — every agent + outcome, drift events, QE + eval verdicts,
     the isolation mode + any collision events + any environment faults (observability skill
-    `worktree` / `collision_events` / `env_faults`), `result`. Write it even when the pipeline escalates or stops early
+    `worktree` / `collision_events` / `env_faults`), `fix_rounds`, `result`. Write it even when the pipeline escalates or stops early
     (`result` records that). Set `terse` to the boolean resolved in Step 0 (`true` iff
     `--terse` resolved on for this run, `false` otherwise); leave `control_run_id` `null`
     (pairing a run to its control run is a later concern, not this command's). The audit
@@ -272,7 +303,9 @@ drift on the original spec: pause and amend first.
 - Never implement, edit code, or write artifacts yourself (the two exceptions: recording
   user approvals in frontmatter, and trivial mechanical fixes to artifact frontmatter).
 - Bounded loops everywhere: PO/architect iterate at user request only; QE fix loop max 2
-  rounds; then escalate. You never loop silently.
+  rounds **per feature**; then escalate with the three exits (one more round · split ·
+  stop). A reply to an escalation buys one round, never a fresh count. You never loop
+  silently, and you never loop two rounds at a time either.
 - If the session ends mid-pipeline, state precisely where it stopped (stage + artifact
   paths) so `/wellforge:orchestrate` can resume from the artifacts on disk — re-read
   spec status frontmatter to find the resume point.

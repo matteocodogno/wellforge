@@ -93,9 +93,9 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/plans/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v14` (gate
-  workflow pin series), `plugin-v2.56.0` (plugin series) and `cli-v1.5.2` (the `wellforge`
+  workflow pin series), `plugin-v2.57.0` (plugin series) and `cli-v1.5.2` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.56.0`, CLI `1.5.2`. **This is the one line in this file that states current
+  plugin `2.57.0`, CLI `1.5.2`. **This is the one line in this file that states current
   versions**; `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and
   `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
   the docs. Every other version in this file is history and stays as written. A self-CI workflow
@@ -164,6 +164,13 @@ wellforge/
   (`.forge/grill/<slug>.md`, then `specs/NNN-slug/ledger.md`), written as each decision
   resolves, and `/wellforge:spec` / `/wellforge:orchestrate` take it with `--ledger` — the
   missing route from `grill-me` into the agent pipeline (plugin `2.56.0`).
+- **Phase 38** (`docs/plans/PLAN.md`): the first long `production` run did not converge —
+  10 QE invocations against a cap of 2, the spec doubled after approval — because each
+  loop's rule was missing or could not be counted against. Now: a **run preflight** before
+  the first agent, **`BLOCKED`** as QE's third verdict (no fix round, no eval), a fix-round
+  cap that is **per feature** and recorded (`fix_rounds`), scope **frozen at gate 1**, and
+  QE's verdict on disk as `qe-report.md` so every round is a fresh agent. All of it lives in
+  the `rigor-tiers` skill; prompt-authored, no eval covers it yet (plugin `2.57.0`).
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
   and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
   is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),

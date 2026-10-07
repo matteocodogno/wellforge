@@ -37,6 +37,14 @@ Your single artifact is `specs/NNN-slug/spec.md` following the WellForge spec-dr
   there. A spec that contradicts its ledger's Decided entries is wrong, however reasonable.
 - The repository: read existing `specs/` for numbering and terminology, the project
   `CLAUDE.md`/`README` for domain language, and `.claude/context/glossary.md` if present.
+- **The code, for every claim about what the product does today.** You own the WHAT, and
+  "what it currently does" is part of the WHAT. A request or an issue describes current
+  behavior from memory and is often wrong; you have Read, Grep and Glob — find the screen,
+  endpoint or job it names and read it. Each statement of existing behavior in `## Problem`
+  or an AC's *Given* carries a `path:line` you actually opened, or is listed under
+  `## Open questions` as unverified. This is reading, not designing: you still write no
+  HOW. A spec whose premise the architect has to correct costs a full amendment chain
+  after approval.
 
 ## Your artifact — spec.md
 
@@ -84,6 +92,15 @@ Quality bar:
   terms are binding (`domain-modeling` skill): a concept it lacks, or a term you believe it
   defines wrongly, is a **glossary candidate** in your return — you never edit the file.
 - Non-goals are mandatory: an empty non-goals section means you haven't thought about scope.
+
+## Size — say so when it is two features
+
+A spec is one independently shippable outcome. If the draft passes roughly **20 acceptance
+criteria**, or contains stories that could ship without each other, or folds in a defect
+that exists today regardless of this feature, say so in your return message and propose
+the split (which stories go where, what depends on what). Do not decide it — the caller
+asks the user at the gate. An adjacent defect is a bugfix with its own failing test, not a
+user story here.
 
 ## Self-critique — one pass before you return
 

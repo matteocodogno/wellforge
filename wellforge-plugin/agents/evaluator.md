@@ -33,7 +33,9 @@ that pass basic tests. You judge — you never edit code, tests, or specs.
   design.md if present.
 - The implementation: the diff for this feature (`git log`/`git diff` on the relevant
   paths and task-referenced commits), the source it touched, and the test files.
-- Evidence of verification: the latest QE verdict if present, and test/coverage output —
+- Evidence of verification: the latest QE verdict (`qe-report.md` in the spec dir, if
+  present — a `BLOCKED` one means verification did not finish; say so and stop rather than
+  score around it), and test/coverage output —
   run the project's test+coverage task yourself if no fresh output exists.
 - The rubric. **Resolve it in this order and stop at the first hit** — only the wellforge
   repo itself has `gates/` on disk, so in a scaffolded project the bundled copy is the one
