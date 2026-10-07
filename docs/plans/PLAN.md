@@ -951,11 +951,19 @@ asked again as open questions.
 about it — it is evidence beside a feature, not a lifecycle stage, and a third thing to
 approve would be ceremony. No template change: `.forge/grill/` is created on first use.
 
-**Unproven.** Prompt-authored, no eval, and this changes the prompt layer, so `LAST-RUN`
-is stale again and `plugin-v2.56.0` needs a fresh eval pass before it can be tagged. An
-eval case is finally cheap to write for this one — a fixture ledger, `orchestrate
---ledger`, and a grader that fails if the spec contradicts a Decided entry — and is the
-obvious next addition to the suite.
+**Proven since, for the two consumers.** Released as `plugin-v2.56.0` after a full green
+eval pass, and then given its own cases: `spec-from-ledger` and
+`orchestrate-hands-po-the-ledger`, over a fixture ledger whose decisions nobody would guess
+(14 months, EUR only, a 12-character code). Both pass 3 of 3, and the second was checked
+from a kept trace to have really spawned `wellforge:product-owner` with the ledger path.
+Every regex grader fails on a spec that never saw the ledger.
+
+**Still unproven:** `grill-me` *writing* the ledger. An interview needs a user, and the
+runner has none; a case with scripted answers would test the script more than the command.
+
+`eval-never-closes`, intermittent in two of three full passes, was a grader fault: an `llm`
+grader with `focus: trace` handed the judge 50–64 KB of JSONL and it voted FAIL on runs that
+had explicitly not closed the feature. It now judges the last message; 3 of 3 since.
 
 ## Phase 36 — A CLI release path that can actually produce a green tag (added 2026-10-06)
 

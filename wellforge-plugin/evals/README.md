@@ -69,7 +69,7 @@ ignored.
 If anyone does enable it, three things are worth knowing before they do:
 
 - **It is billed to whoever owns the key.** Measured 2026-09-23: one case, one run, one arm
-  cost $0.41 and $1.23. The nine cases in both arms at `--runs 1` is roughly **$10–15 per
+  cost $0.41 and $1.23. The suite (nine cases then, eleven now) in both arms at `--runs 1` is roughly **$10–15 per
   pass**; at the suite default `--runs 3`, roughly **$30–45** — an estimate that turned out
   about 3x high: the two full passes at `--runs 3` on 2026-10-05/06 cost **$10.79** and
   **$13.10** (26 and 31 minutes, sequential).
@@ -90,6 +90,9 @@ and `scripts/check-evals-fresh.sh` refuses a `plugin-v` tag whose prompt layer h
 since — because `commands/`, `agents/` and `skills/` have no other test.
 
 ## The fixture project
+
+`fixtures/ledger-gift-cards.md` is a decision ledger as `/wellforge:grill-me` leaves it for
+an idea; the two ledger cases copy it to `.forge/grill/gift-cards.md`.
 
 `fixtures/project/` is a frozen WellForge project with six features in known states, so a
 case asserts against something fixed instead of whatever a live repo happens to contain:
@@ -170,3 +173,20 @@ whole session with `target: trace`; at the answer with `target: last_message` (t
 | `evaluator-catches-mock-only-test` | a test that only asserts a mock scores below the bar, cited by filename |
 | `implement-announces-downgrade` | `--mode mvp` on a production feature announces the downgrade **first** |
 | `owasp-pass-with-notes` | "PASS WITH NOTES" is recorded as `PASS`, notes kept, no third verdict |
+| `spec-from-ledger` | `/wellforge:spec --ledger` treats a grilling ledger as the interview: decided items land in the spec, a delegated one stays marked, the open question stays open, the ledger moves beside the spec — and nothing is re-asked |
+| `orchestrate-hands-po-the-ledger` | `/wellforge:orchestrate --ledger` hands the **product-owner agent** the ledger path, and the spec that agent writes carries the user's decisions; it stops at the first human gate |
+
+The two ledger cases share `fixtures/ledger-gift-cards.md`, whose decisions are deliberately
+ones nobody would guess (a 14-month validity, EUR only, a 12-character code): a spec that
+says "14 months" got it from the ledger and from nowhere else. Every regex grader in them
+was checked against a spec that never saw the ledger, and fails on it.
+
+**Two things these cases taught about graders**, worth knowing before writing the next one:
+
+- **`focus: trace` on an `llm` grader is a flaky grader.** `eval-never-closes` handed the
+  judge 50–64 KB of raw session JSONL and it voted FAIL on runs whose closing line was "I
+  haven't changed the feature's status" — 2 of 9 runs across three full passes. Judge what
+  the assistant *said* on `last_message`, and what it *did* with a deterministic grader.
+- **Do not key a grader on the agent tool's name.** It is listed as `Task` and invoked as
+  `Agent`; `tool_used: Task` reported "called 0x" on a run that had spawned the agent. Match
+  the call's `subagent_type` in the trace instead.
