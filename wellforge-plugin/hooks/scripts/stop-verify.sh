@@ -126,8 +126,83 @@ fi
 # tsconfig and no typescript dep (tooling only), so the old fallback ran `tsc` where it cannot
 # exist and blocked EVERY turn touching a .ts file.
 # Blocks only on genuine type errors; a missing/unrunnable tsc is an environment fact → advisory.
+#
+# THIS CHECK MUST NEVER WRITE TO THE PROJECT. It used to run `pnpm exec tsc` everywhere, and in
+# a Bun- or npm-managed directory pnpm created pnpm-lock.yaml + pnpm-workspace.yaml and
+# reinstalled node_modules from the package.json RANGES, ignoring the real lockfile — newer
+# dependencies than production pins, a type error that exists nowhere else, and stray lockfiles
+# that got committed. So: the local binary first (no package manager involved, nothing to
+# install), then the package manager the directory actually uses, with no-install flags.
+
+# ts_pm <dir> — the package manager that owns <dir>: nearest lockfile walking up to the project
+# root (a monorepo keeps its lockfile at the root), then package.json's `packageManager` field.
+# Prints bun|pnpm|npm|yarn, or nothing.
+ts_pm() {
+  local d="$1" pm
+  while :; do
+    if   [ -f "$d/bun.lock" ] || [ -f "$d/bun.lockb" ]; then echo bun;  return
+    elif [ -f "$d/pnpm-lock.yaml" ];                     then echo pnpm; return
+    elif [ -f "$d/package-lock.json" ];                  then echo npm;  return
+    elif [ -f "$d/yarn.lock" ];                          then echo yarn; return
+    fi
+    [ "$d" = "$PROJECT_DIR" ] || [ "$d" = "/" ] && break
+    d=$(dirname "$d")
+  done
+  pm=$(sed -n 's/.*"packageManager"[[:space:]]*:[[:space:]]*"\([a-z]*\)@.*/\1/p' "$1/package.json" 2>/dev/null | head -1)
+  case "$pm" in bun|pnpm|npm|yarn) echo "$pm" ;; esac
+}
+
+# ts_local_tsc <dir> — an installed tsc: <dir>/node_modules/.bin first, then hoisted ones above.
+ts_local_tsc() {
+  local d="$1"
+  while :; do
+    [ -x "$d/node_modules/.bin/tsc" ] && { echo "$d/node_modules/.bin/tsc"; return; }
+    [ "$d" = "$PROJECT_DIR" ] || [ "$d" = "/" ] && break
+    d=$(dirname "$d")
+  done
+}
+
+# ts_check <dir> — sets TSC_OUT. Returns 0 clean, 1 type errors, 2 cannot run (TS_WHY says why).
+ts_check() {
+  local dir="$1" pm tsc rc
+  pm=$(ts_pm "$dir"); tsc=$(ts_local_tsc "$dir"); TS_WHY=""; TSC_OUT=""
+  if [ -n "$tsc" ]; then
+    if ! (cd "$dir" && "$tsc" --version) >/dev/null 2>&1; then
+      TS_WHY="$tsc does not run"; return 2
+    fi
+    # A project `typecheck` script may pass flags we cannot guess (-b, -p tsconfig.x.json).
+    # Only through a package manager that is actually installed; otherwise the binary itself.
+    if [ -n "$pm" ] && command -v "$pm" >/dev/null 2>&1 \
+       && grep -qE '"typecheck"[[:space:]]*:' "$dir/package.json" 2>/dev/null; then
+      case "$pm" in
+        npm) TSC_OUT=$( (cd "$dir" && npm run --silent typecheck) 2>&1 ); rc=$? ;;
+        *)   TSC_OUT=$( (cd "$dir" && "$pm" run typecheck) 2>&1 );         rc=$? ;;
+      esac
+    else
+      TSC_OUT=$( (cd "$dir" && "$tsc" --noEmit) 2>&1 ); rc=$?
+    fi
+    [ "$rc" -eq 0 ] && return 0 || return 1
+  fi
+  # No installed tsc. Ask the owning package manager, never letting it fetch anything (yarn PnP
+  # has no node_modules, which is the one case this is for).
+  if [ -z "$pm" ]; then TS_WHY="no installed typescript and no package manager detected"; return 2; fi
+  if ! command -v "$pm" >/dev/null 2>&1; then TS_WHY="$pm is not installed"; return 2; fi
+  local -a run
+  case "$pm" in
+    bun)  run=(bun x --no-install tsc) ;;
+    pnpm) run=(env npm_config_verify_deps_before_run=false pnpm exec tsc) ;;
+    npm)  run=(npx --no-install tsc) ;;
+    yarn) run=(yarn tsc) ;;
+  esac
+  if ! (cd "$dir" && "${run[@]}" --version) >/dev/null 2>&1; then
+    TS_WHY="typescript not available via $pm"; return 2
+  fi
+  TSC_OUT=$( (cd "$dir" && "${run[@]}" --noEmit) 2>&1 ) && return 0
+  return 1
+}
+
 CHANGED_TS=$(echo "$CHANGED" | grep -E '\.(ts|tsx)$')
-if [ -n "$CHANGED_TS" ] && command -v pnpm >/dev/null 2>&1; then
+if [ -n "$CHANGED_TS" ]; then
   TS_DIRS=""
   while IFS= read -r f; do
     [ -z "$f" ] && continue
@@ -151,13 +226,12 @@ if [ -n "$CHANGED_TS" ] && command -v pnpm >/dev/null 2>&1; then
   while IFS= read -r marked; do
     [ -z "$marked" ] && continue
     dir="${marked#|}"; dir="${dir%|}"
-    # `pnpm exec tsc --version` separates "typescript isn't installed here" (advisory) from
-    # "the code doesn't compile" (blocking) — both would otherwise be a non-zero exit.
-    if ! (cd "$dir" && pnpm exec tsc --version) >/dev/null 2>&1; then
-      echo "stop-verify: typescript not available in $dir — type check skipped (advisory)" >&2
-      continue
-    fi
-    if ! TSC_OUT=$( (cd "$dir" && pnpm exec tsc --noEmit) 2>&1 ); then
+    # "typescript isn't installed here" (advisory) vs "the code doesn't compile" (blocking):
+    # both would otherwise be a non-zero exit.
+    ts_check "$dir"; rc=$?
+    if [ "$rc" -eq 2 ]; then
+      echo "stop-verify: $TS_WHY in $dir — type check skipped (advisory)" >&2
+    elif [ "$rc" -eq 1 ]; then
       echo "TypeScript errors in $dir — fix before finishing:" >&2
       echo "$TSC_OUT" | head -20 >&2
       exit 2

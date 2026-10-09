@@ -200,6 +200,100 @@ got=$(sed -n 's/^LIFECYCLE_FIELDS="\(.*\)"$/\1/p' "$HOOK" | tr '|' '\n' | sort |
 if [ -n "$want" ] && [ "$want" = "$got" ]; then PASS=$((PASS+1));
 else FAIL=$((FAIL+1)); echo "  FAIL: lifecycle fields differ — forge-state.py: [$want] hook: [$got]"; fi
 
+# ── the type check must never touch the project ─────────────────────────────────
+# The bug: the check always ran `pnpm exec tsc`, which in a Bun/npm directory wrote
+# pnpm-lock.yaml + pnpm-workspace.yaml and reinstalled node_modules from package.json ranges.
+# Stub package managers on PATH make that observable without a toolchain: every one of them
+# LOGS its call and writes the pollution files, so any invocation is a visible failure. The
+# stub tsc fails (exit 1) only when a file contains TYPE_ERROR.
+STUBS=$(mktemp -d)
+for pm in pnpm bun npx yarn npm; do
+  printf '#!/bin/sh\necho "$0 $*" >> "$STUB_LOG"\ntouch pnpm-lock.yaml pnpm-workspace.yaml\ncase "$*" in *tsc*) exit 1;; esac\nexit 0\n' > "$STUBS/$pm"
+  chmod +x "$STUBS/$pm"
+done
+
+ts_repo() {   # ts_repo <lockfile|-> <typed|clean|broken>; a compile unit in $REPO/svc
+  new_repo
+  mkdir -p svc/node_modules/.bin
+  printf '{"name":"svc"}\n' > svc/package.json
+  echo '{}' > svc/tsconfig.json
+  [ "$1" != "-" ] && : > "svc/$1"
+  printf '#!/bin/sh\n[ "$1" = "--version" ] && { echo "Version 5.0.0"; exit 0; }\n'\
+'if grep -rqs TYPE_ERROR --include=*.ts . --exclude-dir=node_modules; then echo "error TS2345: bad"; exit 1; fi\nexit 0\n' \
+    > svc/node_modules/.bin/tsc
+  chmod +x svc/node_modules/.bin/tsc
+  echo 'export const x = 1' > svc/a.ts
+  [ "$2" = "broken" ] && echo 'const y: string = 1 // TYPE_ERROR' >> svc/a.ts
+  git add -A; git commit -qm "chore: ts unit"       # node_modules is committed: the stub is the fixture
+  echo 'export const z = 2' >> svc/a.ts               # the changed .ts file the hook sees
+  STUB_LOG="$REPO/.stub.log"; : > "$STUB_LOG"; export STUB_LOG
+}
+snapshot() { (cd "$REPO" && git status --porcelain | sort; find svc/node_modules -type f | sort | xargs cksum; ls) 2>&1 | cksum; }
+run_stubbed() {   # same as run, with the stub package managers first on PATH
+  local want="$1" desc="$2" got out
+  out=$(echo '{}' | PATH="$STUBS:$PATH" CLAUDE_PROJECT_DIR="$REPO" bash "$HOOK" 2>&1); got=$?
+  LAST_OUT="$out"
+  if [ "$got" = "$want" ]; then PASS=$((PASS+1))
+  else FAIL=$((FAIL+1)); echo "  FAIL: $desc (want exit $want, got $got)"; echo "$out" | sed 's/^/        /'; fi
+}
+no_pollution() {  # no_pollution <desc>: no package manager ran, nothing written (the snapshot
+                  # also catches a stray pnpm-lock.yaml; a pnpm fixture's own lock is in BEFORE)
+  if [ ! -s "$STUB_LOG" ] && [ ! -e "$REPO/svc/pnpm-workspace.yaml" ] \
+     && [ "$BEFORE" = "$(snapshot)" ]; then PASS=$((PASS+1))
+  else FAIL=$((FAIL+1)); echo "  FAIL: $1"; cat "$STUB_LOG" | sed 's/^/        called: /'; ls "$REPO/svc" | sed 's/^/        svc\//'; fi
+}
+
+# 19. Bun directory: type-checks, writes nothing, calls no package manager
+ts_repo bun.lock clean; BEFORE=$(snapshot)
+run_stubbed 0 "Bun directory type-checks clean"
+no_pollution "Bun directory was polluted (pnpm-lock.yaml/pnpm-workspace.yaml/node_modules) or a package manager ran"
+
+# 20. npm directory: the same
+ts_repo package-lock.json clean; BEFORE=$(snapshot)
+run_stubbed 0 "npm directory type-checks clean"
+no_pollution "npm directory was polluted or a package manager ran"
+
+# 21. a genuine type error still blocks, in Bun, npm and pnpm directories
+for lock in bun.lock package-lock.json pnpm-lock.yaml; do
+  ts_repo "$lock" broken; BEFORE=$(snapshot)
+  run_stubbed 2 "a real type error blocks in a $lock directory"
+  echo "$LAST_OUT" | grep -q 'TypeScript errors in' && PASS=$((PASS+1)) \
+    || { FAIL=$((FAIL+1)); echo "  FAIL: $lock block must report the compiler output"; }
+done
+
+# 22. pnpm directory with a local tsc: clean passes, and pnpm is still not needed for it
+ts_repo pnpm-lock.yaml clean; BEFORE=$(snapshot)
+run_stubbed 0 "pnpm directory type-checks clean"
+no_pollution "pnpm directory ran a package manager although a local tsc exists"
+
+# 23. no pnpm at all (Bun-only machine) must not skip the check: the gate is per directory
+ts_repo bun.lock broken
+out=$(echo '{}' | PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$REPO" bash "$HOOK" 2>&1); rc=$?
+if [ "$rc" = 2 ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); echo "  FAIL: a machine without pnpm must still check (exit $rc)"; echo "$out" | sed 's/^/        /'; fi
+
+# 24. a project `typecheck` script is preferred, through the directory's own package manager
+ts_repo bun.lock clean
+printf '{"name":"svc","scripts":{"typecheck":"tsc -b"}}\n' > svc/package.json
+git commit -qam "chore: typecheck script"; echo 'export const w = 3' >> svc/a.ts
+run_stubbed 0 "a typecheck script runs"
+grep -q 'bun run typecheck' "$STUB_LOG" && PASS=$((PASS+1)) \
+  || { FAIL=$((FAIL+1)); echo "  FAIL: typecheck script must run via bun (log: $(cat "$STUB_LOG"))"; }
+
+# 25. no installed typescript → advisory, never a block, and nothing fetched
+ts_repo bun.lock clean; rm -rf svc/node_modules; git add -A; git commit -qm "chore: no node_modules" 2>/dev/null
+echo 'export const v = 4' >> svc/a.ts; : > "$STUB_LOG"
+run_stubbed 0 "no installed typescript is an advisory, not a block"
+echo "$LAST_OUT" | grep -q 'advisory' && PASS=$((PASS+1)) \
+  || { FAIL=$((FAIL+1)); echo "  FAIL: missing typescript must be reported as advisory"; }
+# the stub bun runs `--version` and "succeeds", so the only thing that may happen is a no-install exec
+grep -qE 'bun x --no-install' "$STUB_LOG" || [ ! -s "$STUB_LOG" ] && PASS=$((PASS+1)) \
+  || { FAIL=$((FAIL+1)); echo "  FAIL: fallback must not install (log: $(cat "$STUB_LOG"))"; }
+
+# 26. the old gate and the old unconditional pnpm call must not come back
+if grep -q 'command -v pnpm >/dev/null 2>&1 \]' "$HOOK" || grep -qE '^[^#]*pnpm exec tsc --noEmit\)' "$HOOK"; then
+  FAIL=$((FAIL+1)); echo "  FAIL: hook is gated on / hardcodes pnpm again"
+else PASS=$((PASS+1)); fi
+
 echo
 echo "stop-verify: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

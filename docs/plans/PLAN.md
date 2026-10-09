@@ -917,6 +917,42 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 39 — The Stop hook stops installing packages (added 2026-10-09)
+
+`stop-verify.sh` type-checked every TypeScript compile unit with `pnpm exec tsc`, gated only
+on pnpm being installed. In a Bun- or npm-managed directory that is not a read-only check:
+pnpm wrote `pnpm-lock.yaml` and `pnpm-workspace.yaml` and reinstalled `node_modules` from the
+`package.json` ranges, ignoring the real lockfile. In a mixed pnpm + Bun monorepo this put
+three Bun services on newer dependencies than they pin (better-auth 1.7.2 against a locked
+1.6.23), the newer version changed a signature, and the hook then blocked every turn on a type
+error that exists nowhere else; the stray lockfiles were eventually committed and broke an
+unrelated CI check. The hook runs on every Stop, so it was the most repeated writer in the
+project.
+
+- ☑ **The check writes nothing.** Per directory: an installed `tsc` (the directory's own
+  `node_modules/.bin`, then a hoisted one above it) runs directly — no package manager is
+  involved, so there is nothing to install.
+- ☑ **Otherwise the directory's own package manager**, nearest lockfile first
+  (`bun.lock`/`bun.lockb` > `pnpm-lock.yaml` > `package-lock.json` > `yarn.lock`, then the
+  `packageManager` field), in no-install forms: `bun x --no-install`, `npx --no-install`,
+  `pnpm exec` with `verify-deps-before-run` off, `yarn tsc`.
+- ☑ **A project `typecheck` script is preferred** when a local `tsc` and the package manager
+  both exist, since it may carry flags the hook cannot guess.
+- ☑ **No tsc and no package manager is an advisory**, like a missing `tsconfig.json`.
+- ☑ **The `command -v pnpm` gate is gone**: Bun-only and npm-only machines are now checked
+  instead of silently skipped.
+
+Seven new cases in `stop-verify.test.sh` use stub package managers that log every call and
+write the pollution files, so any invocation is a visible failure: Bun and npm directories
+leave `git status` and `node_modules` byte-identical; a real type error blocks (exit 2) in
+Bun, npm and pnpm directories; a missing TypeScript is advisory; a machine without pnpm still
+blocks; the `typecheck` script runs through Bun.
+
+**Not done here:** `pre-bash-guard.sh` blocks any command that names a committed example env
+file, so an agent cannot read or update the documented env contract. That is a separate change
+with its own tests (exempt `*.example` / `*.sample` templates, keep the real secret files
+blocked). Plugin `2.57.1` — not yet tagged, like `2.57.0` before it.
+
 ## Phase 38 — Loops that end: preflight, a third verdict, a cap that counts (added 2026-10-07)
 
 The first long `production` run on a real feature did not converge, and its own account is
