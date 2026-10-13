@@ -11,8 +11,16 @@
 <meta property="og:description" content="Reproducible, standard, fast AI-assisted project setup: a spec-driven agent team, quality gates as law, versioned scaffolds, and an upgradeable lifecycle.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://matteocodogno.github.io/wellforge/">
-<meta name="twitter:card" content="summary">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff7b39'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='%230d1117'%3E%E2%9A%92%3C/text%3E%3C/svg%3E">
+<meta property="og:image" content="https://matteocodogno.github.io/wellforge/brand/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Forgey, the WellForge robot-octopus mascot, next to the tagline: a week of AI-infra setup, turned into one command.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://matteocodogno.github.io/wellforge/brand/og-image.png">
+<link rel="icon" href="brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="brand/icon-32.png">
+<link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
+<link rel="manifest" href="brand/site.webmanifest">
 <style>
   /* ===== Tokens =====
      Neutrals and type are inherited from the previous site; the one axis that changed is
@@ -65,8 +73,7 @@
   .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 1rem; }
   .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; letter-spacing: -0.02em; font-size: 1.1rem; color: var(--text); }
   .brand:hover { text-decoration: none; }
-  .brand .spark { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px;
-    background: var(--ember); color: var(--bg); font-size: 0.95rem; }
+  .brand .spark { width: 30px; height: 30px; display: block; }
   .nav-links { display: flex; align-items: center; gap: 1.4rem; font-size: 0.92rem; }
   .nav-links a { color: var(--muted); white-space: nowrap; }
   .nav-links a:hover { color: var(--text); text-decoration: none; }
@@ -101,7 +108,7 @@
   .sec-head p { color: var(--muted); margin-top: 0.8rem; font-size: 1.05rem; }
   .kicker { color: var(--ember); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; }
   .alt { background: var(--surface); }
-  .alt .card, .alt .layer, .alt .tier-table { background: var(--bg); }
+  .alt .card, .alt .layer, .alt .play, .alt .tier-table { background: var(--bg); }
 
   /* Problem: before / after */
   .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; max-width: 920px; margin: 0 auto; }
@@ -199,7 +206,9 @@
   .adopt-note { text-align: center; margin-top: 1.6rem; color: var(--muted); font-size: 0.95rem; }
 
   /* Playbooks */
-  .plays { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.1rem; }
+  .plays { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
+  @media (max-width: 800px) { .plays { grid-template-columns: minmax(0, 1fr); } }
+  .play-more { text-align: center; margin-top: 0.6rem; color: var(--muted); font-size: 0.95rem; }
   .play { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; display: flex; flex-direction: column; transition: border-color .15s, transform .15s; }
   .play:hover { border-color: var(--ember); transform: translateY(-3px); }
   .play .when { color: var(--ember); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -212,13 +221,31 @@
   .play pre .arrow { color: var(--muted); }
   .play-note { max-width: 720px; margin: 2rem auto 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
   .play-note b { color: var(--text); }
-  .play-tip { max-width: 760px; margin: 2rem auto 0; background: var(--surface-2); border: 1px solid var(--border);
-    border-left: 3px solid var(--ember); border-radius: 10px; padding: 1.1rem 1.3rem; }
-  .play-tip p { color: var(--muted); font-size: 0.92rem; }
-  .play-tip b { color: var(--text); }
-  .play-tip pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 0.9rem;
-    margin-top: 0.75rem; overflow-x: auto; font-size: 0.8rem; color: #d7dee8; white-space: pre-wrap; line-height: 1.6; }
-  .play-tip pre .p { color: var(--purple); }
+
+  /* Why not X */
+  .whynot { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
+  @media (max-width: 800px) { .whynot { grid-template-columns: minmax(0, 1fr); } }
+  .whynot .card h3 { font-size: 1.05rem; margin-top: 0; }
+  .whynot dl { margin-top: 0.7rem; display: grid; gap: 0.5rem; font-size: 0.92rem; }
+  .whynot dt { color: var(--ember); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .whynot dd { color: var(--muted); }
+  .scope-note { max-width: 760px; margin: 1.8rem auto 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
+  .scope-note b { color: var(--text); }
+
+  /* Status */
+  .status { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; max-width: 920px; margin: 0 auto; }
+  @media (max-width: 760px) { .status { grid-template-columns: minmax(0, 1fr); } }
+  .status-col { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem 1.6rem; background: var(--surface); }
+  .status-col h3 { font-size: 1rem; margin-bottom: 0.9rem; }
+  .status-col.proven h3 { color: var(--green); }
+  .status-col.open h3 { color: var(--heat); }
+  .status-col ul { list-style: none; display: grid; gap: 0.7rem; }
+  .status-col li { position: relative; padding-left: 1.6rem; font-size: 0.93rem; color: var(--muted); }
+  .status-col li b { color: var(--text); font-weight: 600; }
+  .status-col li::before { position: absolute; left: 0; top: 0; font-family: ui-monospace, monospace; }
+  .status-col.proven li::before { content: "✓"; color: var(--green); }
+  .status-col.open li::before { content: "○"; color: var(--heat); }
+  .status-foot { max-width: 760px; margin: 1.6rem auto 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
 
   /* Footer */
   footer { border-top: 1px solid var(--border); padding: 3rem 0 2.5rem; color: var(--muted); font-size: 0.9rem; }
@@ -229,7 +256,7 @@
   .foot a { color: var(--muted); }
   .foot a:hover { color: var(--text); }
   .forgey { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; }
-  .forgey pre { color: var(--ember); font-size: 0.62rem; line-height: 1.15; flex-shrink: 0; }
+  .forgey img { flex-shrink: 0; width: 132px; height: auto; }
   .forgey p { font-size: 0.86rem; }
   .forgey b { color: var(--text); }
   .foot-base { margin-top: 2.2rem; padding-top: 1.4rem; border-top: 1px solid var(--border); font-size: 0.82rem; }
@@ -313,13 +340,14 @@
 
 <header class="nav">
   <div class="wrap nav-inner">
-    <a class="brand" href="#top"><span class="spark" aria-hidden="true">⚒</span> WellForge</a>
+    <a class="brand" href="#top"><img class="spark" src="brand/icon-192.png" alt="" width="30" height="30"> WellForge</a>
     <nav class="nav-links" aria-label="Sections">
       <a href="#problem" class="hide-sm">Why</a>
       <a href="#output" class="hide-sm">What you get</a>
       <a href="#pillars" class="hide-sm">Pillars</a>
       <a href="#tiers" class="hide-sm">Rigor tiers</a>
       <a href="#workflows" class="hide-sm">Playbooks</a>
+      <a href="#status" class="hide-sm">Status</a>
       <a href="#start">Get started</a>
       <a href="https://github.com/matteocodogno/wellforge" class="nav-cta">GitHub</a>
     </nav>
@@ -517,8 +545,44 @@
     </div>
   </section>
 
+  <!-- WHY NOT X -->
+  <section id="why-not">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">Fair question</span>
+        <h2>Why not spec-kit, BMAD or Kiro?</h2>
+        <p>We tried them before building anything. Each one shaped WellForge, and none was the whole answer.</p>
+      </div>
+      <div class="whynot">
+        <div class="card">
+          <h3>spec-kit / cc-sdd</h3>
+          <dl><dt>What it gets right</dt><dd>The closest to what we wanted. WellForge keeps its spec → plan → tasks shape.</dd>
+          <dt>Why not as-is</dt><dd>We wanted to own the prompts, so they encode our conventions and don't churn under us between releases.</dd></dl>
+        </div>
+        <div class="card">
+          <h3>BMAD</h3>
+          <dl><dt>What it gets right</dt><dd>Powerful: a full method, not just a prompt pack.</dd>
+          <dt>Why not as-is</dt><dd>Heavyweight: too much ceremony for the size of most of our projects. Rigor tiers are our answer to that.</dd></dl>
+        </div>
+        <div class="card">
+          <h3>Kiro</h3>
+          <dl><dt>What it gets right</dt><dd>A good spec UX.</dd>
+          <dt>Why not as-is</dt><dd>It's tied to its own IDE and runtime. WellForge runs in Claude Code, OpenCode and GitHub Copilot.</dd></dl>
+        </div>
+        <div class="card">
+          <h3>superpowers</h3>
+          <dl><dt>What it gets right</dt><dd>Great skill-authoring patterns. Our skills borrow the style, and the visual companion is adapted from it under MIT, with credit.</dd>
+          <dt>Why not as-is</dt><dd>We wanted the style, not the framework.</dd></dl>
+        </div>
+      </div>
+      <p class="scope-note">The bigger difference is scope: a spec workflow is <b>one pillar of six</b>. WellForge also ships the
+      scaffold, the CI gates and the upgrade path, because those have to outlive the AI session.
+      <br><span style="font-size:0.86rem">These projects move fast; this is how they compared when we chose.</span></p>
+    </div>
+  </section>
+
   <!-- PRESETS -->
-  <section id="presets">
+  <section id="presets" class="alt">
     <div class="wrap">
       <div class="sec-head">
         <span class="kicker">Pick your stack</span>
@@ -554,7 +618,7 @@
   </section>
 
   <!-- RIGOR TIERS -->
-  <section id="tiers" class="alt">
+  <section id="tiers">
     <div class="wrap">
       <div class="sec-head">
         <span class="kicker">Match ceremony to stakes</span>
@@ -582,12 +646,12 @@
   </section>
 
   <!-- WORKFLOWS / PLAYBOOKS -->
-  <section id="workflows">
+  <section id="workflows" class="alt">
     <div class="wrap">
       <div class="sec-head">
         <span class="kicker">One command per job</span>
-        <h2>Playbooks for the whole lifecycle</h2>
-        <p>Every stage of the SDLC has a WellForge entry point, from a blank folder to a shipped release.</p>
+        <h2>Playbooks for the everyday jobs</h2>
+        <p>The four jobs you'll do most. Each is one command.</p>
       </div>
       <div class="plays">
 
@@ -618,17 +682,7 @@
 <span class="c"># QE repro (failing test) → dev fix → QE verify</span></pre>
         </div>
 
-        <div class="play">
-          <span class="when">Scaffold · not a feature</span>
-          <h3>Add a new service</h3>
-          <p>A new service is scaffolding from a preset, <b>not</b> a spec-driven feature. New repo → <span class="mono">:new</span>. Inside a monorepo → ask the stack skill.</p>
-<pre><span class="c"># standalone repo</span>
-<span class="p">/wellforge:new</span>
-<span class="c"># inside an existing monorepo (stack skill)</span>
-<span class="c">"scaffold a new Hono service: billing"</span></pre>
-        </div>
-
-        <div class="play">
+                <div class="play">
           <span class="when">Existing code</span>
           <h3>Adopt a brownfield repo</h3>
           <p>Brings the workflow and calibrated gates to a project you already have. Additive only, one revertable commit.</p>
@@ -637,63 +691,45 @@
 <span class="c"># calibrated gates → release wiring</span></pre>
         </div>
 
-        <div class="play">
-          <span class="when">Before you build</span>
-          <h3>Decide an idea</h3>
-          <p>One question at a time, each with a recommendation, ending in a decision ledger that keeps what you decided apart from what you delegated.</p>
-<pre><span class="p">/wellforge:grill-me</span> <span class="c">"offline mode for field techs"</span>
-<span class="p">/wellforge:grill-me</span> --docs  <span class="c"># + glossary &amp; ADRs</span>
-<span class="p">/wellforge:spec</span> --grill      <span class="c"># same interview, then the spec</span></pre>
-        </div>
-
-        <div class="play">
-          <span class="when">Quality check</span>
-          <h3>Evaluate an existing project</h3>
-          <p>Score a feature against the rubric, or take the pulse of the whole repo.</p>
-<pre><span class="p">/wellforge:eval</span>    <span class="c"># LM-judge a feature vs rubric</span>
-<span class="p">/wellforge:status</span>  <span class="c"># where each feature sits</span>
-<span class="p">/wellforge:triage</span>  <span class="c"># which specs are rotting</span>
-<span class="p">/wellforge:doctor</span>  <span class="c"># tools, MCP, hooks, guards</span></pre>
-        </div>
-
-        <div class="play">
-          <span class="when">Feasibility</span>
-          <h3>Spike a question</h3>
-          <p>The fast lane: build from a one-paragraph brief, advisory gates, no agents, no approval. May be thrown away.</p>
-<pre><span class="p">/wellforge:spike</span> <span class="c">"stream LLM tokens over SSE?"</span>
-<span class="c"># raise it later with /wellforge:promote</span></pre>
-        </div>
-
-        <div class="play">
-          <span class="when">Keep it healthy</span>
-          <h3>Improve what you work in</h3>
-          <p>Look back for what slowed a session down, and scan for modules that make every change expensive. Both propose from evidence and change nothing without your yes.</p>
-<pre><span class="p">/wellforge:retro</span>  <span class="c"># fixes to the environment, ranked</span>
-<span class="p">/wellforge:improve-architecture</span>
-<span class="c"># shallow modules → refactor candidates</span></pre>
-        </div>
-
-        <div class="play">
-          <span class="when">Lifecycle</span>
-          <h3>Ship &amp; maintain</h3>
-          <p>Cut releases from Conventional Commits, and keep scaffolds from rotting as presets evolve.</p>
-<pre><span class="p">/wellforge:release</span>  <span class="c"># bump + CHANGELOG + tag</span>
-<span class="p">/wellforge:upgrade</span>  <span class="c"># re-template (copier update)</span>
-<span class="p">/wellforge:promote</span>  <span class="c"># graduate a rigor tier</span>
-<span class="c"># add --dry-run: plan only, changes nothing</span></pre>
-        </div>
-
-      </div>
-      <div class="play-tip">
-        <p><b>Iterating? Re-run the command. Agent commands are one-shot, not a mode.</b>
-        <span class="mono">/wellforge:orchestrate</span> and <span class="mono">:implement</span> drive
-        the agent loop (QE → dev → QE) for that single invocation; plain follow-up messages only steer
-        the main loop. To keep the team working after a partial fix, re-invoke with what's still broken:</p>
-<pre><span class="p">/wellforge:orchestrate</span> "the reset fix is incomplete: it works
-for email users but SSO users still get no token"</pre>
-      </div>
+                                              </div>
       <p class="play-note">Not sure which fits? <b>/wellforge:orchestrate</b> classifies any goal
       (feature, bugfix, refactor or infra) and runs the matching pipeline.</p>
+      <p class="play-more">Spikes, idea grilling, evals, retros, releases and upgrades have their own commands:
+      <a href="https://github.com/matteocodogno/wellforge#the-commands">see every command →</a></p>
+    </div>
+  </section>
+
+  <!-- STATUS -->
+  <section id="status">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">Status · pre-1.0</span>
+        <h2>Where it stands</h2>
+        <p>Pre-1.0 means the version number, not the confidence. Here's what's already proven.</p>
+      </div>
+      <div class="status">
+        <div class="status-col proven">
+          <h3>In real projects</h3>
+          <ul>
+            <li><b>Several projects scaffolded with WellForge</b>, pushed to GitHub, CI green end to end.</li>
+            <li><b>Brownfield repos adopted</b> with <span class="mono">/wellforge:adopt</span>, running the same workflow and gates.</li>
+            <li><b>Scaffolding a new project takes minutes</b>, from interview to a verified build.</li>
+            <li><b>Gate thresholds verified</b> against real projects, not just the presets.</li>
+          </ul>
+        </div>
+        <div class="status-col proven">
+          <h3>In the repo</h3>
+          <ul>
+            <li><b>All six pillars are built</b>, plus rigor tiers and release management.</li>
+            <li><b>The upgrade path works end to end:</b> scaffold at one version, change the template, <span class="mono">copier update</span>, zero conflicts.</li>
+            <li><b>WellForge's own CI</b> runs every self-test and smoke-tests all three presets on each commit.</li>
+            <li><b>Real use feeds back:</b> the first real install on a generated project turned up five defects, all fixed in the templates.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="status-foot"><b style="color:var(--heat)">Still open:</b> cutting <span class="mono">v1.0.0</span>.
+      Starting now is safe: every project records the template version it came from, and
+      <span class="mono">/wellforge:upgrade</span> brings it forward.</p>
     </div>
   </section>
 
@@ -738,14 +774,9 @@ wellforge setup</pre>
   <div class="wrap">
     <div class="foot">
       <div class="foot-brand">
-        <a class="brand" href="#top"><span class="spark" aria-hidden="true">⚒</span> WellForge</a>
+        <a class="brand" href="#top"><img class="spark" src="brand/icon-192.png" alt="" width="30" height="30"> WellForge</a>
         <div class="forgey">
-          <pre aria-hidden="true"> ___________
-|  ◕  ◡  ◕  |
-|___________|
-   |     |
- __|     |__
-|___________|</pre>
+          <img src="brand/forgey-440.webp" alt="Forgey, a friendly robot-octopus holding a hammer and a green check mark" width="132" height="115">
           <p>Hi, I'm <b>Forgey</b>, your AI blacksmith. I forge the boring part (scaffold, gates, CI, the spec workflow, releases) so you get straight to building what matters.</p>
         </div>
       </div>
@@ -780,7 +811,7 @@ wellforge setup</pre>
     if (!('IntersectionObserver' in window)) return;
     if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var targets = document.querySelectorAll(
-      'main section:not(.hero) .sec-head, .vs-col, pre.tree, .tree-points > div, .card, .layer, .tier-scroll, .play, .play-tip, .play-note, .step, .codebox, .pipe, .pipe-note, .floor, .adopt-note');
+      'main section:not(.hero) .sec-head, .vs-col, pre.tree, .tree-points > div, .card, .layer, .tier-scroll, .play, .play-note, .play-more, .whynot .card, .scope-note, .status-col, .status-foot, .step, .codebox, .pipe, .pipe-note, .floor, .adopt-note');
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (!e.isIntersecting) return;
