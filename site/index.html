@@ -233,6 +233,33 @@
   .pipe.in .node { animation: node-lit 7s ease-in-out infinite; animation-delay: calc(var(--i) * .5s); }
   .pipe.in .node::after { animation: link-lit 7s ease-in-out infinite; animation-delay: calc(var(--i) * .5s + .25s); }
 
+  /* Walkthrough terminal. The full transcript is real markup, so it reads fine with no JS or
+     under reduced motion. The script adds .anim to hide the lines and replay them in order. */
+  .term { max-width: 760px; margin: 0 auto 2.4rem; background: #0a0d12; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .term-bar { display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .term-bar .dots { display: flex; gap: 6px; }
+  .term-bar .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+  .term-title { flex: 1; font-size: 0.8rem; color: var(--muted); font-family: ui-monospace, monospace; }
+  .replay { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 0.2rem 0.6rem; font-size: 0.78rem; cursor: pointer; }
+  .replay:hover { color: var(--text); border-color: var(--purple); }
+  .term-steps { list-style: none; display: flex; gap: 0.5rem; padding: 0.7rem 0.9rem 0; flex-wrap: wrap; }
+  .term-steps li { font-size: 0.78rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.7rem;
+    transition: color .25s, border-color .25s, background .25s; }
+  .term-steps li b { color: var(--purple); margin-right: 0.3rem; }
+  .term-steps li.on { color: var(--text); border-color: var(--purple); background: rgba(163,113,247,0.14); }
+  .term-steps li.done { color: var(--text); border-color: var(--green); }
+  .term-body { padding: 1rem 1.2rem; font-size: 0.86rem; line-height: 1.8; color: #d7dee8; white-space: normal; word-break: break-word; min-height: 15.5em; }
+  .term-body .line { display: block; white-space: pre-wrap; }
+  .term-body .ps { color: var(--purple); }
+  .term-body .cmt { color: #6e7781; }
+  .term-body .out { color: var(--green); }
+  .term-body .out[data-step="3"]:not(:last-child) { color: var(--muted); }
+  .term-note { padding: 0 1.2rem 0.9rem; font-size: 0.78rem; color: var(--muted); }
+  .term.anim .line { visibility: hidden; }
+  .term.anim .line.show { visibility: visible; animation: rise .35s ease both; }
+  .term.anim .line.typing .t::after { content: "▍"; color: var(--purple); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before, *::after { animation: none !important; }
@@ -568,13 +595,42 @@ for email users but SSO users still get no token"</pre>
         <h2>From nothing to building</h2>
         <p>Works with Claude Code, OpenCode, and GitHub Copilot (VS Code, via adapter).</p>
       </div>
+      <div class="term" id="term">
+        <div class="term-bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="term-title">from zero to a verified repo</span>
+          <button type="button" class="replay" hidden>↻ Replay</button>
+        </div>
+        <ol class="term-steps" aria-hidden="true">
+          <li data-step="1"><b>1</b> Install</li>
+          <li data-step="2"><b>2</b> Set up</li>
+          <li data-step="3"><b>3</b> Scaffold</li>
+        </ol>
+        <pre class="term-body"><span class="line cmd" data-step="1"><span class="ps">$</span> <span class="t">brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge</span></span>
+<span class="line cmd" data-step="1"><span class="ps">$</span> <span class="t">brew install matteocodogno/wellforge/wellforge</span></span>
+<span class="line out" data-step="1">✓ wellforge installed</span>
+<span class="line cmd" data-step="2"><span class="ps">$</span> <span class="t">wellforge setup</span></span>
+<span class="line out" data-step="2">✓ toolchain checked   ✓ repo cloned   ✓ plugin installed</span>
+<span class="line out" data-step="2">✓ verified</span>
+<span class="line cmt" data-step="3"># now, in Claude Code (or OpenCode)</span>
+<span class="line cmd" data-step="3"><span class="ps">&gt;</span> <span class="t">/wellforge:new a portal where contractors manage their work orders</span></span>
+<span class="line out" data-step="3">interview → stack pick → scaffold → verified build → connections</span>
+<span class="line out" data-step="3">✓ repo ready, first spec drafted</span></pre>
+        <p class="term-note">Illustrative. Run <span class="mono">wellforge doctor</span> any time to check the setup.</p>
+      </div>
+
       <div class="steps">
-        <div class="step"><div class="n">1</div><div><h3>Install the plugin</h3><p>Add the WellForge marketplace and install the plugin — the agents, commands, and skills come with it.</p></div></div>
+        <div class="step"><div class="n">1</div><div><h3>Install and set up</h3><p><span class="mono">brew install</span> the WellForge CLI, then <span class="mono">wellforge setup</span> checks the toolchain, clones the repo and installs the plugin — the agents, commands, and skills come with it.</p></div></div>
         <div class="step"><div class="n">2</div><div><h3>Run the front door</h3><p><span class="mono">/wellforge:new</span> interviews you, recommends a stack, generates the scaffold, verifies the build, and walks the connections.</p></div></div>
         <div class="step"><div class="n">3</div><div><h3>Or adopt an existing repo</h3><p><span class="mono">/wellforge:adopt</span> brings the workflow and calibrated gates to a brownfield project — one layer at a time, additive only.</p></div></div>
         <div class="step"><div class="n">4</div><div><h3>Build with the team</h3><p><span class="mono">/wellforge:orchestrate</span> drives the full agent pipeline on a goal: spec → plan → tasks → code → QE → eval.</p></div></div>
       </div>
-      <pre class="code"><span class="c"># install (local marketplace)</span>
+      <pre class="code"><span class="c"># install (fast path, as in the walkthrough above)</span>
+brew tap <span class="p">matteocodogno/wellforge</span> https://github.com/matteocodogno/wellforge
+brew install matteocodogno/wellforge/wellforge
+wellforge setup
+
+<span class="c"># …or, manually, inside Claude Code</span>
 /plugin marketplace add <span class="p">matteocodogno/wellforge</span>
 /plugin install wellforge
 
@@ -617,6 +673,70 @@ for email users but SSO users still get no token"</pre>
       el.setAttribute('data-reveal', '');
       io.observe(el);
     });
+  })();
+
+  // Walkthrough terminal: types the setup transcript when scrolled into view, with a replay
+  // button. Static (fully visible) if motion is reduced or IntersectionObserver is missing.
+  (function () {
+    var term = document.getElementById('term');
+    if (!term || !('IntersectionObserver' in window)) return;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var lines = Array.prototype.slice.call(term.querySelectorAll('.line'));
+    var chips = Array.prototype.slice.call(term.querySelectorAll('.term-steps li'));
+    var replay = term.querySelector('.replay');
+    var full = lines.map(function (l) { var t = l.querySelector('.t'); return t ? t.textContent : null; });
+    var run = 0;
+
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function mark(step) {
+      chips.forEach(function (c) {
+        var n = +c.getAttribute('data-step');
+        c.classList.toggle('on', n === step);
+        c.classList.toggle('done', n < step);
+      });
+    }
+    function reset() {
+      lines.forEach(function (l, i) {
+        l.classList.remove('show', 'typing');
+        var t = l.querySelector('.t'); if (t) t.textContent = full[i];
+      });
+      chips.forEach(function (c) { c.classList.remove('on', 'done'); });
+      replay.hidden = true;
+    }
+    async function play() {
+      var me = ++run;
+      reset();
+      for (var i = 0; i < lines.length; i++) {
+        if (me !== run) return;
+        var l = lines[i], t = l.querySelector('.t');
+        mark(+l.getAttribute('data-step'));
+        if (t) {
+          t.textContent = '';
+          l.classList.add('show', 'typing');
+          for (var c = 1; c <= full[i].length; c++) {
+            if (me !== run) return;
+            t.textContent = full[i].slice(0, c);
+            await sleep(22);
+          }
+          l.classList.remove('typing');
+          await sleep(350);
+        } else {
+          l.classList.add('show');
+          await sleep(l.classList.contains('cmt') ? 250 : 550);
+        }
+      }
+      if (me !== run) return;
+      chips.forEach(function (c) { c.classList.remove('on'); c.classList.add('done'); });
+      replay.hidden = false;
+    }
+
+    term.classList.add('anim');
+    replay.addEventListener('click', play);
+    var io = new IntersectionObserver(function (es) {
+      if (es[0].isIntersecting) { io.disconnect(); play(); }
+    }, { threshold: 0.5 });
+    io.observe(term);
   })();
 </script>
 </body>
