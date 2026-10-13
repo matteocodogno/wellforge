@@ -1,20 +1,13 @@
-```
-██╗    ██╗███████╗██╗     ██╗     ███████╗ ██████╗ ██████╗  ██████╗ ███████╗
-██║    ██║██╔════╝██║     ██║     ██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝
-██║ █╗ ██║█████╗  ██║     ██║     █████╗  ██║   ██║██████╔╝██║  ███╗█████╗
-██║███╗██║██╔══╝  ██║     ██║     ██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝
-╚███╔███╔╝███████╗███████╗███████╗██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗
- ╚══╝╚══╝ ╚══════╝╚══════╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+<p align="center">
+  <img src="site/brand/forgey-440.webp" width="240" alt="Forgey, the WellForge mascot: a friendly robot-octopus holding a hammer and a green check mark">
+</p>
 
-          idea  →  a building, CI-gated, AI-ready repo  →  in minutes, not hours
+<h1 align="center">WellForge</h1>
 
-       ___________
-      |  ◕  ◡  ◕  |    Hi, I'm Forgey — your AI blacksmith.
-      |___________|    I forge the boring part (scaffold, gates, CI,
-         |     |       the spec workflow, releases) so you get straight
-       __|     |__     to building what actually matters.
-      |___________|
-```
+<p align="center"><b>idea → a building, CI-gated, AI-ready repo → in minutes, not hours</b></p>
+
+<p align="center"><i>Hi, I'm Forgey, your AI blacksmith. I forge the boring part (scaffold, gates, CI,
+the spec workflow, releases) so you get straight to building what actually matters.</i></p>
 
 <!-- LIVE badges, resolved by shields.io at render time — the same sources site/index.html
      uses. The hard-coded versions that were here said template v0.9.0 and plugin v2.32.0,
@@ -190,11 +183,8 @@ point of the quality system.
 threat model for the plugin as installed on a developer's machine (what the hooks run, what
 the MCP servers are, and what the plugin does and does not do about prompt injection).
 
-```
-       ___________
-      |  ◕  ◡  ◕  |    "now go build something. I've got the setup."
-      |___________|                                          — Forgey
-         |     |
-       __|     |__
-      |___________|
-```
+<p align="center">
+  <img src="site/brand/icon-192.png" width="72" alt="Forgey"><br>
+  <i>"Now go build something. I've got the setup."</i><br>
+  <sub>Forgey</sub>
+</p>
