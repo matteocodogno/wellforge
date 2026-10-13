@@ -173,6 +173,72 @@
   footer { border-top: 1px solid var(--border); padding: 2.5rem 0; color: var(--muted); font-size: 0.9rem; text-align: center; }
   footer a { color: var(--muted); }
   .disclaimer { max-width: 640px; margin: 1rem auto 0; font-size: 0.82rem; opacity: 0.75; }
+
+  /* ===== Motion =====
+     Progressive enhancement: nothing is hidden until the script at the end of <body> tags an
+     element with data-reveal, so without JS (or IntersectionObserver) the page is fully
+     visible. Reveals use the individual `translate` property so they compose with the
+     hover `transform` on cards instead of fighting it, and the stagger delay is per-property
+     so hover stays instant. Everything is switched off under prefers-reduced-motion. */
+  @keyframes rise { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
+  @keyframes sheen { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
+  @keyframes ember-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(163,113,247,0); } 50% { box-shadow: 0 0 0 6px rgba(163,113,247,0.18); } }
+
+  .hero .eyebrow, .hero h1, .hero .flow, .hero .cta-row, .hero .badges, .hero .forgey { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+  .hero h1 { animation-delay: .08s; }
+  .hero .flow { animation-delay: .18s; }
+  .hero .cta-row { animation-delay: .28s; }
+  .hero .badges { animation-delay: .38s; }
+  .hero .forgey { animation-delay: .5s; }
+  .hero h1 .grad { background-size: 200% 100%; animation: sheen 9s linear infinite; }
+  .brand .spark { animation: ember-pulse 3.2s ease-in-out infinite; }
+
+  .btn { transition: transform .15s, filter .15s, border-color .15s; }
+  .btn:hover { transform: translateY(-2px); }
+  .layer, .tier { transition: border-color .15s, transform .15s; }
+  .layer:hover, .tier:hover { border-color: var(--purple); transform: translateY(-3px); }
+  .step .n { transition: transform .2s; }
+  .step:hover .n { transform: scale(1.1); }
+
+  [data-reveal] {
+    opacity: 0; translate: 0 22px;
+    transition: opacity .6s ease var(--d, 0s), translate .6s cubic-bezier(.2,.7,.2,1) var(--d, 0s),
+                border-color .15s, transform .15s;
+  }
+  [data-reveal].in { opacity: 1; translate: 0 0; }
+
+  /* Pipeline diagram. Static and fully readable by default; the wave only runs once the
+     observer adds .in (so it plays when scrolled into view, and never under reduced motion). */
+  .pipe { list-style: none; display: flex; gap: 1.6rem; counter-reset: n; }
+  .node { position: relative; flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.1rem 1rem; text-align: center; display: flex; flex-direction: column; gap: 0.35rem; }
+  .node .role { font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
+  .node .art { font-size: 0.76rem; color: var(--muted); }
+  .node.opt { border-style: dashed; }
+  .node:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -1.6rem; width: 1.6rem; height: 2px;
+    background: var(--border); }
+  .pipe-note { max-width: 720px; margin: 1.6rem auto 0; text-align: center; color: var(--muted); font-size: 0.93rem; }
+  @media (max-width: 800px) {
+    .pipe { flex-direction: column; gap: 1.4rem; }
+    .node:not(:last-child)::after { top: auto; bottom: -1.4rem; right: auto; left: 50%; width: 2px; height: 1.4rem; }
+  }
+  @keyframes node-lit {
+    0%, 100% { border-color: var(--border); background: var(--surface); }
+    6%, 16% { border-color: var(--purple); background: rgba(163,113,247,0.14); }
+  }
+  @keyframes link-lit {
+    0%, 100% { background: var(--border); }
+    6%, 16% { background: var(--purple); }
+  }
+  .pipe.in .node { animation: node-lit 7s ease-in-out infinite; animation-delay: calc(var(--i) * .5s); }
+  .pipe.in .node::after { animation: link-lit 7s ease-in-out infinite; animation-delay: calc(var(--i) * .5s + .25s); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; }
+    [data-reveal] { opacity: 1; translate: none; transition: none; }
+    .card:hover, .play:hover, .layer:hover, .tier:hover, .btn:hover, .step:hover .n { transform: none; }
+  }
 </style>
 </head>
 <body>
@@ -263,6 +329,27 @@
         <div class="card"><div class="num">Pillar 6</div><h3>Upgradeable lifecycle</h3>
           <p>Every project records the template + version that made it, and can be re-templated when presets evolve. A scaffold that doesn't rot.</p></div>
       </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section id="flow">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">How a goal flows</span>
+        <h2>One goal, a team of agents</h2>
+        <p><span class="mono">/wellforge:orchestrate</span> hands the work down the line — each agent
+        produces one artifact, and you approve at the gates that matter.</p>
+      </div>
+      <ol class="pipe" aria-label="Agent pipeline: Product Owner, Architect, Designer, Developers, Quality Engineer, Evaluator">
+        <li class="node" style="--i:0"><span class="role">Product Owner</span><span class="art mono">spec.md</span></li>
+        <li class="node" style="--i:1"><span class="role">Architect</span><span class="art mono">plan.md</span></li>
+        <li class="node opt" style="--i:2"><span class="role">Designer</span><span class="art mono">design.md · UI only</span></li>
+        <li class="node" style="--i:3"><span class="role">Frontend / Backend Dev</span><span class="art mono">code, test-first</span></li>
+        <li class="node" style="--i:4"><span class="role">Quality Engineer</span><span class="art mono">gates + verdict</span></li>
+        <li class="node" style="--i:5"><span class="role">Evaluator</span><span class="art mono">eval-report.md</span></li>
+      </ol>
+      <p class="pipe-note">A red QE verdict loops back to the devs — capped per feature, so a run always ends.</p>
     </div>
   </section>
 
@@ -509,5 +596,28 @@ for email users but SSO users still get no token"</pre>
   </div>
 </footer>
 
+<script>
+  // Scroll-reveal. Staggers siblings (capped) so a grid of cards cascades instead of landing
+  // as one block. Hero is animated by CSS on load and is not tagged here.
+  (function () {
+    if (!('IntersectionObserver' in window)) return;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var targets = document.querySelectorAll(
+      'main section:not(.hero) .sec-head, .card, .layer, .tier, .play, .play-tip, .play-note, .step, pre.code, .pipe, .pipe-note');
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    targets.forEach(function (el) {
+      var i = Array.prototype.indexOf.call(el.parentNode.children, el);
+      el.style.setProperty('--d', Math.min(i, 5) * 0.07 + 's');
+      el.setAttribute('data-reveal', '');
+      io.observe(el);
+    });
+  })();
+</script>
 </body>
 </html>
