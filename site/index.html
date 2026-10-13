@@ -5,107 +5,144 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WellForge — idea → a building, CI-gated, AI-ready repo, in minutes</title>
 <meta name="description" content="WellForge turns a week of AI-infrastructure setup into one command. An open platform for reproducible, standard, fast AI-assisted project setup — for any team.">
-<meta property="og:title" content="WellForge — AI-assisted project setup, in minutes not hours">
+<link rel="canonical" href="https://matteocodogno.github.io/wellforge/">
+<meta name="theme-color" content="#0d1117">
+<meta property="og:title" content="WellForge — a week of AI-infra setup, turned into one command">
 <meta property="og:description" content="Reproducible, standard, fast AI-assisted project setup: a spec-driven agent team, quality gates as law, versioned scaffolds, and an upgradeable lifecycle.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://matteocodogno.github.io/wellforge/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff7b39'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='%230d1117'%3E%E2%9A%92%3C/text%3E%3C/svg%3E">
 <style>
+  /* ===== Tokens =====
+     Neutrals and type are inherited from the previous site; the one axis that changed is
+     the accent. The purple→blue gradient was the default look of every AI landing page;
+     ember is the forge's own colour, so it now carries every call to action. Purple stays
+     only as the prompt glyph in code. Contrast (computed, WCAG): muted on bg 7.6, muted on
+     surface 6.9, ember on bg 7.3, bg-on-ember button text 7.3, code comment on code bg 6.3. */
   :root {
     --bg: #0d1117;
     --surface: #161b22;
     --surface-2: #1c2230;
+    --code-bg: #0a0d12;
     --border: #30363d;
     --text: #e6edf3;
     --muted: #9aa5b1;
+    --comment: #8b949e;
+    --ember: #ff7b39;
+    --heat: #ffb86b;
+    --ember-soft: rgba(255,123,57,0.14);
     --purple: #a371f7;
     --blue: #4c8dff;
     --green: #3fb950;
-    --ember: #ff7b39;
     --radius: 14px;
-    --maxw: 1080px;
+    --maxw: 1120px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: radial-gradient(1200px 600px at 50% -10%, #1a2233 0%, var(--bg) 55%) no-repeat, var(--bg);
+    background: radial-gradient(1100px 560px at 70% -12%, #2a1c16 0%, var(--bg) 55%) no-repeat, var(--bg);
     color: var(--text);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
   }
-  a { color: var(--blue); text-decoration: none; }
+  a { color: var(--ember); text-decoration: none; }
   a:hover { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 4px; }
   code, pre, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
   .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 1.5rem; }
-  .accent-purple { color: var(--purple); }
-  .accent-ember { color: var(--ember); }
+  .skip { position: absolute; left: -999px; top: 0.5rem; background: var(--ember); color: var(--bg); padding: 0.5rem 0.9rem; border-radius: 8px; z-index: 100; font-weight: 600; }
+  .skip:focus { left: 0.5rem; }
 
   /* ===== Nav ===== */
   header.nav {
     position: sticky; top: 0; z-index: 50;
     backdrop-filter: blur(10px);
-    background: rgba(13,17,23,0.72);
+    background: rgba(13,17,23,0.78);
     border-bottom: 1px solid var(--border);
   }
-  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 60px; }
-  .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; letter-spacing: -0.02em; font-size: 1.1rem; }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 1rem; }
+  .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; letter-spacing: -0.02em; font-size: 1.1rem; color: var(--text); }
+  .brand:hover { text-decoration: none; }
   .brand .spark { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px;
-    background: linear-gradient(135deg, var(--purple), var(--blue)); color: #fff; font-size: 0.95rem; }
+    background: var(--ember); color: var(--bg); font-size: 0.95rem; }
   .nav-links { display: flex; align-items: center; gap: 1.4rem; font-size: 0.92rem; }
-  .nav-links a { color: var(--muted); }
+  .nav-links a { color: var(--muted); white-space: nowrap; }
   .nav-links a:hover { color: var(--text); text-decoration: none; }
   .nav-cta { padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; color: var(--text) !important; }
-  .nav-cta:hover { border-color: var(--purple); }
-  @media (max-width: 720px) { .nav-links a.hide-sm { display: none; } }
+  .nav-cta:hover { border-color: var(--ember); }
+  @media (max-width: 860px) { .nav-links a.hide-sm { display: none; } }
 
   /* ===== Hero ===== */
-  .hero { text-align: center; padding: 5rem 0 3rem; }
-  .eyebrow { display: inline-block; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--purple); border: 1px solid var(--border); border-radius: 999px; padding: 0.3rem 0.9rem; margin-bottom: 1.5rem; }
-  .hero h1 { font-size: clamp(2.2rem, 5.5vw, 4rem); line-height: 1.05; letter-spacing: -0.03em; font-weight: 800; }
-  .hero h1 .grad { background: linear-gradient(120deg, var(--purple), var(--blue) 60%, var(--ember));
+  .hero { padding: 4.5rem 0 4rem; }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 3rem; align-items: center; }
+  @media (max-width: 960px) { .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 2.4rem; } .hero { padding-top: 3rem; } }
+  .eyebrow { display: inline-block; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ember); border: 1px solid var(--border); border-radius: 999px; padding: 0.3rem 0.9rem; margin-bottom: 1.4rem; }
+  .hero h1 { font-size: clamp(2.2rem, 4.6vw, 3.5rem); line-height: 1.06; letter-spacing: -0.03em; font-weight: 800; }
+  .hero h1 .hot { background: linear-gradient(100deg, var(--ember), var(--heat));
     -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .flow { margin: 1.4rem auto 0; font-size: clamp(0.95rem, 2.4vw, 1.2rem); color: var(--muted); max-width: 720px; }
+  .flow { margin-top: 1.3rem; font-size: clamp(1rem, 2vw, 1.15rem); color: var(--muted); max-width: 34em; }
   .flow b { color: var(--text); font-weight: 600; }
-  .cta-row { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; margin-top: 2.2rem; }
-  .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.3rem; border-radius: 10px; font-weight: 600; font-size: 0.98rem; border: 1px solid transparent; }
-  .btn-primary { background: linear-gradient(135deg, var(--purple), var(--blue)); color: #fff; }
-  .btn-primary:hover { text-decoration: none; filter: brightness(1.08); }
+  .cta-row { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 2rem; }
+  .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.3rem; border-radius: 10px; font-weight: 650; font-size: 0.98rem; border: 1px solid transparent; transition: transform .15s, filter .15s, border-color .15s; }
+  .btn-primary { background: var(--ember); color: var(--bg); }
+  .btn-primary:hover { text-decoration: none; filter: brightness(1.08); transform: translateY(-2px); }
   .btn-ghost { border-color: var(--border); color: var(--text); }
-  .btn-ghost:hover { text-decoration: none; border-color: var(--purple); }
-  .badges { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem; }
+  .btn-ghost:hover { text-decoration: none; border-color: var(--ember); transform: translateY(-2px); }
+  .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.8rem; }
   .badges img { height: 20px; }
-
-  /* ===== Forgey ===== */
-  .forgey { margin: 3rem auto 0; max-width: 640px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 1.6rem 1.8rem; display: flex; gap: 1.4rem; align-items: center; text-align: left; }
-  .forgey pre { color: var(--ember); font-size: 0.82rem; line-height: 1.15; }
-  .forgey p { color: var(--muted); font-size: 0.96rem; }
-  .forgey p b { color: var(--text); }
-  @media (max-width: 620px) { .forgey { flex-direction: column; text-align: center; } }
 
   /* ===== Sections ===== */
   section { padding: 4.5rem 0; border-top: 1px solid var(--border); }
   .sec-head { max-width: 720px; margin: 0 auto 2.6rem; text-align: center; }
-  .sec-head h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); letter-spacing: -0.02em; font-weight: 800; }
+  .sec-head h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); letter-spacing: -0.02em; font-weight: 800; line-height: 1.15; }
   .sec-head p { color: var(--muted); margin-top: 0.8rem; font-size: 1.05rem; }
-  .kicker { color: var(--purple); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .kicker { color: var(--ember); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .alt { background: var(--surface); }
+  .alt .card, .alt .layer, .alt .tier-table { background: var(--bg); }
 
-  .problem { background: var(--surface); }
-  .problem .sec-head p { font-size: 1.15rem; color: var(--text); }
-  .problem em { color: var(--ember); font-style: normal; }
+  /* Problem: before / after */
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; max-width: 920px; margin: 0 auto; }
+  @media (max-width: 760px) { .vs { grid-template-columns: minmax(0, 1fr); } }
+  .vs-col { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem 1.6rem; background: var(--bg); }
+  .vs-col.with { border-color: rgba(255,123,57,0.55); background: linear-gradient(180deg, var(--ember-soft), transparent 70%), var(--bg); }
+  .vs-col h3 { font-size: 1rem; margin-bottom: 0.9rem; }
+  .vs-col.without h3 { color: var(--muted); }
+  .vs-col.with h3 { color: var(--ember); }
+  .vs-col ul { list-style: none; display: grid; gap: 0.65rem; }
+  .vs-col li { position: relative; padding-left: 1.6rem; font-size: 0.95rem; color: var(--muted); }
+  .vs-col.with li { color: var(--text); }
+  .vs-col li::before { position: absolute; left: 0; top: 0; font-family: ui-monospace, monospace; }
+  .vs-col.without li::before { content: "✕"; color: #8b949e; }
+  .vs-col.with li::before { content: "✓"; color: var(--green); }
 
-  /* Pillars grid */
+  /* What you get: repo tree */
+  .tree-wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2.2rem; align-items: center; }
+  @media (max-width: 900px) { .tree-wrap { grid-template-columns: minmax(0, 1fr); } }
+  pre.tree { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem 1.3rem;
+    font-size: 0.84rem; line-height: 1.75; color: #d7dee8; overflow-x: auto; }
+  pre.tree .d { color: var(--text); font-weight: 600; }
+  pre.tree .c { color: var(--comment); }
+  pre.tree .k { color: var(--ember); }
+  .tree-points { display: grid; gap: 1.2rem; }
+  .tree-points h3 { font-size: 1.02rem; margin-bottom: 0.2rem; }
+  .tree-points p { color: var(--muted); font-size: 0.93rem; }
+
+  /* Pillars / presets grid */
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.1rem; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; transition: border-color .15s, transform .15s; }
-  .card:hover { border-color: var(--purple); transform: translateY(-3px); }
-  .card .num { font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--purple); }
+  .card:hover { border-color: var(--ember); transform: translateY(-3px); }
+  .card .num { font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--ember); }
   .card h3 { font-size: 1.15rem; margin: 0.5rem 0 0.5rem; letter-spacing: -0.01em; }
   .card p { color: var(--muted); font-size: 0.95rem; }
 
-  /* Layers table */
+  /* Layers */
   .layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
   @media (max-width: 800px) { .layers { grid-template-columns: 1fr; } }
-  .layer { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+  .layer { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; transition: border-color .15s, transform .15s; }
+  .layer:hover { border-color: var(--ember); transform: translateY(-3px); }
   .layer .tag { display: inline-block; font-family: ui-monospace, monospace; font-size: 0.78rem; padding: 0.25rem 0.6rem; border-radius: 6px; margin-bottom: 0.9rem; }
   .layer:nth-child(1) .tag { background: rgba(163,113,247,0.16); color: var(--purple); }
   .layer:nth-child(2) .tag { background: rgba(76,141,255,0.16); color: var(--blue); }
@@ -115,49 +152,63 @@
   .layer .covers { margin-top: 0.9rem; font-size: 0.82rem; color: var(--muted); }
   .layer .covers b { color: var(--text); }
 
-  /* Tiers */
-  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
-  @media (max-width: 800px) { .tiers { grid-template-columns: 1fr; } }
-  .tier { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; background: var(--surface); }
-  .tier h3 { font-family: ui-monospace, monospace; font-size: 1.1rem; margin-bottom: 0.5rem; }
-  .tier.s h3 { color: var(--green); }
-  .tier.m h3 { color: var(--blue); }
-  .tier.p h3 { color: var(--purple); }
-  .tier p { color: var(--muted); font-size: 0.93rem; }
+  /* Tiers: comparison table */
+  .tier-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; font-size: 0.93rem; }
+  .tier-scroll { overflow-x: auto; }
+  .tier-table th, .tier-table td { padding: 0.85rem 1.1rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .tier-table tr:last-child td, .tier-table tr:last-child th { border-bottom: none; }
+  .tier-table thead th { font-family: ui-monospace, monospace; font-size: 1rem; }
+  .tier-table thead th.s { color: var(--green); }
+  .tier-table thead th.m { color: var(--blue); }
+  .tier-table thead th.p { color: var(--purple); }
+  .tier-table tbody th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .tier-table td { color: var(--text); }
+  .tier-table td .dim { color: var(--muted); }
+  .tier-table thead td { color: var(--muted); font-size: 0.86rem; font-weight: 400; }
+  .floor { max-width: 760px; margin: 1.4rem auto 0; text-align: center; color: var(--muted); font-size: 0.94rem; }
+  .floor b { color: var(--text); }
 
   /* Steps / getting started */
-  .steps { max-width: 760px; margin: 0 auto; }
+  .start-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2.4rem; align-items: start; }
+  @media (max-width: 900px) { .start-grid { grid-template-columns: minmax(0, 1fr); } }
   .step { display: flex; gap: 1.1rem; padding: 1.1rem 0; border-bottom: 1px dashed var(--border); }
+  .step:first-child { padding-top: 0; }
   .step:last-child { border-bottom: none; }
-  .step .n { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
-    background: linear-gradient(135deg, var(--purple), var(--blue)); color: #fff; font-weight: 700; font-size: 0.9rem; }
+  .step .n { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--ember); color: var(--bg); font-weight: 700; font-size: 0.88rem; transition: transform .2s; }
+  .step:hover .n { transform: scale(1.1); }
   .step h3 { font-size: 1.05rem; margin-bottom: 0.2rem; }
   .step p { color: var(--muted); font-size: 0.93rem; }
-  pre.code { background: #0a0d12; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.2rem;
-    overflow-x: auto; margin: 1.5rem auto 0; max-width: 760px; font-size: 0.9rem; color: #d7dee8; }
-  pre.code .c { color: #6e7781; }
+  .codebox { position: relative; }
+  pre.code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem;
+    overflow-x: auto; font-size: 0.86rem; color: #d7dee8; line-height: 1.7; }
+  pre.code .c { color: var(--comment); }
   pre.code .p { color: var(--purple); }
+  .copy { position: absolute; top: 0.6rem; right: 0.6rem; background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; padding: 0.2rem 0.6rem; font-size: 0.76rem; cursor: pointer; font-family: inherit; }
+  .copy:hover { color: var(--text); border-color: var(--ember); }
 
   /* Presets */
   .preset-tag { display: inline-block; font-family: ui-monospace, monospace; font-size: 0.72rem;
     padding: 0.22rem 0.6rem; border-radius: 6px; margin-bottom: 0.7rem; letter-spacing: 0.03em; }
   .preset-tag.full { background: rgba(76,141,255,0.16); color: var(--blue); }
-  .preset-tag.infra { background: rgba(255,123,57,0.16); color: var(--ember); }
+  .preset-tag.infra { background: var(--ember-soft); color: var(--ember); }
   .card h3 .mono-slug { font-family: ui-monospace, monospace; font-size: 0.98rem; }
   .card .stack { margin-top: 0.9rem; font-size: 0.82rem; color: var(--muted); }
   .card .stack b { color: var(--text); font-weight: 600; }
+  .adopt-note { text-align: center; margin-top: 1.6rem; color: var(--muted); font-size: 0.95rem; }
 
   /* Playbooks */
   .plays { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.1rem; }
   .play { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; display: flex; flex-direction: column; transition: border-color .15s, transform .15s; }
-  .play:hover { border-color: var(--purple); transform: translateY(-3px); }
-  .play .when { color: var(--purple); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .play:hover { border-color: var(--ember); transform: translateY(-3px); }
+  .play .when { color: var(--ember); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
   .play h3 { font-size: 1.12rem; margin: 0.35rem 0 0.5rem; letter-spacing: -0.01em; }
   .play > p { color: var(--muted); font-size: 0.92rem; margin-bottom: 1.1rem; }
-  .play pre { background: #0a0d12; border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem;
+  .play pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem;
     overflow-x: auto; font-size: 0.82rem; color: #d7dee8; margin-top: auto; line-height: 1.75; white-space: pre-wrap; }
   .play pre .p { color: var(--purple); }
-  .play pre .c { color: #6e7781; }
+  .play pre .c { color: var(--comment); }
   .play pre .arrow { color: var(--muted); }
   .play-note { max-width: 720px; margin: 2rem auto 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
   .play-note b { color: var(--text); }
@@ -165,40 +216,37 @@
     border-left: 3px solid var(--ember); border-radius: 10px; padding: 1.1rem 1.3rem; }
   .play-tip p { color: var(--muted); font-size: 0.92rem; }
   .play-tip b { color: var(--text); }
-  .play-tip pre { background: #0a0d12; border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 0.9rem;
+  .play-tip pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 0.9rem;
     margin-top: 0.75rem; overflow-x: auto; font-size: 0.8rem; color: #d7dee8; white-space: pre-wrap; line-height: 1.6; }
   .play-tip pre .p { color: var(--purple); }
 
   /* Footer */
-  footer { border-top: 1px solid var(--border); padding: 2.5rem 0; color: var(--muted); font-size: 0.9rem; text-align: center; }
-  footer a { color: var(--muted); }
-  .disclaimer { max-width: 640px; margin: 1rem auto 0; font-size: 0.82rem; opacity: 0.75; }
+  footer { border-top: 1px solid var(--border); padding: 3rem 0 2.5rem; color: var(--muted); font-size: 0.9rem; }
+  .foot { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 2rem; }
+  @media (max-width: 760px) { .foot { grid-template-columns: 1fr 1fr; } .foot-brand { grid-column: 1 / -1; } }
+  .foot h4 { color: var(--text); font-size: 0.85rem; margin-bottom: 0.7rem; letter-spacing: 0.02em; }
+  .foot ul { list-style: none; display: grid; gap: 0.4rem; }
+  .foot a { color: var(--muted); }
+  .foot a:hover { color: var(--text); }
+  .forgey { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; }
+  .forgey pre { color: var(--ember); font-size: 0.62rem; line-height: 1.15; flex-shrink: 0; }
+  .forgey p { font-size: 0.86rem; }
+  .forgey b { color: var(--text); }
+  .foot-base { margin-top: 2.2rem; padding-top: 1.4rem; border-top: 1px solid var(--border); font-size: 0.82rem; }
 
   /* ===== Motion =====
-     Progressive enhancement: nothing is hidden until the script at the end of <body> tags an
-     element with data-reveal, so without JS (or IntersectionObserver) the page is fully
-     visible. Reveals use the individual `translate` property so they compose with the
-     hover `transform` on cards instead of fighting it, and the stagger delay is per-property
-     so hover stays instant. Everything is switched off under prefers-reduced-motion. */
+     One orchestrated moment: the hero terminal forging a repo. Everything else is a quiet
+     scroll-reveal plus the pipeline wave. Progressive enhancement: nothing is hidden until
+     the script tags it, so without JS the page is fully visible. Reveals use the individual
+     `translate` property so they compose with the hover `transform`. All of it is switched
+     off under prefers-reduced-motion. */
   @keyframes rise { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
-  @keyframes sheen { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
-  @keyframes ember-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(163,113,247,0); } 50% { box-shadow: 0 0 0 6px rgba(163,113,247,0.18); } }
-
-  .hero .eyebrow, .hero h1, .hero .flow, .hero .cta-row, .hero .badges, .hero .forgey { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
-  .hero h1 { animation-delay: .08s; }
-  .hero .flow { animation-delay: .18s; }
-  .hero .cta-row { animation-delay: .28s; }
-  .hero .badges { animation-delay: .38s; }
-  .hero .forgey { animation-delay: .5s; }
-  .hero h1 .grad { background-size: 200% 100%; animation: sheen 9s linear infinite; }
-  .brand .spark { animation: ember-pulse 3.2s ease-in-out infinite; }
-
-  .btn { transition: transform .15s, filter .15s, border-color .15s; }
-  .btn:hover { transform: translateY(-2px); }
-  .layer, .tier { transition: border-color .15s, transform .15s; }
-  .layer:hover, .tier:hover { border-color: var(--purple); transform: translateY(-3px); }
-  .step .n { transition: transform .2s; }
-  .step:hover .n { transform: scale(1.1); }
+  .hero-copy > *, .hero .term { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+  .hero-copy h1 { animation-delay: .06s; }
+  .hero-copy .flow { animation-delay: .14s; }
+  .hero-copy .cta-row { animation-delay: .22s; }
+  .hero-copy .badges { animation-delay: .3s; }
+  .hero .term { animation-delay: .3s; }
 
   [data-reveal] {
     opacity: 0; translate: 0 22px;
@@ -207,153 +255,210 @@
   }
   [data-reveal].in { opacity: 1; translate: 0 0; }
 
-  /* Pipeline diagram. Static and fully readable by default; the wave only runs once the
-     observer adds .in (so it plays when scrolled into view, and never under reduced motion). */
-  .pipe { list-style: none; display: flex; gap: 1.6rem; counter-reset: n; }
+  /* Pipeline diagram */
+  .pipe { list-style: none; display: flex; gap: 1.6rem; }
   .node { position: relative; flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 1.1rem 1rem; text-align: center; display: flex; flex-direction: column; gap: 0.35rem; }
   .node .role { font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
   .node .art { font-size: 0.76rem; color: var(--muted); }
   .node.opt { border-style: dashed; }
-  .node:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -1.6rem; width: 1.6rem; height: 2px;
-    background: var(--border); }
+  .node:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -1.6rem; width: 1.6rem; height: 2px; background: var(--border); }
   .pipe-note { max-width: 720px; margin: 1.6rem auto 0; text-align: center; color: var(--muted); font-size: 0.93rem; }
   @media (max-width: 800px) {
     .pipe { flex-direction: column; gap: 1.4rem; }
     .node:not(:last-child)::after { top: auto; bottom: -1.4rem; right: auto; left: 50%; width: 2px; height: 1.4rem; }
   }
-  @keyframes node-lit {
-    0%, 100% { border-color: var(--border); background: var(--surface); }
-    6%, 16% { border-color: var(--purple); background: rgba(163,113,247,0.14); }
-  }
-  @keyframes link-lit {
-    0%, 100% { background: var(--border); }
-    6%, 16% { background: var(--purple); }
-  }
+  @keyframes node-lit { 0%, 100% { border-color: var(--border); background: var(--surface); } 6%, 16% { border-color: var(--ember); background: var(--ember-soft); } }
+  @keyframes link-lit { 0%, 100% { background: var(--border); } 6%, 16% { background: var(--ember); } }
   .pipe.in .node { animation: node-lit 7s ease-in-out infinite; animation-delay: calc(var(--i) * .5s); }
   .pipe.in .node::after { animation: link-lit 7s ease-in-out infinite; animation-delay: calc(var(--i) * .5s + .25s); }
 
-  /* Walkthrough terminal. The full transcript is real markup, so it reads fine with no JS or
-     under reduced motion. The script adds .anim to hide the lines and replay them in order. */
-  .term { max-width: 760px; margin: 0 auto 2.4rem; background: #0a0d12; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  /* Hero terminal (the signature). The transcript is real markup, readable with no JS. */
+  .term { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    box-shadow: 0 30px 80px -30px rgba(255,123,57,0.25); }
   .term-bar { display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); background: var(--surface); }
   .term-bar .dots { display: flex; gap: 6px; }
   .term-bar .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
   .term-title { flex: 1; font-size: 0.8rem; color: var(--muted); font-family: ui-monospace, monospace; }
-  .replay { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 0.2rem 0.6rem; font-size: 0.78rem; cursor: pointer; }
-  .replay:hover { color: var(--text); border-color: var(--purple); }
+  .replay { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 0.2rem 0.6rem; font-size: 0.78rem; cursor: pointer; font-family: inherit; }
+  .replay:hover { color: var(--text); border-color: var(--ember); }
   .term-steps { list-style: none; display: flex; gap: 0.5rem; padding: 0.7rem 0.9rem 0; flex-wrap: wrap; }
   .term-steps li { font-size: 0.78rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.7rem;
     transition: color .25s, border-color .25s, background .25s; }
-  .term-steps li b { color: var(--purple); margin-right: 0.3rem; }
-  .term-steps li.on { color: var(--text); border-color: var(--purple); background: rgba(163,113,247,0.14); }
+  .term-steps li b { color: var(--ember); margin-right: 0.3rem; }
+  .term-steps li.on { color: var(--text); border-color: var(--ember); background: var(--ember-soft); }
   .term-steps li.done { color: var(--text); border-color: var(--green); }
-  .term-body { padding: 1rem 1.2rem; font-size: 0.86rem; line-height: 1.8; color: #d7dee8; white-space: normal; word-break: break-word; min-height: 15.5em; }
+  .term-body { padding: 1rem 1.2rem; font-size: 0.82rem; line-height: 1.8; color: #d7dee8; white-space: normal; word-break: break-word; min-height: 17em; }
   .term-body .line { display: block; white-space: pre-wrap; }
   .term-body .ps { color: var(--purple); }
-  .term-body .cmt { color: #6e7781; }
+  .term-body .cmt { color: var(--comment); }
   .term-body .out { color: var(--green); }
-  .term-body .out[data-step="3"]:not(:last-child) { color: var(--muted); }
-  .term-note { padding: 0 1.2rem 0.9rem; font-size: 0.78rem; color: var(--muted); }
+  .term-body .out.dim { color: var(--muted); }
+  .term-note { padding: 0 1.2rem 0.9rem; font-size: 0.76rem; color: var(--muted); }
   .term.anim .line { visibility: hidden; }
   .term.anim .line.show { visibility: visible; animation: rise .35s ease both; }
-  .term.anim .line.typing .t::after { content: "▍"; color: var(--purple); animation: blink 1s steps(1) infinite; }
+  .term.anim .line.typing .t::after { content: "▍"; color: var(--ember); animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    *, *::before, *::after { animation: none !important; }
-    [data-reveal] { opacity: 1; translate: none; transition: none; }
-    .card:hover, .play:hover, .layer:hover, .tier:hover, .btn:hover, .step:hover .n { transform: none; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    [data-reveal] { opacity: 1; translate: none; }
+    .card:hover, .play:hover, .layer:hover, .btn:hover, .step:hover .n { transform: none; }
   }
 </style>
 </head>
-<body>
+<body id="top">
+<a class="skip" href="#main">Skip to content</a>
 
 <header class="nav">
   <div class="wrap nav-inner">
-    <div class="brand"><span class="spark">⚒</span> WellForge</div>
-    <nav class="nav-links">
-      <a href="#problem" class="hide-sm">Problem</a>
+    <a class="brand" href="#top"><span class="spark" aria-hidden="true">⚒</span> WellForge</a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#problem" class="hide-sm">Why</a>
+      <a href="#output" class="hide-sm">What you get</a>
       <a href="#pillars" class="hide-sm">Pillars</a>
-      <a href="#architecture" class="hide-sm">Architecture</a>
-      <a href="#presets" class="hide-sm">Presets</a>
-      <a href="#workflows" class="hide-sm">Workflows</a>
+      <a href="#tiers" class="hide-sm">Rigor tiers</a>
+      <a href="#workflows" class="hide-sm">Playbooks</a>
       <a href="#start">Get started</a>
       <a href="https://github.com/matteocodogno/wellforge" class="nav-cta">GitHub</a>
     </nav>
   </div>
 </header>
 
-<main>
+<main id="main">
   <!-- HERO -->
   <section class="hero" style="border-top:none">
-    <div class="wrap">
-      <span class="eyebrow">Reproducible · standard · fast AI-assisted setup</span>
-      <h1>A week of AI-infra setup,<br><span class="grad">turned into one command.</span></h1>
-      <p class="flow">idea &nbsp;→&nbsp; <b>a building, CI-gated, spec-driven, AI-ready repo</b> &nbsp;→&nbsp; in minutes, not hours.</p>
-      <div class="cta-row">
-        <a href="#start" class="btn btn-primary">Get started</a>
-        <a href="#pillars" class="btn btn-ghost">See the 6 pillars</a>
-      </div>
-      <div class="badges">
-        <!-- Version badges resolve live so they cannot drift (they were hardcoded and all
-             three went stale). template = latest GitHub Release (only `v*` tags publish one,
-             per release.yml); gates = latest `gates-v*` tag, which publishes no Release;
-             plugin = plugin.json on main, since the plugin version is not a tag at all.
-             See docs/VERSIONING.md for why the three series move independently. -->
-        <img alt="template" src="https://img.shields.io/github/v/release/matteocodogno/wellforge?label=template&amp;color=1f6feb">
-        <img alt="plugin" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmatteocodogno%2Fwellforge%2Fmain%2Fwellforge-plugin%2F.claude-plugin%2Fplugin.json&amp;query=%24.version&amp;prefix=v&amp;label=plugin&amp;color=8957e5">
-        <img alt="gates" src="https://img.shields.io/github/v/tag/matteocodogno/wellforge?filter=gates-v*&amp;label=gates&amp;color=2da44e">
-        <img alt="works with" src="https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode%20%2B%20Copilot-111">
-        <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow">Open source · MIT · Claude Code, OpenCode, Copilot</span>
+        <h1>A week of AI-infra setup, <span class="hot">turned into one command.</span></h1>
+        <p class="flow">Describe the idea. Get back <b>a building, CI-gated, spec-driven repo</b> with an AI agent team already wired in, and keep it upgradeable as your standards move on.</p>
+        <div class="cta-row">
+          <a href="#start" class="btn btn-primary">Get started</a>
+          <a href="https://github.com/matteocodogno/wellforge" class="btn btn-ghost">View on GitHub</a>
+        </div>
+        <div class="badges">
+          <!-- Version badges resolve live so they cannot drift (they were hardcoded and all
+               three went stale). template = latest GitHub Release (only `v*` tags publish one,
+               per release.yml); gates = latest `gates-v*` tag, which publishes no Release;
+               plugin = plugin.json on main, since the plugin version is not a tag at all.
+               See docs/VERSIONING.md for why the series move independently. -->
+          <img alt="template version" src="https://img.shields.io/github/v/release/matteocodogno/wellforge?label=template&amp;color=1f6feb">
+          <img alt="plugin version" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmatteocodogno%2Fwellforge%2Fmain%2Fwellforge-plugin%2F.claude-plugin%2Fplugin.json&amp;query=%24.version&amp;prefix=v&amp;label=plugin&amp;color=8957e5">
+          <img alt="gates version" src="https://img.shields.io/github/v/tag/matteocodogno/wellforge?filter=gates-v*&amp;label=gates&amp;color=2da44e">
+          <img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-green">
+        </div>
       </div>
 
-      <div class="forgey">
-        <pre> ___________
-|  ◕  ◡  ◕  |
-|___________|
-   |     |
- __|     |__
-|___________|</pre>
-        <p>Hi, I'm <b class="accent-ember">Forgey</b> — your AI blacksmith. I forge the boring part
-        (scaffold, gates, CI, the spec workflow, releases) so you get straight to building what actually matters.</p>
+      <div class="term" id="term">
+        <div class="term-bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="term-title">from zero to a verified repo</span>
+          <button type="button" class="replay" hidden>↻ Replay</button>
+        </div>
+        <ol class="term-steps" aria-hidden="true">
+          <li data-step="1"><b>1</b> Install</li>
+          <li data-step="2"><b>2</b> Set up</li>
+          <li data-step="3"><b>3</b> Scaffold</li>
+        </ol>
+        <pre class="term-body"><span class="line cmd" data-step="1"><span class="ps">$</span> <span class="t">brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge</span></span>
+<span class="line cmd" data-step="1"><span class="ps">$</span> <span class="t">brew install matteocodogno/wellforge/wellforge</span></span>
+<span class="line out" data-step="1">✓ wellforge installed</span>
+<span class="line cmd" data-step="2"><span class="ps">$</span> <span class="t">wellforge setup</span></span>
+<span class="line out" data-step="2">✓ toolchain checked   ✓ repo cloned   ✓ plugin installed</span>
+<span class="line cmt" data-step="3"># now, in Claude Code (or OpenCode)</span>
+<span class="line cmd" data-step="3"><span class="ps">&gt;</span> <span class="t">/wellforge:new a portal where contractors manage their work orders</span></span>
+<span class="line out dim" data-step="3">interview → stack pick → scaffold → verified build → connections</span>
+<span class="line out" data-step="3">✓ repo ready, gates green, first spec drafted</span></pre>
+        <p class="term-note">Illustrative transcript. <span class="mono">wellforge doctor</span> checks a real setup any time.</p>
       </div>
     </div>
   </section>
 
   <!-- PROBLEM -->
-  <section id="problem" class="problem">
-    <div class="wrap sec-head">
-      <span class="kicker">The problem</span>
-      <h2>Every new project pays the same tax</h2>
-      <p>Wire up the AI agents, the spec workflow, the scaffold, the quality gates, the CI, the tool
-      connections. Hours of it, every time. Everyone does it a little differently — and it quietly
-      <em>rots</em> the moment your standards move on.</p>
+  <section id="problem" class="alt">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">The problem</span>
+        <h2>Every new project pays the same tax</h2>
+        <p>Hours of AI and CI wiring, every time. Everyone does it a little differently, and it quietly rots the moment your standards move on.</p>
+      </div>
+      <div class="vs">
+        <div class="vs-col without">
+          <h3>Without WellForge</h3>
+          <ul>
+            <li>Agents, prompts and <span class="mono">CLAUDE.md</span> wired by hand, per repo</li>
+            <li>A spec workflow each team reinvents, or skips</li>
+            <li>Coverage and SAST thresholds copied in, then quietly lowered</li>
+            <li>CI pasted from the last project, bugs included</li>
+            <li>Day two: your standards move on, the scaffold doesn't</li>
+          </ul>
+        </div>
+        <div class="vs-col with">
+          <h3>With WellForge</h3>
+          <ul>
+            <li>One interview, <span class="mono">/wellforge:new</span>, and the agent team is in</li>
+            <li>The same <span class="mono">spec → plan → tasks</span> flow in every repo</li>
+            <li>Gates referenced from one place and pinned, never copied</li>
+            <li>CI wired and green before the first feature</li>
+            <li><span class="mono">/wellforge:upgrade</span> re-templates when presets evolve</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT YOU GET -->
+  <section id="output">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">What you get</span>
+        <h2>A repo that builds, gates and remembers where it came from</h2>
+        <p>Here's what <span class="mono">/wellforge:new</span> forges from the <span class="mono">hono-react</span> preset. Nothing in it is a placeholder.</p>
+      </div>
+      <div class="tree-wrap">
+<pre class="tree" aria-label="Generated repository layout"><span class="d">work-orders/</span>
+├── <span class="k">.claude/settings.json</span>  <span class="c"># plugin enabled for the team</span>
+├── <span class="k">.forge/manifest.json</span>   <span class="c"># template + version</span>
+├── .github/workflows/
+│   └── quality.yml        <span class="c"># central gates, pinned</span>
+├── AGENTS.md  CLAUDE.md   <span class="c"># agent context, ADR index</span>
+├── <span class="d">specs/</span>                 <span class="c"># spec → plan → tasks</span>
+├── <span class="d">backend/</span>               <span class="c"># Hono · Drizzle · Vitest</span>
+├── <span class="d">frontend/</span>              <span class="c"># React · TypeScript · Vite</span>
+├── docker-compose.yml     <span class="c"># Postgres, per checkout</span>
+├── .release-it.json       <span class="c"># releases from commits</span>
+└── mise.toml              <span class="c"># pinned toolchain + tasks</span></pre>
+        <div class="tree-points">
+          <div><h3>Agent-ready from the first commit</h3><p>The plugin is enabled in the repo itself, so every teammate who opens it gets the same agents, commands and hooks.</p></div>
+          <div><h3>Gates you can't quietly lower</h3><p>CI calls the central gate workflows at a pinned tag. Raising the bar is one PR for the whole fleet; lowering it locally isn't an option.</p></div>
+          <div><h3>Upgradeable, not a snapshot</h3><p>The manifest records the template and version that made the repo, so <span class="mono">copier update</span> can bring it forward when presets evolve.</p></div>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- PILLARS -->
-  <section id="pillars">
+  <section id="pillars" class="alt">
     <div class="wrap">
       <div class="sec-head">
         <span class="kicker">What WellForge is</span>
         <h2>Six pillars, one command</h2>
-        <p>One interview, and you get a building, CI-gated, spec-driven, AI-ready repository — with a
-        team of AI agents already wired in.</p>
+        <p>Each one is a thing every team ends up building for itself. WellForge builds them once.</p>
       </div>
       <div class="grid">
-        <div class="card"><div class="num">Pillar 1</div><h3>Spec-driven framework</h3>
+        <div class="card"><div class="num">01 · Spec-driven</div><h3>Spec-driven framework</h3>
           <p>A standardized <span class="mono">spec → plan → tasks</span> workflow, owned in-house so it encodes your conventions and doesn't churn under you.</p></div>
-        <div class="card"><div class="num">Pillar 2</div><h3>Multi-agent team</h3>
-          <p>Product Owner, Architect, Designer, Frontend &amp; Backend Devs, DevOps, Quality Engineer — each a Claude Code subagent with a crisp role.</p></div>
-        <div class="card"><div class="num">Pillar 3</div><h3>AI orchestrator</h3>
+        <div class="card"><div class="num">02 · Agents</div><h3>Multi-agent team</h3>
+          <p>Product Owner, Architect, Designer, Frontend &amp; Backend Devs, DevOps, Quality Engineer and Evaluator, each a subagent with a crisp role.</p></div>
+        <div class="card"><div class="num">03 · Orchestrator</div><h3>AI orchestrator</h3>
           <p>Routes work to the right agents, enforces the spec workflow, and coordinates handoffs from PO → Architect → Devs → QE.</p></div>
-        <div class="card"><div class="num">Pillar 4</div><h3>Scaffolder + connections</h3>
+        <div class="card"><div class="num">04 · Scaffold</div><h3>Scaffolder + connections</h3>
           <p>Recommends a stack, generates from a versioned template, and guides MCP/CLI connections to GitHub, CI, cloud, and observability.</p></div>
-        <div class="card"><div class="num">Pillar 5</div><h3>Quality gates as law</h3>
-          <p>Coverage, lint, types, SAST, dependency audits — defined centrally, enforced in CI and locally. Never left to individual discretion.</p></div>
-        <div class="card"><div class="num">Pillar 6</div><h3>Upgradeable lifecycle</h3>
+        <div class="card"><div class="num">05 · Gates</div><h3>Quality gates as law</h3>
+          <p>Coverage, lint, types, SAST, dependency and secret scans: defined centrally, enforced in CI and locally. Never left to individual discretion.</p></div>
+        <div class="card"><div class="num">06 · Lifecycle</div><h3>Upgradeable lifecycle</h3>
           <p>Every project records the template + version that made it, and can be re-templated when presets evolve. A scaffold that doesn't rot.</p></div>
       </div>
     </div>
@@ -365,7 +470,7 @@
       <div class="sec-head">
         <span class="kicker">How a goal flows</span>
         <h2>One goal, a team of agents</h2>
-        <p><span class="mono">/wellforge:orchestrate</span> hands the work down the line — each agent
+        <p><span class="mono">/wellforge:orchestrate</span> hands the work down the line. Each agent
         produces one artifact, and you approve at the gates that matter.</p>
       </div>
       <ol class="pipe" aria-label="Agent pipeline: Product Owner, Architect, Designer, Developers, Quality Engineer, Evaluator">
@@ -376,30 +481,30 @@
         <li class="node" style="--i:4"><span class="role">Quality Engineer</span><span class="art mono">gates + verdict</span></li>
         <li class="node" style="--i:5"><span class="role">Evaluator</span><span class="art mono">eval-report.md</span></li>
       </ol>
-      <p class="pipe-note">A red QE verdict loops back to the devs — capped per feature, so a run always ends.</p>
+      <p class="pipe-note">A red QE verdict loops back to the devs, capped per feature, so a run always ends.</p>
     </div>
   </section>
 
   <!-- ARCHITECTURE -->
-  <section id="architecture" class="problem">
+  <section id="architecture" class="alt">
     <div class="wrap">
       <div class="sec-head">
         <span class="kicker">How it fits together</span>
         <h2>Three layers, because a plugin alone can't</h2>
-        <p>Pillars 1–3 live in the AI session; pillars 4–6 need artifacts that outlive it — versioned
+        <p>Pillars 1–3 live in the AI session; pillars 4–6 need artifacts that outlive it: versioned
         templates and CI workflows. So WellForge is three cooperating layers.</p>
       </div>
       <div class="layers">
         <div class="layer">
           <span class="tag">wellforge-plugin/</span>
-          <h3>Claude Code plugin</h3>
-          <p>Skills, agents, commands, hooks, MCP — the spec workflow, the agent team, the orchestrator, and local gate enforcement.</p>
+          <h3>Agent plugin</h3>
+          <p>Skills, agents, commands, hooks, MCP: the spec workflow, the agent team, the orchestrator, and local gate enforcement.</p>
           <div class="covers"><b>Covers:</b> pillars 1, 2, 3</div>
         </div>
         <div class="layer">
           <span class="tag">copier.yml + templates/</span>
           <h3>Copier template</h3>
-          <p>A monorepo template chosen for first-class <span class="mono">copier update</span> re-templating — the scaffolder and the upgradeable lifecycle.</p>
+          <p>A monorepo template chosen for first-class <span class="mono">copier update</span> re-templating: the scaffolder and the upgradeable lifecycle.</p>
           <div class="covers"><b>Covers:</b> pillars 4, 6</div>
         </div>
         <div class="layer">
@@ -418,50 +523,61 @@
       <div class="sec-head">
         <span class="kicker">Pick your stack</span>
         <h2>Versioned presets, ready to scaffold</h2>
-        <p>Every preset generates a building, gate-wired, spec-driven monorepo — and stays
-        upgradeable as it evolves. Each is backed by a stack skill that keeps its conventions and
-        pinned versions honest.</p>
+        <p>Every preset generates a building, gate-wired, spec-driven monorepo, backed by a stack skill
+        that keeps its conventions and pinned versions honest.</p>
       </div>
       <div class="grid">
         <div class="card">
           <span class="preset-tag full">full-stack</span>
           <h3><span class="mono-slug">spring-kotlin-react</span></h3>
-          <p>A JVM backend with a React SPA — the batteries-included enterprise path.</p>
+          <p>A JVM backend with a React SPA: the batteries-included enterprise path.</p>
           <div class="stack"><b>Backend:</b> Spring Boot 4 · Kotlin · jOOQ · Liquibase<br>
           <b>Frontend:</b> React · TypeScript · Vite</div>
         </div>
         <div class="card">
           <span class="preset-tag full">full-stack</span>
           <h3><span class="mono-slug">hono-react</span></h3>
-          <p>An all-TypeScript, edge-ready full-stack — one language end to end.</p>
+          <p>An all-TypeScript, edge-ready full stack: one language end to end.</p>
           <div class="stack"><b>Backend:</b> Hono · TypeScript · Drizzle<br>
           <b>Frontend:</b> React · TypeScript · Vite</div>
         </div>
         <div class="card">
           <span class="preset-tag infra">infrastructure</span>
           <h3><span class="mono-slug">pulumi-gcp-ts</span></h3>
-          <p>Infrastructure-as-Code, not an app — provision Google Cloud with real TypeScript.</p>
+          <p>Infrastructure-as-Code, not an app: provision Google Cloud with real TypeScript.</p>
           <div class="stack"><b>IaC:</b> Pulumi · TypeScript · GCP<br>
           <b>Built in:</b> per-env stacks · ComponentResources · CrossGuard policy · mock-runtime tests</div>
         </div>
       </div>
+      <p class="adopt-note">Already have a repo? <span class="mono">/wellforge:adopt</span> brings the workflow and calibrated gates to any Node (pnpm) or JVM (Maven) project.</p>
     </div>
   </section>
 
   <!-- RIGOR TIERS -->
-  <section id="tiers">
+  <section id="tiers" class="alt">
     <div class="wrap">
       <div class="sec-head">
         <span class="kicker">Match ceremony to stakes</span>
         <h2>Rigor tiers</h2>
         <p>A throwaway prototype and a regulated production service shouldn't pay the same setup cost.
-        Pick a tier per feature — a security floor holds in every one.</p>
+        Pick a tier per feature. Lower tiers defer rigor as tracked debt; they never lower the bar.</p>
       </div>
-      <div class="tiers">
-        <div class="tier s"><h3>spike</h3><p>The main-loop fast lane: build from a one-paragraph brief, advisory gates, no agents, no approval. Feasibility work in minutes.</p></div>
-        <div class="tier m"><h3>mvp</h3><p>Coverage advisory, SAST still blocks. Enough rigor to validate, tracked as debt you can pay down later.</p></div>
-        <div class="tier p"><h3>production</h3><p>Full gates — 80% coverage, SAST, LM-judge eval. Graduate up with <span class="mono">/wellforge:promote</span>; production only on an eval pass.</p></div>
+      <div class="tier-scroll">
+        <table class="tier-table">
+          <thead>
+            <tr><td></td><th class="s" scope="col">spike</th><th class="m" scope="col">mvp</th><th class="p" scope="col">production</th></tr>
+            <tr><td></td><td>Feasibility, may be thrown away</td><td>Validate with users</td><td>Ship it and own it</td></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Who builds</th><td>Main loop, from a one-paragraph brief</td><td>PO → dev agents → light QE</td><td>The full agent team</td></tr>
+            <tr><th scope="row">Human gates</th><td>None <span class="dim">(review the result)</span></td><td>Spec approval</td><td>Spec + plan</td></tr>
+            <tr><th scope="row">Coverage</th><td class="dim">Advisory</td><td class="dim">Advisory</td><td>80%, blocking</td></tr>
+            <tr><th scope="row">SAST (high)</th><td class="dim">Not run</td><td>Blocking</td><td>Blocking</td></tr>
+            <tr><th scope="row">LM-judge eval</th><td class="dim">Off</td><td class="dim">Off</td><td>The gate into <span class="mono">done</span></td></tr>
+          </tbody>
+        </table>
       </div>
+      <p class="floor">Graduate with <b class="mono">/wellforge:promote</b>, which pays the deferred debt; production only on an eval pass. A <b>security floor</b>, a secret scan over the full git history, blocks in every tier, alongside the linear-history and Conventional Commits checks.</p>
     </div>
   </section>
 
@@ -471,15 +587,14 @@
       <div class="sec-head">
         <span class="kicker">One command per job</span>
         <h2>Playbooks for the whole lifecycle</h2>
-        <p>Every stage of the SDLC has a WellForge entry point. Here's the command flow for each —
-        from a blank folder to a shipped release.</p>
+        <p>Every stage of the SDLC has a WellForge entry point, from a blank folder to a shipped release.</p>
       </div>
       <div class="plays">
 
         <div class="play">
           <span class="when">Greenfield</span>
           <h3>Start a new project</h3>
-          <p>One interview and you get a building, CI-gated, AI-ready repo with the agent team wired in.</p>
+          <p>One interview and you get a building, CI-gated repo with the agent team wired in.</p>
 <pre><span class="p">/wellforge:new</span>
 <span class="c"># interview → stack pick → scaffold →</span>
 <span class="c"># build check → connections → first spec</span></pre>
@@ -491,7 +606,6 @@
           <p>The full spec → plan → tasks flow with a human gate at each step. A design stage kicks in for UI.</p>
 <pre><span class="p">/wellforge:spec</span> <span class="arrow">→</span> <span class="p">:plan</span> <span class="arrow">→</span> <span class="p">:tasks</span> <span class="arrow">→</span> <span class="p">:implement</span> <span class="arrow">→</span> <span class="p">:done</span>
 <span class="c"># UI feature? add /wellforge:design after :plan</span>
-<span class="c"># devs work test-first: red, green, refactor</span>
 <span class="c"># shortcut, end-to-end:</span>
 <span class="p">/wellforge:orchestrate</span> <span class="c">"add password reset"</span></pre>
         </div>
@@ -499,8 +613,7 @@
         <div class="play">
           <span class="when">Test-first</span>
           <h3>Fix a bug</h3>
-          <p>No spec ceremony. QE reproduces with the smallest failing test, a dev makes it green without weakening it, QE verifies no regressions.</p>
-          <p>Every fix states a root cause before the edit — no symptom silenced with a raised timeout, a retry, or a skipped test. After three failed attempts on the same symptom it stops and questions the design instead of trying a fourth.</p>
+          <p>QE reproduces it with the smallest failing test, a dev makes it green without weakening it, QE checks for regressions. Every fix names a root cause first; after three misses it questions the design instead of trying a fourth.</p>
 <pre><span class="p">/wellforge:orchestrate</span> <span class="c">"reset email never arrives"</span>
 <span class="c"># QE repro (failing test) → dev fix → QE verify</span></pre>
         </div>
@@ -508,19 +621,17 @@
         <div class="play">
           <span class="when">Scaffold · not a feature</span>
           <h3>Add a new service</h3>
-          <p>A new service is scaffolding from a preset — <b>not</b> a spec-driven feature. New repo → <span class="mono">:new</span>. Inside a monorepo → ask the stack skill to scaffold one.</p>
+          <p>A new service is scaffolding from a preset, <b>not</b> a spec-driven feature. New repo → <span class="mono">:new</span>. Inside a monorepo → ask the stack skill.</p>
 <pre><span class="c"># standalone repo</span>
 <span class="p">/wellforge:new</span>
 <span class="c"># inside an existing monorepo (stack skill)</span>
-<span class="c">"scaffold a new Hono service: billing"</span>
-<span class="c"># presets: spring-kotlin-react ·</span>
-<span class="c">#   hono-react · pulumi-gcp-ts</span></pre>
+<span class="c">"scaffold a new Hono service: billing"</span></pre>
         </div>
 
         <div class="play">
           <span class="when">Existing code</span>
           <h3>Adopt a brownfield repo</h3>
-          <p>Brings the workflow and calibrated gates to a project you already have — additive only, one revertable commit.</p>
+          <p>Brings the workflow and calibrated gates to a project you already have. Additive only, one revertable commit.</p>
 <pre><span class="p">/wellforge:adopt</span>
 <span class="c"># AI-readiness → gap-check vs presets →</span>
 <span class="c"># calibrated gates → release wiring</span></pre>
@@ -529,7 +640,7 @@
         <div class="play">
           <span class="when">Before you build</span>
           <h3>Decide an idea</h3>
-          <p>One question at a time, each with a recommendation, until nothing load-bearing is left to assume. Ends in a decision ledger that keeps what you decided apart from what you delegated.</p>
+          <p>One question at a time, each with a recommendation, ending in a decision ledger that keeps what you decided apart from what you delegated.</p>
 <pre><span class="p">/wellforge:grill-me</span> <span class="c">"offline mode for field techs"</span>
 <span class="p">/wellforge:grill-me</span> --docs  <span class="c"># + glossary &amp; ADRs</span>
 <span class="p">/wellforge:spec</span> --grill      <span class="c"># same interview, then the spec</span></pre>
@@ -542,13 +653,13 @@
 <pre><span class="p">/wellforge:eval</span>    <span class="c"># LM-judge a feature vs rubric</span>
 <span class="p">/wellforge:status</span>  <span class="c"># where each feature sits</span>
 <span class="p">/wellforge:triage</span>  <span class="c"># which specs are rotting</span>
-<span class="p">/wellforge:doctor</span>  <span class="c"># tools, MCP, hooks, guards — and what's wrong</span></pre>
+<span class="p">/wellforge:doctor</span>  <span class="c"># tools, MCP, hooks, guards</span></pre>
         </div>
 
         <div class="play">
           <span class="when">Feasibility</span>
           <h3>Spike a question</h3>
-          <p>The fast lane — build from a one-paragraph brief, advisory gates, no agents, no approval. May be thrown away.</p>
+          <p>The fast lane: build from a one-paragraph brief, advisory gates, no agents, no approval. May be thrown away.</p>
 <pre><span class="p">/wellforge:spike</span> <span class="c">"stream LLM tokens over SSE?"</span>
 <span class="c"># raise it later with /wellforge:promote</span></pre>
         </div>
@@ -569,97 +680,107 @@
 <pre><span class="p">/wellforge:release</span>  <span class="c"># bump + CHANGELOG + tag</span>
 <span class="p">/wellforge:upgrade</span>  <span class="c"># re-template (copier update)</span>
 <span class="p">/wellforge:promote</span>  <span class="c"># graduate a rigor tier</span>
-<span class="c"># add --dry-run to any of these: plan only, changes nothing</span></pre>
+<span class="c"># add --dry-run: plan only, changes nothing</span></pre>
         </div>
 
       </div>
       <div class="play-tip">
-        <p><b>Iterating? Re-run the command — agent commands are one-shot, not a mode.</b>
+        <p><b>Iterating? Re-run the command. Agent commands are one-shot, not a mode.</b>
         <span class="mono">/wellforge:orchestrate</span> and <span class="mono">:implement</span> drive
         the agent loop (QE → dev → QE) for that single invocation; plain follow-up messages only steer
-        the main loop. To keep the team working after a partial fix, re-invoke with the remaining
-        broken behavior:</p>
-<pre><span class="p">/wellforge:orchestrate</span> "the reset fix is incomplete — it works
+        the main loop. To keep the team working after a partial fix, re-invoke with what's still broken:</p>
+<pre><span class="p">/wellforge:orchestrate</span> "the reset fix is incomplete: it works
 for email users but SSO users still get no token"</pre>
       </div>
-      <p class="play-note">Not sure which fits? <b>/wellforge:orchestrate</b> classifies any goal —
-      feature, bugfix, refactor or infra — and runs the matching pipeline.</p>
+      <p class="play-note">Not sure which fits? <b>/wellforge:orchestrate</b> classifies any goal
+      (feature, bugfix, refactor or infra) and runs the matching pipeline.</p>
     </div>
   </section>
 
   <!-- GET STARTED -->
-  <section id="start" class="problem">
+  <section id="start" class="alt">
     <div class="wrap">
       <div class="sec-head">
         <span class="kicker">Get started</span>
         <h2>From nothing to building</h2>
-        <p>Works with Claude Code, OpenCode, and GitHub Copilot (VS Code, via adapter).</p>
+        <p>macOS or Linux, GitHub, and one of Claude Code, OpenCode, or GitHub Copilot (VS Code, via adapter).</p>
       </div>
-      <div class="term" id="term">
-        <div class="term-bar">
-          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="term-title">from zero to a verified repo</span>
-          <button type="button" class="replay" hidden>↻ Replay</button>
+      <div class="start-grid">
+        <div class="steps">
+          <div class="step"><div class="n">1</div><div><h3>Install and set up</h3><p><span class="mono">brew install</span> the WellForge CLI, then <span class="mono">wellforge setup</span> checks the toolchain, clones the repo and installs the plugin with its agents, commands and skills.</p></div></div>
+          <div class="step"><div class="n">2</div><div><h3>Run the front door</h3><p><span class="mono">/wellforge:new</span> interviews you, recommends a stack, generates the scaffold, verifies the build, and walks the connections.</p></div></div>
+          <div class="step"><div class="n">3</div><div><h3>Or adopt an existing repo</h3><p><span class="mono">/wellforge:adopt</span> brings the workflow and calibrated gates to a brownfield project, one layer at a time, additive only.</p></div></div>
+          <div class="step"><div class="n">4</div><div><h3>Build with the team</h3><p><span class="mono">/wellforge:orchestrate</span> drives the full agent pipeline on a goal: spec → plan → tasks → code → QE → eval.</p></div></div>
         </div>
-        <ol class="term-steps" aria-hidden="true">
-          <li data-step="1"><b>1</b> Install</li>
-          <li data-step="2"><b>2</b> Set up</li>
-          <li data-step="3"><b>3</b> Scaffold</li>
-        </ol>
-        <pre class="term-body"><span class="line cmd" data-step="1"><span class="ps">$</span> <span class="t">brew tap matteocodogno/wellforge https://github.com/matteocodogno/wellforge</span></span>
-<span class="line cmd" data-step="1"><span class="ps">$</span> <span class="t">brew install matteocodogno/wellforge/wellforge</span></span>
-<span class="line out" data-step="1">✓ wellforge installed</span>
-<span class="line cmd" data-step="2"><span class="ps">$</span> <span class="t">wellforge setup</span></span>
-<span class="line out" data-step="2">✓ toolchain checked   ✓ repo cloned   ✓ plugin installed</span>
-<span class="line out" data-step="2">✓ verified</span>
-<span class="line cmt" data-step="3"># now, in Claude Code (or OpenCode)</span>
-<span class="line cmd" data-step="3"><span class="ps">&gt;</span> <span class="t">/wellforge:new a portal where contractors manage their work orders</span></span>
-<span class="line out" data-step="3">interview → stack pick → scaffold → verified build → connections</span>
-<span class="line out" data-step="3">✓ repo ready, first spec drafted</span></pre>
-        <p class="term-note">Illustrative. Run <span class="mono">wellforge doctor</span> any time to check the setup.</p>
-      </div>
-
-      <div class="steps">
-        <div class="step"><div class="n">1</div><div><h3>Install and set up</h3><p><span class="mono">brew install</span> the WellForge CLI, then <span class="mono">wellforge setup</span> checks the toolchain, clones the repo and installs the plugin — the agents, commands, and skills come with it.</p></div></div>
-        <div class="step"><div class="n">2</div><div><h3>Run the front door</h3><p><span class="mono">/wellforge:new</span> interviews you, recommends a stack, generates the scaffold, verifies the build, and walks the connections.</p></div></div>
-        <div class="step"><div class="n">3</div><div><h3>Or adopt an existing repo</h3><p><span class="mono">/wellforge:adopt</span> brings the workflow and calibrated gates to a brownfield project — one layer at a time, additive only.</p></div></div>
-        <div class="step"><div class="n">4</div><div><h3>Build with the team</h3><p><span class="mono">/wellforge:orchestrate</span> drives the full agent pipeline on a goal: spec → plan → tasks → code → QE → eval.</p></div></div>
-      </div>
-      <pre class="code"><span class="c"># install (fast path, as in the walkthrough above)</span>
+        <div>
+          <div class="codebox">
+<pre class="code" data-copy><span class="c"># install</span>
 brew tap <span class="p">matteocodogno/wellforge</span> https://github.com/matteocodogno/wellforge
 brew install matteocodogno/wellforge/wellforge
-wellforge setup
-
-<span class="c"># …or, manually, inside Claude Code</span>
+wellforge setup</pre>
+          </div>
+          <div class="codebox" style="margin-top:1rem">
+<pre class="code" data-copy><span class="c"># …or manually, inside Claude Code</span>
 /plugin marketplace add <span class="p">matteocodogno/wellforge</span>
 /plugin install wellforge
 
-<span class="c"># scaffold a new project…</span>
+<span class="c"># then scaffold a new project, or adopt one</span>
 /wellforge:new
-
-<span class="c"># …or adopt an existing one</span>
 /wellforge:adopt</pre>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <p><strong>WellForge</strong> — reproducible, standard, fast AI-assisted project setup. MIT licensed.</p>
-    <p style="margin-top:.5rem"><a href="https://github.com/matteocodogno/wellforge">GitHub</a> · Built with Forgey ⚒</p>
-    <p class="disclaimer">Forgey is an ASCII mascot; WellForge is tooling for AI-assisted development teams.
-    Versions shown reflect the current plugin/template/gates release series.</p>
+    <div class="foot">
+      <div class="foot-brand">
+        <a class="brand" href="#top"><span class="spark" aria-hidden="true">⚒</span> WellForge</a>
+        <div class="forgey">
+          <pre aria-hidden="true"> ___________
+|  ◕  ◡  ◕  |
+|___________|
+   |     |
+ __|     |__
+|___________|</pre>
+          <p>Hi, I'm <b>Forgey</b>, your AI blacksmith. I forge the boring part (scaffold, gates, CI, the spec workflow, releases) so you get straight to building what matters.</p>
+        </div>
+      </div>
+      <div>
+        <h4>Docs</h4>
+        <ul>
+          <li><a href="https://github.com/matteocodogno/wellforge/blob/main/docs/QUICKSTART.md">Quickstart</a></li>
+          <li><a href="https://github.com/matteocodogno/wellforge/blob/main/docs/INSTALLATION.md">Installation</a></li>
+          <li><a href="https://github.com/matteocodogno/wellforge/blob/main/docs/FEATURES.md">Features</a></li>
+          <li><a href="https://github.com/matteocodogno/wellforge/blob/main/docs/VERSIONING.md">Versioning</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="https://github.com/matteocodogno/wellforge">GitHub</a></li>
+          <li><a href="https://github.com/matteocodogno/wellforge/releases">Releases</a></li>
+          <li><a href="https://github.com/matteocodogno/wellforge/issues">Issues</a></li>
+          <li><a href="https://github.com/matteocodogno/wellforge/blob/main/CONTRIBUTING.md">Contributing</a></li>
+          <li><a href="https://github.com/matteocodogno/wellforge/blob/main/LICENSE">MIT License</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="foot-base">WellForge: reproducible, standard, fast AI-assisted project setup. Open source under the MIT licence.</p>
   </div>
 </footer>
 
 <script>
   // Scroll-reveal. Staggers siblings (capped) so a grid of cards cascades instead of landing
-  // as one block. Hero is animated by CSS on load and is not tagged here.
+  // as one block. The hero is animated by CSS on load and is not tagged here.
   (function () {
     if (!('IntersectionObserver' in window)) return;
     if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var targets = document.querySelectorAll(
-      'main section:not(.hero) .sec-head, .card, .layer, .tier, .play, .play-tip, .play-note, .step, pre.code, .pipe, .pipe-note');
+      'main section:not(.hero) .sec-head, .vs-col, pre.tree, .tree-points > div, .card, .layer, .tier-scroll, .play, .play-tip, .play-note, .step, .codebox, .pipe, .pipe-note, .floor, .adopt-note');
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (!e.isIntersecting) return;
@@ -675,8 +796,24 @@ wellforge setup
     });
   })();
 
-  // Walkthrough terminal: types the setup transcript when scrolled into view, with a replay
-  // button. Static (fully visible) if motion is reduced or IntersectionObserver is missing.
+  // Copy buttons on install blocks. Copies only the commands (comment lines dropped).
+  (function () {
+    document.querySelectorAll('pre[data-copy]').forEach(function (pre) {
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'copy'; btn.textContent = 'Copy';
+      btn.setAttribute('aria-label', 'Copy commands');
+      btn.addEventListener('click', function () {
+        var text = pre.textContent.split('\n').filter(function (l) { return l.trim() && l.trim()[0] !== '#'; }).join('\n');
+        var done = function (ok) { btn.textContent = ok ? 'Copied' : 'Select & copy'; setTimeout(function () { btn.textContent = 'Copy'; }, 1600); };
+        try { navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); }); }
+        catch (e) { done(false); }
+      });
+      pre.parentNode.appendChild(btn);
+    });
+  })();
+
+  // Hero terminal: types the setup transcript on load, with a replay button. Static (fully
+  // visible) if motion is reduced or IntersectionObserver is missing.
   (function () {
     var term = document.getElementById('term');
     if (!term || !('IntersectionObserver' in window)) return;
@@ -734,8 +871,8 @@ wellforge setup
     term.classList.add('anim');
     replay.addEventListener('click', play);
     var io = new IntersectionObserver(function (es) {
-      if (es[0].isIntersecting) { io.disconnect(); play(); }
-    }, { threshold: 0.5 });
+      if (es[0].isIntersecting) { io.disconnect(); setTimeout(play, 600); }
+    }, { threshold: 0.4 });
     io.observe(term);
   })();
 </script>
