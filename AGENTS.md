@@ -2,3 +2,9 @@
 
 - [0001] Keep full, trigger-phrase-rich descriptions on the five stack skills — shrinking a description to a one-liner deletes exactly the text routing depends on, because the body isn't read until after selection, and this repo has no eval suite to catch the resulting mis-routing: hono-ts-backend, kotlin-springboot, react-ts-vite, pulumi-gcp-ts, mise keep their full trigger phrases + disambiguation clauses, ratcheted by `wellforge-plugin/config/budget.yml` (see docs/adr/0001-keep-full-stack-skill-descriptions.md)
 - [0002] Per-worktree database isolation, derived from checkout path — two actors deriving the same name for what each believes is a private resource (a shared convention, not a unique identity) collide silently until the resource itself disagrees with one of them: spring-kotlin-react and hono-react now derive `WF_DB_NAME`/port/compose project from `sha256(checkout path)`, never a basename or timestamp, primary tree exempted, backed by a `mise run db:guard` task (see docs/adr/0002-per-worktree-databases.md)
+
+<!-- groma:start -->
+## Groma
+
+This project uses Groma. Before you scan, inspect, or curate architecture, or change files for a Backlog task, run `groma agent-instructions` and read the guide it names for that job. When it reports a first scan, ask the user whether they want you to curate the architecture. Do not edit Groma-owned architecture files directly.
+<!-- groma:end -->

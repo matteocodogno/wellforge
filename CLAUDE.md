@@ -292,3 +292,9 @@ wellforge/
   built for — never the licence. The Formula said `license :cannot_represent # internal
   WellForge tooling`, which made an audience note into a licensing claim that
   contradicted the LICENSE file, plugin.json, the README badge and the public repo.
+
+<!-- groma:start -->
+## Groma
+
+This project uses Groma. Before you scan, inspect, or curate architecture, or change files for a Backlog task, run `groma agent-instructions` and read the guide it names for that job. When it reports a first scan, ask the user whether they want you to curate the architecture. Do not edit Groma-owned architecture files directly.
+<!-- groma:end -->

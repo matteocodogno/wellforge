@@ -1,0 +1,99 @@
+{
+  "scanners": [
+    {
+      "id": "javascript",
+      "source": "@groma/scanner-javascript@0.2.1",
+      "include": [
+        "**/*.js",
+        "**/*.mjs",
+        "**/*.cjs",
+        "**/*.jsx",
+        "**/package.json",
+        "**/*.html",
+        "**/project.json",
+        "**/nx.json"
+      ],
+      "exclude": [
+        "*.min.js",
+        "*.min.mjs",
+        "*.min.cjs",
+        "*.min.jsx",
+        "node_modules/",
+        "dist/",
+        "build/",
+        "coverage/",
+        "templates/",
+        "site/node_modules/",
+        ".forge/",
+        "/specs/",
+        "**/tests/",
+        "*.test.py",
+        "/site/node_modules/",
+        "/templates/",
+        "/.forge/"
+      ]
+    },
+    {
+      "id": "python",
+      "source": "@groma/scanner-python@0.2.1",
+      "include": [
+        "**/*.py",
+        "**/pyproject.toml",
+        "**/setup.cfg",
+        "**/requirements.txt"
+      ],
+      "exclude": [
+        ".venv/",
+        "venv/",
+        "__pycache__/",
+        "test/",
+        "tests/",
+        "test_*.py",
+        "*_test.py",
+        "conftest.py",
+        "build/",
+        "dist/",
+        "/specs/",
+        "**/tests/",
+        "*.test.py",
+        "/site/node_modules/",
+        "/templates/",
+        "/.forge/"
+      ]
+    },
+    {
+      "id": "typescript",
+      "source": "@groma/scanner-typescript@0.2.2",
+      "include": [
+        "**/*.ts",
+        "**/*.tsx",
+        "**/tsconfig*.json",
+        "**/package.json",
+        "**/*.html",
+        "**/angular.json",
+        "**/project.json",
+        "**/nx.json"
+      ],
+      "exclude": [
+        "*.test.ts",
+        "*.test.tsx",
+        "*.spec.ts",
+        "*.spec.tsx",
+        "/test/",
+        "node_modules/",
+        "dist/",
+        "build/",
+        "coverage/",
+        "templates/",
+        "site/node_modules/",
+        ".forge/",
+        "/specs/",
+        "**/tests/",
+        "*.test.py",
+        "/site/node_modules/",
+        "/templates/",
+        "/.forge/"
+      ]
+    }
+  ]
+}
