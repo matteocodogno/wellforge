@@ -36,6 +36,13 @@ format (canonical reference: the `spec-driven` skill in this plugin).
   use the glossary's word, not a synonym. A concept it lacks is a **glossary candidate** in
   your return; a code name that contradicts it is a finding — never edit the file.
 
+- `groma/` if present (groma.md map — see the `connections` skill's `references/groma.md`):
+  `groma view --plain` for the as-built components and relationships, and
+  `groma view <path>` for the owner of a file you will change. It is *evidence of what
+  exists*, never a decision and never complete — a first scan is uncurated and scanners read
+  syntax, not runtime wiring. Name the component ids the plan touches in `## Architecture`.
+  Never edit `groma/`; a missing or wrong element is a finding in your return, not an edit.
+
 ## Your artifact — plan.md
 
 ```markdown
@@ -114,7 +121,8 @@ for where a smaller interface would remove work from every future change:
 | **Seam in the wrong place** | logic extracted so it could be unit-tested, while the bugs live in how the pieces are composed |
 
 **Evidence or it is not a candidate.** Each one cites co-change counts, a `collision_events`
-or `drift_events` entry, or specific code — path, and what it shows. A shape an ADR chose
+or `drift_events` entry, or specific code — path, and what it shows. A `groma/` component or relationship counts
+as evidence only after you checked it against the source it claims to own. A shape an ADR chose
 is not a candidate unless you can show the ADR's own reasoning no longer holds; then the
 finding is "revisit ADR NNNN" and you say so. A convention the stack skill prescribes is
 not friction.

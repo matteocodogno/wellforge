@@ -225,7 +225,8 @@ Mechanics that make it reliable:
 4. **Build verification** — `mise run install/build/test` is the acceptance bar; failures
    are template bugs to report, not things to patch around.
 5. **Connections** — standardized checklists (GitHub repo + branch protection, CI
-   secrets, MCP servers, environments/DB). Every checklist opens and closes with an
+   secrets, MCP servers, environments/DB, and the opt-out [groma.md](https://github.com/MrLesk/Groma.md)
+   architecture map the architect reads as as-built evidence). Every checklist opens and closes with an
    executed **verification command**: "connected" is an observed fact. Incompletable
    steps become explicit PENDING items, never silent skips.
 

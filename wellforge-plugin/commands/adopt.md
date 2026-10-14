@@ -143,7 +143,9 @@ new layers.** Only run steps 1–3 on a first-time adoption.
 ## Stage 4 — Connections (if chosen)
 
 Load the `connections` skill and walk its checklists (each opens and closes with a
-verification command; PENDING for anything needing rights you don't have).
+verification command; PENDING for anything needing rights you don't have). The groma.md
+map is offered here too — on an adopted project it is most useful, since the scan gives
+the team a first map of code nobody has described; its Backlog.md guard applies.
 
 ## Stage 5 — Release management (if chosen)
 

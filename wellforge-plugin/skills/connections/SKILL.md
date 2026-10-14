@@ -19,6 +19,7 @@ References (read the one you need):
 - `references/github.md` — repo creation, merge strategy (linear history), branch protection, CI secrets
 - `references/mcp-servers.md` — the standard MCP set for WellForge projects
 - `references/environments.md` — env vars, secrets hygiene, local DB
+- `references/groma.md` — the live C4 architecture map (groma.md): offered by default, never mandatory
 
 ## Order
 
@@ -29,6 +30,9 @@ When connecting a fresh project, follow this order (later steps depend on earlie
 3. **CI secrets/variables** — before the first PR triggers the gate workflows.
 4. **MCP servers** — project `.mcp.json` (usually scaffolded; verify, don't recreate).
 5. **Environments / DB** — local docker-compose up + connection check.
+6. **Architecture map (groma.md)** — last, because a scan wants a project that builds.
+   Offered by default (opt-out), skipped at `spike`. Mind the Backlog.md guard in its
+   checklist: `groma init` must not drag a second task system into the project.
 
 ## Conduct
 

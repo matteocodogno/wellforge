@@ -114,7 +114,8 @@ to add to the wellforge repo), apply the minimal local fix, and continue.
 ## Stage 5 — Connect
 
 Load the **connections** skill and walk its checklists in order (GitHub, CI secrets,
-MCP servers, environments/DB). Every connection ends with that checklist's verification
+MCP servers, environments/DB, then the groma.md architecture map — offered by default,
+declined = recorded `skipped-by-choice`). Every connection ends with that checklist's verification
 command — run it and show the output. Skip checklists the user declines; record skipped
 ones in the project README under "Pending setup".
 

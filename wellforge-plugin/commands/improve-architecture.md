@@ -65,13 +65,20 @@ generated source pairing with everything is bookkeeping, not coupling — drop t
 and `drift_events` on `plan.md` (the architecture did not survive implementation) are
 coupling and wrong-seam evidence that cost real rework to produce.
 
+**The architecture map** — if `groma/` exists (groma.md; `connections` skill,
+`references/groma.md`), capture `groma view --plain` and `groma lint` and hand both to the
+architect. They are the *as-built* component and relationship view and the lint's possible
+duplicate logic — a lead to verify in the code, not a finding. Say whether the map is still
+an uncurated first scan, since a scan names files, not responsibilities. This command never
+edits `groma/` by hand; if the map is stale, say so and let the user refresh it.
+
 **A young repository has no history to read.** Fewer than ~30 commits in scope → say so,
 skip co-change, and let the architect work from the code alone, with lower confidence.
 
 ## Step 3 — The scan
 
 Spawn `wellforge:architect` in **architecture review mode** (it defines the mode and the
-report format itself) with: the scope, the Step 2 output verbatim, and the ADRs and stack
+report format itself) with: the scope, the Step 2 output verbatim (git evidence and the groma map, labelled), and the ADRs and stack
 skill from Step 1. It reads the code and returns **at most five candidates**, ranked, each
 with the friction, the evidence, the deepening in one sentence, and the blast radius — and
 writes the report to `docs/architecture/review-<YYYY-MM-DD>.md`.

@@ -30,3 +30,11 @@ run         = "scripts/check-all.sh"
 [tasks."check:full"]
 description = "check, plus one preset's OWN gates on a fresh scaffold (slow, needs mise+uvx)"
 run         = "scripts/check-all.sh --preset spring-kotlin-react"
+
+# groma.md — the C4 architecture map in groma/ (see the connections skill, references/groma.md).
+# A pinned npx wrapper rather than a [tools] entry: this file deliberately declares no tools,
+# and groma is pre-1.0, so the version is a visible, deliberate bump here.
+# Usage: mise run groma -- view --plain | scan | agent-instructions
+[tasks.groma]
+description = "Run the pinned groma.md CLI (groma.md@0.6.6) — pass its arguments after --"
+run         = "npx -y groma.md@0.6.6"
