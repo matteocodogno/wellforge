@@ -253,7 +253,7 @@ jobs:
         run: |
           mkdir -p /tmp/sast/bad/src/main/kotlin /tmp/sast/good/src
           # Deliberately LOW-entropy placeholder: it must trip wellforge-hardcoded-secret
-          # (16+ chars after an api_key-ish name) without tripping the gitleaks security
+          # (16+ chars after an api_key-ish name) without tripping the betterleaks security
           # floor, which scans this workflow file itself and rejects a realistic-looking key.
           cat > /tmp/sast/bad/src/bad.ts <<'EOF'
           const apiKey = "notarealsecretnotarealsecret";

@@ -157,7 +157,7 @@ Two hooks protect secrets and destructive operations, and they work differently 
      a transcript, the file being unreadable is the guarantee — the guard is not.
   3. **It is a seatbelt, not a sandbox.** Text matching is evadable by anyone trying —
      variable indirection, base64, an unusual spelling. It is there to stop an accident, not
-     an adversary. Real enforcement lives where it cannot be talked around: the gitleaks
+     an adversary. Real enforcement lives where it cannot be talked around: the betterleaks
      pre-commit hook, the security-floor CI gate, and branch protection.
 
 Both have regression matrices (`hooks/scripts/tests/`, run by CI). Every case in them is

@@ -123,7 +123,7 @@ Extraction reads real, possibly proprietary, code. These are prerequisites, not 
    ONE genericized representative example** per layer (a sample module/endpoint/entity, a
    sample component/page/route) — never the project's domain/business logic. Delete feature
    code; keep the scaffolding that shows *how* the stack is wired.
-2. **Secret scrub.** Scan every candidate file for secrets (run `gitleaks detect` if
+2. **Secret scrub.** Scan every candidate file for secrets (run `betterleaks dir .` if
    available; otherwise pattern-scan for keys/tokens/passwords/connection strings). If any are
    found in files you'd include, **stop and report** — do not write the template. Replace all
    env values with placeholders; never carry a real `.env`.

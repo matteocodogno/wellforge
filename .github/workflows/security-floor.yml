@@ -29,7 +29,7 @@
 # implied; /wellforge:spike checks critical advisories locally, and local is not a gate.
 #
 # "No hardcoded credentials in changed code" is not a separate check — it is what a secret
-# scanner does. gitleaks covers it, over history rather than only the diff.
+# scanner does. betterleaks covers it, over history rather than only the diff.
 name: security-floor
 
 on:
@@ -48,27 +48,27 @@ on:
         # reusable workflow. Same convention and same reasoning as quality-node.yml: a
         # hardcoded default rots silently.
         default: ''
-      gitleaks-version:
-        description: pinned gitleaks release
+      betterleaks-version:
+        description: pinned betterleaks release
         required: false
         type: string
-        default: "8.30.1"
-      gitleaks-sha256:
-        description: sha256 of gitleaks_<version>_linux_x64.tar.gz, from the release's checksums.txt
+        default: "1.9.0"
+      betterleaks-sha256:
+        description: sha256 of betterleaks_<version>_linux_x64.tar.gz, from the release's checksums.txt
         required: false
         type: string
-        default: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+        default: "f8b185a39ffcece2a1ca82bf3a4e7435cd81963ffd16b7a9128daf75f35f6de7"
 
 jobs:
   secrets:
-    name: secret scan (gitleaks)
+    name: secret scan (betterleaks)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0           # scan full history, not just the tip
 
-      # The config was previously read from `gates/configs/gitleaks.toml` in the CALLER's
+      # The config was previously read from `gates/configs/betterleaks.toml` in the CALLER's
       # checkout — a path that exists in this repo and in no generated project, because
       # scaffolds reference the gates and never copy them. The `[ -f ]` fallback then made
       # that silent: every downstream project scanned with pure defaults and the op://
@@ -83,42 +83,38 @@ jobs:
       - name: Verify gate configs resolved
         run: |
           ref="${{ inputs.gates-ref || github.job_workflow_sha }}"
-          cfg=.wellforge-gates/gates/configs/gitleaks.toml
+          cfg=.wellforge-gates/gates/configs/betterleaks.toml
           if [ ! -f "$cfg" ]; then
-            echo "::error::gate config missing at ref ${ref}: gates/configs/gitleaks.toml"
+            echo "::error::gate config missing at ref ${ref}: gates/configs/betterleaks.toml"
             echo "::error::The gates checkout (${{ inputs.gates-repo }}@${ref}) does not contain this gate's config. Pass gates-ref explicitly, matching the tag you call this workflow with."
             exit 1
           fi
           echo "gate config OK at ${ref}"
 
-      - name: Install gitleaks (pinned + checksum-verified)
+      - name: Install betterleaks (pinned + checksum-verified)
         env:
-          GL: ${{ inputs.gitleaks-version }}
-          GL_SHA: ${{ inputs.gitleaks-sha256 }}
+          GL: ${{ inputs.betterleaks-version }}
+          GL_SHA: ${{ inputs.betterleaks-sha256 }}
         run: |
           set -euo pipefail
-          url="https://github.com/gitleaks/gitleaks/releases/download/v${GL}/gitleaks_${GL}_linux_x64.tar.gz"
-          curl -sSL --fail "$url" -o gitleaks.tgz
+          url="https://github.com/betterleaks/betterleaks/releases/download/v${GL}/betterleaks_${GL}_linux_x64.tar.gz"
+          curl -sSL --fail "$url" -o betterleaks.tgz
           # A version pin says WHICH release; only the checksum says the bytes are that
           # release. Without this the floor trusts whatever the URL serves — an odd thing
           # for the one gate whose job is to distrust what is in the repo.
-          echo "${GL_SHA}  gitleaks.tgz" | sha256sum -c - || {
-            echo "::error::gitleaks ${GL} checksum mismatch — refusing to run the security floor with an unverified binary."
-            echo "::error::expected ${GL_SHA}, got $(sha256sum gitleaks.tgz | cut -d' ' -f1)"
+          echo "${GL_SHA}  betterleaks.tgz" | sha256sum -c - || {
+            echo "::error::betterleaks ${GL} checksum mismatch — refusing to run the security floor with an unverified binary."
+            echo "::error::expected ${GL_SHA}, got $(sha256sum betterleaks.tgz | cut -d' ' -f1)"
             exit 1
           }
-          tar -xzf gitleaks.tgz gitleaks
-          ./gitleaks version
+          tar -xzf betterleaks.tgz betterleaks
+          ./betterleaks version
 
-      - name: Secret scan (gitleaks)
+      - name: Secret scan (betterleaks)
         run: |
           set -euo pipefail
-          # `git`, not `detect`. 8.30.1 lists only dir/git/stdin; `detect` still runs as an
-          # undocumented alias, which is a thin thing for the security floor to stand on.
-          # Verified identical on a fixture repo: same finding, same exit code.
-          #
           # Git mode walks COMMITS, so the nested .wellforge-gates checkout is not scanned —
           # its files are untracked in this repository and appear in none of its history.
-          ./gitleaks git . \
+          ./betterleaks git . \
             --redact --no-banner \
-            --config .wellforge-gates/gates/configs/gitleaks.toml
+            --config .wellforge-gates/gates/configs/betterleaks.toml

@@ -304,7 +304,7 @@ premise.
 These always run and always **block**, regardless of tier. Fast must never mean "leaks
 credentials":
 
-- **Secret scan** (gitleaks, pinned and checksum-verified) over the **full git history** —
+- **Secret scan** (betterleaks, pinned and checksum-verified) over the **full git history** —
   no committed secrets, ever, at any tier. This is also the "no hardcoded credentials"
   check: a secret scanner is what finds a credential pasted into code.
 

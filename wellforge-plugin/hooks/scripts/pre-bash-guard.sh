@@ -38,7 +38,7 @@ fi
 #              only, which already handles python's `.keys()`.
 # Known limits, accepted deliberately: a mention of `.env.ci`/`.env.local` still blocks
 # (those often hold real values), and `production.env` no longer does. Real content is
-# backstopped by the gitleaks pre-commit hook and the security-floor CI gate.
+# backstopped by the betterleaks pre-commit hook and the security-floor CI gate.
 # Regression matrix: hooks/scripts/tests/pre-bash-guard.test.sh (run in ci.yml).
 # .env.example / .env.jinja are legitimately referenced — scrub them first.
 SCRUBBED=$(echo "$COMMAND" | sed 's/\.env\.example//g; s/\.env\.jinja//g')

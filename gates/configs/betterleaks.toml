@@ -1,19 +1,19 @@
-# WellForge security-floor gitleaks configuration.
+# WellForge security-floor betterleaks configuration.
 #
-# Extends gitleaks' default ruleset (every built-in secret rule stays active) and adds a
+# Extends betterleaks' default ruleset (every built-in secret rule stays active) and adds a
 # global allowlist for 1Password `op://` secret REFERENCES — e.g. op://vault/item/field.
 # Those are runtime pointers resolved by the 1Password CLI/Connect at deploy time, NOT
 # secrets themselves, and they are the recommended secret-injection pattern — so a literal
 # op:// reference (incl. dummy ones in tests) must not trip the security floor.
 #
-# Honest scope note: measured against gitleaks 8.30.1's default rules, a bare
+# Honest scope note: measured against gitleaks 8.30.1's default rules (before the move to betterleaks, not re-measured), a bare
 # `op://vault/item/field` is not flagged even with no allowlist at all. This entry is
 # defence in depth for the shapes that WOULD trip `generic-api-key` — a long reference, or
 # one sitting next to a `password:`-ish key — not a suppression the floor currently depends
 # on. It costs nothing and removes a class of false positive before it appears.
 #
-# Wire in with `gitleaks git . --config <this file>` (security-floor.yml checks out the
-# gates and passes it explicitly; point a local pre-commit gitleaks hook at it too).
+# Wire in with `betterleaks git . --config <this file>` (security-floor.yml checks out the
+# gates and passes it explicitly; point a local pre-commit betterleaks hook at it too).
 # Changing the security floor is a gates/ PR — the deliberate discretion point.
 
 title = "WellForge security floor"
@@ -30,4 +30,20 @@ useDefault = true
 description = "1Password op:// secret references (runtime pointers, not secrets)"
 regexes = [
   '''op://[A-Za-z0-9 ._%+-]+/[A-Za-z0-9 ._%+-]+(?:/[A-Za-z0-9 ._%+-]+)*''',
+]
+
+# Throwaway local-dev credentials that the presets and the plugin's example docs ship on
+# purpose: the docker-compose Postgres, `.env.example`, and test fixtures. They are published
+# defaults, not secrets, and every generated project contains them — so without this the very
+# first CI run of a scaffold fails its own security floor.
+#
+# Narrow on purpose: the finding's SECRET must be exactly one of these three values, and only
+# the two generic rules may be suppressed. A real credential next to them, a vendor-specific
+# token rule, or any other password value still trips the floor.
+[[allowlists]]
+description = "published local-dev placeholder credentials (docker-compose, .env.example, test fixtures)"
+targetRules = ["generic-password", "generic-credential-uri"]
+regexTarget = "secret"
+regexes = [
+  '''^(?:postgres|secret|Password123!)$''',
 ]

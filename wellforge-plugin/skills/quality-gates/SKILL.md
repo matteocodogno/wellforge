@@ -32,7 +32,7 @@ gates make a repository safe to point agents at.
 |---|---|
 | `quality-node.yml` | Node/TS: install, lint, typecheck, test + coverage, SAST, dependency audit |
 | `quality-jvm.yml` | JVM: compile, ktlint, test, JaCoCo coverage, SAST, dependency audit |
-| `security-floor.yml` | Secret scan over full git history (gitleaks, pinned + checksum-verified). That is its whole scope — see "What the floor is" below |
+| `security-floor.yml` | Secret scan over full git history (betterleaks, pinned + checksum-verified). That is its whole scope — see "What the floor is" below |
 | `commit-lint.yml` | Conventional Commits over the PR range ([`git-policy`](../git-policy/SKILL.md)) |
 | `linear-history.yml` | No merge commits in the PR range ([`git-policy`](../git-policy/SKILL.md)) |
 | `quality-eval.yml` | Opt-in LM-judge against the central rubric; needs `ANTHROPIC_API_KEY` |
@@ -63,8 +63,8 @@ is missing.
 
 ### What the floor is — and the hole it does not cover
 
-`security-floor.yml` runs **one** thing: gitleaks over the full git history, with
-`gates/configs/gitleaks.toml`. It is called unconditionally by every generated
+`security-floor.yml` runs **one** thing: betterleaks over the full git history, with
+`gates/configs/betterleaks.toml`. It is called unconditionally by every generated
 `quality.yml`, at every tier.
 
 It used to be described here as "secret scan, hardcoded credentials, CRITICAL-CVE audit".
@@ -91,12 +91,12 @@ locally, and local is not a gate. That is the honest shape of the floor: state t
 not paper it over with a line in a table.
 
 A second consequence, worth knowing when reading old runs: the floor resolved its config
-from the **caller's** checkout, a path (`gates/configs/gitleaks.toml`) that exists in this
+from the **caller's** checkout, a path (`gates/configs/betterleaks.toml`) that exists in this
 repo and in no generated project — and fell back to defaults silently. Every downstream scan
 before `gates-v12` ran without the `op://` allowlist.
 
 Supporting configs: `gates/configs/semgrep/wellforge.yml` (SAST rules),
-`gates/configs/gitleaks.toml`, `gates/configs/eval-rubric.yml` (the rubric — mirrored into
+`gates/configs/betterleaks.toml`, `gates/configs/eval-rubric.yml` (the rubric — mirrored into
 the plugin so an in-session eval can resolve it), `gates/scripts/check-jacoco.py`,
 `check-commit-msg.py`, `run-eval.py`.
 

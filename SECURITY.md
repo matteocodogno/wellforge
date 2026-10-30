@@ -119,7 +119,7 @@ The limits are documented in `pre-bash-guard.sh`'s own header and are real: the 
 loose. `.env.ci` and `.env.local` still block even when harmless; `production.env` no longer
 blocks; metadata-only queries like `git check-ignore` are deliberately carved out, and that
 carve-out applies only to a single simple command with no separator or substitution. Real
-secret *content* is backstopped elsewhere — a gitleaks pre-commit hook and the security-floor
+secret *content* is backstopped elsewhere — a betterleaks pre-commit hook and the security-floor
 CI gate — because a text matcher on a command line was never going to be the last line.
 
 ### Generated projects
