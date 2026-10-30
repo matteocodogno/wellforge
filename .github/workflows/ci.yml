@@ -655,6 +655,18 @@ jobs:
       # lefthook `run:` script under sh, wellforge.js under node) in real repositories, and
       # asserts all four field lists are forge-state.py's.
       - run: uv run --with pyyaml python scripts/tests/adapters-drift.test.py
+      # The Codex adapter runs the plugin's OWN hook scripts behind a payload translator —
+      # no fourth copy of any rule. That holds only if the translation is right, and both of
+      # its jobs fail silently: a path missed in an apply_patch is a guard that sees nothing,
+      # and a root resolved from the wrong cwd (or the logical side of a symlink — the first
+      # run of this suite found exactly that) is a spec guard that never matches. Generates
+      # the adapter and fires the command strings out of its hooks.json.
+      - run: uv run --with pyyaml python scripts/tests/codex-hooks.test.py
+      # The native Codex plugin is the one adapter output this repo COMMITS (a marketplace
+      # installs it from git), so it can drift from the plugin it was generated from, and
+      # Codex users would get the old release under the new version. Regenerates it and
+      # diffs, then drives wf-setup's installer and the plugin's own hook wiring.
+      - run: uv run --with pyyaml python scripts/tests/codex-plugin.test.py
       # The placeholder-sha rule a CLI release depends on. It shipped in 61dcca6 with a
       # comment in the `formula` job saying this suite "pins both halves" — and no line
       # here running it, so only `check-all.sh` on a developer's machine ever did.
@@ -672,7 +684,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        adapter: [copilot, opencode]
+        adapter: [copilot, opencode, codex]
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -754,7 +766,9 @@ jobs:
             scripts/wellforge scripts/*.sh scripts/tests/*.sh \
             gates/hooks/* \
             wellforge-plugin/hooks/scripts/*.sh \
-            wellforge-plugin/hooks/scripts/tests/*.sh
+            wellforge-plugin/hooks/scripts/tests/*.sh \
+            adapters/*/hooks/*.sh \
+            adapters/*/plugin/*/scripts/*.sh
 
       # Drives the real CLI against shim executables and real git fixtures. Cases marked
       # xfail describe behaviour a later change introduces; the suite fails if one of them

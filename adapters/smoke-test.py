@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prove an adapter's OUTPUT is shippable — the machine half of adapters/*/SMOKE-TEST.md.
 
-    uv run --with pyyaml python adapters/smoke-test.py --adapter copilot|opencode
+    uv run --with pyyaml python adapters/smoke-test.py --adapter copilot|opencode|codex
     uv run --with pyyaml python adapters/smoke-test.py --adapter opencode --keep /tmp/x
 
 Generates the adapter into a temp dir and asserts five things about what came out. Each
@@ -21,7 +21,11 @@ either way:
      config/model-tiers.yml            hand-edited or stale generated `model:` sends work to
                                        the wrong tier and nothing complains.
 
-Exit 0 = all four pass. Non-zero = the adapter would ship broken; the output names the file.
+  f. (codex) native config parses — a hook wired to a missing script is a guard that
+     and every wired hook script     refuses nothing, and Codex does not say so.
+     exists
+
+Exit 0 = every assertion passes. Non-zero = the adapter would ship broken; the output names the file.
 """
 import argparse
 import glob
@@ -56,6 +60,17 @@ ADAPTERS = {
         "agents": (".opencode/agents", "wf-*.md", r"wf-(?P<name>.+)"),
         "skills": ".opencode/skills",
     },
+    # Codex: commands are SKILL DIRECTORIES (`.agents/skills/wf-spec/SKILL.md`) because Codex
+    # replaced custom prompts with skills; agents are TOML. A SKILL.md match is named by its
+    # directory — see `artifact_stem`.
+    "codex": {
+        "roots": [".agents", ".codex", "AGENTS.md"],
+        "commands": (".agents/skills", "wf-*/SKILL.md", r"wf-(?P<name>.+)"),
+        "agents": (".codex/agents", "wf-*.toml", r"wf-(?P<name>.+)"),
+        "skills": ".agents/skills",
+        # Codex custom agents cannot override model_provider; openai is the only tier set.
+        "provider": "openai",
+    },
 }
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
@@ -63,7 +78,17 @@ LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 
 # Where each adapter ships the deterministic layer. The prompts resolve $WF to this.
 ADAPTER_ROOT = {"copilot": os.path.join(".github", "wf-skills"),
-                "opencode": os.path.join(".opencode", "wellforge")}
+                "opencode": os.path.join(".opencode", "wellforge"),
+                "codex": os.path.join(".codex", "wellforge")}
+
+
+def artifact_stem(path):
+    """Generated filename → the stem `name_re` is matched against. A skill is named by its
+    directory; anything else by its basename minus the LAST extension (so a Copilot
+    `wf-x.prompt.md` is still `wf-x.prompt`, and a Codex `wf-x.toml` is `wf-x`)."""
+    if os.path.basename(path) == "SKILL.md":
+        return os.path.basename(os.path.dirname(path))
+    return os.path.splitext(os.path.basename(path))[0]
 
 
 def plugin_inventory():
@@ -155,14 +180,18 @@ def c_coverage(out, spec, adapter):
         rx = re.compile(name_re + "$")
         names = set()
         for f in glob.glob(os.path.join(out, d, pat)):
-            stem = os.path.basename(f)[:-3]
-            m = rx.match(stem)
+            m = rx.match(artifact_stem(f))
             if m:
                 names.add(m.group("name"))
         have[kind] = names
     have["skills"] = {os.path.basename(d)
                       for d in glob.glob(os.path.join(out, spec["skills"], "*"))
                       if os.path.isdir(d)}
+    if spec["skills"] == spec["commands"][0]:
+        # Commands and skills share one directory (Codex): a command-skill is not a skill
+        # for coverage purposes, and counting it as one inflates the summary line.
+        cmd_rx = re.compile(spec["commands"][2] + "$")
+        have["skills"] = {n for n in have["skills"] if not cmd_rx.match(n)}
 
     plugin = plugin_inventory()
     problems = []
@@ -200,10 +229,11 @@ def e_references(out, adapter):
     # os.walk, not glob: `.github` and `.opencode` are dot-directories and glob's `**`
     # does not descend into them. The first version of this check used glob, found zero
     # references, and reported it as "the layer stopped being mentioned".
+    # .toml too: Codex agents carry their whole prompt in developer_instructions.
     def _md_files():
         for dirpath, _dirs, files in os.walk(out):
             for fn in files:
-                if fn.endswith(".md"):
+                if fn.endswith((".md", ".toml")):
                     yield os.path.join(dirpath, fn)
 
     for fp in _md_files():
@@ -254,12 +284,62 @@ def e_references(out, adapter):
     return problems
 
 
+def f_native(out, adapter):
+    """f. The tool's own config files parse, and every hook they wire runs a script that
+    exists and is valid shell. Only Codex has native hook config today; for the others this
+    is a no-op, reported as such rather than as a pass.
+
+    Why: a hook whose script is missing is the quietest failure there is. Codex reports a
+    non-2 exit without blocking, so a guard that points at nothing looks exactly like a guard
+    that found nothing to refuse — the same reason /wellforge:doctor checks hook scripts.
+    """
+    if adapter != "codex":
+        return None
+    import json
+    import tomllib
+    problems = []
+    for dp, _, fns in os.walk(os.path.join(out, ".codex")):
+        for fn in fns:
+            if fn.endswith(".toml"):
+                fp = os.path.join(dp, fn)
+                try:
+                    tomllib.loads(open(fp).read())
+                except tomllib.TOMLDecodeError as e:
+                    problems.append(f"{os.path.relpath(fp, out)}: invalid TOML ({e})")
+    hooks_json = os.path.join(out, ".codex", "hooks.json")
+    try:
+        doc = json.load(open(hooks_json))
+    except (OSError, ValueError) as e:
+        return problems + [f".codex/hooks.json unreadable: {e}"]
+    wired = 0
+    hook_re = re.compile(r'"\$\(git rev-parse --show-toplevel[^)]*\)/([^"]+)"\s+([a-z-]+)$')
+    for ev, groups in (doc.get("hooks") or {}).items():
+        for g in groups:
+            for h in g.get("hooks", []):
+                m = hook_re.search(h.get("command", ""))
+                if not m:
+                    continue
+                wired += 1
+                runner = os.path.join(out, m.group(1))
+                script = os.path.join(os.path.dirname(runner), "scripts", m.group(2) + ".sh")
+                for f in (runner, script):
+                    if not os.path.isfile(f):
+                        problems.append(f"{ev}: {m.group(2)} → {os.path.relpath(f, out)} missing")
+                    elif subprocess.run(["bash", "-n", f], capture_output=True).returncode:
+                        problems.append(f"{ev}: {os.path.relpath(f, out)} is not valid bash")
+    if not wired:
+        problems.append(".codex/hooks.json wires no WellForge hook — enforcement is absent "
+                        "or this check's pattern no longer matches the generator's command")
+    return problems
+
+
 def d_routing(out, spec, adapter):
     """d. Generated `model:` values == routing × tiers for this tool. Reuses the plugin's
     own drift guard rather than re-deriving the expectation here."""
     d, pat, name_re = spec["agents"]
     cmd = [sys.executable, os.path.join(PLUGIN, "scripts", "check-routing.py"),
-           "--tool", adapter, "--agents", os.path.join(out, d),
+           "--tool", adapter, "--provider", spec.get("provider", "anthropic"),
+           "--agents", os.path.join(out, d),
            "--glob", pat, "--name-re", name_re]
     r = subprocess.run(cmd, capture_output=True, text=True)
     return r.returncode, (r.stdout + r.stderr).strip()
@@ -328,11 +408,25 @@ def main():
             n = len(glob.glob(os.path.join(root, "scripts", "*.py")))
             print(f"  ✓ e. every $WF/ path referenced exists; {n} shipped script(s) run")
 
+        total = 5
+        problems = f_native(out, args.adapter)
+        if problems is None:
+            print("  - f. no native hook/config files for this adapter (n/a)")
+        else:
+            total += 1
+            if problems:
+                failed += 1
+                print(f"  ✗ f. {len(problems)} problem(s) in the native config:")
+                for e in problems[:20]:
+                    print(f"       {e}")
+            else:
+                print("  ✓ f. native config parses; every wired hook runs an existing script")
+
         print()
         if failed:
-            print(f"{args.adapter}: {failed} of 5 assertions FAILED")
+            print(f"{args.adapter}: {failed} of {total} assertions FAILED")
             return 1
-        print(f"{args.adapter}: 5 of 5 assertions passed")
+        print(f"{args.adapter}: {total} of {total} assertions passed")
         return 0
     finally:
         if not args.keep:

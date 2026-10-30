@@ -1,0 +1,4 @@
+# wf-setup writes into the project — it runs when asked for by name (or as the plugin's
+# onboarding skill), never because a sentence resembled its description.
+policy:
+  allow_implicit_invocation: false

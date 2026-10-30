@@ -75,6 +75,8 @@ wellforge/
 │   │                         # spec-frontmatter.schema.json (machine mirror of spec-driven)
 │   ├── hooks/                # lifecycle hooks (incl. SubagentStop run-trace telemetry)
 │   └── .mcp.json             # sequential-thinking, playwright, github, context-hub
+├── wellforge-codex-plugin/   # GENERATED native Codex plugin (adapters/codex/generate.py
+│                             # --package), listed by .agents/plugins/marketplace.json
 ├── templates/
 │   ├── _shared/CONTRACT.md   # binding contract: questions, required files, versioning
 │   ├── spring-kotlin-react/template/   # SB4 Kotlin + jOOQ + Liquibase / React TS Vite
@@ -93,9 +95,9 @@ wellforge/
 - **Rigor tiers shipped** (all 3 phases ☑ — `docs/plans/PLAN-rigor-tiers.md`): spike/mvp/production
   across plugin, gates and templates.
 - Latest tags: `v0.11.0` (template series, PEP440 — what copier resolves), `gates-v14` (gate
-  workflow pin series), `plugin-v2.57.1` (plugin series) and `cli-v1.5.2` (the `wellforge`
+  workflow pin series), `plugin-v2.58.0` (plugin series) and `cli-v1.5.2` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.57.1`, CLI `1.5.2`. **This is the one line in this file that states current
+  plugin `2.58.0`, CLI `1.5.2`. **This is the one line in this file that states current
   versions**; `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and
   `Formula/wellforge.rb`, and refuses any version claim newer than those files anywhere in
   the docs. Every other version in this file is history and stays as written. A self-CI workflow
@@ -171,6 +173,14 @@ wellforge/
   cap that is **per feature** and recorded (`fix_rounds`), scope **frozen at gate 1**, and
   QE's verdict on disk as `qe-report.md` so every round is a fresh agent. All of it lives in
   the `rigor-tiers` skill; prompt-authored, no eval covers it yet (plugin `2.57.0`).
+- **Phase 40** (`docs/plans/PLAN.md`): the **Codex adapter** (`adapters/codex/`) — commands
+  as `$wf-*` skills (explicit-only), agents as `.codex/agents/*.toml`, and Codex's
+  Claude-contract hooks running the plugin's own scripts unchanged behind a payload
+  translator. Implementation batches run sequentially there (no worktree isolation). Also a
+  **native Codex plugin**, `wellforge-codex-plugin/` — generated and committed (CI diffs it
+  against a fresh run), skills + MCP + hooks, with `$wf-setup` copying the per-project half
+  (agents, `$WF`) in (plugin `2.58.0`). The live-session pass
+  (`adapters/codex/SMOKE-TEST.md`) is still open.
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
   and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
   is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),

@@ -917,6 +917,76 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 40 — The Codex adapter (added 2026-10-30)
+
+`MULTI-TOOL-SUPPORT.md` filed Codex as Tier 2 — "hooks ✗ minimal, subagents ~ limited",
+sequential role adoption, CI-only enforcement — and so it was the one tool with no adapter.
+That table was a year old. Codex as documented in 2026-10 has parallel custom subagents
+(`.codex/agents/*.toml`), Agent Skills (`.agents/skills/`), custom prompts deprecated in
+their favour, and lifecycle hooks on the **Claude contract**: same event names, the same
+payload fields (`tool_input.command`, `stop_hook_active`, `agent_type`), exit 2 + stderr to
+block, a `Stop` that continues the turn. It even exports `CLAUDE_PLUGIN_ROOT` to plugin
+hooks. Codex is the closest tool to Claude Code, not one of the furthest.
+
+- ☑ **`adapters/codex/generate.py`**, option (b) like the others. Commands → skills invoked
+  by name (`$wf-spec`) with `allow_implicit_invocation: false` — `$wf-release` tags and
+  pushes, and a command must run because it was asked for, not because a sentence
+  resembled its description. Agents → custom-agent TOML with `model` +
+  `model_reasoning_effort` from routing × tiers (new `codex:` block and a per-tier
+  `reasoning_effort` table in `model-tiers.yml`). MCP → a managed block in
+  `.codex/config.toml`; guide → a managed block in `AGENTS.md`. Nothing the user owns is
+  overwritten: `.agents/skills/` is shared with other tools, so only directories the
+  generator recorded writing are pruned.
+- ☑ **Enforcement is the plugin's own scripts, unchanged** — the first adapter where that is
+  true. `hooks/run-hook.sh` translates only what differs: the root (Codex runs hooks in the
+  session cwd) and `apply_patch`, whose `tool_input.command` is patch text, fanned out to one
+  script run per added/updated/moved/deleted path. So the lifecycle rules (`status: done`,
+  raise-only `rigor:`) are mechanism on Codex, where on Copilot and OpenCode they are
+  prompt promises — and there is no fourth copy of the drift rule to go stale.
+- ☑ **`scripts/tests/codex-hooks.test.py`** (24 cases) generates the adapter into a real repo
+  and fires the command strings out of its `hooks.json`. **Its first run found a real bug:**
+  `git rev-parse --show-toplevel` returns the physical path and Codex's payload `cwd` need
+  not, so under any symlinked directory (macOS `/var` → `/private/var`) `${FILE#$ROOT/}`
+  stripped nothing, `git show HEAD:<path>` found nothing, and post-spec-guard read every
+  edited spec as NEW — waving a lowered `rigor:` through. The runner now uses `pwd -P`.
+- ☑ **`adapters/smoke-test.py --adapter codex`** in `check-all.sh` and the CI matrix, with a
+  sixth assertion for native config (TOML parses; every hook wired in `hooks.json` runs a
+  script that exists and is valid bash). `check-routing.py` reads TOML agents.
+- ☑ **A native Codex plugin, `wellforge-codex-plugin/`** (`generate.py --package`), listed by
+  `.agents/plugins/marketplace.json`: install once with `codex plugin marketplace add
+  matteocodogno/wellforge --ref plugin-vX.Y.Z` instead of generating files into every
+  project. A Codex plugin carries skills, MCP (`mcp.json`, portable `type` per server) and
+  hooks (`${PLUGIN_ROOT}`) — **not custom agents**, and a skill cannot resolve the plugin's
+  install path. So the package splits: the plugin installs skills, MCP and hooks; its
+  onboarding skill **`$wf-setup`** copies the per-project half (agents, `.codex/wellforge/`
+  = `$WF`, the rubric, the `AGENTS.md` block) in from `skills/wf-setup/project/`. `$WF`
+  resolves exactly as in the per-project adapter, so the command skills are byte-identical.
+  Plugin hooks are documented for manually installed desktop plugins only, so
+  `$wf-setup --hooks` installs them into the project instead; when both exist, the plugin's
+  runner steps aside (nothing runs twice). SessionStart says when a project was never set
+  up or is behind the plugin (`.codex/wellforge/VERSION`).
+- ☑ **The package is committed, so it is guarded against drift.**
+  `scripts/tests/codex-plugin.test.py` (23 cases) regenerates it and diffs byte for byte,
+  checks the manifest against the Claude plugin's version, runs `install.sh` in a throwaway
+  repo (twice, from a subdirectory, with the user's `AGENTS.md` and hooks present) and fires
+  the plugin's own hook commands with `PLUGIN_ROOT` set. Two deliberate mutations (an edited
+  skill, the step-aside removed) each failed the case meant to catch them. The marketplace
+  entry is a `local` source, so it never names a tag its own commit cannot have yet: the
+  version is the ref the marketplace was added at.
+- ☐ **The manual pass** (`adapters/codex/SMOKE-TEST.md`) in a live Codex — the per-project
+  adapter and the plugin. Every claim above about Codex behaviour is from its docs, not from
+  a session; the checklist names each assumption next to the step that would falsify it.
+
+**Declared gaps.** No worktree isolation for subagents (shared checkout, sandbox not
+overridable per agent) → implementation batches of ≥2 take the worktree-isolation Fallback,
+sequential. Tool allowlists are not representable (Codex reads through the shell, so it
+cannot be turned off) → a "Tool scope" paragraph at the top of each restricted agent.
+Token usage in trace-subagent is best-effort until the rollout format is checked. `notify`
+and `pre-compact-backup` not wired. The plugin's skills are assumed to keep their names
+(`$wf-spec`, not a `wellforge:`-namespaced form) — unverified. **Next:** `wellforge install
+--tool codex`. Plugin `2.57.1` → `2.58.0` (the Codex package carries the same version, from
+`plugin.json`). Not tagged.
+
 ## Phase 39 — The Stop hook stops installing packages (added 2026-10-09)
 
 `stop-verify.sh` type-checked every TypeScript compile unit with `pnpm exec tsc`, gated only

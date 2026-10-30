@@ -29,6 +29,12 @@ HERE = os.path.dirname(__file__)
 
 def frontmatter_model(path):
     t = open(path).read()
+    # Codex custom agents are TOML, not Markdown with frontmatter: `model = "gpt-5.5"` at
+    # top level. Read with tomllib rather than a regex — a `model = ` line inside the
+    # multi-line developer_instructions would otherwise be a match.
+    if path.endswith(".toml"):
+        import tomllib
+        return tomllib.loads(t).get("model")
     m = re.match(r"^---\n(.*?)\n---\n", t, re.S)
     if not m:
         return None

@@ -17,7 +17,7 @@ the spec workflow, releases) so you get straight to building what actually matte
 [![plugin](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmatteocodogno%2Fwellforge%2Fmain%2Fwellforge-plugin%2F.claude-plugin%2Fplugin.json&query=%24.version&prefix=v&label=plugin&color=8957e5)](wellforge-plugin/)
 [![gates](https://img.shields.io/github/v/tag/matteocodogno/wellforge?filter=gates-v*&label=gates&color=2da44e)](docs/VERSIONING.md)
 [![cli](https://img.shields.io/github/v/tag/matteocodogno/wellforge?filter=cli-v*&label=cli&color=d29922)](docs/RELEASING-CLI.md)
-![works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20OpenCode%20%2B%20Copilot-111)
+![works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%2B%20Codex%20%2B%20OpenCode%20%2B%20Copilot-111)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 > **WellForge turns a week of AI-infra setup into one command.** An open platform for
@@ -47,7 +47,7 @@ lifecycle that keeps your whole fleet upgradeable.
 WellForge is a plugin on top of an AI coding CLI, and it's opinionated about stack + platform.
 It fits best if you have:
 
-- **Claude Code**, **OpenCode**, or **GitHub Copilot** (VS Code, via a generated adapter) + model access — it's a plugin/adapter, not a standalone tool
+- **Claude Code**, **Codex**, **OpenCode**, or **GitHub Copilot** (VS Code) — the last three via a generated adapter + model access — it's a plugin/adapter, not a standalone tool
 - **macOS or Linux** with Homebrew (Windows isn't supported yet)
 - **GitHub** — the quality gates are GitHub Actions; connections & releases assume `gh`
 - **Greenfield**: one of three presets — **Spring-Kotlin + React**, **Hono + React**, or
@@ -158,16 +158,19 @@ Three layers, because no single mechanism covers everything:
 Fleet view across all your generated projects: [`scripts/fleet-status.sh`](scripts/fleet-status.sh).
 
 **Other AI tools:** the plugin is the source of truth; [`adapters/`](adapters/) *generates*
-tool-native files from it — [OpenCode](adapters/opencode/) (`.opencode/`) and
+tool-native files from it — [Codex](adapters/codex/) (`.agents/skills/`, `.codex/agents/`,
+hooks + MCP, invoked as `$wf-*`; or the native Codex plugin: `codex plugin marketplace add
+matteocodogno/wellforge`, then `$wf-setup` in each project), [OpenCode](adapters/opencode/) (`.opencode/`) and
 [GitHub Copilot](adapters/copilot/) for VS Code (`.github/` prompts, chat modes, instructions
-+ MCP, invoked as `/wf-*`). Copilot reaches the workflow + agents + skills + MCP; parallel
-multi-agent orchestration and local hooks are Claude Code / OpenCode-only (Copilot leans on CI
-gates + a generated `lefthook.yml`). See [multi-tool support](docs/plans/MULTI-TOOL-SUPPORT.md).
++ MCP, invoked as `/wf-*`). Codex is the closest to Claude Code: parallel subagents and the
+plugin's own hook scripts, unchanged — but no worktree isolation, so implementation batches
+run sequentially. Copilot reaches the workflow + agents + skills + MCP and leans on CI gates +
+a generated `lefthook.yml` instead of local hooks. See [multi-tool support](docs/plans/MULTI-TOOL-SUPPORT.md).
 
 ## Status
 
 All 6 pillars built and E2E-tested, plus rigor tiers and release management. Works with
-**Claude Code, OpenCode, and GitHub Copilot** (VS Code, via adapter). Latest: template
+**Claude Code, Codex, OpenCode, and GitHub Copilot** (VS Code) — the last three via adapter. Latest: template
 four independent series that move
 independently, see [versioning](docs/VERSIONING.md).
 Before `v1.0.0`: the Phase 7 pilot on a real project — see [PLAN.md](docs/plans/PLAN.md).

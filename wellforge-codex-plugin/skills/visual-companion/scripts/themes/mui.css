@@ -1,0 +1,28 @@
+/*
+ * Material UI (MUI) theme — approximates MUI's default light theme: Roboto,
+ * indigo-blue primary, 4px radius, and UPPERCASE buttons (MUI's signature).
+ * For adopted projects whose real component library is MUI.
+ */
+:root {
+  --accent: #1976d2;          /* MUI primary.main */
+  --accent-hover: #1565c0;    /* MUI primary.dark */
+  --selected-border: #1976d2;
+  --selected-bg: #e3f2fd;     /* MUI blue 50 */
+  --error: #d32f2f;           /* MUI error.main */
+  --success: #2e7d32;         /* MUI success.main */
+  --warning: #ed6c02;         /* MUI warning.main */
+  --radius: 4px;              /* MUI default shape.borderRadius */
+  --radius-sm: 4px;
+  --font: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  --button-transform: uppercase;   /* MUI contained/text buttons uppercase by default */
+  --button-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #90caf9;         /* MUI dark primary.main */
+    --accent-hover: #a6d4fa;
+    --selected-border: #90caf9;
+    --selected-bg: rgba(144, 202, 249, 0.16);
+  }
+}

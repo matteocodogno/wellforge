@@ -4,7 +4,8 @@
 > The adapters shipped. For what exists today read
 > [`INSTALLATION.md`](../INSTALLATION.md) and the generated adapters'
 > own READMEs ([`adapters/copilot/`](../../adapters/copilot/README.md),
-> [`adapters/opencode/`](../../adapters/opencode/README.md)), which are regenerated with the
+> [`adapters/opencode/`](../../adapters/opencode/README.md),
+> [`adapters/codex/`](../../adapters/codex/README.md)), which are regenerated with the
 > code and cannot drift from it the way this document did. Kept for the reasoning that led
 > to the design, the same way `GAP-ANALYSIS-google-sdlc.md` is kept.
 

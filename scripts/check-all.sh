@@ -136,11 +136,11 @@ fi
 printf '\n%sadapters%s\n' "$BOLD" "$RST"
 if [ -f adapters/smoke-test.py ]; then
   if python3 -c "import yaml" >/dev/null 2>&1 || have uv; then
-    for a in copilot opencode; do
+    for a in copilot opencode codex; do
       run "adapter smoke ($a)" pyrun adapters/smoke-test.py --adapter "$a"
     done
   else
-    skip "adapter smoke (2)" "no python3+pyyaml and no uv"
+    skip "adapter smoke (3)" "no python3+pyyaml and no uv"
   fi
 else
   skip "adapter smoke" "adapters/smoke-test.py not found — did the layout move?"
@@ -231,7 +231,8 @@ fi
 # change the other, and the release-guard job compares them.
 printf '\n%sshellcheck%s\n' "$BOLD" "$RST"
 sc_files=(scripts/wellforge scripts/*.sh scripts/tests/*.sh gates/hooks/*
-          wellforge-plugin/hooks/scripts/*.sh wellforge-plugin/hooks/scripts/tests/*.sh)
+          wellforge-plugin/hooks/scripts/*.sh wellforge-plugin/hooks/scripts/tests/*.sh
+          adapters/*/hooks/*.sh adapters/*/plugin/*/scripts/*.sh)
 # `command -v shellcheck` is not enough: mise installs SHIMS on PATH, and a shim for a tool
 # with no version selected resolves fine and then dies with "No version is set for shim".
 # Ask whether it RUNS.

@@ -1,0 +1,19 @@
+{
+  "name": "wellforge",
+  "interface": {
+    "displayName": "WellForge"
+  },
+  "plugins": [
+    {
+      "name": "wellforge",
+      "source": {
+        "source": "local",
+        "path": "./wellforge-codex-plugin"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "Coding"
+    }
+  ]
+}

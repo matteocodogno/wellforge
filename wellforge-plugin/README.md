@@ -164,7 +164,7 @@ Both have regression matrices (`hooks/scripts/tests/`, run by CI). Every case in
 something a guard once got wrong — add yours there rather than only widening a regex.
 
 | `config/model-routing.yml` | Tool-neutral: agent → tier (frontier/mid/cheap) — the portable routing policy |
-| `config/model-tiers.yml` | Per-tool: tier → concrete model (claude aliases, opencode provider/model) |
+| `config/model-tiers.yml` | Per-tool: tier → concrete model (claude aliases, opencode provider/model, copilot picker names, codex model ids + reasoning effort) |
 | `skills/connections/` | Standardized tool-connection checklists (GitHub, MCP, environments) — each ends with a verification command |
 | `skills/domain-modeling/` | the project glossary — one word per concept, the edge-case stress test, who may write it |
 | `skills/frontend-design/` | visual direction for NEW product surfaces — the surface-class gate and two-pass token system |

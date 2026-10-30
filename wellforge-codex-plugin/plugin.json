@@ -1,0 +1,43 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "wellforge",
+  "version": "2.58.0",
+  "description": "Full-stack AI-assisted development: spec-driven workflow, role-based agent team, orchestrator, scaffolder, lifecycle upgrades, quality-gate and eval enforcement.",
+  "author": {
+    "name": "WellForge"
+  },
+  "homepage": "https://github.com/matteocodogno/wellforge",
+  "repository": "https://github.com/matteocodogno/wellforge",
+  "license": "MIT",
+  "keywords": [
+    "spec-driven",
+    "multi-agent",
+    "quality-gates",
+    "copier",
+    "scaffolding",
+    "kotlin",
+    "spring-boot",
+    "hono",
+    "pulumi",
+    "react",
+    "typescript",
+    "owasp",
+    "adr",
+    "playwright",
+    "monorepo",
+    "codex"
+  ],
+  "extensions": {
+    "com.openai": {
+      "hooks": "./hooks/hooks.json",
+      "onboardingSkill": "./skills/wf-setup/SKILL.md",
+      "interface": {
+        "displayName": "WellForge",
+        "shortDescription": "Spec-driven workflow, a role-based agent team and enforced quality gates for Codex.",
+        "developerName": "WellForge",
+        "category": "Coding",
+        "websiteURL": "https://github.com/matteocodogno/wellforge"
+      }
+    }
+  }
+}

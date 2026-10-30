@@ -1,0 +1,228 @@
+---
+name: wf-adopt
+description: 'WellForge command — Adopt WellForge in an existing (brownfield) project — AI-readiness, spec workflow, calibrated quality gates, release management. Invoke explicitly: $wf-adopt [--dry-run] (run from the project root)'
+---
+> WellForge command, generated for Codex from `wellforge-plugin/commands/adopt.md` — do not edit; regenerate with `adapters/codex/generate.py`.
+> Invoked as `$wf-adopt [--dry-run] (run from the project root)`. **ARGUMENTS** below means the text the user wrote after `$wf-adopt` in the invoking message (empty if nothing).
+
+
+Onboard this existing project onto WellForge: AI-readiness files, the spec-driven
+workflow, optionally the central quality gates (with a measured baseline) and tool
+connections. Adoption **adds** — it never rewrites existing code or conventions.
+
+## `--dry-run` — show the plan, change nothing
+
+With `--dry-run` anywhere in the arguments, run every **read** step below and none of the
+writes, then stop with the plan of record. Adoption writes into a repo that already exists and already works — the one place a WellForge command touches code it did not generate. A preview is the difference between adoption and an unrequested refactor.
+
+1. **What would change** — every file written, created or deleted, one line of reason each.
+   Separate **added** files (AGENTS.md, specs/, CI workflows) from **modified** ones; a modification to an existing config is what a maintainer actually wants to see first.
+2. **What would run** — the exact commands and **which agents would be spawned**, in order.
+3. **What would be irreversible** — called out separately; if nothing is, say so.
+4. **What it cannot predict** — the honest half. Stage 0's survey drives everything after it, so the plan is only as good as what the survey can see: a gate threshold calibrated from a measured baseline cannot be known until the baseline is measured.
+
+End with the exact command to run for real (this invocation minus `--dry-run`).
+
+**Hard rule:** a dry run writes nothing and **spawns no agents** — an agent that runs has
+already changed the world (tokens, traces, and often files). Naming the agents you *would*
+spawn is the deliverable.
+
+## Stage 0 — Survey (read-only)
+
+1. Preconditions: a git repo with a reasonably clean tree (uncommitted adoption files
+   must be reviewable as one diff). Then check `.forge/`:
+   - `.forge/manifest.json` present → a **scaffolded** project (has template ancestry).
+     Refuse; point to `$wf-upgrade`.
+   - `.forge/adoption.json` present → **already adopted. Run in add-layers mode** (not a
+     refusal): read its `layers`, SKIP the core (Stage 2 is already done), and in Stage 1
+     offer ONLY the layers not yet adopted. This is exactly how you add a layer — e.g.
+     Release management — to an existing adoption; re-running `$wf-adopt` is safe and
+     purely additive.
+   - Neither → first-time adoption, full flow.
+2. Detect the stack: build files (package.json/pnpm-lock/pom.xml/build.gradle),
+   languages, test runners, lint setup, CI provider, monorepo layout. Read the README
+   and any existing AI-context files (CLAUDE.md, AGENTS.md, .cursorrules, …).
+3. **Stack profile + gap check (read-only).** Load the `template-extraction` skill and run its
+   Part 1: write `.forge/stack-profile.json` (the structured fingerprint) and classify the
+   project against the shipped presets — verdict `covered` / `partial` / `novel`, closest
+   preset, recommendation. This is metadata only; it touches no source.
+4. Report what you found — including the **gap verdict** and closest preset — and what
+   adoption will add BEFORE touching anything.
+
+## Stage 1 — Scope interview
+
+AskUserQuestion (batch): which layers to adopt. **In add-layers mode, offer only the layers
+NOT already in `adoption.json`'s `layers`** (and don't re-offer the core) — e.g. an adopted
+project that skipped release earlier sees just "Release management" here.
+- **Workflow + AI-readiness** (always on first adoption; the core — skipped when re-running)
+- **Quality gates in CI** (needs GitHub Actions + interface prerequisites, see stage 3)
+- **Release management** (release-it: version + CHANGELOG from Conventional Commits — stage 5;
+  offer only if the project has no release tool already, and pair it with commit-lint)
+- **Connections** (GitHub settings, MCP, environments — the `connections` skill)
+- **mise toolchain** (offer only if the project doesn't already pin tools another way;
+  never fight an existing working setup)
+- **Reusable template extraction** (opt-in — reverse this project into an org-owned Copier
+  template so the team's next service starts from its own proven stack; the `template-extraction`
+  skill, Part 2 — run in Stage 5b). Frame it by the Stage 0 gap verdict: most valuable on
+  `novel` / `partial`, low value on `covered` (say so). It's higher-effort and token-heavy —
+  present it as the optional payoff, not a default.
+
+In the same batch, settle the **default rigor tier** (like `$wf-new`): a throwaway /
+experimental repo → `spike`; validating an MVP → `mvp`; a long-lived product → `production`
+(default). It's recorded in `adoption.json` and becomes the project-wide default for
+`$wf-implement` & `$wf-orchestrate` — per-feature `rigor:` frontmatter and
+`--mode` still override it. In add-layers mode, keep the existing tier unless the user changes it.
+
+## Stage 2 — AI-readiness + spec workflow
+
+**Add-layers mode: skip steps 1–3 (the core already exists) and go to step 4 to record the
+new layers.** Only run steps 1–3 on a first-time adoption.
+
+1. `AGENTS.md` (canonical context file, cross-tool standard): generate from the survey —
+   actual stack + versions, dev commands (the project's real ones, not WellForge defaults),
+   layout, conventions you OBSERVED (naming, error handling, test style), and the
+   spec-driven workflow note (`specs/` + `$wf-*` commands).
+   - **For projects with a frontend, record the UI library & styling system explicitly**
+     (e.g. MUI / Chakra / Ant / shadcn / Mantine / Tailwind-only) — the designer and
+     frontend-dev read this to map component reuse against the *project's* library, not the
+     WellForge greenfield default. Note the component directory and any theme/design-token file.
+   - Existing `CLAUDE.md` with content? Migrate its content into AGENTS.md (preserving
+     every rule), then replace CLAUDE.md with the one-line `@AGENTS.md` import.
+   - Existing `AGENTS.md`? Extend, never overwrite — append missing sections only.
+2. `specs/README.md` — pointer to the spec-driven workflow (same as scaffolds get).
+3. `.claude/settings.json` — pre-allow the project's routine commands (its actual
+   build/test/lint invocations). Merge into an existing file, never clobber. Add the plugin
+   declaration a scaffold gets (templates/_shared/CONTRACT.md § `.claude/settings.json`):
+   `extraKnownMarketplaces.wellforge` + `enabledPlugins["wellforge@wellforge"]`, so the
+   adopted repo states its dependency the same way a generated one does. Merge those two
+   keys in; leave any marketplace or plugin the project already declares untouched.
+4. `.forge/adoption.json` — `{ "adopted": "<date>", "plugin": { "version": "<version>", "set_by": "adopt", "at": "<date>", "marketplace": "<wellforge@wellforge | local>" }, "rigor": "<tier>", "layers": [...] }`.
+   Records that this is an ADOPTED project: `$wf-upgrade` stays unavailable
+   (no template ancestry) and fleet tooling can distinguish adopted from scaffolded.
+   - **`rigor`** — the project's default tier (from the Stage 1 interview; `production` if not
+     asked). It's the project default `$wf-implement` and `$wf-orchestrate`
+     resolve when a feature has no `rigor:` frontmatter and no `--mode` (rigor-tiers
+     precedence). This is the brownfield equivalent of a scaffold's `manifest.json` `rigor` —
+     without it, every feature falls back to `production`.
+   - **`plugin`** — an OBJECT (`version` / `set_by` / `at` / `marketplace`), read from the
+     installed plugin's `.claude-plugin/plugin.json`. `marketplace` is the key under
+     `.plugins` in `~/.claude/plugins/installed_plugins.json` starting `wellforge@`, or
+     `local` when the plugin is running from a checkout (`--plugin-dir`) — provenance a
+     teammate can or cannot reproduce. Earlier adoptions wrote a bare version string here;
+     when you find one, replace it with the object rather than leaving the shape mixed.
+     Readers accept both, writers emit the object.
+   - **Add-layers mode: MERGE, never overwrite** — keep the original `adopted` date and
+     `rigor` (unless the user re-chooses it), append the newly added layers to `layers`
+     (dedupe), and add `"updated": "<date>"`. Refresh `plugin` to the running version with
+     `set_by: "adopt"` — adding a layer is this plugin touching the project, and the field
+     records who last did. This is the one file that changes on a re-run.
+
+## Stage 3 — Quality gates (if chosen)
+
+1. **Interface check** — the reusable workflows have prerequisites; verify, don't assume:
+   - Node: pnpm with committed `pnpm-lock.yaml`, scripts `lint`, `typecheck`, vitest
+     for coverage. npm/yarn projects: STOP this stage and report what a migration
+     would involve — wiring a gate that can't pass is worse than no gate.
+   - JVM: Maven (`mvnw` or mise-provided), kotlin sources. ktlint/JaCoCo run via full
+     plugin coordinates — no pom changes needed. Gradle projects: not supported yet;
+     report it as a gates/ feature request.
+2. **Measure the baseline** — run the project's coverage ONCE, locally. Record actual
+   line (and branch, node) percentages, rounded DOWN to the nearest integer.
+3. **Wire** `.github/workflows/quality.yml` calling the reusable workflow(s) pinned to
+   the current `gates-v*` tag, passing `coverage-lines-baseline` (and branches for
+   node) from the measurement. Include the header comment:
+   ```yaml
+   # Ratchet rule: baselines may only be RAISED, never lowered (PR review enforces
+   # this). Central target: 80/70 — close the gap over time, then drop the inputs.
+   ```
+4. **Prove it locally**: lint + typecheck + coverage-at-baseline must pass before you
+   commit the workflow. A gate that is born red is a calibration failure — remeasure.
+5. **Git policy** — wire `commit-lint.yml` and `linear-history.yml` (same `gates-v*` pin) into
+   the same `quality.yml`, and tell the team to run `git config merge.ff only && git config
+   pull.rebase true` per clone. Both gates only inspect the **PR range**, so an existing
+   history full of merge commits stays untouched — the policy binds from adoption forward.
+   No ratchet or baseline here: unlike coverage, this costs a legacy project nothing to meet.
+
+## Stage 4 — Connections (if chosen)
+
+Load the `connections` skill and walk its checklists (each opens and closes with a
+verification command; PENDING for anything needing rights you don't have). The groma.md
+map is offered here too — on an adopted project it is most useful, since the scan gives
+the team a first map of code nobody has described; its Backlog.md guard applies.
+
+## Stage 5 — Release management (if chosen)
+
+Wire release-it so the project gets a version bump + `CHANGELOG.md` from its Conventional
+Commits (the `release` task / `$wf-release`). Additive; never destructive.
+
+1. **Never run two release tools — detect an existing one FIRST.** Look for
+   `.releaserc*`/`release.config.*` (semantic-release), `.changeset/` (Changesets),
+   `.versionrc*`/`standard-version`, a release GitHub Action, or a maintained `CHANGELOG.md`
+   with real history. If ANY exists: **STOP this stage**, report it, and do NOT add release-it
+   (offer to document their existing process in AGENTS.md instead). Never fight a working setup.
+2. **Version source — git tags (default).** release-it reads the latest `vX.Y.Z` tag as the
+   base and computes the bump from the commits. If there are NO release tags yet but a
+   manifest carries a version (`package.json`/`pom.xml`/…), use that as the starting version;
+   note future versions come from tags. Match the project's existing tag style (`v` prefix or
+   not) if it already tags.
+3. **Detect the version files to keep in sync** — document what IS, include only files that
+   actually carry a version:
+   - `package.json` (root and/or each package in a monorepo) → `@release-it/bumper` `out`.
+   - `pom.xml` → `hooks.after:bump`: `mvn versions:set -DnewVersion=${version} -DgenerateBackupPoms=false` (mvnw or mise-provided mvn).
+   - `build.gradle(.kts)` → a hook or a bumper regex on the `version` line.
+   - `pyproject.toml` → bumper (`project.version` or `tool.poetry.version`).
+   - `Cargo.toml` → bumper (`package.version`).
+   - None carry a version → git tags alone are fine (no bumper `out`).
+4. **Write `.release-it.json`**: `npm.publish:false` (adoption never publishes a package
+   unless the user explicitly asks), `github.release:true`, the `@release-it/conventional-changelog`
+   plugin (`preset: conventionalcommits`, `infile: CHANGELOG.md`), and the bumper `out`/hooks
+   from step 3. Mirror the project's commit/tag conventions.
+5. **How to run it** — if the repo uses mise, add a `release` task like the scaffold's
+   (`pnpm --package=release-it@^17 --package=@release-it/conventional-changelog@^8 --package=@release-it/bumper@^6 dlx release-it`);
+   otherwise document `npx release-it` in AGENTS.md. Needs Node available.
+6. **Conventional Commits from here on** — the changelog only works if commits are
+   conventional going forward (historical commits stay as-is; the first notes start clean at
+   the current tag). **Strongly recommend the commit-lint gate** (Quality-gates layer) so it's
+   enforced — say so explicitly. Do NOT run a release during adoption; that's `$wf-release`.
+
+## Stage 5b — Reusable template extraction (if chosen)
+
+Run the `template-extraction` skill's Part 2 on this project. **Safety gate first**
+(skeleton-only, secret scrub, IP/license check), then ask for a destination path (refuse the
+source project and the WellForge repo), generate the CONTRACT-compliant org-owned Copier
+template, and **verify it renders with `copier copy --defaults`** before hand-off. This runs
+*outside* the single adoption commit — the extracted template lives at its own destination with
+its own git history, not in this project's tree. Record `template-extraction` in
+`adoption.json`'s `layers`. It's an org-owned draft to review — say so.
+
+## Stage 6 — Hand off
+
+1. One commit: `chore: adopt WellForge (workflow[, gates][, release][, connections])` —
+   adoption must be a single revertable diff. In add-layers mode, name only what was added,
+   e.g. `chore: adopt WellForge release management`.
+2. Summary table: layer / added files / status (incl. measured baseline vs central
+   target, the release version source + files synced, the gap verdict from Stage 0, the
+   extracted template's destination + verification result if Stage 5b ran, and any stage
+   stopped with reasons — npm migration, Gradle, existing release tool, …).
+3. Suggest the natural next step: `$wf-spec <first feature>` — or
+   `$wf-orchestrate` for a pending bugfix, which doubles as a workflow demo.
+
+## Hard rules
+
+- Adoption ADDS files (AI-readiness, `quality.yml`, `.release-it.json`); it never modifies
+  existing source or build config, and never a version file except at an explicit
+  `$wf-release` later. Aligning the project to WellForge conventions is refactor work —
+  offer `$wf-orchestrate` for it, separately, after adoption.
+- Never wire release-it over an existing release tool (semantic-release, Changesets, …) —
+  detect and defer. Two release tools on one repo is a footgun.
+- Never invent conventions for AGENTS.md — document what IS, not what should be.
+- Baselines come from measurement, never estimation; round down; prove green locally.
+- No `.forge/manifest.json` for adopted projects — that file means "born from the
+  template" and would corrupt the upgrade contract. (`.forge/stack-profile.json` from Stage 0
+  is fine — it's read-only metadata, not template ancestry.)
+- Template extraction (Stage 5b) is **org-owned and skeleton-only**: it writes to a
+  user-chosen destination outside this project and outside the WellForge repo, never carries
+  domain code/secrets/licensed code, and never opens a PR to the WellForge catalog.
+- Re-running adoption is **additive only**: never re-generate or overwrite the core
+  (AGENTS.md, specs/, settings.json) on a re-run, never re-do a layer already in
+  `adoption.json`'s `layers`. The only file a re-run rewrites is `adoption.json` itself (merge).

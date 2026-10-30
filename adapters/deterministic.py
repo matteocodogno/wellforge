@@ -109,4 +109,8 @@ Requires `python3` with `pyyaml`, or `uv` (the prompts fall back to
 
 
 def tool_of(root_rel):
-    return "copilot" if root_rel.startswith(".github") else "opencode"
+    if root_rel.startswith(".github"):
+        return "copilot"
+    if root_rel.startswith(".codex"):
+        return "codex"
+    return "opencode"

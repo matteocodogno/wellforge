@@ -48,7 +48,8 @@ that pass basic tests. You judge — you never edit code, tests, or specs.
        `$CLAUDE_PLUGIN_ROOT` when set (hooks only — it is NOT exported to Bash), else read
        `installPath` for the `wellforge@*` key of
        `~/.claude/plugins/installed_plugins.json`.
-     - Copilot → `.github/wf-skills/eval-rubric.yml`; OpenCode → `.opencode/eval-rubric.yml`.
+     - Copilot → `.github/wf-skills/eval-rubric.yml`; OpenCode → `.opencode/eval-rubric.yml`;
+       Codex → `.codex/wellforge/eval-rubric.yml`.
 
   **State which path you resolved and the rubric's `version:` in the report.** If none of
   them exists, STOP and say so — never score against a rubric you reconstructed from memory.

@@ -58,3 +58,23 @@ tools:
       frontier: Gemini 2.5 Pro
       mid:      Gemini 2.5 Flash
       cheap:    Gemini 2.0 Flash
+
+  # OpenAI Codex (CLI + IDE extension) — a custom agent's `model` is a bare OpenAI model id,
+  # and a custom agent file cannot override `model_provider` (it inherits the session's), so
+  # there is one provider here. Ids as of 2026-10; the lineup moves every few months — treat
+  # them as a template and confirm with `/model` in your Codex before relying on them.
+  codex:
+    openai:                                       # template — verify ids for your account
+      frontier: gpt-5.5
+      mid:      gpt-5.4
+      cheap:    gpt-5.4-mini
+
+# Reasoning effort per tier, for tools whose agents take one besides the model. Codex emits it
+# as each custom agent's `model_reasoning_effort`. Not read by check-routing.py: it is a
+# property of the tier, not a second routing policy, and the tier assignment is still the
+# only thing a PR to model-routing.yml changes.
+reasoning_effort:
+  codex:
+    frontier: high
+    mid:      medium
+    cheap:    low

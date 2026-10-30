@@ -1,0 +1,66 @@
+# Per-tier budgets — advisory tripwires for cost and wall clock.
+#
+# ADVISORY, ALWAYS. A budget here never blocks a run, fails a gate, or changes a verdict.
+# It surfaces in /wellforge:triage and /wellforge:status so a human can look. That is the
+# heartbeat skill's surface-never-ship rule, and it applies with extra force to cost: the
+# numbers these are compared against are ESTIMATES, and a tripwire built on an estimate
+# that silently blocked work would be the worst of both.
+version: rigor-budgets-v1
+advisory_only: true
+
+# ── What the numbers are measured against, and why they are not dollars ─────────────
+# `est_cost_usd` from run-report.py is a STRUCTURAL UNDERCOUNT, documented in the
+# observability skill: it sees only what the SubagentStop hook captured (no main loop, no
+# cache read/write, and nothing at all when `.events.jsonl` was never written — which is
+# the case for every trace currently in this repo, all of which price at $0.0000).
+#
+# So treat these as RELATIVE tripwires — "this feature cost several times what a feature of
+# its tier usually does" — not as a bill. `/usage` is the bill.
+#
+# CALIBRATION STATUS: these are first values, derived from composition rather than
+# measurement, and they have never fired in anger. Expected trace-estimated spend, at
+# sonnet-5 ($2/$10 per MTok) for mid-tier agents and opus-5 ($5/$25) for the evaluator,
+# assuming ~40k in / 12k out per dispatch (≈ $0.20 mid, ≈ $0.50 frontier):
+#
+#   spike       main loop, no agents                          ≈ $0.00 traced
+#   mvp         PO + devs + QE-light          ~4-6 dispatches  ≈ $1
+#   production  + architect, designer, owasp, eval  ~10-14     ≈ $3
+#
+# Ceilings are set at roughly 3-4x expected so they flag an OUTLIER, not a normal run. Tune
+# them from real traces once a few features have run end to end; a ceiling that fires on
+# ordinary work gets ignored, which is the only way an advisory signal can fail.
+
+tiers:
+  spike:
+    cost_per_feature_usd: 1.00
+    cost_per_run_usd: 0.50
+    # A spike that has run for half a day is not a spike any more — that is the finding,
+    # and it is about the tier's premise rather than the money.
+    wallclock_per_batch_minutes: 30
+
+  mvp:
+    cost_per_feature_usd: 4.00
+    cost_per_run_usd: 1.50
+    wallclock_per_batch_minutes: 60
+
+  production:
+    cost_per_feature_usd: 12.00
+    cost_per_run_usd: 4.00
+    wallclock_per_batch_minutes: 120
+
+# ── Rework, the signal model-routing.yml actually asks for ──────────────────────────
+# "Move agents down a tier only with evidence — too cheap causes rework loops." This is
+# where that evidence is defined, so the claim and its measure live together.
+rework:
+  # A rework round = a run for this feature whose qe or security verdict is FAIL. Each one
+  # is work that had to be redone. Counted per feature and attributed to the agents that
+  # participated in the failing run.
+  #
+  # Threshold for calling an agent a hotspot: this many failing rounds across the window.
+  hotspot_rounds: 3
+  window_runs: 20
+
+  # Re-tiering evidence standard: an agent is a candidate to move DOWN a tier only when its
+  # rework rate stays at or below the rate of agents already at that tier, measured over a
+  # real window — and a candidate to move UP when it exceeds this threshold. Neither
+  # direction is a judgement call about how the output "felt".

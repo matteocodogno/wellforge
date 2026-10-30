@@ -1,0 +1,46 @@
+/*
+ * Wireframe theme — deliberately low-fidelity: grayscale, sharp corners, a
+ * sketch/mono type. Use when the QUESTION is about structure and layout, not
+ * look-and-feel — the muted styling signals "this is a wireframe, not the final
+ * design" so nobody bikesheds colors. Also the fallback when the project's real
+ * component library is unknown.
+ */
+:root {
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #ececec;
+  --border: #b0b0b0;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b6b6b;
+  --text-tertiary: #9a9a9a;
+  --accent: #4a4a4a;           /* neutral gray — no brand color */
+  --accent-hover: #333333;
+  --on-accent: #ffffff;
+  --selected-border: #1a1a1a;
+  --selected-bg: #e8e8e8;
+  --radius: 2px;               /* near-sharp — wireframe, not polished */
+  --radius-sm: 2px;
+  --font: 'Comic Sans MS', 'Segoe Print', ui-rounded, 'Bradley Hand', system-ui, sans-serif;
+  --button-transform: none;
+  --button-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #202020;
+    --bg-secondary: #2a2a2a;
+    --bg-tertiary: #333333;
+    --border: #555555;
+    --text-primary: #eaeaea;
+    --text-secondary: #a0a0a0;
+    --text-tertiary: #777777;
+    --accent: #cfcfcf;
+    --accent-hover: #e8e8e8;
+    --on-accent: #1a1a1a;
+    --selected-border: #eaeaea;
+    --selected-bg: #3a3a3a;
+  }
+}
+
+/* Dashed borders reinforce the "sketch" read on the main surfaces. */
+.option, .card, .mockup, .placeholder { border-style: dashed; }
