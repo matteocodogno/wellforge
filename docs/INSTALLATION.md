@@ -106,6 +106,30 @@ never blocks and never says so).
   session-start hook injects it automatically. `/wellforge:grill-me --docs` builds it for
   you during an interview (`domain-modeling` skill).
 
+## 6. Other AI tools
+
+The plugin above is for Claude Code. The same workflow, agents and skills reach other tools
+generated from it — never edited by hand:
+
+- **Codex — native plugin.** Install once, then set up each project:
+  ```bash
+  codex plugin marketplace add matteocodogno/wellforge --ref plugin-vX.Y.Z
+  ```
+  Install WellForge from that marketplace, then in each project run `$wf-setup` (the
+  plugin's onboarding skill): it copies the agent team, the scripts the `$wf-*` commands
+  run and an `AGENTS.md` block into the project — commit them. Trust the hooks via
+  `/hooks`; if `/hooks` does not list them, run `$wf-setup --hooks`. Re-run `$wf-setup`
+  after every plugin update (the session start says when a project is behind). Commands
+  are `$wf-spec`, `$wf-status`, … — see [`adapters/codex/`](../adapters/codex/README.md).
+- **Codex without the plugin, OpenCode, GitHub Copilot (VS Code)** — generate the files
+  into the project from a checkout:
+  ```bash
+  uv run --with pyyaml python adapters/<codex|opencode|copilot>/generate.py --out <project>
+  ```
+  Each adapter's README ([Codex](../adapters/codex/README.md),
+  [OpenCode](../adapters/opencode/README.md), [Copilot](../adapters/copilot/README.md))
+  says what is covered and what is not.
+
 ## Updating
 
 There are **two update channels** — they cover different things:

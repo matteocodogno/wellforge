@@ -359,7 +359,7 @@
   <section class="hero" style="border-top:none">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <span class="eyebrow">Open source · MIT · Claude Code, OpenCode, Copilot</span>
+        <span class="eyebrow">Open source · MIT · Claude Code, Codex, OpenCode, Copilot</span>
         <h1>A week of AI-infra setup, <span class="hot">turned into one command.</span></h1>
         <p class="flow">Describe the idea. Get back <b>a building, CI-gated, spec-driven repo</b> with an AI agent team already wired in, and keep it upgradeable as your standards move on.</p>
         <div class="cta-row">
@@ -395,7 +395,7 @@
 <span class="line out" data-step="1">✓ wellforge installed</span>
 <span class="line cmd" data-step="2"><span class="ps">$</span> <span class="t">wellforge setup</span></span>
 <span class="line out" data-step="2">✓ toolchain checked   ✓ repo cloned   ✓ plugin installed</span>
-<span class="line cmt" data-step="3"># now, in Claude Code (or OpenCode)</span>
+<span class="line cmt" data-step="3"># now, in Claude Code (or Codex, OpenCode)</span>
 <span class="line cmd" data-step="3"><span class="ps">&gt;</span> <span class="t">/wellforge:new a portal where contractors manage their work orders</span></span>
 <span class="line out dim" data-step="3">interview → stack pick → scaffold → verified build → connections</span>
 <span class="line out" data-step="3">✓ repo ready, gates green, first spec drafted</span></pre>
@@ -526,7 +526,7 @@
         <div class="layer">
           <span class="tag">wellforge-plugin/</span>
           <h3>Agent plugin</h3>
-          <p>Skills, agents, commands, hooks, MCP: the spec workflow, the agent team, the orchestrator, and local gate enforcement.</p>
+          <p>Skills, agents, commands, hooks, MCP: the spec workflow, the agent team, the orchestrator, and local gate enforcement. Also generated as a native Codex plugin and as adapters for OpenCode and Copilot.</p>
           <div class="covers"><b>Covers:</b> pillars 1, 2, 3</div>
         </div>
         <div class="layer">
@@ -567,7 +567,7 @@
         <div class="card">
           <h3>Kiro</h3>
           <dl><dt>What it gets right</dt><dd>A good spec UX.</dd>
-          <dt>Why not as-is</dt><dd>It's tied to its own IDE and runtime. WellForge runs in Claude Code, OpenCode and GitHub Copilot.</dd></dl>
+          <dt>Why not as-is</dt><dd>It's tied to its own IDE and runtime. WellForge runs in Claude Code, Codex, OpenCode and GitHub Copilot.</dd></dl>
         </div>
         <div class="card">
           <h3>superpowers</h3>
@@ -739,7 +739,7 @@
       <div class="sec-head">
         <span class="kicker">Get started</span>
         <h2>From nothing to building</h2>
-        <p>macOS or Linux, GitHub, and one of Claude Code, OpenCode, or GitHub Copilot (VS Code, via adapter).</p>
+        <p>macOS or Linux, GitHub, and one of Claude Code, Codex (native plugin), OpenCode, or GitHub Copilot (VS Code, via adapter).</p>
       </div>
       <div class="start-grid">
         <div class="steps">
@@ -763,6 +763,15 @@ wellforge setup</pre>
 <span class="c"># then scaffold a new project, or adopt one</span>
 /wellforge:new
 /wellforge:adopt</pre>
+          </div>
+          <div class="codebox" style="margin-top:1rem">
+<pre class="code" data-copy><span class="c"># …or in Codex: install the plugin, then once per project</span>
+codex plugin marketplace add <span class="p">matteocodogno/wellforge</span>
+$wf-setup
+
+<span class="c"># commands are skills, invoked by name</span>
+$wf-new
+$wf-adopt</pre>
           </div>
         </div>
       </div>

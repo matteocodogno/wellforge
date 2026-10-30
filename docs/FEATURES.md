@@ -367,5 +367,5 @@ The whole loop is E2E-tested: scaffold at v0.1.0 → template evolves → `copie
 - [Installation](INSTALLATION.md) — set up WellForge on your machine
 - [Quick start](QUICKSTART.md) — greenfield project in ~30 minutes
 - [PLAN.md](plans/PLAN.md) — build phases, status, honest deviations
-- [Multi-tool support](plans/MULTI-TOOL-SUPPORT.md) — run WellForge on Codex, OpenCode or GitHub Copilot (VS Code) via generated [adapters](../adapters/)
+- [Multi-tool support](plans/MULTI-TOOL-SUPPORT.md) — run WellForge on Codex, OpenCode or GitHub Copilot (VS Code) via generated [adapters](../adapters/); on Codex also as a native plugin (`wellforge-codex-plugin/`, then `$wf-setup` per project — [install](INSTALLATION.md#6-other-ai-tools))
 - [Template contract](../templates/_shared/CONTRACT.md) · [Gates policy](../gates/README.md)
