@@ -48,44 +48,11 @@ in every tier. Tier is a copier answer (manifest) + spec/brief frontmatter + com
 
 ## Repository layout
 
-```
-wellforge/
-├── AGENTS.md                 # this file: the brief every AI session reads + ADR index
-├── docs/plans/PLAN.md              # roadmap + per-phase status — read before working here
-├── copier.yml                # SINGLE template entry point: preset question + templated
-│                             # _subdirectory (required for copier update; repo-wide vX.Y.Z tags)
-├── .github/workflows/        # reusable gates: quality-node.yml, quality-jvm.yml
-│                             # (must live here — GitHub only resolves workflow_call from this path)
-├── wellforge-plugin/         # Claude Code plugin, v2.42.x (installed from the git
-│                         # marketplace, pinned to a plugin-v* tag)
-│   ├── .claude-plugin/plugin.json
-│   ├── commands/             # spec, plan, design, tasks, implement, orchestrate, eval, done,
-│   │                         # status, triage, doctor, new, upgrade, adopt, extract-template,
-│   │                         # spike, promote, release, grill-me, retro, improve-architecture, terse,
-│   │                         # terse-compress (→ /wellforge:*)
-│   ├── agents/               # product-owner, architect, designer, frontend-dev, backend-dev,
-│   │                         # devops, quality-engineer, evaluator + specialists (owasp-reviewer, adr-writer)
-│   ├── skills/               # spec-driven, rigor-tiers, observability, visual-companion,
-│   │                         # frontend-design, systematic-debugging, worktree-isolation,
-│   │                         # self-critique, tdd, grilling, domain-modeling, template-extraction, git-policy,
-│   │                         # quality-gates, template-contract,
-│   │                         # connections + stack skills (react-ts-vite, kotlin-springboot,
-│   │                         # hono-ts-backend, mise, springboot-scaffold, pulumi-gcp-ts)
-│   ├── config/               # model-routing.yml + model-tiers.yml (tool-neutral tiers),
-│   │                         # spec-frontmatter.schema.json (machine mirror of spec-driven)
-│   ├── hooks/                # lifecycle hooks (incl. SubagentStop run-trace telemetry)
-│   └── .mcp.json             # sequential-thinking, playwright, github, context-hub
-├── wellforge-codex-plugin/   # GENERATED native Codex plugin (adapters/codex/generate.py
-│                             # --package), listed by .agents/plugins/marketplace.json
-├── templates/
-│   ├── _shared/CONTRACT.md   # binding contract: questions, required files, versioning
-│   ├── spring-kotlin-react/template/   # SB4 Kotlin + jOOQ + Liquibase / React TS Vite
-│   ├── hono-react/template/            # Hono + Drizzle / React TS Vite
-│   └── pulumi-gcp-ts/template/         # Pulumi IaC (TypeScript) on GCP — stacks, ComponentResources,
-│                                       # CrossGuard policy, mock tests (reuses quality-node gate)
-├── gates/                    # configs (semgrep), scripts (check-jacoco.py), policy README
-└── scripts/fleet-status.sh   # org-wide table: project template versions vs latest tag
-```
+`ls` shows it; two things it will not tell you:
+- The reusable gate workflows must live in `.github/workflows/` — GitHub only resolves
+  `workflow_call` from that path.
+- `wellforge-codex-plugin/` is GENERATED (`adapters/codex/generate.py --package`) and CI
+  diffs it against a fresh run — never edit it by hand.
 
 ## Current state (2026-09)
 
@@ -117,70 +84,12 @@ wellforge/
   `marketplace.json`'s `version` and `source.ref`, AGENTS.md) — `check-docs.py` fails CI
   otherwise, because a teammate silently installing a different plugin than this repo
   describes is not a failure anything else would report.
-- **Phase 16** (`docs/plans/PLAN.md`) hardens parallel execution from the pilot's field findings —
-  the `worktree-isolation` skill, environment faults, `touch:`-overlap edges, ADR failure
-  shapes (plugin `2.26.0`). **Its template half landed in `v0.10.0`** (ADR 0002): both app
-  presets derive a per-checkout database name, host port and compose project from
-  `sha256(git rev-parse --show-toplevel)` via mise `[env]`, integration tests run against an
-  ephemeral Testcontainers database, and `mise run db:guard` refuses to act on another
-  checkout's database. Class 1 of the shared-state enumeration is therefore **isolated** for
-  projects at `v0.10.0`+, which is what lets a backend batch of ≥2 run in parallel at all —
-  the preflight reads `.forge/manifest.json` to decide which rule applies.
-- **Phase 17** (`docs/plans/PLAN.md`) adds the reflexive pattern the plugin lacked: the
-  `self-critique` skill — one bounded pass over your own artifact before the gate that
-  follows, checklist-driven, never a loop, never self-approving, and explicitly not evidence
-  the evaluator may credit (plugin `2.27.0`).
-- **Phase 30** (`docs/plans/PLAN.md`) makes the dev agents test-first: the `tdd` skill —
-  one behavior per cycle, a red that must fail on the assertion before any implementation,
-  an explicit exemption list, and a `TDD:` report line that is the agent's own account and
-  never evidence the evaluator may credit (plugin `2.51.0`).
-- **Phase 31** (`docs/plans/PLAN.md`) adds the deep interview the batched one cannot be:
-  the `grilling` skill and `/wellforge:grill-me` — one question at a time down the decision
-  tree, a recommendation with each, ending in a decision ledger that keeps what the user
-  *decided* apart from what they *delegated* (plugin `2.52.0`).
-- **Phase 32** (`docs/plans/PLAN.md`) gives the domain language an owner: the
-  `domain-modeling` skill and `/wellforge:grill-me --docs` — one word per concept in the
-  project glossary, every new term stress-tested against edge cases, agents that return
-  glossary candidates instead of editing it (plugin `2.53.0`).
-- **Phase 33** (`docs/plans/PLAN.md`) closes the loop on the environment itself:
-  `/wellforge:retro` — evidence from the session and the run traces, at most five findings
-  ranked by recurrence, each fixed at the strongest rung that fits (remove the cause >
-  mechanism > on-demand doc > always-loaded doc), applied only on a yes (plugin `2.54.0`).
-- **Phase 34** (`docs/plans/PLAN.md`) adds the scan for architectural decay:
-  `/wellforge:improve-architecture` — co-change and run-trace evidence first, then the
-  architect in a spec-less *review mode* looking for shallow modules; at most five
-  candidates, the picked one designed twice, the refactor itself routed to
-  `/wellforge:orchestrate` (plugin `2.55.0`).
-- **Phase 35** (`docs/plans/PLAN.md`): the prompt evals were run in full for the first
-  time. Six suite/environment defects fixed (tool grant, fixture not a git repo, pyyaml
-  invisible in the sandbox, …) and **one real bug found by them**: the Stop hook treated
-  the `status: done` write of `/wellforge:done` as drift and blocked every close.
-  `stop-verify.sh` now shares `forge-state.py`'s lifecycle rule, asserted by its matrix.
-- **Phase 36** (`docs/plans/PLAN.md`): the CLI release path could not produce a green tag —
-  the tarball's sha cannot exist before the tag is pushed, and three checks failed the
-  placeholder that follows from it. `release-cli.sh` now bumps the constant, the Formula
-  url and this file together, `check-docs.py` accepts a placeholder on the release commit
-  and nowhere after it, and the script restores the tree if it stops. Rehearsed end to end
-  in a throwaway clone before it was run for real.
-- **Phase 37** (`docs/plans/PLAN.md`): the grilling decision ledger is a file
-  (`.forge/grill/<slug>.md`, then `specs/NNN-slug/ledger.md`), written as each decision
-  resolves, and `/wellforge:spec` / `/wellforge:orchestrate` take it with `--ledger` — the
-  missing route from `grill-me` into the agent pipeline (plugin `2.56.0`).
-- **Phase 38** (`docs/plans/PLAN.md`): the first long `production` run did not converge —
-  10 QE invocations against a cap of 2, the spec doubled after approval — because each
-  loop's rule was missing or could not be counted against. Now: a **run preflight** before
-  the first agent, **`BLOCKED`** as QE's third verdict (no fix round, no eval), a fix-round
-  cap that is **per feature** and recorded (`fix_rounds`), scope **frozen at gate 1**, and
-  QE's verdict on disk as `qe-report.md` so every round is a fresh agent. All of it lives in
-  the `rigor-tiers` skill; prompt-authored, no eval covers it yet (plugin `2.57.0`).
-- **Phase 40** (`docs/plans/PLAN.md`): the **Codex adapter** (`adapters/codex/`) — commands
-  as `$wf-*` skills (explicit-only), agents as `.codex/agents/*.toml`, and Codex's
-  Claude-contract hooks running the plugin's own scripts unchanged behind a payload
-  translator. Implementation batches run sequentially there (no worktree isolation). Also a
-  **native Codex plugin**, `wellforge-codex-plugin/` — generated and committed (CI diffs it
-  against a fresh run), skills + MCP + hooks, with `$wf-setup` copying the per-project half
-  (agents, `$WF`) in (plugin `2.58.0`). The live-session pass
-  (`adapters/codex/SMOKE-TEST.md`) is still open.
+- **Phases 16–40** (per-phase detail in `docs/plans/PLAN.md`): parallel-safety
+  (`worktree-isolation`; per-checkout databases from template `v0.10.0`, ADR 0002),
+  self-critique, TDD, grilling + ledger files, the domain glossary, retro,
+  improve-architecture, convergence rules for long runs (`rigor-tiers`), and the Codex
+  adapter + native Codex plugin — whose live-session pass (`adapters/codex/SMOKE-TEST.md`)
+  is still open.
 - **Outstanding** (Phase 7 pilot): full `mise run install/build/test` on a generated project
   and its gates green in **that project's** CI (wellforge's own repo and CI are green — what
   is unproven is a scaffold pushed to GitHub and passing `quality-*.yml` end to end),
