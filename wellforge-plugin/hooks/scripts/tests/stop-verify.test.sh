@@ -219,6 +219,7 @@ ts_repo() {   # ts_repo <lockfile|-> <typed|clean|broken>; a compile unit in $RE
   echo '{}' > svc/tsconfig.json
   [ "$1" != "-" ] && : > "svc/$1"
   printf '#!/bin/sh\n[ "$1" = "--version" ] && { echo "Version 5.0.0"; exit 0; }\n'\
+'[ -n "$TSC_LOG" ] && echo run >> "$TSC_LOG"\n'\
 'if grep -rqs TYPE_ERROR --include=*.ts . --exclude-dir=node_modules; then echo "error TS2345: bad"; exit 1; fi\nexit 0\n' \
     > svc/node_modules/.bin/tsc
   chmod +x svc/node_modules/.bin/tsc
@@ -293,6 +294,65 @@ grep -qE 'bun x --no-install' "$STUB_LOG" || [ ! -s "$STUB_LOG" ] && PASS=$((PAS
 if grep -q 'command -v pnpm >/dev/null 2>&1 \]' "$HOOK" || grep -qE '^[^#]*pnpm exec tsc --noEmit\)' "$HOOK"; then
   FAIL=$((FAIL+1)); echo "  FAIL: hook is gated on / hardcodes pnpm again"
 else PASS=$((PASS+1)); fi
+
+# ── a tree that already passed is not compiled again ────────────────────────────
+# The cost bug: every Stop re-ran tsc / mvnw over the whole branch, ~11s typical and up to
+# 37s, even on a turn that only answered a question. A pass is remembered by a fingerprint
+# of the compile-relevant tree (in the git dir) and an identical tree skips the compile.
+# Everything below must fail against a hook that does not cache — or one that caches wrong.
+tsc_runs() { [ -s "$TSC_LOG" ] && wc -l < "$TSC_LOG" | tr -d ' ' || echo 0; }
+expect_runs() {  # expect_runs <n> <desc>
+  if [ "$(tsc_runs)" = "$1" ]; then PASS=$((PASS+1))
+  else FAIL=$((FAIL+1)); echo "  FAIL: $2 (tsc ran $(tsc_runs) times, want $1)"; fi
+}
+
+# 27. unchanged tree: the second Stop does not run tsc
+ts_repo bun.lock clean; TSC_LOG=$(mktemp); export TSC_LOG
+git switch -qc feat/cache     # a branch, so a committed .ts file stays in the hook's view (29)
+run_stubbed 0 "first Stop type-checks"
+run_stubbed 0 "second Stop on an unchanged tree"
+expect_runs 1 "tsc re-ran on an unchanged tree"
+
+# 28. docs, specs and run traces cannot change a compile: they do not invalidate it
+echo "- [ ] T9" >> specs/001-x/tasks.md; mkdir -p .forge/runs; echo '{}' > .forge/runs/r.json
+run_stubbed 0 "a docs/trace-only change after a pass"
+expect_runs 1 "a markdown or .forge/ change re-ran tsc"
+
+# 29. committing the very content that passed is not a change either
+git add svc/a.ts; git commit -qm "feat: z"
+run_stubbed 0 "committing the passed content"
+expect_runs 1 "a commit of already-checked content re-ran tsc"
+
+# 30. a tracked .ts edit invalidates: a new type error blocks
+echo 'const q: string = 1 // TYPE_ERROR' >> svc/a.ts
+run_stubbed 2 "a type error introduced after a cached pass blocks"
+
+# 31. so does a NEW untracked file
+ts_repo bun.lock clean; : > "$TSC_LOG"
+run_stubbed 0 "pass before the untracked file"
+echo 'const r: string = 1 // TYPE_ERROR' > svc/b.ts
+run_stubbed 2 "an untracked file with a type error, after a cached pass, blocks"
+
+# 32. a block is never cached: the same broken tree is checked again
+ts_repo bun.lock broken; : > "$TSC_LOG"
+run_stubbed 2 "broken tree blocks"
+run_stubbed 2 "broken tree still blocks on the next Stop"
+expect_runs 2 "a failed check was served from cache"
+
+# 33. an advisory (no typescript) is not a pass and is not cached
+ts_repo bun.lock clean; rm -rf svc/node_modules; git add -A; git commit -qm "chore: no tsc" 2>/dev/null
+echo 'export const u = 5' >> svc/a.ts
+run_stubbed 0 "advisory run"
+PF=$(git -C "$REPO" rev-parse --path-format=absolute --git-path wellforge/stop-verify.pass)
+[ ! -s "$PF" ] && PASS=$((PASS+1)) || { FAIL=$((FAIL+1)); echo "  FAIL: an advisory skip was recorded as a pass"; }
+
+# 34. the record lives in the git dir: the working tree is untouched
+ts_repo bun.lock clean; BEFORE=$(snapshot)
+run_stubbed 0 "pass that writes the record"
+PF=$(git -C "$REPO" rev-parse --path-format=absolute --git-path wellforge/stop-verify.pass)
+[ -s "$PF" ] && [ "$BEFORE" = "$(snapshot)" ] && PASS=$((PASS+1)) \
+  || { FAIL=$((FAIL+1)); echo "  FAIL: pass record missing from the git dir, or the tree changed"; }
+unset TSC_LOG
 
 echo
 echo "stop-verify: $PASS passed, $FAIL failed"

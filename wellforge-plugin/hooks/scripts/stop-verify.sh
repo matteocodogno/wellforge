@@ -119,6 +119,52 @@ if [ -n "$SPECS_CHANGED" ] && [ -z "$TASKS_CHANGED" ]; then
   done
 fi
 
+# ── Skip a compile that already passed on this exact tree ───────────────────────
+# The checks below run over the whole BRANCH, so without this every Stop re-ran tsc / mvnw
+# — ~11s typical, 37s worst, measured — even on a turn that only answered a question or
+# edited a spec. A PASS is remembered as a fingerprint of the compile-relevant tree; an
+# identical tree on the next Stop exits here.
+#
+# The fingerprint is CONTENT, not history: path + blob hash of every tracked and untracked
+# (non-ignored) file, the worktree's hash where it differs from the index. So committing or
+# staging the content that passed is not a change, and any edit — tracked, untracked or a
+# deletion — is. Excluded, because they cannot change a compile: `*.md` (specs, docs) and
+# `.forge/` (run traces, written by SubagentStop on every agent). The hook's own text is
+# included, so a hook upgrade re-checks. Not covered: gitignored state (node_modules,
+# ~/.m2) changing on its own — an install that matters changes a lockfile, which IS covered.
+#
+# Only a clean pass is recorded. A block re-runs (the user is fixing it), and an advisory
+# (no tsc, Maven out of budget) is not a pass. The record lives in the git dir (per
+# worktree), never the working tree — this check must not write to the project.
+compile_fingerprint() {
+  local top dirty untr paths
+  top=$(git -C "$PROJECT_DIR" rev-parse --show-toplevel 2>/dev/null) || return
+  (
+    cd "$top" || exit
+    set -- . ':(exclude)*.md' ':(exclude).forge'
+    dirty=$(git diff --name-only -- "$@")
+    untr=$(git ls-files --others --exclude-standard -- "$@")
+    paths=$(printf '%s\n%s\n' "$dirty" "$untr" | sort -u | while IFS= read -r p; do
+      [ -n "$p" ] && [ -f "$p" ] && echo "$p"; done)
+    {
+      cksum < "${BASH_SOURCE[0]}"
+      git ls-files -s -- "$@" | DIRTY="$dirty" awk -F'\t' '
+        BEGIN { n = split(ENVIRON["DIRTY"], x, "\n"); for (i = 1; i <= n; i++) skip[x[i]] = 1 }
+        !($2 in skip) { split($1, a, " "); print $2 "\t" a[2] }'
+      [ -n "$paths" ] && paste <(echo "$paths") <(echo "$paths" | git hash-object --stdin-paths)
+    } | sort | git hash-object --stdin
+  )
+}
+COMPILE_CHANGED=$(echo "$CHANGED" | grep -E '\.(ts|tsx|kt|kts)$|(^|/)pom\.xml$')
+FP=""; NO_RECORD=""
+if [ -n "$COMPILE_CHANGED" ]; then
+  PASS_FILE=$(git -C "$PROJECT_DIR" rev-parse --path-format=absolute --git-path wellforge/stop-verify.pass 2>/dev/null)
+  FP=$(compile_fingerprint)
+  if [ -n "$FP" ] && [ -n "$PASS_FILE" ] && [ "$(cat "$PASS_FILE" 2>/dev/null)" = "$FP" ]; then
+    exit 0
+  fi
+fi
+
 # ── TypeScript compile check ─────────────────────────────────────────────────
 # Monorepo-aware: for each changed .ts/.tsx file walk UP to the nearest directory holding BOTH
 # a package.json and a tsconfig.json — that is the real compile unit. Never assume `frontend/`
@@ -222,6 +268,7 @@ if [ -n "$CHANGED_TS" ]; then
 
   if [ -z "$TS_DIRS" ]; then
     echo "stop-verify: no tsconfig.json found above the changed .ts files — type check skipped (advisory)" >&2
+    NO_RECORD=1
   fi
   while IFS= read -r marked; do
     [ -z "$marked" ] && continue
@@ -231,6 +278,7 @@ if [ -n "$CHANGED_TS" ]; then
     ts_check "$dir"; rc=$?
     if [ "$rc" -eq 2 ]; then
       echo "stop-verify: $TS_WHY in $dir — type check skipped (advisory)" >&2
+      NO_RECORD=1
     elif [ "$rc" -eq 1 ]; then
       echo "TypeScript errors in $dir — fix before finishing:" >&2
       echo "$TSC_OUT" | head -20 >&2
@@ -262,6 +310,8 @@ if [ -n "$CHANGED_MVN" ]; then
     done
   done <<< "$CHANGED_MVN"
 
+  # A Kotlin/pom change with no mvnw above it was compiled by nobody: not a pass.
+  [ -n "$NO_WRAPPER" ] && NO_RECORD=1
   if [ -z "$MVN_DIRS" ] && [ -n "$NO_WRAPPER" ] && echo "$CHANGED_MVN" | grep -qE '(^|/)pom\.xml$'; then
     echo "⚠ pom.xml changed but no mvnw found. Run: mvn wrapper:wrapper -N" >&2
   fi
@@ -284,6 +334,7 @@ if [ -n "$CHANGED_MVN" ]; then
       # Out of budget. Say so loudly: an unreported timeout is a check that silently passed.
       echo "stop-verify: Maven compile in $dir exceeded ${MVN_BUDGET}s — NOT verified (advisory)." >&2
       echo "  Run it yourself: (cd $dir && ./mvnw compile)" >&2
+      NO_RECORD=1
       continue
     fi
     if [ "$RC" -ne 0 ]; then
@@ -295,4 +346,8 @@ if [ -n "$CHANGED_MVN" ]; then
   done <<< "$MVN_DIRS"
 fi
 
+# Every compile that ran passed and nothing was skipped: remember this tree.
+if [ -n "$FP" ] && [ -z "$NO_RECORD" ] && [ -n "$PASS_FILE" ]; then
+  mkdir -p "$(dirname "$PASS_FILE")" 2>/dev/null && echo "$FP" > "$PASS_FILE" 2>/dev/null
+fi
 exit 0
