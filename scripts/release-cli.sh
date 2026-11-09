@@ -37,7 +37,7 @@ TAP_NAME="matteocodogno/wellforge"
 
 # Files the release commit rewrites. Named once: step 2 edits them, step 4 stages them, and
 # `die` restores them if the release stops between the two.
-RELEASE_FILES=(scripts/wellforge Formula/wellforge.rb CLAUDE.md)
+RELEASE_FILES=(scripts/wellforge Formula/wellforge.rb AGENTS.md)
 UNCOMMITTED_BUMP=0
 UNCOMMITTED_FORMULA=0
 die() {
@@ -161,7 +161,7 @@ if [ "$FORMULA_ONLY" -eq 1 ]; then
 else
   say "  1. prove   scripts/check-all.sh — EVERY self-test, and a hard precondition"
   say "     decide  $BUMP -> $next"
-  say "  2. bump    WELLFORGE_CLI_VERSION=\"$next\", the Formula url (placeholder sha), CLAUDE.md"
+  say "  2. bump    WELLFORGE_CLI_VERSION=\"$next\", the Formula url (placeholder sha), AGENTS.md"
   say "  3. prove   CLI matrix, shellcheck, brew style, check-docs — on the bumped tree"
   say "  4. commit  'chore(cli): release $next'  +  tag $tag"
   say "  5. push    main and $tag            ← the tarball does not exist before this"
@@ -225,9 +225,9 @@ fi
 if [ "$FORMULA_ONLY" -eq 0 ]; then
 step 1 "running scripts/check-all.sh (every self-test in the repo)"
 run_gate
-step 2 "bumping to $next — the constant, the Formula url, and CLAUDE.md, together"
+step 2 "bumping to $next — the constant, the Formula url, and AGENTS.md, together"
 # THREE files, not one. This step used to touch only scripts/wellforge, and the commit it
-# produced could not be green anywhere: check-docs requires the Formula url and CLAUDE.md's
+# produced could not be green anywhere: check-docs requires the Formula url and AGENTS.md's
 # "Latest tags" line to name the same version as the constant, and the CLI matrix asserts
 # the url too. So the tagged commit failed its own CI, by construction, on every release.
 #
@@ -249,10 +249,10 @@ grep -q "^  url \"$url\"\$" "$tmp" || die "the Formula url did not take — chec
 grep -q "^  sha256 \"$PLACEHOLDER_SHA\"\$" "$tmp" || die "the placeholder sha did not take — check $FORMULA by hand"
 cat "$tmp" > "$FORMULA"; rm -f "$tmp"
 
-# CLAUDE.md states current versions in exactly one paragraph ("- Latest tags: …"), twice per
+# AGENTS.md states current versions in exactly one paragraph ("- Latest tags: …"), twice per
 # series: as a tag and as a bare version. Only that paragraph is touched — every other
 # version in the file is history and stays as written.
-CLAUDE_MD="$ROOT/CLAUDE.md"
+AGENTS_MD="$ROOT/AGENTS.md"
 tmp="$(mktemp)"
 awk -v cur="$cur" -v nxt="$next" '
   /^- Latest tags:/ { left = 6 }
@@ -261,10 +261,10 @@ awk -v cur="$cur" -v nxt="$next" '
     gsub("CLI `" cur "`", "CLI `" nxt "`")
     left--
   }
-  { print }' "$CLAUDE_MD" > "$tmp" || die "awk failed on CLAUDE.md"
+  { print }' "$AGENTS_MD" > "$tmp" || die "awk failed on AGENTS.md"
 grep -q "cli-v$next" "$tmp" && grep -qF "CLI \`$next\`" "$tmp" \
-  || die "CLAUDE.md's 'Latest tags' paragraph did not take cli-v$next — check it by hand"
-cat "$tmp" > "$CLAUDE_MD"; rm -f "$tmp"
+  || die "AGENTS.md's 'Latest tags' paragraph did not take cli-v$next — check it by hand"
+cat "$tmp" > "$AGENTS_MD"; rm -f "$tmp"
 
 step 3 "proving the bumped tree before the tag — CLI matrix, shellcheck, brew style, check-docs"
 # WELLFORGE_RELEASING tells the matrix which version is being cut. Without it, "the constant

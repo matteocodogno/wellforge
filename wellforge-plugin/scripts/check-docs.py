@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Docs drift guard — the plugin's README and CLAUDE.md must describe what ships.
+"""Docs drift guard — the plugin's README and AGENTS.md must describe what ships.
 
 Same idea as check-routing.py: the failure is silent (a command exists, nobody can find it),
 so it needs a test rather than a convention. Reported 2026-09-20 with the README at 13/19
 commands, 7/18 skills and one MCP server missing, and plugin.json one patch ahead of the
-version CLAUDE.md quoted.
+version AGENTS.md quoted.
 
 Checks:
   1. every commands/*.md appears in wellforge-plugin/README.md
   2. every skills/*/SKILL.md appears there too
   3. every server in .mcp.json appears there
-  4. plugin.json's version == the version CLAUDE.md quotes, the version the marketplace
+  4. plugin.json's version == the version AGENTS.md quotes, the version the marketplace
      entry publishes, AND the plugin tag its `ref` pins — three files naming one release
   5. every skill description is within the 1024-char limit the loader enforces
   6. cross-skill links are relative markdown links that resolve, not inert [[wiki-links]]
@@ -50,11 +50,11 @@ for server in mcp.get("mcpServers", mcp):
         fail.append(f"README does not list MCP server `{server}`")
 
 pj = json.load(open(f"{PLUGIN}/.claude-plugin/plugin.json"))["version"]
-quoted = re.search(r"plugin `([0-9]+\.[0-9]+\.[0-9]+)`", open(f"{ROOT}/CLAUDE.md").read())
+quoted = re.search(r"plugin `([0-9]+\.[0-9]+\.[0-9]+)`", open(f"{ROOT}/AGENTS.md").read())
 if not quoted:
-    fail.append("CLAUDE.md no longer quotes a plugin version — the sync check cannot run")
+    fail.append("AGENTS.md no longer quotes a plugin version — the sync check cannot run")
 elif quoted.group(1) != pj:
-    fail.append(f"plugin.json is {pj} but CLAUDE.md says {quoted.group(1)} — bump both in one commit")
+    fail.append(f"plugin.json is {pj} but AGENTS.md says {quoted.group(1)} — bump both in one commit")
 
 # The marketplace entry is what a NEW teammate installs. It carries the version twice (an
 # explicit `version`, and the `ref` tag its git-subdir source is pinned to), so there are two
@@ -439,7 +439,7 @@ if os.path.exists(_mcp):
 
 # ── no document may claim a version that does not exist yet ─────────────────────────
 # The brief for this check asked that EVERY plugin version mention equal plugin.json. It
-# cannot: CLAUDE.md legitimately cites plugin 2.26.0 and 2.27.0 as the releases that shipped
+# cannot: AGENTS.md legitimately cites plugin 2.26.0 and 2.27.0 as the releases that shipped
 # Phases 16 and 17, and rewriting those to today's number would turn a changelog into a lie.
 # The rule that IS enforceable: nothing may claim a version NEWER than the files define
 # (that version does not exist), and the single designated current-state line must match
@@ -449,7 +449,7 @@ def _tuple(v):
 
 
 _docs = [("README.md", os.path.join(ROOT, "README.md")),
-         ("CLAUDE.md", os.path.join(ROOT, "CLAUDE.md")),
+         ("AGENTS.md", os.path.join(ROOT, "AGENTS.md")),
          ("docs/INSTALLATION.md", os.path.join(ROOT, "docs", "INSTALLATION.md"))]
 for label, path in _docs:
     if not os.path.exists(path):
@@ -467,10 +467,10 @@ for label, path in _docs:
                                 f"scripts/wellforge ({cli_version}) — that release does not exist")
 
 # The designated current-state line, asserted exactly.
-_cl = open(os.path.join(ROOT, "CLAUDE.md"), encoding="utf-8").read()
+_cl = open(os.path.join(ROOT, "AGENTS.md"), encoding="utf-8").read()
 _cur = [l for l in _cl.splitlines() if "Latest tags:" in l]
 if not _cur:
-    fail.append("CLAUDE.md no longer has a `Latest tags:` line — the current-state check "
+    fail.append("AGENTS.md no longer has a `Latest tags:` line — the current-state check "
                 "has nothing to assert against")
 else:
     # The statement spans a few wrapped lines; take the paragraph.
@@ -482,19 +482,19 @@ else:
     # other satisfied the check — measured, that is exactly what slipped through.
     for found in re.findall(r"plugin[ -]`?v?([0-9]+\.[0-9]+\.[0-9]+)`?", _para):
         if found != pj:
-            fail.append(f"CLAUDE.md's `Latest tags` paragraph names plugin {found} but "
+            fail.append(f"AGENTS.md's `Latest tags` paragraph names plugin {found} but "
                         f"plugin.json is {pj} — the one paragraph that states current "
                         f"versions has a stale mention")
     if cli_version:
         for found in re.findall(r"(?:CLI|cli)[ -]`?v?([0-9]+\.[0-9]+\.[0-9]+)`?", _para):
             if found != cli_version:
-                fail.append(f"CLAUDE.md's `Latest tags` paragraph names CLI {found} but "
+                fail.append(f"AGENTS.md's `Latest tags` paragraph names CLI {found} but "
                             f"scripts/wellforge is {cli_version}")
     if f"plugin `{pj}`" not in _para and f"plugin-v{pj}" not in _para:
-        fail.append(f"CLAUDE.md's `Latest tags` paragraph does not name plugin {pj} "
+        fail.append(f"AGENTS.md's `Latest tags` paragraph does not name plugin {pj} "
                     f"(plugin.json) — the one line that states current versions is stale")
     if cli_version and f"cli-v{cli_version}" not in _para:
-        fail.append(f"CLAUDE.md's `Latest tags` paragraph does not name cli-v{cli_version} "
+        fail.append(f"AGENTS.md's `Latest tags` paragraph does not name cli-v{cli_version} "
                     f"(scripts/wellforge) — the one line that states current versions is stale")
 
 if fail:
@@ -504,4 +504,4 @@ if fail:
     sys.exit(1)
 print(f"✓ docs consistent — {len(cmds)} commands, {len(skills)} skills, "
       f"{len(mcp.get('mcpServers', mcp))} MCP servers listed; version {pj} in sync "
-      f"(plugin.json = CLAUDE.md = marketplace.json = ref plugin-v{pj})")
+      f"(plugin.json = AGENTS.md = marketplace.json = ref plugin-v{pj})")

@@ -123,7 +123,7 @@ jobs:
         working-directory: wellforge-plugin
         run: uv run --with pyyaml python scripts/check-routing.py --tool claude
       # Docs drift: a command nobody can find in the README, a skill description over the
-      # loader's limit, or CLAUDE.md quoting a stale plugin version. All silent failures.
+      # loader's limit, or AGENTS.md quoting a stale plugin version. All silent failures.
       - name: check-docs.py
         working-directory: wellforge-plugin
         run: uv run --with pyyaml python scripts/check-docs.py

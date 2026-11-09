@@ -351,7 +351,7 @@ The whole loop is E2E-tested: scaffold at v0.1.0 → template evolves → `copie
   *declared*, with `/mcp` named as what actually proves them. It closes with the command
   index, so it doubles as `help`.
 - **Drift guards in CI** — `check-routing.py` (agent models match the routing policy),
-  `check-docs.py` (the README lists every command, skill and MCP server; CLAUDE.md's quoted
+  `check-docs.py` (the README lists every command, skill and MCP server; AGENTS.md's quoted
   version matches `plugin.json`; skill descriptions stay under the loader's limit; no
   dangling `[[wiki-link]]`), and `rubric-sync` (the plugin's eval-rubric mirror is
   byte-identical to the central one). Each exists because the corresponding failure is

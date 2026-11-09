@@ -24,7 +24,7 @@ local    746cc34fd84f6563a3ad4c688b1c195852b3a9d7969e7d8538232b4098010441   ← 
 ```
 
 So the order is forced: **tag first, sha second.** Commit 1 moves the version everywhere it
-is stated — the constant, the Formula's url, CLAUDE.md — and carries the tag; commit 2 writes
+is stated — the constant, the Formula's url, AGENTS.md — and carries the tag; commit 2 writes
 the sha of the tarball that now exists. Anything promising one commit is either not pinning
 a sha or not checking it.
 
@@ -60,7 +60,7 @@ or `check-docs.py` fails it:
 
 - `Formula/wellforge.rb` — the `url` names `cli-vX.Y.Z`; the `sha256` becomes the all-zero
   placeholder (step 6 replaces it).
-- `CLAUDE.md` — the "Latest tags" paragraph, both mentions (`cli-vX.Y.Z` and CLI `X.Y.Z`).
+- `AGENTS.md` — the "Latest tags" paragraph, both mentions (`cli-vX.Y.Z` and CLI `X.Y.Z`).
 
 `release-cli.sh` does all three. This step used to bump only the constant, and the commit
 it produced could not pass its own CI. If the release stops before the commit, the script
@@ -100,7 +100,7 @@ git -C "$TAP" checkout -- Formula/wellforge.rb        # always restore
 ### 4 — commit and tag
 
 ```bash
-git commit -m "chore(cli): release X.Y.Z"      # constant + Formula url/placeholder + CLAUDE.md
+git commit -m "chore(cli): release X.Y.Z"      # constant + Formula url/placeholder + AGENTS.md
 git tag cli-vX.Y.Z
 git tag --points-at HEAD                        # MUST print exactly one tag
 ```

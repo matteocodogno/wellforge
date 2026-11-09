@@ -262,7 +262,7 @@ this repo describes.
 | `wellforge-plugin/.claude-plugin/plugin.json` | `version` | `2.42.0` |
 | `.claude-plugin/marketplace.json` | `version` | `2.42.0` |
 | `.claude-plugin/marketplace.json` | `source.ref` | `plugin-v2.42.0` |
-| `CLAUDE.md` | the quoted plugin version | `2.42.0` |
+| `AGENTS.md` | the quoted plugin version | `2.42.0` |
 | git | the tag | `plugin-v2.42.0` |
 
 The manifest must point at its **own** tag, so the order is: bump all three files, commit,
@@ -406,7 +406,7 @@ main ──●───────────────●──────
   consumers should adopt. Consumers pin, so an unbumped change reaches nobody.
 - **Plugin**, semver: patch = fix/wording, minor = new command, agent, skill, hook or
   config, major = a change that breaks a project set up by an older plugin. Bump
-  `plugin.json`, `marketplace.json` (`version` **and** `source.ref`) and CLAUDE.md in the
+  `plugin.json`, `marketplace.json` (`version` **and** `source.ref`) and AGENTS.md in the
   same commit, then tag it `plugin-vX.Y.Z`. It is cached by version at runtime, so an
   unbumped edit will not take effect in a running session — and an untagged bump is
   installable by nobody, because the manifest's `ref` would name a tag that does not exist.

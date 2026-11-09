@@ -69,7 +69,7 @@ def main():
                        capture_output=True)
         # The clone is HEAD; the code under test is the WORKING TREE. Overlay EVERY
         # uncommitted file, not a hand-picked few: check-docs reads a dozen files and
-        # cross-checks them, so carrying only some of an uncommitted change (CLAUDE.md with
+        # cross-checks them, so carrying only some of an uncommitted change (AGENTS.md with
         # its new version, but not the plugin.json that matches it) fails the suite for a
         # reason that has nothing to do with what it tests. A clean tree overlays nothing.
         dirty = subprocess.run(["git", "-C", ROOT, "ls-files", "--modified", "--others",

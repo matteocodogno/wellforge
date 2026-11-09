@@ -1,6 +1,6 @@
 # Contributing to WellForge
 
-For **people**. `CLAUDE.md` is the brief an AI session reads in this repo; it is not a
+For **people**. `AGENTS.md` is the brief an AI session reads in this repo; it is not a
 contributor guide and this file does not repeat it.
 
 ## Setup, once per clone

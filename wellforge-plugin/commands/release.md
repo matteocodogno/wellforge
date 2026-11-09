@@ -116,7 +116,7 @@ would report the wrong one and mislabel a scaffold's template version):
    plugin that is not the one this repo describes:
    - `wellforge-plugin/.claude-plugin/plugin.json` → `version`
    - `.claude-plugin/marketplace.json` → `version` **and** `source.ref` (`plugin-vX.Y.Z`)
-   - `CLAUDE.md` → the quoted plugin version
+   - `AGENTS.md` → the quoted plugin version
 3. **Add the `docs/PLUGIN-MIGRATIONS.md` entry** for the minor — including "no project-side
    action", which is information. `/wellforge:upgrade` reads that file; a missing entry is
    indistinguishable from an unexamined one.
