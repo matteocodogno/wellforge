@@ -50,6 +50,23 @@ run_case ALLOW 'echo "set it in the environment"'
 run_case ALLOW 'grep DATABASE_URL backend/.env.example'
 run_case ALLOW 'cat templates/x/.env.jinja'
 
+# ── jq/yq filters are field paths, not file paths (blocked a /doctor run 3 times) ──
+run_case ALLOW "jq -c '.plugins | to_entries[] | [.key, .value]' ~/.claude/plugins/installed_plugins.json"
+run_case ALLOW "jq -c '{e:((.env//{})|keys)}' ~/.claude/settings.json"
+run_case ALLOW "jq -r --arg p \"\$PWD\" '.projects[\$p].env' ~/.claude.json"
+run_case ALLOW "yq '.services.api.env' compose.yml"
+run_case ALLOW 'jq -r ".key" data.json'
+run_case ALLOW 'echo "| .key | .value |"'
+# ...but a secret named anywhere OUTSIDE the filter still blocks.
+run_case BLOCK 'jq . .env'
+run_case BLOCK "jq '.' backend/.env.local"
+run_case BLOCK "jq -r '.key' deploy.key"
+run_case BLOCK "jq --rawfile s server.key '.'"
+run_case BLOCK "jq '.a' secrets.yml"
+run_case BLOCK "jq '.a' x.json; cat .env"
+run_case BLOCK "jq '.a'\"\$(cat .env)\""
+run_case BLOCK 'ls *.pem | xargs cat'
+
 # ── the other rules (each had its own false positive once) ─────────────────────
 run_case BLOCK 'rm -rf /'
 run_case BLOCK 'rm -rf ~'

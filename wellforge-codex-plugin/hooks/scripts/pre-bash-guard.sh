@@ -42,9 +42,22 @@ fi
 # Regression matrix: hooks/scripts/tests/pre-bash-guard.test.sh (run in ci.yml).
 # .env.example / .env.jinja are legitimately referenced — scrub them first.
 SCRUBBED=$(echo "$COMMAND" | sed 's/\.env\.example//g; s/\.env\.jinja//g')
+# A jq/yq FILTER is field paths, not file paths: `.env//{}`, `[.key, .value]` and
+# `.projects[$p].env` name JSON keys and open nothing, yet they blocked a whole /doctor run.
+# Blank the filter — the first quoted argument after jq/yq/gojq — and nothing else: input
+# files, --rawfile/--slurpfile values and anything after a separator stay in the text and
+# are still checked. Only flags and --arg/--argjson/--rawfile/--slurpfile <name> <value>
+# may precede it; anything else (an unquoted filter, `--indent 2`) means no match, so the
+# fallback is the old, stricter behaviour. A double-quoted filter qualifies only without
+# `$`, backtick or backslash — anything the shell would expand is not a plain filter.
+JQ_OPT="[[:space:]]+(--(arg|argjson|rawfile|slurpfile)[[:space:]]+[^[:space:]]+[[:space:]]+([^[:space:]'\"]+|\"[^\"]*\")|-{1,2}[A-Za-z][A-Za-z-]*)"
+JQ_FILTER="('[^']*'|\"[^\"\$\`\\\\]*\")"
+SCRUBBED=$(echo "$SCRUBBED" | sed -E "s/(^|[^A-Za-z0-9_./-])((jq|yq|gojq)(${JQ_OPT})*[[:space:]]+)${JQ_FILTER}/\1\2''/g")
+# .pem/.key/.p12/.pfx are extensions, so a real path has a stem (or a glob) right before
+# the dot: `server.key`, `*.pem`. A bare `.key` is a field or prose (`| .key | .value |`).
 if echo "$SCRUBBED" | grep -qE '(^|[^A-Za-z0-9_.])\.env([^A-Za-z0-9_]|$)' \
   || echo "$SCRUBBED" | grep -qE '(^|[^A-Za-z0-9_.])\.envrc([^A-Za-z0-9_]|$)' \
-  || echo "$SCRUBBED" | grep -qE '\.(pem|key|p12|pfx)([^A-Za-z0-9_]|$)|secrets\.ya?ml|(^|/)id_(rsa|ed25519)([^A-Za-z0-9_]|$)'; then
+  || echo "$SCRUBBED" | grep -qE '[A-Za-z0-9_*-]\.(pem|key|p12|pfx)([^A-Za-z0-9_]|$)|secrets\.ya?ml|(^|/)id_(rsa|ed25519)([^A-Za-z0-9_]|$)'; then
   echo "BLOCKED: touches protected file (.env/.pem/.key/secrets.yml)" >&2; exit 2
 fi
 # ── Destructive git (widened 2026-09: the narrow patterns had documented bypasses) ──────
