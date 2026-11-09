@@ -44,15 +44,22 @@ fi
 SCRUBBED=$(echo "$COMMAND" | sed 's/\.env\.example//g; s/\.env\.jinja//g')
 # A jq/yq FILTER is field paths, not file paths: `.env//{}`, `[.key, .value]` and
 # `.projects[$p].env` name JSON keys and open nothing, yet they blocked a whole /doctor run.
-# Blank the filter — the first quoted argument after jq/yq/gojq — and nothing else: input
-# files, --rawfile/--slurpfile values and anything after a separator stay in the text and
-# are still checked. Only flags and --arg/--argjson/--rawfile/--slurpfile <name> <value>
-# may precede it; anything else (an unquoted filter, `--indent 2`) means no match, so the
-# fallback is the old, stricter behaviour. A double-quoted filter qualifies only without
-# `$`, backtick or backslash — anything the shell would expand is not a plain filter.
+# Blank the filter — the first positional argument after jq/yq/gojq, quoted or not — and
+# nothing else: input files, --rawfile/--slurpfile values and anything after a separator
+# stay in the text and are still checked. Only flags and --arg/--argjson/--rawfile/
+# --slurpfile <name> <value> may precede it. An option that takes a value we do not know
+# (`--indent 2`) makes its VALUE look like the filter, so the real filter stays checked —
+# stricter, never looser. A quoted filter qualifies only without `$`, backtick or backslash
+# in double quotes; an unquoted one only without quotes, `$`, backticks, parens, redirects
+# or separators — anything the shell would expand or split is not a plain filter.
+# EXCEPT with -f/--from-file (filter read FROM a file) or -L/--library-path (a directory):
+# there the first positional is a path, so nothing is blanked on that command.
 JQ_OPT="[[:space:]]+(--(arg|argjson|rawfile|slurpfile)[[:space:]]+[^[:space:]]+[[:space:]]+([^[:space:]'\"]+|\"[^\"]*\")|-{1,2}[A-Za-z][A-Za-z-]*)"
-JQ_FILTER="('[^']*'|\"[^\"\$\`\\\\]*\")"
-SCRUBBED=$(echo "$SCRUBBED" | sed -E "s/(^|[^A-Za-z0-9_./-])((jq|yq|gojq)(${JQ_OPT})*[[:space:]]+)${JQ_FILTER}/\1\2''/g")
+JQ_FILTER="('[^']*'|\"[^\"\$\`\\\\]*\"|[^[:space:];&|<>()\`\$'\"\\\\]+)"
+JQ_PATHOPT='(^|[^A-Za-z0-9_./-])(jq|yq|gojq)[^;&|]*[[:space:]](-[A-Za-z]*[fL][A-Za-z]*|--from-file|--library-path)([[:space:]=]|$)'
+if ! echo "$SCRUBBED" | grep -qE "$JQ_PATHOPT"; then
+  SCRUBBED=$(echo "$SCRUBBED" | sed -E "s/(^|[^A-Za-z0-9_./-])((jq|yq|gojq)(${JQ_OPT})*[[:space:]]+)${JQ_FILTER}/\1\2''/g")
+fi
 # .pem/.key/.p12/.pfx are extensions, so a real path has a stem (or a glob) right before
 # the dot: `server.key`, `*.pem`. A bare `.key` is a field or prose (`| .key | .value |`).
 if echo "$SCRUBBED" | grep -qE '(^|[^A-Za-z0-9_.])\.env([^A-Za-z0-9_]|$)' \

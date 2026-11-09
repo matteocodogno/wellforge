@@ -66,6 +66,16 @@ run_case BLOCK "jq '.a' secrets.yml"
 run_case BLOCK "jq '.a' x.json; cat .env"
 run_case BLOCK "jq '.a'\"\$(cat .env)\""
 run_case BLOCK 'ls *.pem | xargs cat'
+# Unquoted filters are filters too — the first positional after the flags.
+run_case ALLOW 'jq -r .env file.json'
+run_case ALLOW 'cat x.json | jq -c .env'
+run_case ALLOW 'jq .key'
+run_case BLOCK 'jq -r .a .env'
+# -f / --from-file / -L make the first positional a FILE: nothing is blanked there.
+run_case BLOCK 'jq -f .env x.json'
+run_case BLOCK "jq -rf '.env' x.json"
+run_case BLOCK 'jq --from-file .env x.json'
+run_case BLOCK 'jq -L .env .a x.json'
 
 # ── the other rules (each had its own false positive once) ─────────────────────
 run_case BLOCK 'rm -rf /'
