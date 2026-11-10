@@ -1,6 +1,7 @@
 ---
 description: One-way compression of a WellForge-owned file (memory / AGENTS.md / a skill-command-agent description) with a fact-preservation safety gate
 argument-hint: <path> — memory/*.md | AGENTS.md | a skill/command/agent file (its description: frontmatter is the compression target)
+disable-model-invocation: true
 ---
 
 Compress a WellForge-owned file **in place, irreversibly**, without losing any fact it

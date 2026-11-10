@@ -1,6 +1,7 @@
 ---
 description: Profile an existing project's stack, gap-check it against the WellForge presets, and optionally extract a reusable org-internal Copier template from it
 argument-hint: (run from the project root) [--profile-only] — --profile-only stops after the stack profile + gap check
+disable-model-invocation: true
 ---
 
 Turn **this** project into a reusable template. Two parts, per the **template-extraction**

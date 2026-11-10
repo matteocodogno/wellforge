@@ -1,6 +1,7 @@
 ---
 description: Upgrade a scaffolded project to a newer template version (copier update + AI conflict resolution)
 argument-hint: [target version, e.g. v0.2.0 — defaults to latest] [--dry-run]
+disable-model-invocation: true
 ---
 
 Upgrade this project to a newer WellForge template version. The mechanical re-templating

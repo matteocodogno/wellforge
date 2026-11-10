@@ -1,6 +1,7 @@
 ---
 description: Adopt WellForge in an existing (brownfield) project — AI-readiness, spec workflow, calibrated quality gates, release management
 argument-hint: [--dry-run] (run from the project root)
+disable-model-invocation: true
 ---
 
 Onboard this existing project onto WellForge: AI-readiness files, the spec-driven

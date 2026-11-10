@@ -1,6 +1,7 @@
 ---
 description: Cut a release — auto version bump + CHANGELOG from Conventional Commits, git tag, GitHub release (release-it)
 argument-hint: [patch|minor|major] (optional — default: auto-computed from commits) [--dry-run]
+disable-model-invocation: true
 ---
 
 Cut a release for this project. The mechanics are **release-it** with the

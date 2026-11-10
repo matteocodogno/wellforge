@@ -1,6 +1,7 @@
 ---
 description: Scaffold a new WellForge project — interview, stack recommendation, generation, connections
 argument-hint: <short product description> (optional — interview fills the gaps)
+disable-model-invocation: true
 ---
 
 Scaffold a new WellForge project end-to-end: analyze what's being built, recommend a stack,

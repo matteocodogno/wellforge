@@ -62,6 +62,13 @@ Inside Claude Code:
 
 ## Structure
 
+**User-only commands.** `release`, `new`, `upgrade`, `promote`, `adopt`, `extract-template`
+and `terse-compress` carry `disable-model-invocation: true`: each does something hard to undo
+(a tag, a scaffold, a copier merge, a raised tier, a one-way compression), so Claude can
+suggest them but only you start them. `done` is deliberately NOT on the list: `spike`,
+`promote` and `orchestrate` run it as their close procedure, and `post-spec-guard` already
+enforces its gate whoever writes `status: done`.
+
 | Path | What |
 |---|---|
 | `.mcp.json` | sequential-thinking, playwright, github, context-hub MCP servers |

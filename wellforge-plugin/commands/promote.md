@@ -1,6 +1,7 @@
 ---
 description: Graduate a feature (or the project) up a rigor tier — pay the deferred debt (retro plan, backfill tests, blocking gates, eval)
 argument-hint: <feature> --to mvp|production   |   --project --to mvp|production   [--dry-run]
+disable-model-invocation: true
 ---
 
 Raise the rigor tier of a feature (or the whole project) and **pay the rigor it deferred**.
