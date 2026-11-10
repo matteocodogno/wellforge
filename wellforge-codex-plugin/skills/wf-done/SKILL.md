@@ -182,6 +182,16 @@ State: feature, tier, the gate conditions that passed **with evidence** (task co
 verdict, eval score/date), and that status is now `done`. If a spike proved out, suggest
 `$wf-promote`.
 
+Then **the decisions the agents made for the user**: read `specs/NNN-slug/decisions.md` and
+print its entries grouped by kind — `reinterpretation` first, then `assumption`, `scope`,
+`default` — each with its `where:`. Every line, not a count: the green gate says the work
+meets the spec; this list is the part of the work the spec never asked for, and the person
+closing the feature is the one who will answer for it. Close with one line: "disagree with
+one? It is drift — amend the spec/plan and re-sync, don't edit the code quietly."
+No file → say so in one line ("no agent decisions recorded"): at `mvp`/`production` that
+means the work predates the record or the caller skipped it, and the user should know which
+it was. Not a gate condition: the close is already done; this is what the human signs for.
+
 ## Hard rules
 
 - **Refuse** to close a feature whose gate isn't met — name the missing condition; never set

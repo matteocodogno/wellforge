@@ -51,6 +51,15 @@ Key properties:
   so `/wellforge:spec --ledger <path>` or `/wellforge:orchestrate --ledger <path>` can pick
   it up in this session or another — and the product-owner agent, which cannot see the
   conversation, gets the user's answers instead of re-deriving them.
+- **What the agents decided for you** (`specs/NNN-slug/decisions.md`): the ledger's other
+  half. Every `backend-dev`, `frontend-dev` and `devops` report ends with a `DECISIONS:`
+  block — each default it picked, scope it left out, requirement it reinterpreted and
+  assumption it did not check, with why and where — or `none` and the reason. A
+  `SubagentStop` hook sends an agent back once if the block is missing; the main loop
+  appends it verbatim, quotes every reinterpretation in its relay, and `/wellforge:done`
+  prints the whole list when it closes the feature. The green checks say the work meets the
+  spec; this list is the part of it nobody asked for, so the person closing the feature
+  knows what they are accepting.
 - **A shared domain language** (`domain-modeling` skill, `/wellforge:grill-me --docs`): the
   project glossary (`.claude/context/glossary.md`, injected into every session) is where a
   concept gets exactly one word. A new term is stress-tested against concrete edge cases —

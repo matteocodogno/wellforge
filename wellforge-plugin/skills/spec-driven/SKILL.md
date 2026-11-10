@@ -38,6 +38,7 @@ specs/
 │   ├── plan.md      # HOW — architecture, data model, API contracts, test strategy
 │   ├── design.md    # optional, UI features only — flows, screens, component reuse, a11y
 │   ├── tasks.md     # ordered, dependency-aware task list
+│   ├── decisions.md # what the implementing agents decided for you (main loop appends)
 │   ├── eval.md      # optional — per-feature rubric overrides (add dims / raise floors only)
 │   ├── qe-report.md    # the latest QE verdict table (written by the quality-engineer)
 │   └── eval-report.md  # LM-judge scored verdict (written by /wellforge:eval)
@@ -224,6 +225,46 @@ concurrently. So:
   scheduled alone rather than guessed at.
 
 See [`worktree-isolation`](../worktree-isolation/SKILL.md) for how the effective graph is computed and enforced at dispatch.
+
+### decisions.md
+
+The ledger records what the **user** decided. This file records what the **agents** decided
+on the user's behalf while building: the choices no spec, plan or task dictated, which
+otherwise live only in the code, where a reviewer finds them by accident or not at all.
+Accepting work without knowing which choices are in it is how delegating turns into
+surrendering the judgement.
+
+**Who writes what.** Every `backend-dev`, `frontend-dev` and `devops` report ends with a
+`DECISIONS:` block — the `subagent-decisions-guard` hook sends an agent back once if it is
+missing. The agents never write this file (parallel worktrees would collide on it): the
+**main loop** appends each returned block, verbatim, under a heading for that dispatch.
+`/wellforge:implement` and `/wellforge:orchestrate` do it after every dev/devops return;
+`/wellforge:done` shows it before closing.
+
+```markdown
+# Decisions — CSV export for reports
+
+Choices the agents made that the spec, plan and tasks did not dictate. Disagree with one?
+It is drift: amend the spec/plan and re-sync tasks — do not quietly edit the code.
+
+## T3 · backend-dev · 2026-11-10
+- default: page size 50 — why: spec silent, matches the list endpoint — where: ExportService.kt
+- scope: formula escaping in cells deferred — why: no AC covers it — where: T3
+- reinterpretation: "recent" read as last 30 days — why: AC-2 gives no window — where: T3
+- assumption: timestamps are UTC in the DB — why: not verified against prod — where: ExportRow.kt
+
+## T4 · frontend-dev · 2026-11-10
+none — the task named every value
+```
+
+The four kinds, and only these: **default** (picked a value where the text was silent),
+**scope** (left something out or deferred it), **reinterpretation** (read a requirement one
+way when another reading was possible), **assumption** (took something as true without
+checking). An agent with nothing to declare says `DECISIONS: none — <why>`; the main loop
+records that line too, so an empty section reads as a statement, not an omission.
+A `reinterpretation` of an AC is drift-adjacent: if the other reading is the one the user
+meant, it is drift, routed as such. No frontmatter — the file has no lifecycle and is not a
+gate input.
 
 ## Workflow gates
 

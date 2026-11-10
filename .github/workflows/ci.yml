@@ -625,6 +625,10 @@ jobs:
       # missing any identity field silently produced no event at all. Only inspecting the
       # written .events.jsonl can tell the two apart, which is what this matrix does.
       - run: wellforge-plugin/hooks/scripts/tests/trace-subagent.test.sh
+      # An implementing agent's report must say what it decided for the user (DECISIONS:).
+      # The prompt asks; this hook sends the agent back once when it doesn't — and must
+      # never loop, never block an agent it is not about, never block on an unreadable report.
+      - run: wellforge-plugin/hooks/scripts/tests/subagent-decisions-guard.test.sh
       # Cost attribution: parallel runs used to count each other's tokens, and the pricing
       # table had drifted stale behind a "keep in sync" comment. Neither fails loudly on
       # its own — a wrong cost estimate still prints a number.

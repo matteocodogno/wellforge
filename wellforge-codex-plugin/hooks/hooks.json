@@ -64,6 +64,10 @@
           {
             "type": "command",
             "command": "bash \"${PLUGIN_ROOT}/hooks/run-hook.sh\" trace-subagent"
+          },
+          {
+            "type": "command",
+            "command": "bash \"${PLUGIN_ROOT}/hooks/run-hook.sh\" subagent-decisions-guard"
           }
         ]
       }

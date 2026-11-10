@@ -94,6 +94,7 @@ behaviour — one file, next to the cases already there:
 | the Stop verification hook | `…/tests/stop-verify.test.sh` |
 | a lifecycle rule (`status:`, rigor, terminal states) | `…/tests/post-spec-guard.test.sh` |
 | SubagentStop telemetry | `…/tests/trace-subagent.test.sh` |
+| the dev/devops `DECISIONS:` report rule | `…/tests/subagent-decisions-guard.test.sh` |
 | deterministic feature state | `wellforge-plugin/scripts/tests/forge-state.test.py` |
 | run-trace parsing or cost attribution | `…/tests/run-report.test.py` |
 | which paths trigger a security review | `…/tests/security-triggers.test.py` |

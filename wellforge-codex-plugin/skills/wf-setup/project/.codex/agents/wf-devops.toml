@@ -58,4 +58,10 @@ Your final message: what was wired (files + connections), each verification comm
 its actual output, the one-line **self-critique** result, and any follow-ups that need human
 action (e.g. OAuth grants, org
 permissions you can't self-serve).
+End with the **`DECISIONS:`** block — the choices you made that the spec, plan and task text
+did not dictate, one line each, as `- <default|scope|reinterpretation|assumption>: <what> —
+why: <reason> — where: <file or task>`; or `DECISIONS: none — <why nothing was left open>`.
+The caller records it in the feature's `decisions.md` for the human (format: `spec-driven`
+skill); a report without it is sent back by a hook. A choice you leave out of it is one the
+human approves without knowing it was made.
 '''

@@ -115,10 +115,10 @@ def main():
         cmd = commands(repo)
         sub = os.path.join(repo, "specs")
 
-        case("hooks.json wires the seven ported hooks",
+        case("hooks.json wires the eight ported hooks",
              sorted(cmd) == sorted(["session-start", "pre-bash-guard", "pre-file-guard",
                                     "post-lint", "post-spec-guard", "stop-verify",
-                                    "trace-subagent"]), sorted(cmd))
+                                    "trace-subagent", "subagent-decisions-guard"]), sorted(cmd))
 
         # ── pre-bash-guard: unchanged script, Codex payload ──────────────────────────
         r = fire(repo, cmd["pre-bash-guard"], bash("rm -rf ~"))

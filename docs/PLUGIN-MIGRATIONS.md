@@ -26,6 +26,21 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.61.0 — agents declare what they decided for you
+
+- `backend-dev`, `frontend-dev` and `devops` end every report with a `DECISIONS:` block:
+  the defaults, scope cuts, reinterpretations and unchecked assumptions the spec, plan and
+  task did not dictate (or `DECISIONS: none — <why>`). A new `SubagentStop` hook,
+  `subagent-decisions-guard.sh`, sends the agent back once when the block is missing; it
+  never loops and fails open when it cannot read the report.
+- `/wellforge:implement` and `/wellforge:orchestrate` append those blocks to
+  `specs/NNN-slug/decisions.md` (format in the `spec-driven` skill); `/wellforge:done`
+  prints them when it closes the feature.
+- **Nothing to do on upgrade.** Features already in flight simply have no `decisions.md`
+  until their next dispatch, and `done` says so in one line. The file is not a gate input.
+
+---
+
 ## 2.60.0 — leaner sessions: two MCP servers gone, side-effect commands user-only
 
 - The plugin no longer starts the `sequential-thinking` and `github` MCP servers.

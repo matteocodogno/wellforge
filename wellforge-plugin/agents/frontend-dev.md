@@ -117,3 +117,9 @@ or glossary candidates, and any drift or blockers found.
 Add `ENV-FAULT: <what didn't resolve or was shared> — <what you checked>` for any failure you
 traced to the environment rather than the code; never report a failure as "pre-existing
 breakage" without that check behind it.
+End with the **`DECISIONS:`** block — the choices you made that the spec, plan and task text
+did not dictate, one line each, as `- <default|scope|reinterpretation|assumption>: <what> —
+why: <reason> — where: <file or task>`; or `DECISIONS: none — <why nothing was left open>`.
+The caller records it in the feature's `decisions.md` for the human (format: `spec-driven`
+skill); a report without it is sent back by a hook. A choice you leave out of it is one the
+human approves without knowing it was made.

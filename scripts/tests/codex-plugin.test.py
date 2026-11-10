@@ -174,7 +174,7 @@ def main():
              os.path.normpath(os.path.join(ROOT, src)) == PKG, src)
         pcmd = hook_commands(os.path.join(PKG, "hooks", "hooks.json"))
         case("plugin hooks run the runner via PLUGIN_ROOT, scripts present",
-             len(pcmd) == 7 and all("${PLUGIN_ROOT}/hooks/run-hook.sh" in c for c in pcmd.values())
+             len(pcmd) == 8 and all("${PLUGIN_ROOT}/hooks/run-hook.sh" in c for c in pcmd.values())
              and all(os.path.isfile(os.path.join(PKG, "hooks", "scripts", f"{h}.sh"))
                      for h in pcmd), pcmd)
         mcp = json.load(open(os.path.join(PKG, "mcp.json")))["mcpServers"]

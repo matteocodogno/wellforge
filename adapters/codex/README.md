@@ -103,6 +103,7 @@ The workflow, the agents, the skills, MCP **and** local enforcement. What differ
 | post-spec-guard (lifecycle gates) | `PostToolUse` `apply_patch` | ✓ unchanged — the `status: done` gate and the raise-only `rigor:` rule are **mechanism** here, as on Claude Code (not prompt promises, as on Copilot/OpenCode) |
 | stop-verify (spec drift, compile) | `Stop` | ✓ unchanged; exit 2 makes Codex continue the turn with the reason, `stop_hook_active` stops the loop |
 | session-start | `SessionStart` | ✓ plain stdout becomes developer context, as on Claude Code |
+| subagent-decisions-guard (`DECISIONS:` in dev/devops reports) | `SubagentStop` (`^wf-` agents) | ~ unchanged script; it reads `last_assistant_message` or the Claude transcript shape, and fails open when neither is there — so on Codex it enforces only if the payload carries the final message (unverified) |
 | trace-subagent (observability) | `SubagentStop` (`^wf-` agents) | ~ the event, agent type and id are recorded; token usage is best-effort — the script reads the Claude transcript shape and Codex's rollout format is different, so expect empty token fields until that is verified |
 | notify | — | ✗ Codex's own `notify` setting (an external program on turn completion) is user config, not a hook; configure it in `~/.codex/config.toml` if wanted |
 | pre-compact-backup | — | ✗ not wired: it writes under `.claude/`, which means nothing here (lower value) |

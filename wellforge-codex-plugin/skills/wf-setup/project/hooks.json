@@ -64,6 +64,10 @@
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/wellforge/hooks/run-hook.sh\" trace-subagent"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/wellforge/hooks/run-hook.sh\" subagent-decisions-guard"
           }
         ]
       }

@@ -79,6 +79,7 @@ it; change the rule there, never restate it elsewhere:
 | one self-review pass before handover | `self-critique` skill |
 | test-first in `frontend-dev` / `backend-dev` | `tdd` skill |
 | deep interview, decision ledger | `grilling` skill |
+| what agents decided for the user (`DECISIONS:` → `decisions.md`) | `spec-driven` skill — enforced by `subagent-decisions-guard.sh` |
 | project glossary (main loop writes it) | `domain-modeling` skill |
 | linear history + Conventional Commits | `git-policy` skill — enforced by hooks, CI and branch protection |
 | gate catalogue and thresholds | `quality-gates` skill |

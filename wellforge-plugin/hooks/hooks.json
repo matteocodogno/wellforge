@@ -20,7 +20,10 @@
       { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/stop-verify.sh", "timeout": 300 }] }
     ],
     "SubagentStop": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/trace-subagent.sh" }] }
+      { "matcher": "", "hooks": [
+        { "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/trace-subagent.sh" },
+        { "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/subagent-decisions-guard.sh" }
+      ] }
     ],
     "PreCompact": [
       { "matcher": "", "hooks": [{ "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-compact-backup.sh" }] }

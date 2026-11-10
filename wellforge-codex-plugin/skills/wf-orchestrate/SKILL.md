@@ -66,6 +66,10 @@ ask the user anything and must never self-approve.
   returning): at a human gate it tells the reviewer what was already caught, and an agent
   that silently omits it skipped the pass. It is never evidence of quality — the gate, QE
   and the eval judge exactly as before.
+- **Agent decisions are recorded, not relayed away.** Every dev/devops return carries a
+  `DECISIONS:` block (a hook sends it back otherwise). With a spec dir, append it to
+  `specs/NNN-slug/decisions.md` (spec-driven skill); without one (bugfix, infra), list the
+  lines in the final report. Either way, quote every **reinterpretation** in the stage relay.
 - **Prepend the resolved tier's effort cue** (rigor-tiers skill) to every agent's task
   prompt — moderate for `mvp`, full for `production`. It's plain text, not config.
 - **When terse is resolved on** (Step 0), also prepend the terse cue (**terse** skill,

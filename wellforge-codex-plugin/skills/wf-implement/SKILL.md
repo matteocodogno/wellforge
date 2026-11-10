@@ -96,6 +96,12 @@ The argument is `[feature] [tasks]` — both optional, feature first.
   agents' one-line **TDD** result the same way (`tdd` skill — cycles by behavior, exempt,
   already-green, test-after): a `test-after` entry is worth the human's eye, and the line is
   the agent's account of how it worked, not evidence QE may credit.
+- **Record each agent's `DECISIONS:` block** — append it verbatim to
+  `specs/NNN-slug/decisions.md` under `## T<n> · <agent> · <today>`, creating the file with
+  its header if absent (format: **spec-driven** skill, *decisions.md*). You write it, not
+  the agents — in a parallel batch, append after integration, in the batch's reconcile
+  commit. In the relay, give the count by kind and quote every **reinterpretation** in
+  full: that is the one most likely to be drift the agent did not call drift.
 - **Drift / blocker** from any agent pauses that track: surface the proposed amendment,
   route it to the owning agent (PO for spec, architect for plan), re-sync via
   `$wf-tasks`, then resume. Never let an agent silently work around a wrong spec.
@@ -210,6 +216,9 @@ the cost of being wrong in that direction; an unreviewed auth change is the cost
 
 - Tasks done (with IDs), tasks skipped (already checked) and deferred (unmet deps not in
   scope), QE verdict, commits. State what remains unchecked in `tasks.md`.
+- **Decisions made for you this run**: the lines this run appended to `decisions.md`,
+  grouped by kind — not a count, the lines. They are what the human is accepting along with
+  the green checks.
 - If every task is now checked and QE passed, suggest the next step **by tier** (never set
   `done` from here — that's `$wf-done`'s guarded job):
   - `production` → run **`$wf-eval <feature>`** (the LM-judge is the gate, not the QE
