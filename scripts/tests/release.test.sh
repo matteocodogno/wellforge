@@ -17,6 +17,11 @@ trap 'rm -rf -- "${T:?}"' EXIT
 # untrusted, every `python3` through a mise shim errors. The clone needs no mise at all.
 export MISE_IGNORED_CONFIG_PATHS="$T"
 git clone -q --bare --no-tags "$ROOT" "$T/origin.git"
+# The origin needs a `main` at the tree under test. A CI checkout of a TAG is a detached HEAD
+# with no local main, so the bare clone had none and every push in this file failed
+# ("src refspec main does not match any") — green on a laptop, red on both release tags.
+git -C "$T/origin.git" update-ref refs/heads/main "$(git -C "$ROOT" rev-parse HEAD)"
+git -C "$T/origin.git" symbolic-ref HEAD refs/heads/main
 git clone -q "$T/origin.git" "$T/w" 2>/dev/null
 W="$T/w"; cd "$W" || exit 1
 git config user.email t@t; git config user.name T; git config commit.gpgsign false; git config tag.gpgsign false
