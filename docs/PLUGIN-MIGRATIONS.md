@@ -26,6 +26,20 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.59.0 — a new `tasks.md` needs an approved upstream
+
+`post-spec-guard` (PostToolUse) now refuses the **creation** of `specs/NNN-slug/tasks.md`
+unless what it derives from is approved: `plan.md` at `production`, `spec.md` at `mvp`; at
+`spike` a `tasks.md` is always refused. The tier resolves like `forge-state.py`: the spec's
+`rigor:`, then `.forge/manifest.json` / `.forge/adoption.json`, then `production`. This was
+already the rule in `/wellforge:tasks`; only the prompt kept it.
+
+**Nothing to do on upgrade.** Existing `tasks.md` files are never gated (only a file with no
+version at HEAD is), so re-syncing after drift works as before. A hand-written `tasks.md` on
+a draft plan will now be refused — approve the plan, or set the feature's `rigor:` honestly.
+
+---
+
 ## 2.50.0 — MCP servers are pinned to exact versions
 
 `wellforge-plugin/.mcp.json` launched `@playwright/mcp@latest` and
