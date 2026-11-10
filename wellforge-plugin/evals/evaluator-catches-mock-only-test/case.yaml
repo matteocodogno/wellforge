@@ -1,5 +1,0 @@
-schema_version: "1.1"
-name: evaluator-catches-mock-only-test
-tags: [wellforge]
-context:
-  scaffold_script: scaffold.sh

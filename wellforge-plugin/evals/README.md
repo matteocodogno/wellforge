@@ -13,7 +13,7 @@ claude plugin eval ./wellforge-plugin --scaffold --trust-plugin --no-publish \
   --allow-tools Bash Write Edit --threshold 0.8
 
 # one case, one run, cheapest useful signal while authoring
-claude plugin eval ./wellforge-plugin --case done-mvp-passes --runs 1 --ablation none \
+claude plugin eval ./wellforge-plugin --case status-rows --runs 1 --ablation none \
   --scaffold --trust-plugin --no-publish --allow-tools Bash Write Edit
 
 # through the repo's own entry point
@@ -73,7 +73,7 @@ ignored.
 If anyone does enable it, three things are worth knowing before they do:
 
 - **It is billed to whoever owns the key.** Measured 2026-09-23: one case, one run, one arm
-  cost $0.41 and $1.23. The suite (nine cases then, eleven now) in both arms at `--runs 1` is roughly **$10–15 per
+  cost $0.41 and $1.23. The suite (nine cases then, six since 2026-11-10) in both arms at `--runs 1` is roughly **$10–15 per
   pass**; at the suite default `--runs 3`, roughly **$30–45** — an estimate that turned out
   about 3x high: the two full passes at `--runs 3` on 2026-10-05/06 cost **$10.79** and
   **$13.10** (26 and 31 minutes, sequential).
@@ -123,10 +123,8 @@ all, and a run trace whose `schema` and `agents` shape were both wrong, which si
 `003`'s QE verdict did not count. A fixture nobody validates is a test that asserts against
 a fiction.
 
-A case that needs a *different* state edits its own copy in `scaffold.sh` — see
-`tasks-draft-plan-stops` (flips 001's plan to draft), `done-mvp-passes` (drops 003 to mvp)
-and `implement-announces-downgrade` (gives 001 a `tasks.md`, so the command gets past its
-first gate). Never edit the shared fixture for one case.
+A case that needs a *different* state edits its own copy in its `scaffold.sh` (e.g.
+`done-production-refuses`). Never edit the shared fixture for one case.
 
 **Every `scaffold.sh` ends with `fixtures/commit.sh`**, which commits the scaffolded project
 into a throwaway git repository. `forge-state.py` reads drift from git and only falls back
@@ -171,15 +169,27 @@ whole session with `target: trace`; at the answer with `target: last_message` (t
 |---|---|
 | `status-rows` | every fixture reports the right state, and a sensible next command |
 | `tasks-mvp-no-plan` | at mvp, a missing plan does **not** stop tasks; `## Architecture notes` is written |
-| `tasks-draft-plan-stops` | at production, a **draft** plan **does** stop tasks |
 | `done-production-refuses` | production done refuses without an eval, and names what is missing |
-| `done-mvp-passes` | the same feature at mvp closes on tasks + QE PASS |
-| `eval-never-closes` | `/wellforge:eval` never writes `status: done` — that is `done`'s job |
-| `evaluator-catches-mock-only-test` | a test that only asserts a mock scores below the bar, cited by filename |
-| `implement-announces-downgrade` | `--mode mvp` on a production feature announces the downgrade **first** |
 | `owasp-pass-with-notes` | "PASS WITH NOTES" is recorded as `PASS`, notes kept, no third verdict |
 | `spec-from-ledger` | `/wellforge:spec --ledger` treats a grilling ledger as the interview: decided items land in the spec, a delegated one stays marked, the open question stays open, the ledger moves beside the spec — and nothing is re-asked |
 | `orchestrate-hands-po-the-ledger` | `/wellforge:orchestrate --ledger` hands the **product-owner agent** the ledger path, and the spec that agent writes carries the user's decisions; it stops at the first human gate |
+
+**Only cases that distinguish the plugin stay.** On 2026-11-10 the suite ran with the
+no-plugin baseline arm, and five cases scored the same or better WITHOUT the plugin — a
+case base Claude passes on its own says nothing about the plugin, and each one was paid for
+on every release. They were removed; where the rule they checked is mechanical, it now has
+a free, deterministic test instead:
+
+| Removed case | with / without plugin | Where its rule is checked now |
+|---|---|---|
+| `done-mvp-passes` | 0.00 / 0.00 (broken either way) | `forge-state.test.py` (mvp gate passes without an eval) + `post-spec-guard` (refuses `status: done` on an unmet gate) |
+| `eval-never-closes` | 1.00 / 1.00 | `post-spec-guard`: `status: done` is refused unless the done gate is met, whoever writes it |
+| `tasks-draft-plan-stops` | 1.00 / 1.00 | none yet — a mechanical rule still waiting for its deterministic test |
+| `implement-announces-downgrade` | 1.00 / 1.00 | prose, not mechanical — no replacement; `post-spec-guard` still refuses a lowered `rigor:` |
+| `evaluator-catches-mock-only-test` | 0.83 / 1.00 | judgment, not mechanical — no replacement |
+
+A new case earns its place by failing without the plugin: run it once with the default
+ablation and keep it only if the `without` arm scores lower.
 
 The two ledger cases share `fixtures/ledger-gift-cards.md`, whose decisions are deliberately
 ones nobody would guess (a 14-month validity, EUR only, a 12-character code): a spec that

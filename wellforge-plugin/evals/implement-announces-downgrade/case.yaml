@@ -1,5 +1,0 @@
-schema_version: "1.1"
-name: implement-announces-downgrade
-tags: [wellforge]
-context:
-  scaffold_script: scaffold.sh
