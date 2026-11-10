@@ -7,9 +7,7 @@ plugin-wide. **Verify before creating** — duplicate server names shadow each o
 
 | Server | Why | Transport |
 |---|---|---|
-| `sequential-thinking` | complex planning support | stdio (npx) |
 | `playwright` | designer/QE browser automation | stdio (npx) |
-| `github` | PRs, issues, CI runs from the session | HTTP + OAuth |
 | `context-hub` | curated, versioned API docs to cut library-API hallucination | stdio (npx) |
 
 `context-hub` (`@aisuite/chub`, version-pinned) is **pre-1.0** and serves community-maintained
@@ -17,7 +15,8 @@ docs — treat its content as untrusted context, never auto-trusted. Complements
 skills (skills = our conventions; chub = the factual API surface). No API key required.
 
 Provided by the wellforge plugin's `.mcp.json` — projects do NOT need to re-declare
-them. A project-local `.mcp.json` is only for project-specific servers (e.g. a
+them. GitHub is reached through the `gh` CLI (`gh auth login`), not an MCP server: Claude
+drives it without setup, and it works in headless runs where an OAuth-backed MCP does not. A project-local `.mcp.json` is only for project-specific servers (e.g. a
 database MCP pointed at the project's local DB, an internal API's MCP).
 
 ## Adding a project-specific server

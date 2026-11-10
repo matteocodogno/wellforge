@@ -26,6 +26,19 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.60.0 — leaner sessions: two MCP servers gone, side-effect commands user-only
+
+- The plugin no longer starts the `sequential-thinking` and `github` MCP servers.
+  `sequential-thinking` did what the effort level does now, and its tool definitions sat in
+  every session; `github` duplicated the `gh` CLI that every GitHub-touching command already
+  fell back to. **Action, only if you used them:** run `gh auth login` (GitHub is reached
+  through `gh`), or declare either server in the project's own `.mcp.json`.
+- `release`, `new`, `upgrade`, `promote`, `adopt`, `extract-template` and `terse-compress`
+  are user-only (`disable-model-invocation: true`): Claude suggests them, you type them.
+  Nothing to do on upgrade.
+
+---
+
 ## 2.59.0 — a new `tasks.md` needs an approved upstream
 
 `post-spec-guard` (PostToolUse) now refuses the **creation** of `specs/NNN-slug/tasks.md`

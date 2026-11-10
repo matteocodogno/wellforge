@@ -182,8 +182,8 @@ Run manually any time, OR schedule it as the **spec-health heartbeat** — a Cla
 digest. Per the **heartbeat** skill:
 - **Surface, never auto-ship** — post the digest to a tracking issue or Slack; never touch specs,
   check boxes, run eval, or promote. A human reads it and decides.
-- **Auth degrades** — in a headless/cron run the github MCP may be absent; post via `gh issue`
-  (needs `GITHUB_TOKEN`), not an interactive connection.
+- **Auth** — post via `gh issue` (in a headless/cron run: `GITHUB_TOKEN`), never an
+  interactive connection.
 - **Dedup + cost bound** — update one rolling "spec-health" issue in place (don't open a new one
   each week); keep the sweep on a cheap model, and it's read-only so there's no escalation.
 - **Record it** — write a run trace (`command: triage`) per the observability skill when run as a

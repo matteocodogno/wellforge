@@ -72,9 +72,9 @@ take it:
 4. **Cost-bounded (agentic).** A scheduled agent runs unattended and costs tokens. Bound it:
    cheap model for the triage sweep, escalate to a stronger model only on a real finding; cap
    the work per run; never loop unbounded. State the bound in the routine.
-5. **Auth degrades gracefully (agentic).** Interactively-authenticated MCP servers (e.g. the
-   github MCP) may be **absent in headless/cron runs**. A scheduled heartbeat must fall back to
-   `gh` CLI / REST with a `GITHUB_TOKEN`, never assume an interactive MCP connection.
+5. **Auth works headless (agentic).** Interactively-authenticated MCP servers are **absent in
+   headless/cron runs**, so a scheduled heartbeat uses the `gh` CLI / REST with a
+   `GITHUB_TOKEN` — never an interactive MCP connection.
 6. **Recorded like any run.** An agentic heartbeat writes a run trace per the **observability**
    skill (`.forge/runs/…-triage-…json`, or `command: heartbeat`); the deterministic ones leave
    their audit trail in the tracking issue's history.

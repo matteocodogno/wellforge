@@ -53,7 +53,7 @@ anyway until the version is bumped.
 Inside Claude Code:
 ```
 /plugin              → wellforge listed under Installed
-/mcp                 → sequential-thinking, playwright, github, context-hub connected
+/mcp                 → playwright, context-hub connected
 /hooks               → 7 hooks listed
 /wellforge:doctor    → full health report, install source, and the command index
 ```
@@ -71,7 +71,7 @@ enforces its gate whoever writes `status: done`.
 
 | Path | What |
 |---|---|
-| `.mcp.json` | sequential-thinking, playwright, github, context-hub MCP servers |
+| `.mcp.json` | playwright, context-hub MCP servers |
 | `commands/spec.md` | `/wellforge:spec` — interview (`--grill` for one question at a time) → feature spec (step 1 of 3) |
 | `commands/plan.md` | `/wellforge:plan` — approved spec → technical plan (step 2 of 3) |
 | `commands/design.md` | `/wellforge:design` — UX flows, screens & states, component reuse, a11y (UI features) |
@@ -201,10 +201,15 @@ something a guard once got wrong — add yours there rather than only widening a
 
 | Server | Transport | Auth | Pinned version |
 |---|---|---|---|
-| `sequential-thinking` | stdio | none | `@modelcontextprotocol/server-sequential-thinking@2026.8.31` |
 | `playwright` | stdio | none | `@playwright/mcp@0.0.82` |
-| `github` | HTTP | OAuth via `/mcp` on first use | n/a (hosted) |
 | `context-hub` | stdio | none | `@aisuite/chub@0.1.4` |
+
+**Two servers were removed in 2.60.0.** `sequential-thinking` was a "think harder" tool: how
+long Claude reasons is the effort level's job now, and the server's tool definitions sat in
+every session's context whether used or not. `github` duplicated the `gh` CLI, which Claude
+already drives without explanation and which every command that touched GitHub fell back to
+anyway — while the MCP needed an OAuth grant and was absent in headless runs. Use `gh`; add a
+GitHub MCP to a project's own `.mcp.json` if you want one.
 
 **Versions checked against the npm registry on 2026-09-23** (`npm view <pkg> version`). This
 table is the record because `.mcp.json` is JSON and cannot carry a comment.

@@ -56,7 +56,7 @@ useful complete.
 `gh` additionally: `gh auth status` — authenticated or not.
 
 **MCP servers** ⟨plugin⟩ — read `.mcp.json` from the plugin root and list what it declares
-(`sequential-thinking`, `playwright`, `github`, `context-hub`). You cannot introspect live
+(`playwright`, `context-hub`). You cannot introspect live
 connections from here, so report them as **declared**, and tell the user to run `/mcp` for
 actual connection state — do not guess or imply you checked.
 

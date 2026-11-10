@@ -69,7 +69,7 @@ assumes.** The assumptions are listed in each section below; each one is a fact 
       run in parallel.
 
 ## 5. MCP — *assumes: `[mcp_servers]` in project config.toml loads*
-- [ ] `/mcp` lists `sequential-thinking`, `playwright`, `context-hub`, `github`.
+- [ ] `/mcp` lists `playwright`, `context-hub`.
 - [ ] `codex mcp login github` completes OAuth (no token is written to the repo).
 
 ## 6. The native plugin — *assumes: the portable package layout, onboarding skill, PLUGIN_ROOT*

@@ -63,17 +63,16 @@ check `jq --version` first.
 
 ### MCP servers are fetched from npm and run as you
 
-`.mcp.json` starts three stdio servers through `npx`, which means npm downloads and executes
+`.mcp.json` starts two stdio servers through `npx`, which means npm downloads and executes
 code on your machine, with your user's permissions and network access:
 
 | Server | Package | Network |
 |---|---|---|
-| `sequential-thinking` | `@modelcontextprotocol/server-sequential-thinking@2026.8.31` | none |
 | `playwright` | `@playwright/mcp@0.0.82` | drives a real browser — whatever you point it at |
 | `context-hub` | `@aisuite/chub@0.1.4` | the Context Hub service |
 
-plus `github`, which is HTTP to `api.githubcopilot.com` and holds an OAuth token you grant
-on first use.
+(`sequential-thinking` and the HTTP `github` server were removed in plugin 2.60.0; GitHub
+access goes through the `gh` CLI and its own login.)
 
 **Every one of them names an exact version.** `playwright` and `sequential-thinking` used to
 resolve `@latest`, which is a dependency chosen at launch by whatever the registry served

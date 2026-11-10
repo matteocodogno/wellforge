@@ -74,7 +74,7 @@ Inside a Claude Code session:
 | Check | Expect |
 |---|---|
 | `/plugin` | `wellforge` listed under Installed (v2.0+) |
-| `/mcp` | `sequential-thinking`, `playwright`, `github`, `context-hub` connected (github triggers OAuth on first use) |
+| `/mcp` | `playwright`, `context-hub` connected |
 | `/hooks` | 7 events listed (SessionStart, PreToolUse ×2, PostToolUse, Notification, Stop, SubagentStop, PreCompact) |
 | type `/wellforge:` | completions for all 23 commands |
 | **`/wellforge:doctor`** | **the real check** — one table of tools, MCP servers, hooks, drift guards and project shape, with a fix command for anything red. Add `--tests` to also run the plugin's own regression matrices. |

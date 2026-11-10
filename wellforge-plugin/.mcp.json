@@ -1,13 +1,5 @@
 {
   "mcpServers": {
-    "sequential-thinking": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking@2026.8.31"
-      ]
-    },
     "playwright": {
       "type": "stdio",
       "command": "npx",
@@ -15,10 +7,6 @@
         "-y",
         "@playwright/mcp@0.0.82"
       ]
-    },
-    "github": {
-      "type": "http",
-      "url": "https://api.githubcopilot.com/mcp"
     },
     "context-hub": {
       "type": "stdio",

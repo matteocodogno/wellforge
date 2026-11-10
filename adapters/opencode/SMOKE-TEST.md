@@ -67,8 +67,8 @@ Everything below is the part that needs a human and a running tool. Run the scri
       loads, that is the known difference, not a bug.
 
 ## 5. MCP servers
-- [ ] `opencode.json` lists all 4 (`sequential-thinking`, `playwright`, `github`,
-      `context-hub`) under `mcp`, in OpenCode's local/remote schema.
+- [ ] `opencode.json` lists both (`playwright`, `context-hub`) under `mcp`, in OpenCode's
+      local schema.
 - [ ] At least one reaches a running state and its tools appear in a session.
 
 ## 6. Enforcement plugin
