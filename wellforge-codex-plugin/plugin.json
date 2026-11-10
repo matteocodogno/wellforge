@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "wellforge",
-  "version": "2.59.0",
+  "version": "2.60.0",
   "description": "Full-stack AI-assisted development: spec-driven workflow, role-based agent team, orchestrator, scaffolder, lifecycle upgrades, quality-gate and eval enforcement.",
   "author": {
     "name": "WellForge"
