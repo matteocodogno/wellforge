@@ -7,6 +7,8 @@ contributor guide and this file does not repeat it.
 
 ```sh
 git clone git@github.com:matteocodogno/wellforge.git && cd wellforge
+mise trust && mise install       # the pinned Python for the repo's own scripts (.venv)
+mise run setup                   # pyyaml into .venv — the prompt evals need it under `python3 -s`
 ./scripts/setup-git-policy.sh    # installs the commit-msg / pre-merge-commit / pre-push hooks
 mise run check                   # every self-test in the repo, one exit code
 ```
@@ -69,6 +71,11 @@ the part people get wrong:
 - **bumping a pinned MCP server version in `.mcp.json` is a plugin PATCH release** — the
   version people run is part of what the plugin is, so it is not a silent edit
 
+Cut template and plugin releases with `mise run release:template` / `release:plugin`
+(`scripts/release.sh`: plan by default, `--execute`, then `--push`), the CLI with
+`scripts/release-cli.sh` — never by hand. Write the migration note in the commit that makes
+the change; the release script refuses a version that has none.
+
 ## Commits and history
 
 **Conventional Commits** and **linear history**, enforced in four places (local config,
@@ -113,7 +120,9 @@ ignored.
 
 If anyone enables it: it is **billed to whoever owns the key**, so use a dedicated one with
 a spend limit rather than a personal or production key. Measured 2026-09-23, a full pass is
-roughly **$10–15** at `--runs 1` and **$30–45** at the default `--runs 3`. CI pins `--runs 1`
+roughly **$10–15** at `--runs 1` and **$30–45** at the default `--runs 3` — measured with
+the no-plugin baseline arm, which `check-all.sh` and CI no longer run (`--ablation none -j 4
+--max-cost-usd 12`), so a pass now costs about half. CI pins `--runs 1`
 and only runs the job when `wellforge-plugin/{commands,agents,skills,evals}` changed; a full
 pre-release pass is the `workflow_dispatch` route with the `eval_runs` input. Details and
 per-case costs: [evals/README.md](wellforge-plugin/evals/README.md).
@@ -121,7 +130,8 @@ per-case costs: [evals/README.md](wellforge-plugin/evals/README.md).
 **The local path needs no key at all** and is the primary one:
 
 ```sh
-scripts/check-all.sh --with-evals     # uses your own Claude Code login
+mise run check -- --with-evals                          # full suite, records LAST-RUN
+mise run check -- --eval-case 'done-*' --eval-runs 1    # only what you changed (never recorded)
 ```
 
 A green local run records the tree it passed against in `wellforge-plugin/evals/LAST-RUN`,

@@ -47,8 +47,10 @@ What happens (you stay in the loop at every decision):
    Steps needing org rights you don't have become explicit PENDING items.
 
 You now have a repo with: pinned toolchain (`mise.toml`), CI calling the central quality
-gates, project `CLAUDE.md` (AI-ready on first open), `specs/` directory, and
-`.forge/manifest.json` recording template+version for future upgrades.
+gates, project `AGENTS.md` (AI-ready on first open, imported by a one-line `CLAUDE.md`),
+`.claude/settings.json` that denies the secret files (`.env*`, keys) in every permission
+mode, `.worktreeinclude` for parallel agents, `specs/` directory, and `.forge/manifest.json`
+recording template+version for future upgrades.
 
 ### Manual generation (no AI session)
 

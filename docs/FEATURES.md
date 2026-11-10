@@ -35,7 +35,9 @@ Key properties:
 - **Status lifecycle** `draft → approved → in-progress → done`; only the human user
   approves — no command or agent can self-approve.
 - **Gates are structural**: `/wellforge:plan` refuses a non-approved spec; `/wellforge:tasks`
-  refuses a non-approved plan.
+  refuses a non-approved plan — and since plugin 2.60.0 not only by prompt: `post-spec-guard`
+  refuses to let a NEW `tasks.md` stand unless its upstream is approved (plan at
+  `production`, spec at `mvp`, never at `spike`), whoever writes it.
 - **Bidirectional coverage**: every AC covered by ≥1 task, every task serves ≥1 AC
   (taskless work = scope creep, flagged).
 - **Grilling, on request** (`grilling` skill, `/wellforge:grill-me`, `/wellforge:spec
@@ -219,9 +221,13 @@ Mechanics that make it reliable:
 | `pulumi-gcp-ts` | infrastructure-as-code, not an app — provisioning Google Cloud with Pulumi + TypeScript (per-env stacks, ComponentResources, CrossGuard policy, mock-runtime tests) |
 
 3. **Generation** via the root `copier.yml` (one entry point, `--data preset=<name>`).
-   Every generated project ships **AI-ready**: project `CLAUDE.md`, pre-allowed
-   `.claude/settings.json`, `specs/` directory, mise toolchain (pinned versions, standard
-   task names), CI calling the central gates, `.forge/manifest.json` (the upgrade contract).
+   Every generated project ships **AI-ready**: project `AGENTS.md` (with a one-line
+   `CLAUDE.md` importing it), a `.claude/settings.json` that pre-allows the stack's routine
+   commands and **denies the secret files** (`.env*`, keys, `secrets.yml`; read-only denial
+   for `.mise.local.toml`) in every permission mode, a `.worktreeinclude` so parallel agents'
+   worktrees start with the env they need, `specs/` directory, mise toolchain (pinned
+   versions, standard task names), CI calling the central gates, `.forge/manifest.json` (the
+   upgrade contract).
 4. **Build verification** — `mise run install/build/test` is the acceptance bar; failures
    are template bugs to report, not things to patch around.
 5. **Connections** — standardized checklists (GitHub repo + branch protection, CI
@@ -297,8 +303,9 @@ PR-governed like every threshold; per-feature `eval.md` may raise floors, never 
 **Model routing (economics).** Agents don't all run the frontier model. A central
 PR-governed policy (`config/model-routing.yml`) assigns each agent a tier — **frontier**
 (opus) for the highest judgment (architect, the LM-judge evaluator), **mid** (sonnet) for
-structured writing and implementation (PO, designer, FE/BE dev, devops, QE), reserving the
-**cheap** tier for genuinely mechanical surfaces. This drives OpEx down without lowering
+structured writing and implementation (PO, designer, FE/BE dev, devops, QE), and **cheap**
+(haiku) for genuinely mechanical surfaces — today only `adr-writer`, as a recorded trial with
+its revert criterion in the policy file. This drives OpEx down without lowering
 quality where it counts — the paper's "intelligent model routing." A drift guard
 (`check-routing.py`) keeps each agent's frontmatter in sync with the policy; tiers are
 calibrated by the pilot (too cheap causes rework loops — the OpEx trap). Security reviews
@@ -325,7 +332,10 @@ Generated projects are not snapshots — they follow the template:
   judgment calls are the upgrade command's job.
 - **Releases**: repo-wide `vX.Y.Z` tags (patch cosmetic / minor additive / major needs
   migration). The `gates-v*` series is independent — gate bumps are never bundled into
-  template upgrades.
+  template upgrades. WellForge cuts its own template and plugin releases with
+  `scripts/release.sh` (`mise run release:template` / `release:plugin`): it bumps every place
+  a version lives, refuses a release with no migration note, proves the bumped tree, and
+  tags one series per commit.
 - **Fleet visibility**: `scripts/fleet-status.sh <org>` prints every generated project
   with its template version vs the latest release.
 
@@ -356,6 +366,13 @@ The whole loop is E2E-tested: scaffold at v0.1.0 → template evolves → `copie
   dangling `[[wiki-link]]`), and `rubric-sync` (the plugin's eval-rubric mirror is
   byte-identical to the central one). Each exists because the corresponding failure is
   silent — a command nobody can find, a cost estimate that still prints a number.
+- **User-only commands** — `release`, `new`, `upgrade`, `promote`, `adopt`,
+  `extract-template` and `terse-compress` do something hard to undo, so Claude may suggest
+  them but only you start them (`disable-model-invocation`).
+- **Lean sessions** — the plugin starts two MCP servers (`playwright`, `context-hub`); GitHub
+  is reached through the `gh` CLI. The prompt evals that cover the plugin run with-plugin
+  only, four at a time and cost-capped, and can be targeted at what changed
+  (`--eval-case`); a stale eval run is reported at a plugin tag, not used to block it.
 - **Portable conventions** — `git-policy`, `quality-gates` and `template-contract` ship as
   skills, not just repo files, so an agent working inside a *generated* project can load
   the rules it is being held to.

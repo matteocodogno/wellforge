@@ -447,7 +447,7 @@
       </div>
       <div class="tree-wrap">
 <pre class="tree" aria-label="Generated repository layout"><span class="d">work-orders/</span>
-├── <span class="k">.claude/settings.json</span>  <span class="c"># plugin enabled for the team</span>
+├── <span class="k">.claude/settings.json</span>  <span class="c"># plugin on, secret files denied</span>
 ├── <span class="k">.forge/manifest.json</span>   <span class="c"># template + version</span>
 ├── .github/workflows/
 │   └── quality.yml        <span class="c"># central gates, pinned</span>
@@ -456,10 +456,11 @@
 ├── <span class="d">backend/</span>               <span class="c"># Hono · Drizzle · Vitest</span>
 ├── <span class="d">frontend/</span>              <span class="c"># React · TypeScript · Vite</span>
 ├── docker-compose.yml     <span class="c"># Postgres, per checkout</span>
+├── .worktreeinclude       <span class="c"># env for parallel agents</span>
 ├── .release-it.json       <span class="c"># releases from commits</span>
 └── mise.toml              <span class="c"># pinned toolchain + tasks</span></pre>
         <div class="tree-points">
-          <div><h3>Agent-ready from the first commit</h3><p>The plugin is enabled in the repo itself, so every teammate who opens it gets the same agents, commands and hooks.</p></div>
+          <div><h3>Agent-ready from the first commit</h3><p>The plugin is enabled in the repo itself, so every teammate who opens it gets the same agents, commands and hooks. Secret files are denied by permission rule in every mode, auto included.</p></div>
           <div><h3>Gates you can't quietly lower</h3><p>CI calls the central gate workflows at a pinned tag. Raising the bar is one PR for the whole fleet; lowering it locally isn't an option.</p></div>
           <div><h3>Upgradeable, not a snapshot</h3><p>The manifest records the template and version that made the repo, so <span class="mono">copier update</span> can bring it forward when presets evolve.</p></div>
         </div>

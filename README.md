@@ -6,6 +6,11 @@
 
 <p align="center"><b>idea → a building, CI-gated, AI-ready repo → in minutes, not hours</b></p>
 
+<p align="center"><b><a href="https://matteocodogno.github.io/wellforge/">🌐 matteocodogno.github.io/wellforge</a></b>
+&nbsp;·&nbsp; <a href="docs/QUICKSTART.md">Quickstart</a>
+&nbsp;·&nbsp; <a href="docs/INSTALLATION.md">Install</a>
+&nbsp;·&nbsp; <a href="docs/FEATURES.md">Features</a></p>
+
 <p align="center"><i>Hi, I'm Forgey, your AI blacksmith. I forge the boring part (scaffold, gates, CI,
 the spec workflow, releases) so you get straight to building what actually matters.</i></p>
 
