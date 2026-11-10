@@ -18,6 +18,10 @@
 #   scripts/check-all.sh --preset hono-react
 #                                        # ...plus that preset's OWN gates on a fresh scaffold
 #   scripts/check-all.sh --quick         # skip the slow scaffold/gate work
+#   scripts/check-all.sh --with-evals    # ...plus the prompt evals (paid; records LAST-RUN)
+#   scripts/check-all.sh --eval-case 'done-*' --eval-runs 1
+#                                        # only the eval cases for what changed (implies
+#                                        # --with-evals; a targeted run is never recorded)
 #
 # Exit 0 only when every check passed. Nothing here is advisory.
 set -uo pipefail
@@ -27,6 +31,7 @@ cd "$ROOT" || exit 1
 
 PRESET=""
 QUICK=0; WITH_EVALS=0
+EVAL_CASE=""; EVAL_RUNS=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --preset) PRESET="${2:-}"; shift 2 ;;
@@ -35,8 +40,14 @@ while [ $# -gt 0 ]; do
     # OFF by default and that is the point: each case is N full agent runs against the API.
     # The default sweep must stay free, or people stop running it.
     --with-evals) WITH_EVALS=1; shift ;;
+    # Targeted runs: the full suite is the wrong tool for "I changed done.md". Either flag
+    # implies --with-evals.
+    --eval-case) EVAL_CASE="${2:-}"; WITH_EVALS=1; shift 2 ;;
+    --eval-case=*) EVAL_CASE="${1#*=}"; WITH_EVALS=1; shift ;;
+    --eval-runs) EVAL_RUNS="${2:-}"; WITH_EVALS=1; shift 2 ;;
+    --eval-runs=*) EVAL_RUNS="${1#*=}"; WITH_EVALS=1; shift ;;
     -h|--help)
-      sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'
       exit 0 ;;
     *) printf 'unknown argument: %s\n' "$1" >&2; exit 2 ;;
   esac
@@ -215,14 +226,21 @@ else
   # -j 4: runs are independent sessions in their own scaffold dirs; four at once share one
   #   rate limit and keep case order in the report. Together: ~7 min instead of ~56.
   # --max-cost-usd 12: a hard ceiling, so a looping case cannot turn a gate into a bill.
+  EVAL_ARGS=()
+  [ -n "$EVAL_CASE" ] && EVAL_ARGS+=(--case "$EVAL_CASE")
+  [ -n "$EVAL_RUNS" ] && EVAL_ARGS+=(--runs "$EVAL_RUNS")
   run "prompt evals" claude plugin eval ./wellforge-plugin \
     --scaffold --trust-plugin --no-publish --allow-tools Bash Write Edit --threshold 0.8 \
-    --ablation none -j 4 --max-cost-usd 12
+    --ablation none -j 4 --max-cost-usd 12 ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
   # Record the tree they passed against, so the release path can tell whether the prompt
   # layer has moved since. Only on a green run, and only from a clean tree: recording HEAD
   # while files are modified would claim the evals covered code that was never committed.
   if [ "${OUTCOMES[$((${#OUTCOMES[@]} - 1))]}" = "ok" ]; then
-    if [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ]; then
+    if [ -n "$EVAL_CASE$EVAL_RUNS" ]; then
+      # LAST-RUN means "the suite passed against this tree". One case, or one run per case,
+      # is a useful signal and not that claim.
+      printf '    %s(not recorded: a targeted run does not cover the suite)%s\n' "$DIM" "$RST"
+    elif [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ]; then
       printf '    %s(not recorded: the tree is dirty, so HEAD is not what was tested)%s\n' \
         "$DIM" "$RST"
     elif "$ROOT/scripts/check-evals-fresh.sh" --record \

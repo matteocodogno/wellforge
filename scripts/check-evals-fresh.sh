@@ -67,7 +67,15 @@ stale() {
   echo "  last prompt change : $last_change"
   echo "                       $(git -C "$ROOT" log -1 --format='%s' "$last_change" 2>/dev/null)"
   echo ""
-  echo "  Run them (records the result):  mise run check -- --with-evals"
+  if [ -n "$recorded" ] && git -C "$ROOT" cat-file -e "${recorded}^{commit}" 2>/dev/null; then
+    echo "  prompt files changed since:"
+    git -C "$ROOT" diff --name-only "$recorded" HEAD -- "${PROMPT_DIRS[@]}" 2>/dev/null \
+      | sed 's|^wellforge-plugin/|    |' | head -20
+    echo ""
+  fi
+  echo "  Only the cases for what changed (minutes):"
+  echo "    mise run check -- --eval-case '<glob>' --eval-runs 1"
+  echo "  The full suite (records the result):  mise run check -- --with-evals"
   echo ""
   [ -n "$STRICT" ] && exit 1
   exit 0

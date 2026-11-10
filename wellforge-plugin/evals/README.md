@@ -16,8 +16,11 @@ claude plugin eval ./wellforge-plugin --scaffold --trust-plugin --no-publish \
 claude plugin eval ./wellforge-plugin --case status-rows --runs 1 --ablation none \
   --scaffold --trust-plugin --no-publish --allow-tools Bash Write Edit
 
-# through the repo's own entry point
+# through the repo's own entry point — the full suite (records LAST-RUN)
 mise run check -- --with-evals
+
+# only the cases for what you changed, one run each (never recorded)
+mise run check -- --eval-case 'done-*' --eval-runs 1
 ```
 
 **They cost real money.** Each case is N full agent runs against the API, and by default
