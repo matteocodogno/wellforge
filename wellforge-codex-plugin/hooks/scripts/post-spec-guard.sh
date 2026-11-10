@@ -32,9 +32,11 @@ fi
 FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.notebook_path // empty')
 [ -z "$FILE" ] && exit 0
 
-# Only a spec's or a brief's own frontmatter carries these fields.
+# Only a spec's or a brief's own frontmatter carries these fields — plus tasks.md, whose
+# CREATION is gated on its upstream (rule 0 below).
 case "$FILE" in
   */specs/*/spec.md|specs/*/spec.md|*/specs/*/brief.md|specs/*/brief.md) ;;
+  */specs/*/tasks.md|specs/*/tasks.md) ;;
   *) exit 0 ;;
 esac
 [ -f "$FILE" ] || exit 0
@@ -61,6 +63,53 @@ field() {  # field <name> <text>
       print v; exit
     }'
 }
+
+# ── 0. a NEW tasks.md needs an approved upstream ───────────────────────────────
+# /wellforge:tasks states the rule (commands/tasks.md step 2) and only the prompt kept it:
+# at production a task list derives from an APPROVED plan, at mvp from an APPROVED spec,
+# and a spike has no tasks.md at all. The eval case that checked it scored 1.00 with and
+# without the plugin — base Claude already obeys — so it was paid for on every release and
+# measured nothing. The rule is mechanical, so it lives here, free and deterministic.
+#
+# Only CREATION is gated (no version at HEAD). Re-syncing an existing tasks.md after drift
+# is the drift rule's own remedy, and blocking it would dead-end the feature.
+if [ "$(basename "$FILE")" = "tasks.md" ]; then
+  git -C "$PROJECT_DIR" cat-file -e "HEAD:$REL" 2>/dev/null && exit 0
+  DIR=$(dirname "$FILE")
+  SPEC_TEXT=$(cat "$DIR/spec.md" 2>/dev/null || true)
+  TIER=$(field rigor "$SPEC_TEXT")
+  if [ -z "$TIER" ]; then   # project default, same precedence as forge-state.py
+    for m in manifest.json adoption.json; do
+      [ -f "$PROJECT_DIR/.forge/$m" ] || continue
+      TIER=$(jq -r '.rigor // empty' "$PROJECT_DIR/.forge/$m" 2>/dev/null)
+      [ -n "$TIER" ] && break
+    done
+  fi
+  TIER="${TIER:-production}"
+  upstream_ok() { case "$1" in approved|in-progress|done) return 0 ;; *) return 1 ;; esac; }
+  tasks_refuse() {
+    echo "BLOCKED by post-spec-guard: $1" >&2; shift
+    for line in "$@"; do echo "  $line" >&2; done
+    echo "  The file is already written — PostToolUse runs after the tool. DELETE it:" >&2
+    echo "      rm \"$FILE\"" >&2
+    exit 2
+  }
+  case "$TIER" in
+    spike)
+      tasks_refuse "$SLUG is a spike — a spike has no tasks.md" \
+        "It has brief.md and builds in the main loop: /wellforge:spike $SLUG" \
+        "To graduate it: /wellforge:promote $SLUG --to mvp" ;;
+    mvp)
+      ST=$(field status "$SPEC_TEXT")
+      upstream_ok "$ST" || tasks_refuse "tasks.md created for $SLUG (mvp) but spec.md is '${ST:-missing}'" \
+        "At mvp the task list derives from an APPROVED spec. Approve spec.md first." ;;
+    *)
+      PST=$(field status "$(cat "$DIR/plan.md" 2>/dev/null || true)")
+      upstream_ok "$PST" || tasks_refuse "tasks.md created for $SLUG (production) but plan.md is '${PST:-missing}'" \
+        "At production the task list derives from an APPROVED plan: /wellforge:plan $SLUG, then approve it." ;;
+  esac
+  exit 0
+fi
 
 AFTER=$(cat "$FILE")
 # Untracked file → "before" is empty, which is how a brand-new spec reads as a creation

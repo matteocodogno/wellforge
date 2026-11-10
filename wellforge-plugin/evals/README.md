@@ -187,7 +187,7 @@ a free, deterministic test instead:
 |---|---|---|
 | `done-mvp-passes` | 0.00 / 0.00 (broken either way) | `forge-state.test.py` (mvp gate passes without an eval) + `post-spec-guard` (refuses `status: done` on an unmet gate) |
 | `eval-never-closes` | 1.00 / 1.00 | `post-spec-guard`: `status: done` is refused unless the done gate is met, whoever writes it |
-| `tasks-draft-plan-stops` | 1.00 / 1.00 | none yet — a mechanical rule still waiting for its deterministic test |
+| `tasks-draft-plan-stops` | 1.00 / 1.00 | `post-spec-guard` rule 0: a NEW `tasks.md` is refused unless its upstream is approved (production: plan, mvp: spec, spike: never) — `post-spec-guard.test.sh` |
 | `implement-announces-downgrade` | 1.00 / 1.00 | prose, not mechanical — no replacement; `post-spec-guard` still refuses a lowered `rigor:` |
 | `evaluator-catches-mock-only-test` | 0.83 / 1.00 | judgment, not mechanical — no replacement |
 

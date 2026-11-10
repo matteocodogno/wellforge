@@ -298,6 +298,33 @@ sleep 1
   echo; echo "A NEW REQUIREMENT nobody re-synced."; } > "$REPO/specs/001-x/spec.md"
 run 2 "a spec BODY change with the close still blocks on drift"
 
+# ── rule 0: a NEW tasks.md needs an approved upstream ───────────────────────────
+# Replaces the tasks-draft-plan-stops prompt eval (1.00 with and without the plugin):
+# the rule is mechanical, so it is checked here, free, on every run.
+plan() { printf -- '---\nspec: 001\nstatus: %s\n---\n\n# Plan\n' "$1" > "$REPO/specs/001-x/plan.md"; }
+T="$REPO/specs/001-x/tasks.md"
+
+new_project; spec approved production; plan draft; commit_all; tasks 0 2; T="$REPO/specs/001-x/tasks.md"
+run 2 "production: a new tasks.md on a DRAFT plan is refused" "$T"
+new_project; spec approved production; commit_all; tasks 0 2; T="$REPO/specs/001-x/tasks.md"
+run 2 "production: a new tasks.md with NO plan is refused" "$T"
+new_project; spec approved production; plan approved; commit_all; tasks 0 2; T="$REPO/specs/001-x/tasks.md"
+run 0 "production: a new tasks.md on an approved plan is allowed" "$T"
+new_project; spec approved mvp; commit_all; tasks 0 2; T="$REPO/specs/001-x/tasks.md"
+run 0 "mvp: no plan, approved spec — allowed (plan folded into tasks)" "$T"
+new_project; spec draft mvp; commit_all; tasks 0 2; T="$REPO/specs/001-x/tasks.md"
+run 2 "mvp: a new tasks.md on a DRAFT spec is refused" "$T"
+new_project; spec approved spike; commit_all; tasks 0 2; T="$REPO/specs/001-x/tasks.md"
+run 2 "spike: a tasks.md is refused at any status" "$T"
+# Project default: the spec says nothing, the manifest says mvp → no plan needed.
+new_project; spec approved production; sed -i.bak '/^rigor:/d' "$REPO/specs/001-x/spec.md"; rm -f "$REPO/specs/001-x/spec.md.bak"
+echo '{"rigor":"mvp"}' > "$REPO/.forge/manifest.json"; commit_all; tasks 0 2; T="$REPO/specs/001-x/tasks.md"
+run 0 "no rigor: in the spec → the manifest's mvp applies" "$T"
+# Re-sync is never gated: tasks.md exists at HEAD, the plan went back to draft.
+new_project; spec approved production; plan approved; tasks 0 2; commit_all; plan draft; tasks 1 3
+T="$REPO/specs/001-x/tasks.md"
+run 0 "an EXISTING tasks.md (re-sync) is never gated" "$T"
+
 echo
 echo "post-spec-guard: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
