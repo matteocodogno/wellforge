@@ -85,6 +85,16 @@ defects that could produce that shape were removed and the next occurrence was m
 self-diagnosing — see the `harness:` self-check cases and `assert_file_has`, which now
 prints grep's own exit status and stderr instead of hiding them behind `2>/dev/null`.
 
+**`v0.12.0` and `plugin-v2.60.0` were deleted and re-cut on 2026-11-10, this time by the
+rule.** Both went red on their first CI run in the `cli` job, on the brand-new
+`release.test.sh`: same host-dependence shape as above. A CI checkout of a tag is a detached
+HEAD with no local `main`, so the test's bare origin had no `main` and every push in it
+failed — green on a laptop, where `main` exists. The test now creates the branch itself, and
+the defect was reproduced in a detached clone without `main` before the fix was trusted. The
+plugin, the templates and `copier.yml` are byte-identical between the first tags and the
+re-cut ones, so anyone who installed in between got the same artifact; the tags were
+re-cut, not moved.
+
 ### A `plugin-v` tag reports whether the prompt evals are fresh
 
 `commands/`, `agents/` and `skills/` are most of what the plugin is, and the **only** tests
