@@ -85,27 +85,28 @@ defects that could produce that shape were removed and the next occurrence was m
 self-diagnosing — see the `harness:` self-check cases and `assert_file_has`, which now
 prints grep's own exit status and stderr instead of hiding them behind `2>/dev/null`.
 
-### A `plugin-v` tag needs fresh prompt evals
+### A `plugin-v` tag reports whether the prompt evals are fresh
 
 `commands/`, `agents/` and `skills/` are most of what the plugin is, and the **only** tests
 they have are the prompt evals in `wellforge-plugin/evals/`. Those are optional in CI by
-design — they need an `ANTHROPIC_API_KEY` this repo does not have and no fork should need —
-so "optional in CI" plus nothing else would mean the plugin's largest surface ships untested.
-
-The check therefore lives on the release path, where it costs nothing on an ordinary push:
+design — they need an `ANTHROPIC_API_KEY` this repo does not have and no fork should need.
 
 ```sh
-scripts/check-evals-fresh.sh          # prints the last recorded run, refuses if stale
+scripts/check-evals-fresh.sh          # prints the last recorded run, WARNS if stale (exit 0)
+scripts/check-evals-fresh.sh --strict # same, but exit 1 if stale
 ```
 
 **Fresh** means the SHA recorded in `wellforge-plugin/evals/LAST-RUN` is the last commit that
 touched the prompt layer, or a descendant of it. `scripts/check-all.sh --with-evals` records
-it for you after a green run, from a clean tree only. `gates/hooks/pre-push` runs the check
-for any `plugin-v*` tag; `WELLFORGE_SKIP_EVALS=1` (or `--skip-evals`) overrides it and prints
-a banner saying the evals were not confirmed.
+it for you after a green full run, from a clean tree only. `gates/hooks/pre-push` runs the
+check for any `plugin-v*` tag and prints the result; it does **not** refuse the push.
 
-There is deliberately no recorded SHA yet: the suite has never been run in full, so claiming
-one would be a lie. The gate refusing a plugin tag today is the correct state.
+It used to. A full pass took ~56 min and ~$17, the suite did not cover what had changed, and
+the first time the refusal met a release everyone needed (`plugin-v2.58.0`, 2026-11-10) it was
+overridden with `WELLFORGE_SKIP_EVALS=1`. A gate that is walked past whenever it matters
+protects nothing. The warning keeps the stale commit visible at the moment of release; running
+the cases that cover what changed is the releaser's call. (`--skip-evals` and
+`WELLFORGE_SKIP_EVALS` are still accepted and do nothing.)
 
 ### Why it cannot happen again by remembering
 

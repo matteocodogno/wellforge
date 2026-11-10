@@ -58,8 +58,9 @@ Four independent series — template `vX.Y.Z`, `gates-vN`, `plugin-vX.Y.Z`, `cli
 [docs/VERSIONING.md](docs/VERSIONING.md); read it before cutting anything. Short version of
 the part people get wrong:
 
-- plugin prompt/skill/command/hook change → `plugin-v*`, and the prompt evals must be
-  fresh (`scripts/check-evals-fresh.sh`; the pre-push hook enforces it)
+- plugin prompt/skill/command/hook change → `plugin-v*`; run the prompt evals that cover
+  what you changed (`scripts/check-evals-fresh.sh` says whether they are stale; the pre-push
+  hook prints it, advisory)
 - a template file a generated project receives → `vX.Y.Z`, and a
   [PLUGIN-MIGRATIONS](docs/PLUGIN-MIGRATIONS.md) or TEMPLATE-MIGRATIONS entry if a project
   must absorb it
@@ -124,8 +125,9 @@ scripts/check-all.sh --with-evals     # uses your own Claude Code login
 ```
 
 A green local run records the tree it passed against in `wellforge-plugin/evals/LAST-RUN`,
-and `scripts/check-evals-fresh.sh` refuses a `plugin-v` tag whose prompt layer has moved
-since — because `commands/`, `agents/` and `skills/` have no other test.
+and `scripts/check-evals-fresh.sh` warns at a `plugin-v` tag when the prompt layer has
+moved since — because `commands/`, `agents/` and `skills/` have no other test. It warns;
+it no longer refuses (docs/VERSIONING.md says why).
 
 ## What a PR must show
 

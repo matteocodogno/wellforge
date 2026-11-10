@@ -90,8 +90,9 @@ scripts/check-all.sh --with-evals     # uses your own Claude Code login
 ```
 
 A green local run records the tree it passed against in `wellforge-plugin/evals/LAST-RUN`,
-and `scripts/check-evals-fresh.sh` refuses a `plugin-v` tag whose prompt layer has moved
-since — because `commands/`, `agents/` and `skills/` have no other test.
+and `scripts/check-evals-fresh.sh` warns at a `plugin-v` tag when the prompt layer has
+moved since — because `commands/`, `agents/` and `skills/` have no other test. It warns;
+it no longer refuses (docs/VERSIONING.md says why).
 
 ## The fixture project
 
