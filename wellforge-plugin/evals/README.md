@@ -36,6 +36,10 @@ copy is invisible because the per-user site-packages lives under `$HOME`. Withou
 interpreter's **own** site-packages; `-s` is how you test for that from a normal shell.
 `check-all.sh --with-evals` checks it first and fails before spending anything.
 
+In this repo the fix is mise: `mise trust && mise install && mise run setup` creates `.venv`
+(Python pinned in `mise.toml`) with pyyaml in it, and mise puts it first on `PATH`, so
+`mise run check -- --with-evals` passes the preflight.
+
 Why the flags:
 
 - `--scaffold` — every case's `scaffold.sh` copies `fixtures/project/` into the run's working

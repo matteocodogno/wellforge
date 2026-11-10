@@ -192,6 +192,8 @@ elif ! python3 -s -c "import yaml" >/dev/null 2>&1; then
   printf '  prompt evals… %sFAILED%s (python3 -s cannot import yaml)\n' "$RED" "$RST"
   printf '    Eval sessions run with no network and a throwaway HOME. pyyaml must be importable\n'
   printf '    by `python3 -s` — the interpreter'"'"'s own site-packages, not a --user install.\n'
+  printf '    Fix: mise trust && mise install && mise run setup, then run this via\n'
+  printf '    `mise run check -- --with-evals` (mise puts the repo .venv first on PATH).\n'
   printf '    See wellforge-plugin/evals/README.md.\n'
   record "prompt evals" failed ""
   FAILED=$((FAILED + 1))
@@ -206,8 +208,16 @@ else
   #   grant every session ran with no shell and no way to write a file, so nothing that calls
   #   forge-state.py or writes tasks.md could pass — the first full run (2026-10-05) scored
   #   done-mvp-passes 0.00 for exactly that, with the agent correctly declining to guess.
+  # --ablation none: the default also runs every case WITHOUT the plugin to report a delta.
+  #   That measures the plugin's value, not whether a release regressed — and it doubled the
+  #   suite: 66 sequential sessions, 56 min and ~$17 on 2026-11-10. A release gate needs the
+  #   with-plugin arm only. Run the ablation by hand when the delta is the question.
+  # -j 4: runs are independent sessions in their own scaffold dirs; four at once share one
+  #   rate limit and keep case order in the report. Together: ~7 min instead of ~56.
+  # --max-cost-usd 12: a hard ceiling, so a looping case cannot turn a gate into a bill.
   run "prompt evals" claude plugin eval ./wellforge-plugin \
-    --scaffold --trust-plugin --no-publish --allow-tools Bash Write Edit --threshold 0.8
+    --scaffold --trust-plugin --no-publish --allow-tools Bash Write Edit --threshold 0.8 \
+    --ablation none -j 4 --max-cost-usd 12
   # Record the tree they passed against, so the release path can tell whether the prompt
   # layer has moved since. Only on a green run, and only from a clean tree: recording HEAD
   # while files are modified would claim the evals covered code that was never committed.

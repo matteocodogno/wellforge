@@ -987,10 +987,11 @@ jobs:
           RUNS: ${{ github.event_name == 'workflow_dispatch' && inputs.eval_runs || '1' }}
         run: |
           set -euo pipefail
-          echo "::notice::prompt evals: --runs $RUNS over both arms. See the cost note in ci.yml."
+          echo "::notice::prompt evals: --runs $RUNS, with-plugin arm only, 4 at once. See the cost note in ci.yml."
           claude plugin eval ./wellforge-plugin \
             --scaffold --trust-plugin --no-publish --allow-tools Bash Write Edit \
-            --runs "$RUNS" --threshold 0.8 --json evals-result.json
+            --runs "$RUNS" --threshold 0.8 --ablation none -j 4 --max-cost-usd 12 \
+            --json evals-result.json
           echo "::notice::evals passed for ${{ github.sha }} — record that SHA in"
           echo "::notice::wellforge-plugin/evals/LAST-RUN before cutting a plugin-v tag."
       - name: Upload the report

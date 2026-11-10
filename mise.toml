@@ -1,10 +1,28 @@
 # mise.toml — the WELLFORGE repo itself (not a generated project).
 #
-# Deliberately thin: no [tools], because this repo is not an application — its toolchain is
-# whatever the scripts declare they need, and pinning node/java here would shadow the pins a
-# generated project is being tested against. Tasks only.
+# Deliberately thin: this repo is not an application. node/java stay UNPINNED here, because
+# pinning them would shadow the pins a generated project is being tested against. Python is
+# the one tool pinned: no preset pins it, and it is the runtime of this repo's own scripts
+# (check-docs.py, forge-state.py, the prompt evals). Unpinned, it was whatever python3 the
+# machine had — and the evals died on a Homebrew 3.15 without pyyaml (2026-11-10).
+# Scaffolds under test are generated in mktemp dirs, outside this tree, so they inherit none
+# of it.
 #
-# Run `mise trust` once after cloning.
+# Once after cloning: `mise trust && mise install && mise run setup`.
+
+[tools]
+python = "3.13"
+
+[env]
+# .venv/ is gitignored. A venv's site-packages are its interpreter's OWN, so pyyaml is visible
+# to `python3 -s` — which the eval sandbox needs: it runs with a throwaway $HOME, where a
+# `pip install --user` copy is invisible (wellforge-plugin/evals/README.md).
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.setup]
+description = "Install the Python deps the repo's scripts and the prompt evals need (pyyaml)"
+# ensurepip first: when uv is on PATH, mise creates the venv with uv, which ships no pip.
+run         = "python -m ensurepip >/dev/null && python -m pip install -q --disable-pip-version-check pyyaml"
 
 [tasks.format-templates]
 description = "Run each preset's OWN formatter over its rendered output and copy the result back"
