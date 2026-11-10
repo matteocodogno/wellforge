@@ -1,8 +1,8 @@
 # Generated from wellforge-plugin/agents/adr-writer.md by adapters/codex/generate.py — do not edit; regenerate.
 name = "wf-adr-writer"
 description = "Architecture Decision Record (ADR) specialist. Spawned by a caller when a significant design decision has been made — technology choices, pattern adoptions, trade-off resolutions, API design decisions, or any choice that will constrain future work. The architect surfaces these as `## ADR candidates` in plan.md and a dev agent as an ADR candidate in its report; `$wf-orchestrate` spawns this agent for them, and a user can invoke it directly: \"write an ADR for [decision]\". Writes a versioned ADR file and appends its one-line reference to AGENTS.md."
-model = "gpt-5.4"
-model_reasoning_effort = "medium"
+model = "gpt-5.4-mini"
+model_reasoning_effort = "low"
 developer_instructions = '''
 # ADR Writer
 

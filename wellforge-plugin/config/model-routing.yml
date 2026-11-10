@@ -30,12 +30,15 @@ agents:
   backend-dev:      { tier: mid, why: "implementation against the stack skills — the token bulk" }
   devops:           { tier: mid, why: "CI/infra wiring, largely deterministic" }
   quality-engineer: { tier: mid, why: "runs gates + writes tests (test-gen is paper's cheaper tier); judgment backstopped by the eval" }
-  adr-writer:       { tier: mid, why: "documents a decision already made" }
+  adr-writer:       { tier: cheap, why: "documents a decision already made, from a caller's brief — template filling; the first agent on cheap (2.60.0), check /usage before moving others" }
   owasp-reviewer:   { tier: mid, why: "OWASP checklist review; OVERRIDE to frontier for regulated/high-risk projects (PII, public sector, financial)" }
 
-  # cheap — none by default. WellForge's agents are all substantive enough that haiku would
-  # cause rework loops (false economy). The tier exists for future mechanical surfaces
-  # (e.g. a changelog/status-summarizer agent), assigned only with evidence it holds quality.
+  # cheap — adr-writer only, AS A TRIAL (2.60.0). The rework metric below cannot judge it: it
+  # never passes through QE or security, so its rework rate is zero at any model. Its output
+  # is judged by the human who reviews the ADR and the index line it appends. Revert it to
+  # mid the first time one of those has to be rewritten for substance (a wrong failure shape,
+  # a rule the decision did not make) rather than wording. Every other agent stays off cheap:
+  # they are substantive enough that haiku would cause rework loops (false economy).
 
 # ── What "evidence" means, concretely ───────────────────────────────────────────────
 # "Move agents down a tier only with evidence" was a rule with no measure attached, which

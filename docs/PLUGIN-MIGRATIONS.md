@@ -36,6 +36,8 @@ between "nothing to do" and "nobody wrote it down".
 - `release`, `new`, `upgrade`, `promote`, `adopt`, `extract-template` and `terse-compress`
   are user-only (`disable-model-invocation: true`): Claude suggests them, you type them.
   Nothing to do on upgrade.
+- `adr-writer` runs on the `cheap` tier (haiku) as a trial — see `config/model-routing.yml`
+  for when it reverts. Nothing to do on upgrade.
 
 ---
 

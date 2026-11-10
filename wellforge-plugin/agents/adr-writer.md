@@ -14,7 +14,7 @@ tools:
   - Edit
   - Glob
   - Bash
-model: sonnet
+model: haiku
 color: cyan
 ---
 
