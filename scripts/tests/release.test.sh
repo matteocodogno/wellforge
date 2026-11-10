@@ -61,6 +61,7 @@ grep -q "\"version\": \"$NP\"" wellforge-codex-plugin/plugin.json && ok || bad "
 expect "$(git tag --points-at HEAD)" "plugin-v$NP" "exactly one tag, on the release commit"
 expect "$(git log -1 --format=%s)" "chore(plugin): release $NP" "release commit message"
 expect "$(git status --porcelain --untracked-files=no)" "" "tree clean after the release"
+git tag -n1 "plugin-v$NP" | grep -q "evals:" && ok || bad "plugin tag message carries the evals status" "$(git tag -n1 "plugin-v$NP")"
 
 # 4. the same version again is refused (tag exists)
 git push -q origin main; git push -q origin "plugin-v$NP"

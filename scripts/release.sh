@@ -175,7 +175,9 @@ fi
 step 5 "commit and tag"
 if [ "$SERIES" = plugin ]; then
   msg="chore(plugin): release $next"
-  evals="$(scripts/check-evals-fresh.sh 2>/dev/null | head -1)"
+  # First NON-EMPTY line: the stale report opens with a blank line, and `head -1` tagged
+  # plugin-v2.60.0 with an empty evals status.
+  evals="$(scripts/check-evals-fresh.sh 2>/dev/null | grep -m1 -v '^[[:space:]]*$')"
   tag_msg="plugin $next — $evals"
 else
   msg="chore(template): release v$next"; tag_msg="template v$next"
