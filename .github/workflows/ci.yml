@@ -344,7 +344,7 @@ jobs:
         run: |
           fail=0
           for f in .forge/manifest.json .copier-answers.yml AGENTS.md CLAUDE.md \
-                   .claude/settings.json specs/README.md mise.toml \
+                   .claude/settings.json .worktreeinclude specs/README.md mise.toml \
                    .github/workflows/quality.yml .gitignore README.md; do
             if [ -e "/tmp/out/$f" ]; then echo "  OK  $f"; else echo "::error::missing $f"; fail=1; fi
           done

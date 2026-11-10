@@ -1,0 +1,8 @@
+# Gitignored env files Claude Code copies into every worktree it creates (see the
+# worktree-isolation skill: carry-in). Small config files only - never build output.
+.mise.local.toml
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local

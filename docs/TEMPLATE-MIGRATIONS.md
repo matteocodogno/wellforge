@@ -23,6 +23,22 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## v0.12.0 — secret files are denied by permission rules, and worktrees get their env
+
+**Action: none required.** `copier update` adds both files; review the diff.
+
+- `.claude/settings.json` gains a `permissions.deny` list: `Read` and `Edit` of `.env*` (not
+  `.env.example`), `.envrc`, keys/certs and `secrets.y*ml` are denied, and so is `Read` of
+  `.mise.local.toml` and `credentials.json`. Deny rules hold in every permission mode,
+  including auto, and also stop `cat .env`. If your project keeps a secret file under another
+  name, add it to the list yourself; if you had allowed reading one of these on purpose, the
+  deny now wins — move that value into `.mise.local.toml` and read it through `mise env`.
+- `.worktreeinclude` (new) lists the gitignored env files Claude Code copies into every
+  worktree it creates, so a parallel agent no longer starts with an environment that resolves
+  to nothing. Add any other small gitignored config your app needs to run.
+
+---
+
 ## v0.11.0 — the security floor runs at every tier, and the frontend loses its dotenv file
 
 **Action: two, both small** — a `gates_ref` bump and one file that disappears. Details at the

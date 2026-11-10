@@ -148,10 +148,15 @@ missing, and by WellForge policy env config *is* gitignored (`.env*`, `.mise.loc
 account files). So env does not fail loudly in a worktree — **it resolves to nothing**, and the
 failure surfaces much deeper, inside application code, looking exactly like broken code.
 
-1. **Carry the files in.** Enumerate what the main tree has and the worktree won't
-   (`git status --ignored --porcelain` at the repo root, filtered to config/env files), and copy
-   them into each worktree. Do not carry build output or `node_modules` — those are rebuilt. This
-   adds no exposure: same machine, same repo, same user, same secrets already on disk.
+1. **Carry the files in.** If the repo root has a `.worktreeinclude` (every scaffold from
+   template `v0.12.0` does), Claude Code itself copies the gitignored files it lists into every
+   worktree it creates — the deterministic version of this step; check the list covers what
+   step 2 needs and add to it rather than copying by hand. Otherwise, or for anything it does
+   not list: enumerate what the main tree has and the worktree won't (`git status --ignored
+   --porcelain` at the repo root, filtered to config/env files), and copy them into each
+   worktree. Do not carry build output or `node_modules` — those are rebuilt. This adds no
+   exposure: same machine, same repo, same user, same secrets already on disk. **Step 2 runs
+   either way** — a copied file is not yet a resolved environment.
 2. **Verify — do not assume.** Resolve the required env inside the worktree the way the app
    resolves it (`mise env`, the config module's own parse/validate step) and diff it against the
    main tree. **Any variable that resolves in the main tree and not in the worktree is a hard
