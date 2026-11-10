@@ -386,6 +386,13 @@ behind.
 
 ## Release rules
 
+**Plugin and template releases are cut by `scripts/release.sh`** (`mise run release:plugin` /
+`release:template`), the CLI by `scripts/release-cli.sh`, and `gates-vN` remains a bare tag.
+`release.sh` plans by default; `--execute` bumps every place the version lives, refuses a
+release with no migration entry, runs `check-all.sh` on the bumped tree, commits, tags and
+asserts the commit carries one tag; `--push` publishes. Its matrix
+(`scripts/tests/release.test.sh`) runs in a throwaway clone against a local bare origin.
+
 **Never tag two series on the same commit.** Copier ignores `gates-v*` and `plugin-v*` when
 *resolving* versions, but `git describe` can still report one, which would record the wrong
 `_commit` in a scaffold and mislabel its template version. With four series the rule is the

@@ -108,74 +108,42 @@ would report the wrong one and mislabel a scaffold's template version):
 | gates | `gates-vN` | `.github/workflows/quality-*.yml` or `gates/` changed |
 | **plugin** | `plugin-vX.Y.Z` | anything under `wellforge-plugin/` changed |
 
-## Plugin release
+## Plugin and template releases — `scripts/release.sh`
 
-1. **Decide the increment** from what changed: patch = fix/wording, minor = a new command,
-   agent, skill, hook or config, major = breaks a project set up by an older plugin.
-2. **Bump the version in all three files, one commit.** They must agree or
-   `check-docs.py` fails CI — and the failure it prevents is silent, a teammate installing a
-   plugin that is not the one this repo describes:
-   - `wellforge-plugin/.claude-plugin/plugin.json` → `version`
-   - `.claude-plugin/marketplace.json` → `version` **and** `source.ref` (`plugin-vX.Y.Z`)
-   - `AGENTS.md` → the quoted plugin version
-3. **Add the `docs/PLUGIN-MIGRATIONS.md` entry** for the minor — including "no project-side
-   action", which is information. `/wellforge:upgrade` reads that file; a missing entry is
-   indistinguishable from an unexamined one.
-4. **Verify before tagging — this is a PRECONDITION, not a checklist line.** Run the whole
-   self-test, not the three drift guards this step used to name:
+Both are cut by one script; do not do its steps by hand. It plans by default and only acts
+with `--execute`:
 
-   ```bash
-   mise run check          # scripts/check-all.sh — guards, hooks, python suites, CLI, shellcheck
-   ```
+```bash
+mise run release:plugin   -- minor                   # plan: current -> next, preflight, notes
+mise run release:plugin   -- minor --execute         # bump, check-all, commit, tag
+mise run release:plugin   -- minor --execute --push  # ...and push main, then the tag
+mise run release:template -- minor --execute --push  # template series (vX.Y.Z)
+```
 
-   **Red means no tag.** `plugin-v2.49.0` was cut from a tree where
-   `post-spec-guard.test.sh` had a failure and the CLI matrix had six, because this step
-   listed three commands and the repo has thirteen suites. One entry point now, and adding
-   a suite to `scripts/check-all.sh` updates this step, the pre-push hook, the CLI release
-   script and `/wellforge:doctor --tests` at once.
+What stays yours, and the script cannot decide:
 
-   `gates/hooks/pre-push` runs it again when the tag is pushed (install it with
-   `./scripts/setup-git-policy.sh`), and CI's `release-guard` job requires every job green
-   on the tag — that last one cannot be bypassed. If it goes red, **delete the tag and
-   re-cut it**; see `docs/VERSIONING.md`.
+1. **The increment.** Plugin: patch = fix/wording, minor = a new command, agent, skill, hook
+   or config, major = breaks a project set up by an older plugin. Template: patch cosmetic,
+   minor additive, major needs `_migrations`.
+2. **The migration entry** — `## X.Y.Z — …` in `docs/PLUGIN-MIGRATIONS.md`, or `## vX.Y.Z — …`
+   in `docs/TEMPLATE-MIGRATIONS.md`, including "nothing to do", which is information. It is
+   written in the commit that makes the change; the script refuses a release without it
+   rather than stubbing one.
+3. **Two series, two commits.** Releasing both? Run the script twice: it makes one commit
+   and one tag each, and refuses a commit that would carry two tags.
+4. **After the push**, CI's `release-guard` must go green on the tag
+   (`gh run list --branch <tag>`). Red means delete the tag and re-cut — `docs/VERSIONING.md`.
+5. **Prompt evals.** The script records in the plugin tag's message whether they are fresh;
+   the pre-push hook prints the same. Stale is allowed, but say so in the release notes.
 
-   **And check whether the prompt evals are fresh.** `commands/`, `agents/` and `skills/`
-   have no other test, and the CI eval job is optional (it needs an `ANTHROPIC_API_KEY`
-   this repo does not have). So:
+Then report the install commands a teammate runs, with the real version:
 
-   ```bash
-   scripts/check-evals-fresh.sh     # prints the last recorded run; WARNS if stale
-   scripts/check-all.sh --with-evals   # run them (your own Claude Code login, no key) and record
-   ```
-
-   The pre-push hook prints this for any `plugin-v*` tag but does not refuse the push. If
-   you tag with stale evals, say so in the release notes.
-
-5. **Commit, then tag that commit** — in this order, because the manifest must point at its
-   own tag:
-
-   ```bash
-   git commit -m "feat(plugin): <what changed>"     # or fix(plugin): for a patch
-   git tag plugin-vX.Y.Z
-   git push origin main --tags
-   ```
-
-6. **Confirm no second tag landed on it**, the one rule that is easy to break and quiet
-   when broken:
-
-   ```bash
-   git tag --points-at HEAD        # must print exactly one tag
-   ```
-
-7. **Report the install commands** a teammate runs, with the real version substituted —
-   that is what the release is *for*:
-
-   ```bash
-   claude plugin marketplace add matteocodogno/wellforge
-   claude plugin install wellforge@wellforge --scope user
-   # already installed:
-   claude plugin marketplace update wellforge && claude plugin update wellforge@wellforge
-   ```
+```bash
+claude plugin marketplace add matteocodogno/wellforge
+claude plugin install wellforge@wellforge --scope user
+# already installed:
+claude plugin marketplace update wellforge && claude plugin update wellforge@wellforge
+```
 
 ## Hard rules for a WellForge release
 

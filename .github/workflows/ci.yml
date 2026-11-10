@@ -776,6 +776,14 @@ jobs:
       - name: wellforge CLI matrix
         run: scripts/tests/wellforge.test.sh
 
+      # release.sh regenerates the Codex package, which needs uv (+ pyyaml through it).
+      - uses: astral-sh/setup-uv@v7
+      - name: release.sh matrix (throwaway clone + local bare origin)
+        run: |
+          git config --global user.email ci@example.invalid
+          git config --global user.name ci
+          scripts/tests/release.test.sh
+
   # The Homebrew package, not just the script. The repo's own suite runs scripts/wellforge
   # directly; this proves the thing a teammate actually installs — the formula builds, and
   # its test block passes: `help` mentions doctor, `version` matches the formula's version,

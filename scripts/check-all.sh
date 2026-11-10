@@ -178,6 +178,8 @@ else
   skip "wellforge.test.sh" "not executable"
   FAILED=$((FAILED + 1))
 fi
+# The plugin/template release script, in a throwaway clone with a local bare origin.
+run "release.test.sh" bash scripts/tests/release.test.sh
 
 # ── 4b. prompt-layer evals (opt-in: they cost tokens) ───────────────────────────────
 # Every script and hook in this repo has a matrix; commands/ and agents/ — most of what the
