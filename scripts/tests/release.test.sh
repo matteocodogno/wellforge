@@ -40,7 +40,9 @@ note() { printf '\n## %s — test entry\n\nNothing to do.\n' "$2" >> "docs/$1"; 
 echo "release.sh matrix"
 
 # 1. plan only changes nothing
-P0="$(pv)"; out="$(scripts/release.sh plugin patch 2>&1)"; rc=$?
+# major, not patch: the next patch may already have its entry (it is written with the
+# change, before the release) — that is how this case went red on main at ccdca85.
+P0="$(pv)"; out="$(scripts/release.sh plugin major 2>&1)"; rc=$?
 expect "$rc" 1 "plan without a migration entry refuses" "$out"
 expect "$(git status --porcelain --untracked-files=no)" "" "plan leaves the tree clean"
 
