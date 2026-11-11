@@ -99,33 +99,45 @@ root first — it is the authority; this is the procedure. (Not a link on purpos
 file is installed outside the repo, so a relative path to it resolves nowhere the command
 actually runs.)
 
-Three series version independently and **no commit may carry two tags** (`git describe`
-would report the wrong one and mislabel a scaffold's template version):
+Four series version independently and **no commit may carry two tags** (`git describe`
+would report the wrong one and mislabel a scaffold's template version). Each has one entry
+point, `mise run release:<series>`:
 
-| Series | Tag | Cut when |
-|---|---|---|
-| template | `vX.Y.Z` | `copier.yml` or `templates/` changed |
-| gates | `gates-vN` | `.github/workflows/quality-*.yml` or `gates/` changed |
-| **plugin** | `plugin-vX.Y.Z` | anything under `wellforge-plugin/` changed |
+| Series | Tag | Cut when | Command |
+|---|---|---|---|
+| template | `vX.Y.Z` | `copier.yml` or `templates/` changed | `release:template -- <bump>` |
+| gates | `gates-vN` | `gates/` or a reusable workflow (`on: workflow_call`) changed | `release:gates` |
+| **plugin** | `plugin-vX.Y.Z` | anything under `wellforge-plugin/` changed | `release:plugin -- <bump>` |
+| CLI | `cli-vX.Y.Z` | `scripts/wellforge` changed | `release:cli -- <bump>` |
 
-## Plugin and template releases — `scripts/release.sh`
+## Plugin, template and gates releases — `scripts/release.sh`
 
-Both are cut by one script; do not do its steps by hand. It plans by default and only acts
-with `--execute`:
+All three are cut by one script; do not do its steps by hand. It plans by default and only
+acts with `--execute`:
 
 ```bash
 mise run release:plugin   -- minor                   # plan: current -> next, preflight, notes
 mise run release:plugin   -- minor --execute         # bump, check-all, commit, tag
 mise run release:plugin   -- minor --execute --push  # ...and push main, then the tag
 mise run release:template -- minor --execute --push  # template series (vX.Y.Z)
+mise run release:gates    -- --execute --push        # gates: always the next N, no increment
 ```
+
+A gates release refuses when nothing under `gates/` or in a reusable workflow changed since
+the last `gates-vN`, and its commit touches only the AGENTS.md versions line: the
+`gates_ref` default in `copier.yml` is a template file, so new scaffolds move to the new
+gates with the next **template** release, and existing projects with `/wellforge:upgrade`.
+
+The CLI (`release:cli`, i.e. `scripts/release-cli.sh`) takes two commits — the Formula pins
+the sha of GitHub's tarball, which exists only once the tag is pushed — so it pushes as part
+of `--execute`. Its checklist is `docs/RELEASING-CLI.md`.
 
 What stays yours, and the script cannot decide:
 
 1. **The increment.** Plugin: patch = fix/wording, minor = a new command, agent, skill, hook
    or config, major = breaks a project set up by an older plugin. Template: patch cosmetic,
-   minor additive, major needs `_migrations`.
-2. **The migration entry** — `## X.Y.Z — …` in `docs/PLUGIN-MIGRATIONS.md`, or `## vX.Y.Z — …`
+   minor additive, major needs `_migrations`. Gates: none — it is a counter.
+2. **The migration entry** (plugin and template) — `## X.Y.Z — …` in `docs/PLUGIN-MIGRATIONS.md`, or `## vX.Y.Z — …`
    in `docs/TEMPLATE-MIGRATIONS.md`, including "nothing to do", which is information. It is
    written in the commit that makes the change; the script refuses a release without it
    rather than stubbing one.
