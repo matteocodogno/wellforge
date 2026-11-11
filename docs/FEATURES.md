@@ -341,10 +341,10 @@ Generated projects are not snapshots — they follow the template:
   judgment calls are the upgrade command's job.
 - **Releases**: repo-wide `vX.Y.Z` tags (patch cosmetic / minor additive / major needs
   migration). The `gates-v*` series is independent — gate bumps are never bundled into
-  template upgrades. WellForge cuts its own template and plugin releases with
-  `scripts/release.sh` (`mise run release:template` / `release:plugin`): it bumps every place
-  a version lives, refuses a release with no migration note, proves the bumped tree, and
-  tags one series per commit.
+  template upgrades. WellForge cuts each of its four series with
+  `mise run release:<plugin|template|gates|cli>`: it bumps every place a version lives,
+  refuses a release with no migration note (or, for gates, with nothing a project pins
+  changed), proves the bumped tree, and tags one series per commit.
 - **Fleet visibility**: `scripts/fleet-status.sh <org>` prints every generated project
   with its template version vs the latest release.
 

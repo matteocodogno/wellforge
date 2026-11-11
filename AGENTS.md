@@ -19,8 +19,8 @@ CI quality gates (`.github/workflows/` + `gates/`). What it does and why:
 - **After any change under `wellforge-plugin/`:** regenerate the Codex package —
   `uv run --with pyyaml python adapters/codex/generate.py --package wellforge-codex-plugin
   --marketplace .agents/plugins/marketplace.json`. CI diffs it against a fresh run.
-- **Release:** `mise run release:plugin -- <patch|minor|major>` or `release:template` (plan;
-  add `--execute`, then `--push`). The CLI: `scripts/release-cli.sh`. Never by hand.
+- **Release:** `mise run release:<plugin|template|cli> -- <patch|minor|major>` or
+  `mise run release:gates` (the next N) — plan; add `--execute`, then `--push`. Never by hand.
 - **Once per clone:** `mise trust && mise install && mise run setup` (pinned Python + pyyaml in
   `.venv`), then `./scripts/setup-git-policy.sh`.
 

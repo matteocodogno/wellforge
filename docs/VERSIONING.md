@@ -396,9 +396,12 @@ behind.
 
 ## Release rules
 
-**Plugin and template releases are cut by `scripts/release.sh`** (`mise run release:plugin` /
-`release:template`), the CLI by `scripts/release-cli.sh`, and `gates-vN` remains a bare tag.
-`release.sh` plans by default; `--execute` bumps every place the version lives, refuses a
+**Every series has one entry point, `mise run release:<plugin|template|gates|cli>`.**
+Plugin, template and gates releases are cut by `scripts/release.sh`, the CLI by
+`scripts/release-cli.sh`. A gates release is the next integer, refused when nothing under
+`gates/` or in a reusable workflow changed since the last `gates-vN`; its commit moves only
+the AGENTS.md versions line (the `gates_ref` default in `copier.yml` is a template file and
+moves with a template release). `release.sh` plans by default; `--execute` bumps every place the version lives, refuses a
 release with no migration entry, runs `check-all.sh` on the bumped tree, commits, tags and
 asserts the commit carries one tag; `--push` publishes. Its matrix
 (`scripts/tests/release.test.sh`) runs in a throwaway clone against a local bare origin.

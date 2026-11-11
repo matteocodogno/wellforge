@@ -1,24 +1,30 @@
 #!/usr/bin/env bash
-# release.sh — cut a PLUGIN (`plugin-vX.Y.Z`) or TEMPLATE (`vX.Y.Z`) release of this repo.
+# release.sh — cut a PLUGIN (`plugin-vX.Y.Z`), TEMPLATE (`vX.Y.Z`) or GATES (`gates-vN`) release.
 #
 #   scripts/release.sh plugin   patch|minor|major|X.Y.Z             # plan only (default)
 #   scripts/release.sh plugin   minor --execute                     # bump, check, commit, tag
 #   scripts/release.sh template minor --execute --push              # ...and push main + the tag
+#   scripts/release.sh gates    --execute --push                    # gates: always the next N
 #
-# The CLI has its own script (release-cli.sh, two commits because of the Formula sha); the
-# gates series is a bare `gates-vN` tag. These two series had only a prose checklist in
+# The CLI has its own script (release-cli.sh, two commits because of the Formula sha) —
+# `mise run release:cli` runs it. Plugin and template had only a prose checklist in
 # /wellforge:release, executed by hand — every step a chance to miss one of the four places
 # the plugin version lives, or to tag a tree nobody checked. Mechanical steps belong in a
 # script; the prose stays the WHY (docs/VERSIONING.md) and the judgement (which increment).
+# The gates series was a bare tag cut by hand, with no check that anything a consumer pins
+# had changed, that the tag was free, or that the commit carried no other series' tag.
 #
 # What it does, in order, and refuses rather than guesses at each step:
 #   1. preflight  on main, clean tree, level with origin/main, tag free locally AND on origin
 #   2. notes      the migration entry for this version exists (PLUGIN- / TEMPLATE-MIGRATIONS):
 #                 it is written with the change, not at release time, so a missing one is a
-#                 change nobody examined — refused, not stubbed
+#                 change nobody examined — refused, not stubbed. Gates: something a consumer
+#                 pins (gates/, a reusable workflow) changed since the last gates tag
 #   3. bump       plugin: plugin.json, marketplace.json version + source.ref, the AGENTS.md
 #                 versions line, the Codex install ref, then regenerates the Codex package
 #                 template: copier.yml's template_version default, the AGENTS.md versions line
+#                 gates: the AGENTS.md versions line only — copier.yml's gates_ref default is
+#                 a TEMPLATE file, moved by a template release, never in this commit
 #   4. prove      scripts/check-all.sh on the BUMPED tree — the tree that gets tagged
 #   5. commit+tag `chore(<series>): release …`, an annotated tag, and exactly one tag on it
 #   6. push       only with --push: main first, then the tag (release-guard runs on the tag)
@@ -44,29 +50,39 @@ die() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    plugin|template) SERIES="$1"; shift ;;
+    plugin|template|gates) SERIES="$1"; shift ;;
     patch|minor|major) BUMP="$1"; shift ;;
     [0-9]*.[0-9]*.[0-9]*) BUMP="$1"; shift ;;
     --execute) EXECUTE=1; shift ;;
     --push) PUSH=1; shift ;;
     # For the script's own test matrix, which cannot afford a full check-all per case.
     --skip-checks) SKIP_CHECKS=1; shift ;;
-    -h|--help) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
 [ -n "$SERIES" ] || die "which series? plugin | template"
-[ -n "$BUMP" ] || die "which version? patch | minor | major | X.Y.Z"
+if [ "$SERIES" = gates ]; then
+  [ -z "$BUMP" ] || die "gates is a plain counter — no increment: scripts/release.sh gates [--execute] [--push]"
+else
+  [ -n "$BUMP" ] || die "which version? patch | minor | major | X.Y.Z"
+fi
 [ "$PUSH" -eq 1 ] && [ "$EXECUTE" -eq 0 ] && die "--push needs --execute"
 
 # ── current version and the next one ─────────────────────────────────────────────────
 if [ "$SERIES" = plugin ]; then
   cur="$(python3 -c 'import json;print(json.load(open("wellforge-plugin/.claude-plugin/plugin.json"))["version"])')"
+elif [ "$SERIES" = gates ]; then
+  # The highest gates-vN, local or on origin: a clone without tags must not conclude the
+  # series starts over.
+  cur="$( { git tag -l 'gates-v*'; git ls-remote --tags --refs origin 'gates-v*' 2>/dev/null | sed 's#.*refs/tags/##'; } \
+          | sed -n 's/^gates-v\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)"
 else
   cur="$(awk '/^template_version:/{f=1} f&&/default:/{gsub(/[" ]/,"",$2);print $2;exit}' copier.yml)"
 fi
 [ -n "$cur" ] || die "cannot read the current $SERIES version"
 case "$BUMP" in
+  "") next=$((cur + 1)) ;;
   patch|minor|major)
     next="$(python3 - "$cur" "$BUMP" <<'PY'
 import sys
@@ -79,12 +95,12 @@ PY
 esac
 python3 -c "import sys;a,b=(tuple(map(int,v.split('.'))) for v in sys.argv[1:]);sys.exit(0 if b>a else 1)" "$cur" "$next" \
   || die "$next is not newer than the current $SERIES version $cur"
-if [ "$SERIES" = plugin ]; then tag="plugin-v$next"; else tag="v$next"; fi
+case "$SERIES" in plugin) tag="plugin-v$next" ;; gates) tag="gates-v$next" ;; *) tag="v$next" ;; esac
 
 say "release $SERIES: $cur -> $next   (tag $tag)"
 if [ "$EXECUTE" -eq 0 ]; then
   say "plan only — re-run with --execute (and --push to publish). Steps:"
-  sed -n '14,24p' "$0" | sed 's/^# \{0,1\}/  /'
+  sed -n '17,30p' "$0" | sed 's/^# \{0,1\}/  /'
 fi
 
 # ── 1. preflight ──────────────────────────────────────────────────────────────────────
@@ -99,16 +115,34 @@ git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "tag $tag already e
 [ -z "$(git ls-remote --tags origin "refs/tags/$tag" 2>/dev/null)" ] || die "tag $tag already exists on origin"
 say "  ok — main, clean, tag $tag free"
 
-# ── 2. migration notes ───────────────────────────────────────────────────────────────
-step 2 "migration notes"
-if [ "$SERIES" = plugin ]; then
-  notes=docs/PLUGIN-MIGRATIONS.md; head_re="^## ${next//./\\.}( |$)"
+# ── 2. migration notes — gates: what changed for the projects that pin it ────────────
+if [ "$SERIES" = gates ]; then
+  step 2 "what changed since gates-v$cur"
+  git rev-parse -q --verify "refs/tags/gates-v$cur" >/dev/null \
+    || git fetch -q origin "refs/tags/gates-v$cur:refs/tags/gates-v$cur" 2>/dev/null \
+    || die "cannot read gates-v$cur to compare against"
+  # What a consumer pins: gates/ and every reusable workflow (`on: workflow_call`). ci.yml,
+  # pages.yml and release.yml are this repo's own and do not count.
+  reusable=()
+  for f in .github/workflows/*.yml; do
+    [ "$f" = .github/workflows/ci.yml ] && continue
+    grep -qE '^[[:space:]]+workflow_call:' "$f" && reusable+=("$f")
+  done
+  changed="$(git diff --name-only "gates-v$cur" HEAD -- gates "${reusable[@]}")"
+  [ -n "$changed" ] || die "nothing under gates/ or in a reusable workflow changed since gates-v$cur — no gates release to cut"
+  printf '%s\n' "$changed" | sed 's/^/  /'
+  nchanged="$(printf '%s\n' "$changed" | wc -l | tr -d ' ')"
+  say "  ok — $nchanged file(s) the projects get by pinning $tag"
 else
-  notes=docs/TEMPLATE-MIGRATIONS.md; head_re="^## v${next//./\\.}( |$)"
+  step 2 "migration notes"
+  if [ "$SERIES" = plugin ]; then
+    notes=docs/PLUGIN-MIGRATIONS.md; head_re="^## ${next//./\\.}( |$)"; head_shown="$next"
+  else
+    notes=docs/TEMPLATE-MIGRATIONS.md; head_re="^## v${next//./\\.}( |$)"; head_shown="v$next"
+  fi
+  grep -qE "$head_re" "$notes" || die "$notes has no '## $head_shown' entry — write it (even 'nothing to do') before releasing"
+  say "  ok — $notes has the $head_shown entry"
 fi
-[ "$SERIES" = template ] && head_shown="v$next" || head_shown="$next"
-grep -qE "$head_re" "$notes" || die "$notes has no '## $head_shown' entry — write it (even 'nothing to do') before releasing"
-say "  ok — $notes has the $head_shown entry"
 
 [ "$EXECUTE" -eq 1 ] || { say; say "plan only: nothing changed."; exit 0; }
 
@@ -143,6 +177,19 @@ open("AGENTS.md", "w").write("\n".join(lines))
 PY
   uv run -q --with pyyaml python adapters/codex/generate.py --package wellforge-codex-plugin \
     --marketplace .agents/plugins/marketplace.json >/dev/null 2>&1 || die "Codex package regeneration failed"
+elif [ "$SERIES" = gates ]; then
+  TOUCHED=(AGENTS.md)
+  python3 - "$cur" "$next" <<'PY' || die "bump failed"
+import sys
+cur, nxt = sys.argv[1:]
+lines = open("AGENTS.md").read().split("\n")
+i = next(k for k, l in enumerate(lines) if l.startswith("- Latest tags:"))
+for k in range(i, i + 6):
+    lines[k] = lines[k].replace(f"`gates-v{cur}`", f"`gates-v{nxt}`")
+if f"`gates-v{nxt}`" not in "\n".join(lines[i:i + 6]):
+    sys.exit("AGENTS.md versions paragraph did not take the new gates version")
+open("AGENTS.md", "w").write("\n".join(lines))
+PY
 else
   TOUCHED=(copier.yml AGENTS.md)
   python3 - "$cur" "$next" <<'PY' || die "bump failed"
@@ -179,6 +226,8 @@ if [ "$SERIES" = plugin ]; then
   # plugin-v2.60.0 with an empty evals status.
   evals="$(scripts/check-evals-fresh.sh 2>/dev/null | grep -m1 -v '^[[:space:]]*$')"
   tag_msg="plugin $next — $evals"
+elif [ "$SERIES" = gates ]; then
+  msg="chore(gates): release gates-v$next"; tag_msg="gates v$next — $nchanged file(s) changed since gates-v$cur"
 else
   msg="chore(template): release v$next"; tag_msg="template v$next"
 fi
@@ -199,3 +248,7 @@ fi
 git push -q origin main || die "push of main failed — the tag is still local"
 git push -q origin "$tag" || die "push of $tag failed (main is pushed) — retry: git push origin $tag"
 say "  ok — pushed. release-guard runs on the tag: gh run list --branch $tag"
+if [ "$SERIES" = gates ]; then
+  dflt="$(awk '/^gates_ref:/{f=1} f&&/default:/{print $2;exit}' copier.yml)"
+  [ "$dflt" = "$tag" ] || say "  note: new scaffolds still pin $dflt (copier.yml gates_ref default) — moving it is a template release"
+fi

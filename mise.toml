@@ -41,8 +41,9 @@ run         = "scripts/tests/wellforge.test.sh"
 # tags, and /wellforge:doctor --tests calls it rather than keeping its own list — which is
 # how that list came to be missing security-triggers.test.py. Add a suite to
 # scripts/check-all.sh and all of them pick it up.
-# Plugin / template releases (the CLI has release-cli.sh). Plan by default; add --execute,
-# then --push. e.g.  mise run release:plugin -- minor --execute --push
+# One entry point per series: mise run release:<plugin|template|gates|cli>. Plan by default;
+# add --execute (and, except for the CLI, which pushes as part of its two commits, --push).
+# e.g.  mise run release:plugin -- minor --execute --push
 [tasks."release:plugin"]
 description = "Cut a plugin-vX.Y.Z release: bump everywhere, check, commit, tag (scripts/release.sh)"
 run         = "scripts/release.sh plugin"
@@ -50,6 +51,14 @@ run         = "scripts/release.sh plugin"
 [tasks."release:template"]
 description = "Cut a template vX.Y.Z release: bump copier.yml, check, commit, tag (scripts/release.sh)"
 run         = "scripts/release.sh template"
+
+[tasks."release:gates"]
+description = "Cut the next gates-vN: refuse if nothing a project pins changed, check, commit, tag (scripts/release.sh)"
+run         = "scripts/release.sh gates"
+
+[tasks."release:cli"]
+description = "Cut a cli-vX.Y.Z release: bump, check, tag, push, then pin the Formula sha (scripts/release-cli.sh)"
+run         = "scripts/release-cli.sh"
 
 [tasks.check]
 description = "Every self-test in this repo, one exit code (add --preset <p> for scaffold gates)"

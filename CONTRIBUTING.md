@@ -71,9 +71,9 @@ the part people get wrong:
 - **bumping a pinned MCP server version in `.mcp.json` is a plugin PATCH release** — the
   version people run is part of what the plugin is, so it is not a silent edit
 
-Cut template and plugin releases with `mise run release:template` / `release:plugin`
-(`scripts/release.sh`: plan by default, `--execute`, then `--push`), the CLI with
-`scripts/release-cli.sh` — never by hand. Write the migration note in the commit that makes
+Cut every release with `mise run release:<plugin|template|gates|cli>` (plan by default,
+`--execute`, then `--push`; `scripts/release.sh` for the first three, `scripts/release-cli.sh`
+for the CLI) — never by hand. Write the migration note in the commit that makes
 the change; the release script refuses a version that has none.
 
 ## Commits and history

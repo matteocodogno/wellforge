@@ -90,6 +90,30 @@ expect "$(tv)" "$NT" "copier.yml template_version bumped"
 grep -q "\`v$NT\` (template series" AGENTS.md && ok || bad "AGENTS.md template version bumped"
 expect "$(git tag --points-at HEAD)" "v$NT" "template tag on the release commit"
 
+# 6b. the gates release — a plain counter, cut only when something a project pins changed
+G0="$(grep -m1 -o '`gates-v[0-9]*`' AGENTS.md | tr -dc 0-9)"; NG=$((G0 + 1))
+git tag "gates-v$G0" >/dev/null; git push -q origin "gates-v$G0"
+out="$(scripts/release.sh gates minor 2>&1)"; rc=$?
+expect "$rc" 1 "gates with an increment is refused (it is a counter)" "$out"
+out="$(scripts/release.sh gates --execute --skip-checks 2>&1)"; rc=$?
+expect "$rc" 1 "gates with nothing changed since the last gates tag is refused" "$out"
+expect "$(git status --porcelain --untracked-files=no)" "" "...and touches nothing"
+git commit -q --allow-empty -m "ci: unrelated"; echo "# x" >> .github/workflows/ci.yml; git commit -qam "ci: own workflow"
+git push -q origin main
+out="$(scripts/release.sh gates --execute --skip-checks 2>&1)"; rc=$?
+expect "$rc" 1 "a change to ci.yml alone (not a reusable workflow) is no gates release" "$out"
+echo "# x" >> gates/hooks/pre-push; git commit -qam "fix(gates): hook"; git push -q origin main
+out="$(scripts/release.sh gates 2>&1)"; rc=$?
+expect "$rc" 0 "gates plan lists what changed" "$out"
+printf '%s' "$out" | grep -q "gates/hooks/pre-push" && ok || bad "gates plan names the changed file" "$out"
+git tag -d "gates-v$G0" >/dev/null   # only on origin now: the series must still be found there
+out="$(scripts/release.sh gates --execute --skip-checks 2>&1)"; rc=$?
+expect "$rc" 0 "gates --execute" "$out"
+expect "$(git tag --points-at HEAD)" "gates-v$NG" "gates tag is the next integer, alone on its commit"
+grep -q "\`gates-v$NG\`" AGENTS.md && ok || bad "AGENTS.md gates version bumped"
+expect "$(git log -1 --format=%s)" "chore(gates): release gates-v$NG" "gates release commit message"
+expect "$(git diff --name-only HEAD~1 HEAD)" "AGENTS.md" "the gates release commit touches AGENTS.md only (copier.yml is the template's)"
+
 # 7. behind origin is refused
 git reset -q --hard HEAD~1; git push -qf origin "$(git rev-parse HEAD~0)":refs/heads/tmp 2>/dev/null
 git fetch -q origin; git reset -q --hard origin/main
