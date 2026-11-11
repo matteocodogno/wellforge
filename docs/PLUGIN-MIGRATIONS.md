@@ -26,6 +26,14 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.61.1 — `/wellforge:release` names all four WellForge series
+
+Wording only: inside the wellforge repo, `/wellforge:release` now lists the template,
+gates, plugin and CLI series with their `mise run release:<series>` command. Projects are
+unaffected. **Nothing to do on upgrade.**
+
+---
+
 ## 2.61.0 — agents declare what they decided for you
 
 - `backend-dev`, `frontend-dev` and `devops` end every report with a `DECISIONS:` block:
