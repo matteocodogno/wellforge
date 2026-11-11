@@ -23,6 +23,17 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## v0.12.1 — new projects pin `gates-v15`
+
+**Action: none required.** The `gates_ref` default moves from `gates-v12` to `gates-v15`, so
+only **new** scaffolds get it: an existing project keeps its recorded answer through
+`copier update`. To move one, run `/wellforge:upgrade` (it offers the gates bump as a
+separate, raise-only step) or `copier update --trust --data gates_ref=gates-v15`. No caller
+change is needed: the inputs added since `gates-v12` are optional, and the one renamed
+(`gitleaks-version` → `betterleaks-version`) is not passed by any template.
+
+---
+
 ## v0.12.0 — secret files are denied by permission rules, and worktrees get their env
 
 **Action: none required.** `copier update` adds both files; review the diff.
