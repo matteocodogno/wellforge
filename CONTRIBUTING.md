@@ -64,7 +64,7 @@ the part people get wrong:
   what you changed (`scripts/check-evals-fresh.sh` says whether they are stale; the pre-push
   hook prints it, advisory)
 - a template file a generated project receives → `vX.Y.Z`, and a
-  [PLUGIN-MIGRATIONS](docs/PLUGIN-MIGRATIONS.md) or TEMPLATE-MIGRATIONS entry if a project
+  [PLUGIN-MIGRATIONS](wellforge-plugin/PLUGIN-MIGRATIONS.md) or TEMPLATE-MIGRATIONS entry if a project
   must absorb it
 - a gate workflow or threshold → `gates-vN`
 - `scripts/wellforge` or the formula → `cli-v*` ([docs/RELEASING-CLI.md](docs/RELEASING-CLI.md))
@@ -147,7 +147,7 @@ it no longer refuses (docs/VERSIONING.md says why).
       command/skill count, and a Formula sha that does not match its tarball
 - [ ] a regression case for the behaviour you changed, and evidence it fails without the fix
 - [ ] a migrations entry when a **project** must absorb the change (the test is in
-      [PLUGIN-MIGRATIONS.md](docs/PLUGIN-MIGRATIONS.md): *would a project set up by the older
+      [PLUGIN-MIGRATIONS.md](wellforge-plugin/PLUGIN-MIGRATIONS.md): *would a project set up by the older
       plugin be wrong, incomplete or noisy under the newer one?*)
 - [ ] both adapter smoke tests pass if you touched the plugin's prompts or skills
 - [ ] the right series bumped, or an explicit note that none applies

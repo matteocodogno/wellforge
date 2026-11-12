@@ -136,7 +136,7 @@ if [ "$SERIES" = gates ]; then
 else
   step 2 "migration notes"
   if [ "$SERIES" = plugin ]; then
-    notes=docs/PLUGIN-MIGRATIONS.md; head_re="^## ${next//./\\.}( |$)"; head_shown="$next"
+    notes=wellforge-plugin/PLUGIN-MIGRATIONS.md; head_re="^## ${next//./\\.}( |$)"; head_shown="$next"
   else
     notes=docs/TEMPLATE-MIGRATIONS.md; head_re="^## v${next//./\\.}( |$)"; head_shown="v$next"
   fi

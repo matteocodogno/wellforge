@@ -29,6 +29,9 @@ import shutil
 SCRIPTS = ("forge-state.py", "run-report.py", "security-triggers.py",
            "migrate-ids.py")  # imports forge-state.py from its own directory
 
+# Plugin-root files the prompts cite as $WF/<name>.
+ROOT_FILES = ("PLUGIN-MIGRATIONS.md",)
+
 # Configs the prompts and skills cite by path.
 CONFIGS = ("security-triggers.yml", "rigor-budgets.yml", "model-pricing.yml",
            "spec-frontmatter.schema.json")
@@ -81,6 +84,16 @@ def ship(plugin, out, root_rel):
             if name.endswith(".py"):
                 os.chmod(dst, 0o755)
             written.append(os.path.join(root_rel, kind, name))
+
+    # The plugin's own migration notes, read by upgrade/doctor as $WF/PLUGIN-MIGRATIONS.md.
+    # They ship with the code they describe, so a project with no wellforge checkout can
+    # still read every entry up to the version it runs.
+    for name in ROOT_FILES:
+        src = os.path.join(plugin, name)
+        if os.path.exists(src):
+            os.makedirs(os.path.join(out, root_rel), exist_ok=True)
+            shutil.copyfile(src, os.path.join(out, root_rel, name))
+            written.append(os.path.join(root_rel, name))
 
     # forge-state.py imports run-report.py by path from its own directory, so the two must
     # land together — they do, but say so where someone might prune the list.

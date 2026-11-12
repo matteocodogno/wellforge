@@ -855,7 +855,7 @@ cmd_setup() {
       # exists on this machine and nowhere else — a teammate running the same setup gets a
       # plugin nobody else can install, and `doctor` then WARNS about the very thing setup
       # had just done. Three documents already spelled it the git way
-      # (wellforge-plugin/README.md, docs/PLUGIN-MIGRATIONS.md, and doctor's own fix hint);
+      # (wellforge-plugin/README.md, wellforge-plugin/PLUGIN-MIGRATIONS.md, and doctor's own fix hint);
       # setup and docs/INSTALLATION.md were the outliers.
       #
       # WELLFORGE_MARKETPLACE overrides it: set it to a path to develop against a checkout.

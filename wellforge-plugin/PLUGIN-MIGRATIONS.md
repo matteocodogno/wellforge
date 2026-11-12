@@ -8,6 +8,12 @@ newer plugin expects to find that an older one never created.
 running one and applies or surfaces every entry in between. `/wellforge:doctor` reports the
 gap without acting on it.
 
+**It ships inside the plugin** (`<plugin root>/PLUGIN-MIGRATIONS.md`), so the plugin that
+runs always carries exactly the notes up to its own version — in a project, with no
+wellforge checkout and no network. It lived in the repo's `docs/` until 2.62.1, and a
+marketplace install (which ships only `wellforge-plugin/`) could not read it: an upgrade
+from 1.6 reported the notes unreachable and, correctly, refused to call the project migrated.
+
 ## What belongs here
 
 Only changes a **project** must absorb: a `.forge/` schema bump, a new hook that needs a
@@ -23,6 +29,17 @@ the newer one?* If no, it is not a migration.
 Each entry: the minor it landed in, whether it is automatic or needs a human, and what to do.
 An entry with no project-side action still gets a line saying so — silence is ambiguous
 between "nothing to do" and "nobody wrote it down".
+
+---
+
+## 2.62.1 — the migration notes ship with the plugin
+
+This file moved from the wellforge repo's `docs/` into the plugin, so `/wellforge:upgrade`
+and `/wellforge:doctor` read it from the plugin root instead of needing a wellforge
+checkout. `/wellforge:upgrade` also finds `docs/TEMPLATE-MIGRATIONS.md` on its own (checkout,
+then `_src_path`, then a shallow clone at the target tag), and accepts the pre-2.42 string
+form of `plugin` in the manifest. Projects are unaffected. **Nothing to do on upgrade** —
+except that an upgrade which stopped earlier for want of these notes can now be re-run.
 
 ---
 
@@ -242,14 +259,14 @@ preflight now reads `.forge/manifest.json` and decides:
 | Your template version | What changes |
 |---|---|
 | `v0.10.0` or later | class 1 counts as **isolated**; parallel dispatch is available for backend batches that were previously serialized |
-| earlier, adopted, or no manifest | **nothing changes** — the old rule still applies and batches stay sequential. Take [`TEMPLATE-MIGRATIONS.md`](TEMPLATE-MIGRATIONS.md) `v0.10.0` to get the isolation |
+| earlier, adopted, or no manifest | **nothing changes** — the old rule still applies and batches stay sequential. Take `docs/TEMPLATE-MIGRATIONS.md` (wellforge repo) `v0.10.0` to get the isolation |
 
 The skill also stopped recommending `basename` as the isolation key (it collides across
 repos, is not a legal database identifier, and yields no port offset) in favour of
 `sha256(checkout path)`, which is what the presets ship.
 
 `/wellforge:upgrade` additionally reads the new
-[`TEMPLATE-MIGRATIONS.md`](TEMPLATE-MIGRATIONS.md) alongside this file, so template-side
+`docs/TEMPLATE-MIGRATIONS.md` (wellforge repo) alongside this file, so template-side
 notes reach a project the same way plugin-side ones already did.
 
 ## 2.42 — the plugin is installable, and projects declare it

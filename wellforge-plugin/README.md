@@ -125,7 +125,7 @@ enforces its gate whoever writes `status: done`.
 | `config/security-triggers.yml` | Path globs + substrings whose presence in a batch dispatches the owasp-reviewer; `always_at_tier: [production]` |
 | `config/rigor-budgets.yml` | Advisory per-tier cost/wall-clock ceilings + the rework thresholds — surfaced by triage, never blocking |
 | `scripts/security-triggers.py` | Evaluates those triggers against `touch:` ∪ `git diff` — what implement/orchestrate call before QE |
-| `docs/PLUGIN-MIGRATIONS.md` (repo) | Project-side changes per plugin minor — read by `/wellforge:upgrade`, reported by `/wellforge:doctor` |
+| `PLUGIN-MIGRATIONS.md` | Project-side changes per plugin minor — ships with the plugin; read by `/wellforge:upgrade`, reported by `/wellforge:doctor` |
 | `config/model-pricing.yml` | Per-model price table for run-report cost estimates |
 
 ### What the guards can and cannot do

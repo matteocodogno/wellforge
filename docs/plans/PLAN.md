@@ -1751,7 +1751,7 @@ move with it. A project scaffolded by 2.20 and driven by 2.39 was invisible.
   update` re-renders from recorded answers — the field would be wrong at exactly the moment
   it matters. The general rule it follows: *a value that depends on when the command ran is
   written after generation; only what the user answered is a question.*
-- ☑ **`docs/PLUGIN-MIGRATIONS.md`** — project-side changes per plugin minor, with the test
+- ☑ **`wellforge-plugin/PLUGIN-MIGRATIONS.md`** — project-side changes per plugin minor, with the test
   for what belongs there (*would a project set up by the older plugin be wrong, incomplete
   or noisy under the newer one?*). `/wellforge:upgrade` applies or surfaces every entry
   between recorded and running, as a first-class step beside the template re-render, and

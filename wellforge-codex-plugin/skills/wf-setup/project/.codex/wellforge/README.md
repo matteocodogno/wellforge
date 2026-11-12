@@ -16,6 +16,7 @@ this directory.
 | `wellforge/config/rigor-budgets.yml` | generated prompts and skills |
 | `wellforge/config/model-pricing.yml` | generated prompts and skills |
 | `wellforge/config/spec-frontmatter.schema.json` | generated prompts and skills |
+| `wellforge/PLUGIN-MIGRATIONS.md` | generated prompts and skills |
 
 `forge-state.py` loads `run-report.py` from this same directory at runtime — they are one
 unit, so do not prune either.

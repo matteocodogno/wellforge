@@ -138,7 +138,7 @@ Two levels, two commands, in this order:
 | Level | Command | What it touches | What it never touches |
 |---|---|---|---|
 | **Machine** — once per machine | `wellforge update`, then `/reload-plugins` (or a new session) | the checkout (`~/.ai/wellforge`: plugin source, templates, gates, migration notes), outdated pinned dev tools (`brew upgrade`), the **loaded** Claude Code plugin (`claude plugin update`, only when the cache is stale), and last the brew-installed `wellforge` CLI itself | any project |
-| **Project** — in each project, inside the harness | `/wellforge:upgrade` (`--dry-run` to see the plan first) | re-renders the template (`copier update`), offers the `gates_ref` bump, applies `docs/TEMPLATE-MIGRATIONS.md` **and** `docs/PLUGIN-MIGRATIONS.md` entries (automatic ones applied, human ones offered), resolves conflicts, re-runs the gates, stamps `.forge/manifest.json` — one revertable commit | your machine |
+| **Project** — in each project, inside the harness | `/wellforge:upgrade` (`--dry-run` to see the plan first) | re-renders the template (`copier update`), offers the `gates_ref` bump, applies `docs/TEMPLATE-MIGRATIONS.md` **and** `wellforge-plugin/PLUGIN-MIGRATIONS.md` entries (automatic ones applied, human ones offered), resolves conflicts, re-runs the gates, stamps `.forge/manifest.json` — one revertable commit | your machine |
 
 **Order matters.** `/wellforge:upgrade` works with the plugin that is loaded and the migration
 notes in the checkout — run it before `wellforge update` and it sees neither the new plugin

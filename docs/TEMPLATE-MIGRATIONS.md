@@ -6,7 +6,7 @@ or do **around** that re-render — the part copier cannot perform and a diff do
 
 **Read by `/wellforge:upgrade`**, which compares the recorded template version against the
 target and surfaces every entry in between. The sibling file for the plugin series is
-[`PLUGIN-MIGRATIONS.md`](PLUGIN-MIGRATIONS.md); the two series are independent
+[`PLUGIN-MIGRATIONS.md`](../wellforge-plugin/PLUGIN-MIGRATIONS.md); the two series are independent
 ([`VERSIONING.md`](VERSIONING.md)).
 
 ## What belongs here

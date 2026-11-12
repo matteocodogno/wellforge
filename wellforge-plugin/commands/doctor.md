@@ -186,7 +186,7 @@ one of four states:
 | Recorded | State | Report |
 |---|---|---|
 | equal to running | **OK** | `plugin 2.38.0 — project and plugin agree` |
-| older than running | **WARN** | `project set up by 2.31.0, running 2.38.0 — run /wellforge:upgrade to apply plugin migrations`, and list the applicable entries from `docs/PLUGIN-MIGRATIONS.md` if the wellforge repo is reachable |
+| older than running | **WARN** | `project set up by 2.31.0, running 2.38.0 — run /wellforge:upgrade to apply plugin migrations`, and list the applicable entries from `PLUGIN-MIGRATIONS.md` at the plugin root (it ships with the plugin) |
 | **newer** than running | **FAIL** | `project is on 2.40.0, this plugin is 2.38.0 — you are running an OLD plugin against a newer project. Update the plugin (/plugin) before running commands that write state; a stale plugin can write a file format the project has already moved past.` |
 | **absent** | **WARN** | `no plugin version recorded — this project predates the field (plugin < 2.38). /wellforge:upgrade will stamp it and apply any migrations since.` |
 

@@ -431,7 +431,7 @@ main ──●───────────────●──────
   same commit, then tag it `plugin-vX.Y.Z`. It is cached by version at runtime, so an
   unbumped edit will not take effect in a running session — and an untagged bump is
   installable by nobody, because the manifest's `ref` would name a tag that does not exist.
-  Every minor also gets an entry in [`PLUGIN-MIGRATIONS.md`](PLUGIN-MIGRATIONS.md), even if
+  Every minor also gets an entry in [`PLUGIN-MIGRATIONS.md`](../wellforge-plugin/PLUGIN-MIGRATIONS.md), even if
   it is "no project-side action" — `/wellforge:upgrade` reads that file, and silence there
   is ambiguous between "nothing to do" and "nobody checked".
 - **CLI**, semver by user-visible behaviour: see *Why the CLI is its own series* above.

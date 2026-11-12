@@ -38,7 +38,7 @@ CI quality gates (`.github/workflows/` + `gates/`). What it does and why:
   if they disagree. A tag whose CI is red is deleted and re-cut, never left.
 - Template releases: repo-wide `vX.Y.Z`, presets in lockstep, `template_version` default bumped
   in the release commit; project-side notes in `docs/TEMPLATE-MIGRATIONS.md` (plugin:
-  `docs/PLUGIN-MIGRATIONS.md`), written in the same commit as the change.
+  `wellforge-plugin/PLUGIN-MIGRATIONS.md`), written in the same commit as the change.
 - A `vX.Y.Z` release does not bump `gates_ref` in existing projects (recorded answer +
   `--skip-answered`); `/wellforge:upgrade` does that as an explicit, raise-only step.
 

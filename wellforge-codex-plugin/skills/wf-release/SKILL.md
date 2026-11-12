@@ -139,7 +139,7 @@ What stays yours, and the script cannot decide:
 1. **The increment.** Plugin: patch = fix/wording, minor = a new command, agent, skill, hook
    or config, major = breaks a project set up by an older plugin. Template: patch cosmetic,
    minor additive, major needs `_migrations`. Gates: none — it is a counter.
-2. **The migration entry** (plugin and template) — `## X.Y.Z — …` in `docs/PLUGIN-MIGRATIONS.md`, or `## vX.Y.Z — …`
+2. **The migration entry** (plugin and template) — `## X.Y.Z — …` in `wellforge-plugin/PLUGIN-MIGRATIONS.md`, or `## vX.Y.Z — …`
    in `docs/TEMPLATE-MIGRATIONS.md`, including "nothing to do", which is information. It is
    written in the commit that makes the change; the script refuses a release without it
    rather than stubbing one.

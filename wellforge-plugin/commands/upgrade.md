@@ -45,7 +45,8 @@ section 4 rather than performing it.
 4. **Read the recorded plugin version too** — `plugin.version` in `.forge/manifest.json`
    (older projects have no `plugin` object at all; treat that as "unknown, pre-2.38" and
    carry on — it is the normal state of every project scaffolded before this field existed,
-   not an error). Compare it against the running plugin's
+   not an error). A bare string (`"plugin": "1.6.0"`, the pre-2.42 shape) is the version
+   itself; the stamp below rewrites it as the object. Compare it against the running plugin's
    `.claude-plugin/plugin.json`. **Two upgrades are in play and they are independent:** the
    template (`vX.Y.Z`, what copier re-renders) and the plugin (`2.x`, what changes the
    conventions, spec formats, trace schema and hooks around it). A project can need either,
@@ -54,7 +55,34 @@ section 4 rather than performing it.
    changelog (`git log <cur>..<target> -- templates/<preset>/ copier.yml` in the wellforge
    repo, when available) **and every applicable entry from `docs/TEMPLATE-MIGRATIONS.md`**,
    **and** recorded → running **plugin** version with every applicable entry from
-   `docs/PLUGIN-MIGRATIONS.md` in between. Ask the user to confirm.
+   `PLUGIN-MIGRATIONS.md` in between (see **Where the notes are** below). Ask the user to
+   confirm.
+
+### Where the notes are
+
+Resolve both files before the plan — never ask the user for a path you can find:
+
+```bash
+# The running plugin's root — the same resolver /wellforge:done uses.
+WF=$(python3 -c "import json,os;p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins'];print(next(i['installPath'] for k,v in p.items() if k.startswith('wellforge@') for i in v))" 2>/dev/null)
+[ -n "$WF" ] || WF="$(pwd)/wellforge-plugin"
+ls "$WF/PLUGIN-MIGRATIONS.md"
+```
+
+- **Plugin notes:** `$WF/PLUGIN-MIGRATIONS.md`. It ships with the plugin, so it is always
+  there and always matches the running version. (A plugin older than 2.62.1 did not ship it
+  — that is the one case for the checkout fallback below.)
+- **Template notes** (`docs/TEMPLATE-MIGRATIONS.md`) live with the template, not the plugin.
+  Read them from the template source **at the target tag**, in this order:
+  1. a wellforge checkout — `$WELLFORGE_HOME`, else the `WELLFORGE_HOME=` line in
+     `~/.config/wellforge/config` (where `wellforge setup` records it), else
+     `~/.ai/wellforge`: `git -C <checkout> show <target>:docs/TEMPLATE-MIGRATIONS.md`
+     (`git -C <checkout> fetch --tags` first if the tag is missing);
+  2. `_src_path` from `.copier-answers.yml` when it is a local checkout — same `git show`;
+  3. otherwise the remote copier itself uses:
+     `git clone --quiet --depth 1 --branch <target> <_src_path URL> "$TMPDIR/wf-src"`, then
+     read the file there.
+  Only when all three fail is the file unreachable — then say which ones you tried.
 
    The two migration files are siblings and both matter: a diff shows what copier will
    rewrite, and the notes show what copier *cannot* do — a command to run afterwards, a pin
@@ -101,7 +129,7 @@ infrastructure the template owns, not a user preference like `project_name`:
 Independent of the template re-render, and skippable only when the recorded plugin version
 already equals the running one.
 
-1. Read **`docs/PLUGIN-MIGRATIONS.md`** and take every entry whose minor is greater than the
+1. Read **`$WF/PLUGIN-MIGRATIONS.md`** and take every entry whose minor is greater than the
    recorded `plugin.version`, in order. An unknown recorded version (pre-2.38 project) means
    read them all — they are written to be idempotent, so re-applying one is safe, and
    skipping one because the version is unknown is not.
@@ -110,7 +138,7 @@ already equals the running one.
    plan.
 3. An entry that says "no project-side action" still gets reported. Silence is ambiguous
    between "nothing to do" and "nobody checked".
-4. If `docs/PLUGIN-MIGRATIONS.md` is unreachable (the wellforge repo isn't at hand), say so
+4. If the notes are unreachable (a pre-2.62.1 plugin and no checkout found), say so
    plainly and **do not claim the project is migrated** — record what the gap is so the next
    run can close it.
 

@@ -35,7 +35,7 @@ pv() { python3 -c 'import json;print(json.load(open("wellforge-plugin/.claude-pl
 tv() { awk '/^template_version:/{f=1} f&&/default:/{gsub(/[" ]/,"",$2);print $2;exit}' copier.yml; }
 nextpatch() { python3 -c 'import sys;M,m,p=sys.argv[1].split(".");print(f"{M}.{m}.{int(p)+1}")' "$1"; }
 nextminor() { python3 -c 'import sys;M,m,p=sys.argv[1].split(".");print(f"{M}.{int(m)+1}.0")' "$1"; }
-note() { printf '\n## %s — test entry\n\nNothing to do.\n' "$2" >> "docs/$1"; git commit -qam "docs: $2 notes"; git push -q origin main; }
+note() { printf '\n## %s — test entry\n\nNothing to do.\n' "$2" >> "$1"; git commit -qam "docs: $2 notes"; git push -q origin main; }
 
 echo "release.sh matrix"
 
@@ -46,7 +46,7 @@ P0="$(pv)"; out="$(scripts/release.sh plugin major 2>&1)"; rc=$?
 expect "$rc" 1 "plan without a migration entry refuses" "$out"
 expect "$(git status --porcelain --untracked-files=no)" "" "plan leaves the tree clean"
 
-NP="$(nextpatch "$P0")"; note PLUGIN-MIGRATIONS.md "$NP"
+NP="$(nextpatch "$P0")"; note wellforge-plugin/PLUGIN-MIGRATIONS.md "$NP"
 out="$(scripts/release.sh plugin patch 2>&1)"; rc=$?
 expect "$rc" 0 "plan with the entry succeeds" "$out"
 expect "$(pv)" "$P0" "plan does not bump"
@@ -72,20 +72,20 @@ git tag -n1 "plugin-v$NP" | grep -q "evals:" && ok || bad "plugin tag message ca
 
 # 4. the same version again is refused (tag exists)
 git push -q origin main; git push -q origin "plugin-v$NP"
-note PLUGIN-MIGRATIONS.md "x"   # any commit, so HEAD is not the tagged one
+note wellforge-plugin/PLUGIN-MIGRATIONS.md "x"   # any commit, so HEAD is not the tagged one
 out="$(scripts/release.sh plugin "$NP" --execute --skip-checks 2>&1)"; rc=$?
 expect "$rc" 1 "an existing version is refused" "$out"
 
 # 5. a tag only on origin is refused too
 git tag -d "plugin-v$NP" >/dev/null
-NP2="$(nextpatch "$NP")"; note PLUGIN-MIGRATIONS.md "$NP2"
+NP2="$(nextpatch "$NP")"; note wellforge-plugin/PLUGIN-MIGRATIONS.md "$NP2"
 git tag "plugin-v$NP2" origin/main >/dev/null 2>&1; git push -q origin "plugin-v$NP2"; git tag -d "plugin-v$NP2" >/dev/null
 out="$(scripts/release.sh plugin "$NP2" --execute --skip-checks 2>&1)"; rc=$?
 expect "$rc" 1 "a tag present only on origin is refused" "$out"
 expect "$(git status --porcelain --untracked-files=no)" "" "...and touches nothing"
 
 # 6. the template release
-T0="$(tv)"; NT="$(nextminor "$T0")"; note TEMPLATE-MIGRATIONS.md "v$NT"
+T0="$(tv)"; NT="$(nextminor "$T0")"; note docs/TEMPLATE-MIGRATIONS.md "v$NT"
 out="$(scripts/release.sh template minor --execute --skip-checks 2>&1)"; rc=$?
 expect "$rc" 0 "template minor --execute" "$out"
 expect "$(tv)" "$NT" "copier.yml template_version bumped"
