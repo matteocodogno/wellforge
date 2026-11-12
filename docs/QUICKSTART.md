@@ -133,7 +133,7 @@ Rules worth knowing on day one:
 | bugfix | `/wellforge:orchestrate <bug>` → QE writes the failing repro test first |
 | CI red on the quality gate | the gate report names the exact threshold; thresholds are central — fix the code, don't look for a config to weaken (there isn't one in your repo) |
 | cut a release | `/wellforge:release` — version bump + `CHANGELOG.md` from your Conventional Commits, tag, GitHub release (release-it); dry-run preview first |
-| template released a new version | `/wellforge:upgrade` — diff explained, conflicts resolved with you, gates re-run, one revertable commit |
+| a new template **or plugin** version is out | `wellforge update` + `/reload-plugins` (machine), then `/wellforge:upgrade` in the project — diff explained, gate pin and migrations offered, conflicts resolved with you, gates re-run, one revertable commit |
 | check the fleet | `scripts/fleet-status.sh <github-org>` (from the wellforge repo) |
 
 ### When something breaks

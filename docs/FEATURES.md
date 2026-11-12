@@ -333,10 +333,14 @@ verdict/drift) is exact; the cost layer is an estimate, honestly labelled.
 Generated projects are not snapshots — they follow the template:
 
 - `.forge/manifest.json` + `.copier-answers.yml` record template, version, and answers.
-- **`/wellforge:upgrade`**: pre-flight (clean tree, plan-of-record with template
-  changelog) → `copier update --skip-answered --conflict inline` → AI conflict
-  resolution (default stance: *keep project behavior, adopt template structure*;
-  genuinely ambiguous → ask) → gates verify → one revertable commit.
+- **`/wellforge:upgrade`** (per project, inside the harness — distinct from `wellforge
+  update`, which updates the machine and touches no project): pre-flight (clean tree,
+  plan-of-record with the template changelog and the template + plugin migrations in
+  between) → `copier update --skip-answered --conflict inline` → raise-only `gates_ref`
+  bump offered → `TEMPLATE-MIGRATIONS` / `PLUGIN-MIGRATIONS` entries applied (automatic) or
+  offered (human) → AI conflict resolution (default stance: *keep project behavior, adopt
+  template structure*; genuinely ambiguous → ask) → manifest stamped → gates verify → one
+  revertable commit. Run it after a plugin-only release too: migrations ride the plugin.
 - **Migrations**: mechanical version-boundary steps live in `copier.yml` `_migrations`;
   judgment calls are the upgrade command's job.
 - **Releases**: repo-wide `vX.Y.Z` tags (patch cosmetic / minor additive / major needs

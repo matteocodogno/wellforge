@@ -70,17 +70,17 @@ brew install matteocodogno/wellforge/wellforge
 wellforge setup            # toolchain + repo + plugin, verified
 ```
 
-Keeping it current — two different things, on purpose:
+Keeping it current is two steps at two levels — the **machine**, then each **project**:
 
 ```bash
-brew upgrade wellforge     # the CLI itself  (its own `cli-vX.Y.Z` series)
-wellforge update           # the checkout + the Claude Code plugin
-wellforge version          # which CLI you are actually running
+wellforge update           # machine: checkout + pinned tools + Claude Code plugin + the CLI itself
+                           # then /reload-plugins (or a new session)
+/wellforge:upgrade         # project, inside the harness: template, gate pin, migrations — one commit
 ```
 
-`wellforge doctor` reports when the CLI you are running is older than the checkout's copy —
-they are two different files, and until the CLI got its own release series it was normal for
-the installed one to be months behind with nothing saying so.
+`wellforge update` touches no project. `/wellforge:upgrade` reads the migration notes from the
+checkout the first step pulled — skip that step and it cannot see what changed. `wellforge
+version` says which CLI you are running; `wellforge doctor` says what is behind.
 
 Then, in Claude Code (or OpenCode):
 
@@ -106,7 +106,7 @@ In a hurry? **`/wellforge:spike <idea>`** gets a working prototype in minutes.
 /wellforge:promote      graduate a feature/project up a rigor tier — pays the deferred debt
 /wellforge:release      version + CHANGELOG from Conventional Commits, tag, GitHub release
 /wellforge:adopt        onboard an existing (brownfield) repo — incrementally
-/wellforge:upgrade      re-template a project to a newer release, AI-resolved conflicts
+/wellforge:upgrade      bring a project to the current template + plugin: re-template, gate pin, migrations
 /wellforge:status       where every feature stands + the exact next command to run
 /wellforge:triage       spec-health digest — what's rotting (stale, drifted, never eval'd)
 /wellforge:retro        after a session or feature: ranked, evidence-backed fixes to the environment

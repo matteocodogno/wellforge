@@ -430,7 +430,7 @@
             <li>The same <span class="mono">spec → plan → tasks</span> flow in every repo</li>
             <li>Gates referenced from one place and pinned, never copied</li>
             <li>CI wired and green before the first feature</li>
-            <li><span class="mono">/wellforge:upgrade</span> re-templates when presets evolve</li>
+            <li><span class="mono">/wellforge:upgrade</span> brings each project forward when the template or plugin evolves</li>
           </ul>
         </div>
       </div>
@@ -748,13 +748,18 @@
           <div class="step"><div class="n">2</div><div><h3>Run the front door</h3><p><span class="mono">/wellforge:new</span> interviews you, recommends a stack, generates the scaffold, verifies the build, and walks the connections.</p></div></div>
           <div class="step"><div class="n">3</div><div><h3>Or adopt an existing repo</h3><p><span class="mono">/wellforge:adopt</span> brings the workflow and calibrated gates to a brownfield project, one layer at a time, additive only.</p></div></div>
           <div class="step"><div class="n">4</div><div><h3>Build with the team</h3><p><span class="mono">/wellforge:orchestrate</span> drives the full agent pipeline on a goal: spec → plan → tasks → code → QE → eval.</p></div></div>
+          <div class="step"><div class="n">5</div><div><h3>Keep current — machine, then project</h3><p><span class="mono">wellforge update</span> refreshes your machine: the checkout, pinned tools, the loaded plugin and the CLI; it touches no project. Then <span class="mono">/wellforge:upgrade</span>, inside each project, re-templates, offers the gate bump and applies the migrations in one reviewable commit.</p></div></div>
         </div>
         <div>
           <div class="codebox">
 <pre class="code" data-copy><span class="c"># install</span>
 brew tap <span class="p">matteocodogno/wellforge</span> https://github.com/matteocodogno/wellforge
 brew install matteocodogno/wellforge/wellforge
-wellforge setup</pre>
+wellforge setup
+
+<span class="c"># keep current: machine first, then each project</span>
+wellforge update            <span class="c"># then /reload-plugins</span>
+/wellforge:upgrade</pre>
           </div>
           <div class="codebox" style="margin-top:1rem">
 <pre class="code" data-copy><span class="c"># …or manually, inside Claude Code</span>

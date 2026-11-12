@@ -14,7 +14,7 @@ wellforge setup
 accepts, your choice is remembered), checks/installs the whole toolchain, clones the
 repo, registers the plugin marketplace, and installs the wellforge plugin — then prints
 a verification table. Day-2: `wellforge doctor` (health check), `wellforge update`
-(repo + tools).
+(everything on the machine — see [Updating](#updating)).
 
 The manual path below does the same, step by step.
 
@@ -133,17 +133,24 @@ generated from it — never edited by hand:
 
 ## Updating
 
-There are **two update channels** — they cover different things:
+Two levels, two commands, in this order:
 
-| What | Updates | Command |
-|---|---|---|
-| The checkout (`~/.ai/wellforge`: plugin, templates, gates) — where commands/agents/skills land | `wellforge update` | or: `cd ~/.ai/wellforge && git pull` |
-| The `wellforge` CLI itself (brew-installed script) — its own `cli-vX.Y.Z` series | `brew upgrade wellforge` | `wellforge version` says which one you are running |
+| Level | Command | What it touches | What it never touches |
+|---|---|---|---|
+| **Machine** — once per machine | `wellforge update`, then `/reload-plugins` (or a new session) | the checkout (`~/.ai/wellforge`: plugin source, templates, gates, migration notes), outdated pinned dev tools (`brew upgrade`), the **loaded** Claude Code plugin (`claude plugin update`, only when the cache is stale), and last the brew-installed `wellforge` CLI itself | any project |
+| **Project** — in each project, inside the harness | `/wellforge:upgrade` (`--dry-run` to see the plan first) | re-renders the template (`copier update`), offers the `gates_ref` bump, applies `docs/TEMPLATE-MIGRATIONS.md` **and** `docs/PLUGIN-MIGRATIONS.md` entries (automatic ones applied, human ones offered), resolves conflicts, re-runs the gates, stamps `.forge/manifest.json` — one revertable commit | your machine |
 
-`wellforge doctor` fetches and tells you if the **checkout** is behind (`! checkout N
-behind…`) — that's the channel most updates arrive on — and, since the CLI got its own
-release series, whether the **CLI** you are running is behind the checkout's copy
-(`! cli 1.0.0 is behind the checkout's 1.1.0`). They are two different files.
+**Order matters.** `/wellforge:upgrade` works with the plugin that is loaded and the migration
+notes in the checkout — run it before `wellforge update` and it sees neither the new plugin
+nor its migrations. And it is not only for template releases: a **plugin-only** release can
+carry project-side migrations too (e.g. 2.62.0's date-based ids), so run it after any
+`wellforge update` that moved the plugin. In an adopted project there is no template to
+re-render; `/wellforge:upgrade` still applies the plugin migrations.
+
+`wellforge doctor` fetches and tells you what is behind: the **checkout** (`! checkout N
+behind…`), the **plugin cache** (`! plugin cache loaded vX but source is vY`), and the
+**CLI** you are running versus the checkout's copy (`! cli 1.0.0 is behind the checkout's
+1.1.0`). Without brew (CLI run from the checkout) the CLI updates with the checkout pull.
 
 > The CLI was described here as a "small, stable launcher that changes rarely". That was
 > not true, it was just stuck: the Homebrew formula pinned the **template** tag, so a CLI
@@ -167,7 +174,7 @@ release series, whether the **CLI** you are running is behind the checkout's cop
 > wrong one.
 
 ```bash
-# CLI binary (the formula is versioned — new releases appear via brew update):
+# CLI binary by hand — `wellforge update` already does this (the formula is versioned):
 brew update
 brew upgrade wellforge
 ```
@@ -177,9 +184,10 @@ brew upgrade wellforge
 > (`--force` matters: it removes **all** kegs — a leftover HEAD keg stays linked
 > otherwise, shadows every upgrade, and `brew upgrade` reports "already installed".)
 
-Plugin changes apply on the next Claude Code session (same marketplace path). Template
-and gate releases are consumed by projects explicitly — `/wellforge:upgrade` for
-templates, a `gates-v*` ref bump in CI for gates — never implicitly.
+Plugin changes reach your **sessions** on the next Claude Code session (same marketplace
+path); they reach a **project** only through `/wellforge:upgrade`, which applies the plugin
+migrations. Template and gate releases are consumed by projects explicitly too —
+`/wellforge:upgrade` re-templates and offers the `gates-v*` bump — never implicitly.
 
 ## Uninstall
 
