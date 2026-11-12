@@ -22,11 +22,15 @@ Generate an ADR whenever the conversation contains:
 
 ADRs are stored in: `docs/adr/`
 
-Filename format: `NNNN-short-title-in-kebab-case.md`
-
-Where `NNNN` is a zero-padded sequential number. Before writing, check existing ADRs to determine the next number:
+Filename format: `YYYYMMDD-short-title-in-kebab-case.md` — the id is today's date, never a
+counter. Several people write ADRs on parallel branches; a sequential number hands each of
+them the same one, and the clash only surfaces after the merge. If the file name already
+exists, the title is not specific enough — sharpen it, never append a counter. Legacy
+`NNNN-` ADRs are valid until the project runs the id migration (they sort before every dated
+one); never renumber them yourself. Check what exists first
+— a decision may already be recorded:
 ```bash
-ls docs/adr/*.md 2>/dev/null | sort | tail -1
+ls docs/adr/*.md 2>/dev/null | sort
 ```
 
 If `docs/adr/` doesn't exist, create it.
@@ -34,7 +38,7 @@ If `docs/adr/` doesn't exist, create it.
 ## ADR template (MADR format)
 
 ```markdown
-# NNNN — [Short Decision Title]
+# YYYYMMDD — [Short Decision Title]
 
 **Date:** YYYY-MM-DD  
 **Status:** Accepted  
@@ -140,11 +144,11 @@ inventing a threat to fill the section is not.
    edit is additive and touches nothing else. Say in your report that you appended it, so
    the caller can review the line with everything else.
    ```
-   - [NNNN] Short title — the failure shape in a clause, then the rule (see docs/adr/NNNN-*.md)
+   - [YYYYMMDD] Short title — the failure shape in a clause, then the rule (see docs/adr/YYYYMMDD-*.md)
    ```
    Example:
    ```
-   - [0003] Bound values for every query — untrusted input must never reach an interpreter as syntax (SQL today, any built command tomorrow): jOOQ DSL with bound values, never string interpolation (see docs/adr/0003-jooq-bound-values.md)
+   - [20261112] Bound values for every query — untrusted input must never reach an interpreter as syntax (SQL today, any built command tomorrow): jOOQ DSL with bound values, never string interpolation (see docs/adr/20261112-jooq-bound-values.md)
    ```
    This line is what future AI sessions (Claude Code / OpenCode) will read, and for most of
    them it is the *only* part they read — so it carries the **failure shape**, not just the

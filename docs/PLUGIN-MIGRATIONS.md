@@ -26,6 +26,36 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.62.0 — feature and ADR ids are dates, not counters
+
+New features are `specs/YYYYMMDD-slug/` and new ADRs `docs/adr/YYYYMMDD-title.md`: a
+sequential `NNN` collided whenever two people created a feature or an ADR on parallel
+branches. The frontmatter schema accepts both forms, so a project that does nothing keeps
+working — legacy ids sort before the dated ones.
+
+**Human — offer the rename, do not run it unasked.** It is one repo-wide commit that every
+open branch has to rebase over, so the team picks the moment (ideally few open branches).
+
+1. Dry run, and show the user the plan (old → new, and where each date came from):
+   `wfpy "$WF/scripts/migrate-ids.py"` (the `$WF` / `wfpy` resolver from `/wellforge:done`
+   Step 1). A non-zero exit lists what blocks it: two items mapping to the same
+   `date-slug`, or a target that already exists — rename that slug by hand, then re-run.
+2. On a yes, on a clean tree: `wfpy "$WF/scripts/migrate-ids.py" --apply`. It `git mv`s
+   every legacy feature and ADR, rewrites the references (`NNN-slug` tokens, `specs/NNN`,
+   `ADR NNNN`, the `[NNNN]` tags in `AGENTS.md`, `id:` / `spec:` frontmatter, `.forge/runs/`
+   traces) and writes `.forge/id-migration.json` (old → new — commit messages keep the old
+   ids, this is how they are read back). It refuses while a non-terminal feature has drift
+   or a stale eval, because the rename commit would erase both signals: resolve them first
+   (`--force` only if the user accepts losing them).
+3. Show `git diff --cached -M --stat` and the "check by hand" lines (bare ADR numbers in
+   prose, left alone because `0001` alone is ambiguous), then commit it alone:
+   `refactor: date-based ids for features and ADRs`.
+4. Teammates rebase onto it; git's rename detection carries their edits into the renamed
+   directories. A feature created as `NNN-` on a branch that predates the rename is still
+   valid — re-run step 1 after it lands; the script is idempotent.
+
+---
+
 ## 2.61.1 — `/wellforge:release` names all four WellForge series
 
 Wording only: inside the wellforge repo, `/wellforge:release` now lists the template,

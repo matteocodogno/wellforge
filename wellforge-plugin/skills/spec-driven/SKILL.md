@@ -32,7 +32,7 @@ in the manual flow, `/wellforge:plan` and `/wellforge:tasks` nudge you to it.
 
 ```
 specs/
-├── 001-user-auth/
+├── 20261104-user-auth/
 │   ├── spec.md      # WHAT & WHY — problem, user stories, acceptance criteria
 │   ├── ledger.md    # optional — the decision ledger from /wellforge:grill-me (who decided what)
 │   ├── plan.md      # HOW — architecture, data model, API contracts, test strategy
@@ -42,9 +42,9 @@ specs/
 │   ├── eval.md      # optional — per-feature rubric overrides (add dims / raise floors only)
 │   ├── qe-report.md    # the latest QE verdict table (written by the quality-engineer)
 │   └── eval-report.md  # LM-judge scored verdict (written by /wellforge:eval)
-├── 002-csv-export/
+├── 20261109-csv-export/
 │   └── spec.md
-└── 003-pricing-poc/
+└── 20261112-pricing-poc/
     └── brief.md     # spike tier ONLY — a brief replaces spec/plan/tasks (see rigor-tiers)
 ```
 
@@ -53,7 +53,19 @@ The full spec→plan→tasks set is the `production` tier. Lower **rigor tiers**
 a single `brief.md`. The tier lives in the feature's frontmatter as `rigor:` (default
 `production`). See the **rigor-tiers** skill — load it whenever a feature isn't production.
 
-- `NNN` is zero-padded and sequential across the project (`ls specs/ | sort | tail -1` to find the next).
+- `NNN` is the feature **id**: the creation date as `YYYYMMDD` (today, local time) — never a
+  counter. Several people branch off the same `main` and create features in parallel; a
+  sequential counter (`ls specs/ | sort | tail -1` + 1) hands every one of them the same
+  number, and the collision only shows up after the merge. A date needs no coordination;
+  `id + slug` is the identity, so two features on the same day are distinct by slug. If
+  `specs/<today>-<slug>/` already exists, it is the same feature (resume it) or the slug is
+  not specific enough (pick a sharper one) — never append a counter.
+- Legacy 3-digit ids (`001-user-auth`) stay valid — they sort before every dated id, so a
+  half-migrated `ls specs/` is still chronological. A project renames them with
+  `scripts/migrate-ids.py` (offered by `/wellforge:upgrade`), never by hand: the script
+  rewrites every reference and records old → new in `.forge/id-migration.json`, which is
+  how the old ids in commit messages stay readable. Wherever this plugin writes
+  `NNN-slug`, read *id-slug* — either form.
 - `slug` is short kebab-case; never rename a directory after creation (it's referenced from commits).
 
 ## Status lifecycle

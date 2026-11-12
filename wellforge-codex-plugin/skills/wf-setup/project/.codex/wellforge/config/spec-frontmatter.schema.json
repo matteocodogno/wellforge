@@ -26,8 +26,8 @@
     "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
     "featureRef": {
       "type": "string",
-      "pattern": "^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$",
-      "description": "A full NNN-slug feature directory name, as superseded_by must be."
+      "pattern": "^([0-9]{3}|[0-9]{8})-[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "A full id-slug feature directory name, as superseded_by must be: YYYYMMDD-slug, or a legacy 3-digit NNN-slug."
     }
   },
 
@@ -36,7 +36,7 @@
       "type": "object",
       "required": ["id", "slug", "status"],
       "properties": {
-        "id": { "type": ["string", "integer"], "description": "Sequential NNN; YAML may load 003 as an int." },
+        "id": { "type": ["string", "integer"], "description": "YYYYMMDD creation date (legacy: 3-digit NNN); YAML loads either as an int." },
         "slug": { "$ref": "#/$defs/slug" },
         "status": { "$ref": "#/$defs/status" },
         "rigor": { "$ref": "#/$defs/rigor" },

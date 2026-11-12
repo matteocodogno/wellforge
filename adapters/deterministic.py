@@ -26,7 +26,8 @@ import shutil
 # repo-maintenance tools for THIS repository and are deliberately not shipped: a generated
 # project has no plugin README to check against, and shipping them would invite someone to
 # run a guard that cannot pass.
-SCRIPTS = ("forge-state.py", "run-report.py", "security-triggers.py")
+SCRIPTS = ("forge-state.py", "run-report.py", "security-triggers.py",
+           "migrate-ids.py")  # imports forge-state.py from its own directory
 
 # Configs the prompts and skills cite by path.
 CONFIGS = ("security-triggers.yml", "rigor-budgets.yml", "model-pricing.yml",

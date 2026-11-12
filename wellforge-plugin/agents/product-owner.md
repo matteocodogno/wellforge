@@ -48,11 +48,12 @@ Your single artifact is `specs/NNN-slug/spec.md` following the WellForge spec-dr
 
 ## Your artifact — spec.md
 
-Write `specs/NNN-slug/spec.md` (next sequential NNN, short kebab-case slug):
+Write `specs/NNN-slug/spec.md` — `NNN` is today's date as `YYYYMMDD` (never a counter: parallel
+branches would collide on it), slug short kebab-case:
 
 ```markdown
 ---
-id: NNN
+id: YYYYMMDD
 slug: <slug>
 status: draft
 rigor: <production | mvp>      # the tier the caller stated; production when unstated

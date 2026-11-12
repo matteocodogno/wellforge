@@ -11,6 +11,7 @@ this directory.
 | `wellforge/scripts/forge-state.py` | generated prompts and skills |
 | `wellforge/scripts/run-report.py` | generated prompts and skills |
 | `wellforge/scripts/security-triggers.py` | generated prompts and skills |
+| `wellforge/scripts/migrate-ids.py` | generated prompts and skills |
 | `wellforge/config/security-triggers.yml` | generated prompts and skills |
 | `wellforge/config/rigor-budgets.yml` | generated prompts and skills |
 | `wellforge/config/model-pricing.yml` | generated prompts and skills |

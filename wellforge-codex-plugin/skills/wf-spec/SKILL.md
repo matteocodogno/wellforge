@@ -14,8 +14,8 @@ Feature request: ARGUMENTS
 ## Procedure
 
 1. **Resolve target.** If the argument matches an existing `specs/NNN-slug/` directory,
-   resume that spec. Otherwise determine the next sequential `NNN` and derive a short
-   kebab-case slug from the request.
+   resume that spec. Otherwise the id is today's date as `YYYYMMDD` (never a counter — see
+   the spec-driven skill) and the slug is a short kebab-case name derived from the request.
 
 2. **Interview before writing.** Use AskUserQuestion to close the gaps the request leaves
    open — typically: who the users/roles are, what "done" looks like observably, what is

@@ -42,13 +42,13 @@ terse state up front, next to the tier line above.
 
 ## Procedure
 
-1. **Resolve the folder.** Next sequential `specs/NNN-slug/` (slug from the goal). Reuse an
+1. **Resolve the folder.** `specs/<YYYYMMDD>-<slug>/` — today's date, slug from the goal. Reuse an
    existing folder only if the goal clearly continues it.
 
 2. **Write `specs/NNN-slug/brief.md`** — short, not a spec. Frontmatter then ~5–10 lines:
    ```markdown
    ---
-   id: NNN
+   id: YYYYMMDD
    slug: <kebab>
    rigor: spike
    status: in-progress

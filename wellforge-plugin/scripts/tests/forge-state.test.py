@@ -172,6 +172,26 @@ check("archived without a reason is rejected",
 check("done without a date is rejected", any("`done`" in p for p in one(env, "005-nodate")["problems"]), True)
 check("a schema violation does not crash the report", len(env["features"]), 5)
 
+# ── date ids (YYYYMMDD-slug) coexist with legacy NNN-slug ──────────────────────
+r = repo()
+feature(r, "003-legacy", {"id": "003", "slug": "legacy", "status": "done", "done": "2026-09-02"})
+feature(r, "20261112-login", {"id": 20261112, "slug": "login", "status": "superseded",
+                              "superseded_by": "20261112-login-sso"})
+feature(r, "20261112-login-sso", {"id": 20261112, "slug": "login-sso", "status": "draft"})
+feature(r, "20261113-old", {"id": 20261113, "slug": "old", "status": "superseded",
+                            "superseded_by": "003-legacy"})
+feature(r, "20261114-bad", {"id": 20261114, "slug": "bad", "status": "superseded",
+                            "superseded_by": "2026-11-12-login"})
+commit(r)
+env = state(r)
+check("dated id: no problems", one(env, "20261112-login-sso")["problems"], [])
+check("dated superseded_by accepted", one(env, "20261112-login")["problems"], [])
+check("legacy superseded_by still accepted", one(env, "20261113-old")["problems"], [])
+check("dashed date is not a feature ref",
+      any("superseded_by" in p for p in one(env, "20261114-bad")["problems"]), True)
+check("legacy ids sort before dated ids",
+      [f["slug"] for f in env["features"]][0], "003-legacy")
+
 # ── missing .forge/runs/ ────────────────────────────────────────────────────────
 r = repo()
 feature(r, "001-x", {"id": "001", "slug": "x", "status": "in-progress"}, tasks=[True])
