@@ -1,6 +1,6 @@
 # T9 — Measurement: terse-vs-control output reduction
 
-**Task:** T9 (specs/001-terse-mode) — measure the ≥40% output-token reduction on agent-dispatched runs (AC-5.3).
+**Task:** T9 (specs/20260716-terse-mode) — measure the ≥40% output-token reduction on agent-dispatched runs (AC-5.3).
 **Date:** 2026-07-25. **Tier:** production.
 
 ## Method

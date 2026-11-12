@@ -6,7 +6,7 @@ export default defineConfig({
   dialect: 'postgresql',
   dbCredentials: {
     // No hard-coded fallback on purpose. DATABASE_URL is derived per checkout by mise
-    // (docs/adr/0002-per-worktree-databases.md): a literal default here would quietly
+    // (docs/adr/20260920-per-worktree-databases.md): a literal default here would quietly
     // migrate the shared database from inside a worktree that believes it is isolated —
     // the exact failure the isolation exists to prevent, and one that surfaces days later
     // as a migration row for a file nobody can find.

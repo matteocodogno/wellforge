@@ -110,7 +110,7 @@ Rules worth knowing on day one:
 - Only **you** approve specs and plans — nothing self-approves.
 - If code and spec disagree, the spec gets amended first (a Stop hook blocks sessions
   that change a spec without re-syncing tasks).
-- Commits reference tasks: `feat(orders): accept endpoint (T3, specs/001)`.
+- Commits reference tasks: `feat(orders): accept endpoint (T3, specs/20260716-terse-mode)`.
 - The dev agents work **test-first**: one behavior at a time, the test seen to fail before
   the code exists. Each reports a `TDD:` line; a `test-after` entry in it is worth a look.
 - Domain words live in `.claude/context/glossary.md` — one word per concept. Agents use its

@@ -1,5 +1,5 @@
 ---
-spec: 001
+spec: 20260716
 generated: 2026-07-23
 ---
 
@@ -64,7 +64,7 @@ generated: 2026-07-23
     and `/wellforge:status` shows it (present) / omits it (absent) (AC-5.1, AC-5.2).
 
 - [x] T8: Verify output + artifact integrity under terse (LM-judge/QE) — refs: US-1 (AC-1.2), US-3 (AC-3.1, AC-3.2) — deps: T2, T3
-  - touch: `specs/001-terse-mode/` (verification fixture + notes), reuse the spec-driven
+  - touch: `specs/20260716-terse-mode/` (verification fixture + notes), reuse the spec-driven
     format check + the eval rubric
   - done when: (a) code/command/path spans in terse output are byte-identical to a canonical
     copy (AC-1.2); (b) spec/plan/tasks generated under active terse validate against the
@@ -72,14 +72,14 @@ generated: 2026-07-23
     spec-fidelity & code-conventions eval scores within rubric variance (AC-3.2).
 
 - [x] T9: Measure the ≥40% reduction on agent-dispatched runs — refs: US-5 (AC-5.3) — deps: T2, T7
-  - touch: `specs/001-terse-mode/measurement-t9.md`
+  - touch: `specs/20260716-terse-mode/measurement-t9.md`
   - run a sample of paired agent-dispatched terse/control runs; aggregate the **output-length**
     deltas (authoritative per the 2026-07-25 amendment; run-trace token layer proved unreliable).
   - done when: median output reduction across the sample is **≥ 40%** versus the control
     runs, recorded in the feature's measurement notes (AC-5.3). **Met: median 40.2%** (`measurement-t9.md`).
 
 - [x] T11: Durable AC-4.1 fact-preservation test for /wellforge:terse-compress — refs: US-4 (AC-4.1) — deps: T5
-  - touch: `specs/001-terse-mode/fixtures/t11/` (fixture memory file + compressed + fact-dropping negative control + runnable checker)
+  - touch: `specs/20260716-terse-mode/fixtures/t11/` (fixture memory file + compressed + fact-dropping negative control + runnable checker)
   - promote T5's scratchpad dry-run into a committed, deterministic test: a checker that
     asserts every atomic fact in the original is still present in the compressed form
     (superset), passing on the good compression and FAILING on a negative control that drops
@@ -88,7 +88,7 @@ generated: 2026-07-23
     committed under the feature (AC-4.1), added by the eval to lift test_quality.
 
 - [x] T12: Durable AC-5.1 pairing test for run-report.py — refs: US-5 (AC-5.1) — deps: T7
-  - touch: `specs/001-terse-mode/fixtures/t12/` (terse + control + orphan trace fixtures + `.events.jsonl` + runnable test)
+  - touch: `specs/20260716-terse-mode/fixtures/t12/` (terse + control + orphan trace fixtures + `.events.jsonl` + runnable test)
   - promote T7's scratchpad fixtures into a committed test that runs `run-report.py --json`
     against a fixture runs-dir and asserts `output_tokens_saved`/`pct_saved` for a terse+control
     pair AND clean omission for the orphan (no control).
@@ -96,7 +96,7 @@ generated: 2026-07-23
     omit case, exits 0, committed under the feature (AC-5.1).
 
 - [x] T13: Reproducible test runner + CI wiring — refs: US-1 (AC-1.2), US-4 (AC-4.1), US-5 (AC-5.1) — deps: T8, T11, T12
-  - touch: `specs/001-terse-mode/fixtures/run-all.sh` (new), `.github/workflows/ci.yml`
+  - touch: `specs/20260716-terse-mode/fixtures/run-all.sh` (new), `.github/workflows/ci.yml`
   - a single runner that executes `t8/extract-spans.sh`, `t11/run-check.sh`, and
     `t12/test_run_report_pairing.py`, and exits non-zero if ANY fails; plus a CI step that
     invokes it so these tests guard regressions on every push (they are currently reproducible
@@ -106,4 +106,4 @@ generated: 2026-07-23
 
 - [x] T10: Close the feature — refs: (closing) — deps: T4, T5, T8, T9, T11, T12, T13
   - done when: all gates green (self-CI lint + advisory checks), every task above checked,
-    a fresh `/wellforge:eval` PASS, and `/wellforge:done 001-terse-mode` flips spec status → done.
+    a fresh `/wellforge:eval` PASS, and `/wellforge:done 20260716-terse-mode` flips spec status → done.

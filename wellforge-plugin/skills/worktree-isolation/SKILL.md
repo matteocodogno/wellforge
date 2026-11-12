@@ -100,7 +100,7 @@ from it. Never derive the key from a timestamp or a random value either: a re-ru
 worktree must resolve to the *same* database, port and container, or cleanup silently leaks
 resources and the second run is not reproducible.
 
-See `docs/adr/0002-per-worktree-databases.md` for the decision and its failure shapes.
+See `docs/adr/20260920-per-worktree-databases.md` for the decision and its failure shapes.
 
 ## The preflight — before dispatching a batch of ≥2
 

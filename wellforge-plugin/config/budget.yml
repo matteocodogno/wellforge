@@ -27,7 +27,7 @@ session_injection:
   #   (hono-ts-backend, kotlin-springboot, react-ts-vite, pulumi-gcp-ts, mise ≈ 3,000
   #   chars), whose descriptions are long BECAUSE they carry many trigger phrases. Whether
   #   to one-line them is a trigger-accuracy decision, not a budget one: see
-  #   docs/adr/0001-stack-skill-description-length.md. If that ADR is ever revisited in
+  #   docs/adr/20260920-keep-full-stack-skill-descriptions.md. If that ADR is ever revisited in
   #   favour of short descriptions, drop this ceiling to 17300 in the same commit.
   #
   # A ratchet at the current total is strictly stronger than a ceiling with headroom: you
@@ -45,7 +45,7 @@ session_injection:
   # `/wellforge:grill-me` command (110). Same reasoning, same method: both written to the
   # floor, nothing existing trimmed, ceiling at exactly the new total. Two moves in one day
   # is the pattern the closing note below warns about — the next new description should be
-  # paid for by retiring one, or by revisiting ADR 0001.
+  # paid for by retiring one, or by revisiting ADR 20260920-keep-full-stack-skill-descriptions.
   #
   # 2026-10-05, later: the `domain-modeling` skill (263 chars) was paid for, as the line
   # above asked — by cutting the two descriptions added earlier the same day, `tdd`

@@ -1,4 +1,4 @@
-# 0002 — Per-Worktree Database Isolation, Derived from Checkout Path
+# 20260920 — Per-Worktree Database Isolation, Derived from Checkout Path
 
 **Date:** 2026-09-20
 **Status:** Accepted

@@ -1,4 +1,4 @@
-# 0001 — Keep Full, Trigger-Phrase-Rich Descriptions on the Five Stack Skills
+# 20260920 — Keep Full, Trigger-Phrase-Rich Descriptions on the Five Stack Skills
 
 **Date:** 2026-09-20
 **Status:** Accepted

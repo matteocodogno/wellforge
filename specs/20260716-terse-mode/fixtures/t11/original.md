@@ -36,7 +36,7 @@ nobody has to re-read those documents just to remember the basics.
    in full is `wellforge-plugin/skills/terse/SKILL.md` — read it before touching any
    compression logic.
 
-6. The authoritative acceptance criterion governing all of this is AC-4.1 in `specs/001-terse-mode/spec.md` —
+6. The authoritative acceptance criterion governing all of this is AC-4.1 in `specs/20260716-terse-mode/spec.md` —
    if in doubt about scope, that's the source of truth.
 
 That's everything worth remembering here; anything else, go re-read the spec and plan

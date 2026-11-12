@@ -1,5 +1,5 @@
 ---
-id: 001
+id: 20260716
 slug: terse-mode
 status: done
 rigor: production

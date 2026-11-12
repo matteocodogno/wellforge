@@ -20,7 +20,7 @@ def savings_ratio(baseline: int, terse: int) -> float:
 Repro:
 
 ```bash
-python3 gates/scripts/check-jacoco.py --path specs/001-terse-mode/fixtures/t8/coverage.xml --min 0.8
+python3 gates/scripts/check-jacoco.py --path specs/20260716-terse-mode/fixtures/t8/coverage.xml --min 0.8
 ```
 
 File: `wellforge-plugin/scripts/run-report.py`

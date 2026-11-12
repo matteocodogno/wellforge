@@ -43,7 +43,7 @@ bump. Merge, revert, fixup, squash and amend commits are exempt — git generate
   the failure shape belongs — the thing a future reader needs and `git log --oneline` can
   never carry.
 - Reference the task and spec when there is one: `feat(export): add CSV serializer (T1,
-  specs/002)`.
+  specs/20261109-csv-export)`.
 
 ## Integration — rebase, never merge
 

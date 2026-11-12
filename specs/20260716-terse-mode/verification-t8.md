@@ -1,6 +1,6 @@
 ---
 task: T8
-spec: 001-terse-mode
+spec: 20260716-terse-mode
 verified: 2026-07-24
 verifier: quality-engineer (agent)
 ---
@@ -10,7 +10,7 @@ verifier: quality-engineer (agent)
 Scope per `tasks.md` T8: verify AC-1.2 (byte-identical invariant), AC-3.1 (artifacts stay
 full-contract under terse), AC-3.2 (no evaluator score regression). This is a verification
 task — the deliverable is this document plus the fixtures in `fixtures/t8/`, not product
-code. Nothing outside `specs/001-terse-mode/` was touched.
+code. Nothing outside `specs/20260716-terse-mode/` was touched.
 
 ## Summary verdict
 
@@ -49,7 +49,7 @@ preserved those spans byte-for-byte while the surrounding prose changed freely.
 
 **Command run:**
 ```
-$ ./specs/001-terse-mode/fixtures/t8/extract-spans.sh
+$ ./specs/20260716-terse-mode/fixtures/t8/extract-spans.sh
 ```
 
 **Actual output:**
@@ -81,8 +81,8 @@ $ diff -u /tmp/t8-canonical-fenced.txt /tmp/t8-bad-fenced.txt
      if baseline == 0:
          raise ValueError("baseline token count must be non-zero")
      return (baseline - terse) / baseline
--python3 gates/scripts/check-jacoco.py --path specs/001-terse-mode/fixtures/t8/coverage.xml --min 0.80
-+python3 gates/scripts/check-jacoco.py --path specs/001-terse-mode/fixtures/t8/coverage.xml --min 0.8
+-python3 gates/scripts/check-jacoco.py --path specs/20260716-terse-mode/fixtures/t8/coverage.xml --min 0.80
++python3 gates/scripts/check-jacoco.py --path specs/20260716-terse-mode/fixtures/t8/coverage.xml --min 0.8
  Error: coverage 0.7421 below threshold 0.80 (gates/configs/thresholds.yml)
 ```
 Exit code: `1` (diff detects the drift immediately). This confirms the check has power to
@@ -128,7 +128,7 @@ spec-driven skill's file-format rules (`wellforge-plugin/skills/spec-driven/SKIL
 "File formats" section) and applied to **this feature's own spec.md/plan.md/tasks.md** as
 the fixture.
 
-### Checklist — spec.md (`specs/001-terse-mode/spec.md`)
+### Checklist — spec.md (`specs/20260716-terse-mode/spec.md`)
 
 | # | Rule (spec-driven SKILL.md) | Result | Evidence |
 |---|---|---|---|
@@ -140,7 +140,7 @@ the fixture.
 | 6 | `## Open questions` empty or explicitly resolved before approval | PASS | lines 120-126, all `[x]` resolved |
 | 7 | Every AC objectively verifiable (no clarification needed to test it) | PASS | spot-checked AC-1.2, AC-3.1, AC-3.2, AC-5.1 — all Given/when/then, observable outcomes |
 
-### Checklist — plan.md (`specs/001-terse-mode/plan.md`)
+### Checklist — plan.md (`specs/20260716-terse-mode/plan.md`)
 
 | # | Rule | Result | Evidence |
 |---|---|---|---|
@@ -149,7 +149,7 @@ the fixture.
 | 3 | Every spec AC mapped in the Test strategy table | PASS | table at lines 157-170 lists all 12 ACs (AC-1.1/1.2, 2.1/2.2/2.3, 3.1/3.2, 4.1/4.2, 5.1/5.2/5.3), matching spec.md 1:1; plan.md states this explicitly at line 172 |
 | 4 | `## Security` states security-sensitive YES/NO + reasoning | PASS | line 211: "Security-sensitive: NO ... no owasp pass scheduled", with two named safety invariants |
 
-### Checklist — tasks.md (`specs/001-terse-mode/tasks.md`)
+### Checklist — tasks.md (`specs/20260716-terse-mode/tasks.md`)
 
 | # | Rule | Result | Evidence |
 |---|---|---|---|
@@ -216,7 +216,7 @@ code, or into the artifacts the evaluator reads for spec fidelity).
 
 ### What is mechanically confirmed now (without a live eval run)
 
-- No `eval-report.md` exists yet for `001-terse-mode` (confirmed: `ls specs/001-terse-mode/`
+- No `eval-report.md` exists yet for `20260716-terse-mode` (confirmed: `ls specs/20260716-terse-mode/`
   contains only `spec.md`, `plan.md`, `tasks.md`, this verification doc, and `fixtures/`) —
   T9 (aggregate measurement) and T10 (close) are still open, and a live terse-vs-baseline
   eval comparison is explicitly out of T8's scope per the task brief ("If a full
@@ -258,12 +258,12 @@ rather than assumed away.
 ## Files added by this task
 
 ```
-specs/001-terse-mode/verification-t8.md              (this file)
-specs/001-terse-mode/fixtures/t8/canonical.md         (AC-1.2 fixture: verbose/baseline form)
-specs/001-terse-mode/fixtures/t8/terse-rendered.md    (AC-1.2 fixture: terse form, spans preserved)
-specs/001-terse-mode/fixtures/t8/terse-rendered-BAD.md (AC-1.2 negative control: mangled span)
-specs/001-terse-mode/fixtures/t8/extract-spans.sh     (AC-1.2 deterministic diff-based check)
+specs/20260716-terse-mode/verification-t8.md              (this file)
+specs/20260716-terse-mode/fixtures/t8/canonical.md         (AC-1.2 fixture: verbose/baseline form)
+specs/20260716-terse-mode/fixtures/t8/terse-rendered.md    (AC-1.2 fixture: terse form, spans preserved)
+specs/20260716-terse-mode/fixtures/t8/terse-rendered-BAD.md (AC-1.2 negative control: mangled span)
+specs/20260716-terse-mode/fixtures/t8/extract-spans.sh     (AC-1.2 deterministic diff-based check)
 ```
 
-No files outside `specs/001-terse-mode/` were modified. `tasks.md`, `spec.md`, and `plan.md`
+No files outside `specs/20260716-terse-mode/` were modified. `tasks.md`, `spec.md`, and `plan.md`
 were read but not edited.

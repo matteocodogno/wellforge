@@ -1,5 +1,5 @@
 ---
-spec: 001
+spec: 20260716
 evaluated: 2026-07-27
 rubric: default-v2
 score: 82
@@ -24,7 +24,7 @@ verdict: PASS
 One task added — **T13** (`ab2beaf`): `fixtures/run-all.sh` (a single runner for T8/T11/T12) plus a `terse-mode-fixtures` job in `.github/workflows/ci.yml` that invokes it on every push/PR. The previously by-hand-only reproducible tests are now CI-enforced. Re-verified against the anchors, not just trusted:
 
 - **Ran `fixtures/run-all.sh` myself → exit 0, 3/3 PASS.** T8 (AC-1.2): fenced + inline spans byte-identical vs canonical (`awk`-extract + `diff`). T11 (AC-4.1): 6/6 facts recoverable on `original.md`/`compressed.md`, and the BAD control correctly FAILS 1/6 (the corrupted `` `mise run terse:check -- --min 0.40` `` command span). T12 (AC-5.1): 13/13 checks, invoking the real `run-report.py` — `output_tokens_saved == 4000`, `pct_saved == 50.0`, explicit `control_run_id` pairing, and the orphan cleanly omits all three fields.
-- **CI wiring is real, not decorative.** `ci.yml:89-95` — valid YAML (parsed clean), a `terse-mode-fixtures` job that runs `specs/001-terse-mode/fixtures/run-all.sh` directly. Adversarial check: the runner and its sub-scripts are committed mode `100755` (executable), so the bare-path invocation resolves in CI after checkout; t12 is called via `python3`. The job will actually gate.
+- **CI wiring is real, not decorative.** `ci.yml:89-95` — valid YAML (parsed clean), a `terse-mode-fixtures` job that runs `specs/20260716-terse-mode/fixtures/run-all.sh` directly. Adversarial check: the runner and its sub-scripts are committed mode `100755` (executable), so the bare-path invocation resolves in CI after checkout; t12 is called via `python3`. The job will actually gate.
 
 **Effect on scores:** the CI-enforced runner strengthens the "would catch regressions" clause of **test_quality** and reinforces **trajectory** (a clean fresh QE-PASS trace), but neither tips an anchor boundary — test_quality's ceiling is still capped at 4 because 5 ACs have no executable test (the plan's deterministic/LM-judge split assigns them to QE/evaluator), and trajectory was already at 5. Total is unchanged at 82/100. This is a within-anchor hardening, correctly reflected as a maintained PASS rather than an inflated bump.
 
@@ -38,5 +38,5 @@ One task added — **T13** (`ab2beaf`): `fixtures/run-all.sh` (a single runner f
 
 ## Recommended next step
 
-- **PASS** (82 ≥ 80, no floor breach). Spec 001-terse-mode may move to `done`: T10's `/wellforge:eval PASS` gate is satisfied — run `/wellforge:done 001-terse-mode` to flip status → done.
+- **PASS** (82 ≥ 80, no floor breach). Spec 20260716-terse-mode may move to `done`: T10's `/wellforge:eval PASS` gate is satisfied — run `/wellforge:done 20260716-terse-mode` to flip status → done.
 - Non-blocking (future hardening, not required for this PASS): firm up AC-5.3 beyond the marginal 40.2% median (larger N or a non-best-case task) so the ≥40% gate is not threshold-fragile, and add a durable AC-4.2 fresh-consume check.

@@ -7,7 +7,7 @@
 //   defineConfig from 'vitest/config' → TS2769, vite 5 Plugin vs vite 6 Plugin
 // A triple-slash `/// <reference types="vitest" />` does not augment the type either.
 // Splitting the files removes the conflict without touching the pins — bumping vitest to
-// ^3 is specs/003-ts-stack-migration, not a side effect of a formatting fix.
+// ^3 is specs/20260920-ts-stack-migration, not a side effect of a formatting fix.
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 

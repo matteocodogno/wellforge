@@ -6,7 +6,7 @@ plan.md Test strategy AC-5.1 row: "Assert a terse orchestrate/implement run writ
 terse:true; run-report.py computes output-token delta vs. the paired control run").
 
 Fixtures (this directory, `runs/`):
-  - control-run.json  — a non-terse `implement` run of feature `001-terse-mode`.
+  - control-run.json  — a non-terse `implement` run of feature `20260716-terse-mode`.
   - terse-run.json    — a terse `implement` run of the SAME feature+command, paired to the
                          control via an explicit `control_run_id` (the producer-set pairing
                          path in `find_control()`, run-report.py:119-170).
@@ -40,7 +40,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO_ROOT = HERE.parents[3]  # t12 -> fixtures -> 001-terse-mode -> specs -> <repo root>
+REPO_ROOT = HERE.parents[3]  # t12 -> fixtures -> 20260716-terse-mode -> specs -> <repo root>
 RUN_REPORT = REPO_ROOT / "wellforge-plugin" / "scripts" / "run-report.py"
 RUNS_DIR = HERE / "runs"
 

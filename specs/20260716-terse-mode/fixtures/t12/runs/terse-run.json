@@ -2,7 +2,7 @@
   "schema": "wellforge-run/v1",
   "run_id": "2026-07-20T11-00-00Z-implement-001-terse-mode",
   "command": "implement",
-  "feature": "001-terse-mode",
+  "feature": "20260716-terse-mode",
   "rigor": "production",
   "started": "2026-07-20T11:00:00Z",
   "finished": "2026-07-20T11:10:00Z",

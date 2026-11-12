@@ -116,7 +116,7 @@ than *what the user answered* is written after generation, not asked by copier.*
 Presets with an application database MUST derive their database name, published host port
 and compose project from the checkout, so two git worktrees of one repo never resolve to the
 same database. The rule and its failure shapes are
-`docs/adr/0002-per-worktree-databases.md`; the contract is what a template must emit.
+`docs/adr/20260920-per-worktree-databases.md`; the contract is what a template must emit.
 
 The root `mise.toml` `[env]` block exports, via `.wellforge/worktree-id.sh`:
 

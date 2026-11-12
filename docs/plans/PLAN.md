@@ -1794,7 +1794,7 @@ run a WellForge command.
   total** rather than the 85% asked for: you cannot add a character without removing one, or
   moving the number in its own commit. The arithmetic to reach 85% is written in
   `budget.yml`, and it runs through the stack skills.
-- ☑ **ADR 0001** (first in this repo): the five stack skills **keep** full descriptions.
+- ☑ **ADR 20260920-keep-full-stack-skill-descriptions** (first in this repo): the five stack skills **keep** full descriptions.
   They are 3,288 chars (17% of the total) and almost entirely trigger phrases; the token
   cost is measurable and certain, the mis-routing cost of shortening is real and — with no
   skill-trigger eval suite in this repo — unmeasurable. Optimising the measured side against

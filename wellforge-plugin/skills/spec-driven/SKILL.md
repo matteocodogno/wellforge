@@ -336,6 +336,6 @@ followed.
 ## Implementing tasks
 
 - Work tasks in dependency order; set the checkbox immediately on completion.
-- Reference task IDs in commit messages: `feat(report): add CSV serializer (T1, specs/002)`.
+- Reference task IDs in commit messages: `feat(report): add CSV serializer (T1, specs/20260727-brownfield-plugin-fixes)`.
 - When the last task is checked and gates pass, close the feature with `/wellforge:done`
   (it verifies the tier's done gate before flipping the status).

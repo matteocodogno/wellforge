@@ -28,7 +28,7 @@ sources     = ["src/**/*.kt"]
 
 # Integration tests (*IT, failsafe) get an EPHEMERAL Postgres from Testcontainers: a fresh
 # container on a random host port per run, so there is no shared database for a sibling
-# worktree to drop and nothing to clean up (docs/adr/0002-per-worktree-databases.md).
+# worktree to drop and nothing to clean up (docs/adr/20260920-per-worktree-databases.md).
 # Kept out of `test` above because that lane must stay runnable without Docker.
 [tasks."test:integration"]
 description = "Run *IT integration tests against a throwaway Testcontainers Postgres (needs Docker)"

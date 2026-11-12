@@ -1,0 +1,13 @@
+{
+  "adrs": {
+    "0001-keep-full-stack-skill-descriptions": "20260920-keep-full-stack-skill-descriptions",
+    "0002-per-worktree-databases": "20260920-per-worktree-databases"
+  },
+  "features": {
+    "001-terse-mode": "20260716-terse-mode",
+    "002-brownfield-plugin-fixes": "20260727-brownfield-plugin-fixes",
+    "003-ts-stack-migration": "20260920-ts-stack-migration"
+  },
+  "migrated": "2026-11-12",
+  "version": 1
+}

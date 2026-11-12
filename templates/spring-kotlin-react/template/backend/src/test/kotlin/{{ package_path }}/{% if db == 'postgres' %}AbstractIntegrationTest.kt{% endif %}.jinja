@@ -18,7 +18,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
  * dev database by forgetting a property. Liquibase then migrates the throwaway database on
  * context startup, so the schema under test is the one the changelogs describe.
  *
- * See docs/adr/0002-per-worktree-databases.md in the wellforge repo.
+ * See docs/adr/20260920-per-worktree-databases.md in the wellforge repo.
  *
  * `spring.docker.compose.enabled=false` is load-bearing, not tidiness. The app depends on
  * spring-boot-docker-compose, so a `@SpringBootTest` that does not switch it off would

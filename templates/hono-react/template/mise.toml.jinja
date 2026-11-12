@@ -26,7 +26,7 @@ pnpm = "10"
 VITE_API_BASE_URL = "http://localhost:3000"
 VITE_APP_NAME     = "{{ project_name }}"
 
-# ── Worktree isolation — see docs/adr/0002-per-worktree-databases.md (wellforge repo) ──
+# ── Worktree isolation — see docs/adr/20260920-per-worktree-databases.md (wellforge repo) ──
 # A git worktree isolates the CHECKOUT and nothing else. Without this block two worktrees
 # resolve the same database name, the same host port and the same compose project, and one
 # drops or migrates what the other is mid-test against. It does not look like a collision;

@@ -77,7 +77,7 @@ The first two are the same check. The third it has never run, and it should not:
   (measured on 2.6.0). Blocking on that contradicts `quality-node.yml`'s own
   `pnpm audit --prod` policy, and it fails every fresh scaffold today on `vitest@2.1.9` /
   GHSA-5xrq-8626-4rwp (CVSS 9.8) — a **dev** dependency whose fix is a vitest major bump
-  deferred to `specs/003-ts-stack-migration`.
+  deferred to `specs/20260920-ts-stack-migration`.
 
 So CVE audits live where a stack can judge them, at `mvp` and `production`:
 

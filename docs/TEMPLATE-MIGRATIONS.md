@@ -97,7 +97,7 @@ The prose now says what the workflow does. CVE audits stay in `quality-node.yml`
 *Worth knowing regardless of tier:* `osv-scanner` reports `vitest@2.1.9` /
 GHSA-5xrq-8626-4rwp at CVSS 9.8 in all three presets. It is a dev dependency, so
 `pnpm audit --prod` does not see it, and the fix is a vitest major bump already tracked as
-`specs/003-ts-stack-migration`. Nothing in this release changes it; it is recorded here
+`specs/20260920-ts-stack-migration`. Nothing in this release changes it; it is recorded here
 because it is currently invisible to every gate.
 
 **The frontend dotenv file is gone**
@@ -235,7 +235,7 @@ preset ships. The new `generated-gates` job does.
   `vitest.config.ts`. It could not type-check where it was: the preset pins vite ^6 and
   vitest ^2, and vitest 2 bundles vite 5, so each of the two possible `defineConfig`
   imports produces a different TS2769. Splitting the files removes the conflict without
-  moving the pins (that is specs/003-ts-stack-migration).
+  moving the pins (that is specs/20260920-ts-stack-migration).
 - `"typecheck": "tsc --noEmit"` ran against a solution-style `tsconfig.json` (`"files": []`)
   and therefore checked **nothing**, passing whatever the app contained. It is now
   `tsc -b --noEmit`.
@@ -270,7 +270,7 @@ reported with a diff and applied by hand.
 
 Both application presets now derive the database name, published host port and compose
 project from the checkout's own path, so two git worktrees of one repo can no longer resolve
-to the same database ([ADR 0002](adr/0002-per-worktree-databases.md)).
+to the same database ([ADR 20260920-per-worktree-databases](adr/20260920-per-worktree-databases.md)).
 
 1. **Run `mise trust` after the update.** This is the one required step. The update adds an
    `[env]` block that computes those values by executing `.wellforge/worktree-id.sh`, and

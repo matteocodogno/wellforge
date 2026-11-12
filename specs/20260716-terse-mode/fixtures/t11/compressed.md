@@ -17,4 +17,4 @@ Operational facts for terse-mode work.
 - Default auto-on tier: TERSE_MODE_DEFAULT_TIER=spike (read by the orchestrator).
 - Local gate check: `mise run terse:check -- --min 0.40`.
 - Invariant + exemption list: `wellforge-plugin/skills/terse/SKILL.md`.
-- Authoritative AC: AC-4.1 in `specs/001-terse-mode/spec.md`.
+- Authoritative AC: AC-4.1 in `specs/20260716-terse-mode/spec.md`.

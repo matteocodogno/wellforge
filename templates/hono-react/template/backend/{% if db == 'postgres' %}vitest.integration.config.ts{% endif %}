@@ -7,7 +7,7 @@ import { defineConfig } from 'vitest/config'
 // what keeps the fast lane fast and runnable on a machine with no container runtime,
 // while integration tests get a REAL database that belongs to nobody else: Testcontainers
 // starts a throwaway Postgres on a random host port per run, so two git worktrees running
-// this concurrently never meet (docs/adr/0002-per-worktree-databases.md).
+// this concurrently never meet (docs/adr/20260920-per-worktree-databases.md).
 export default defineConfig({
   test: {
     globals: true,

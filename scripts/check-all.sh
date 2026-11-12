@@ -166,8 +166,8 @@ printf '\n%smirrors%s\n' "$BOLD" "$RST"
 run "eval-rubric mirror" cmp -s gates/configs/eval-rubric.yml wellforge-plugin/config/eval-rubric.yml
 
 # ── 3d. spec fixtures that CI runs ──────────────────────────────────────────────────
-if [ -x specs/001-terse-mode/fixtures/run-all.sh ]; then
-  run "terse-mode fixtures" specs/001-terse-mode/fixtures/run-all.sh
+if [ -x specs/20260716-terse-mode/fixtures/run-all.sh ]; then
+  run "terse-mode fixtures" specs/20260716-terse-mode/fixtures/run-all.sh
 fi
 
 # ── 4. the CLI matrix ───────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 ---
-spec: 001
+spec: 20260716
 status: approved
 ---
 

@@ -4,7 +4,7 @@
 #   mise run db:guard              # check the configured target
 #   sh .wellforge/db-guard.sh <url-or-dbname>
 #
-# Why this exists (docs/adr/0002-per-worktree-databases.md): a git worktree isolates the
+# Why this exists (docs/adr/20260920-per-worktree-databases.md): a git worktree isolates the
 # CHECKOUT and nothing else. Two worktrees resolve the same database name to the same
 # object, so one can drop or migrate the database another is mid-test against. The failure
 # does not look like a collision — it looks like your code broke.

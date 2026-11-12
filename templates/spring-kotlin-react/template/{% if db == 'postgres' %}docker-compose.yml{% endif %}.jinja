@@ -1,6 +1,6 @@
 # One postgres per CHECKOUT, not per project. The database name and the published host
 # port come from mise's [env] block, which derives them from this checkout's path
-# (docs/adr/0002-per-worktree-databases.md in the wellforge repo). COMPOSE_PROJECT_NAME is
+# (docs/adr/20260920-per-worktree-databases.md in the wellforge repo). COMPOSE_PROJECT_NAME is
 # set there too, so containers, volumes and networks are per-checkout as well, and Spring
 # Boot's docker-compose support picks the datasource up from whichever container it started
 # — so Liquibase migrates this checkout's database without anything else being configured.

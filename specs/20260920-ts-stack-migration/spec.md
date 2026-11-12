@@ -1,5 +1,5 @@
 ---
-id: 003
+id: 20260920
 slug: ts-stack-migration
 status: draft
 rigor: production

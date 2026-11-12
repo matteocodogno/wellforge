@@ -20,7 +20,7 @@
 #     and its JSON marks no dependency group (measured on 2.6.0). Blocking on that
 #     contradicts the project's own audit policy (quality-node.yml runs `pnpm audit --prod`)
 #     and fails every fresh scaffold today on vitest@2.1.9 / GHSA-5xrq-8626-4rwp (CVSS 9.8),
-#     a DEV dependency whose fix is a vitest major bump deferred to specs/003-ts-stack-migration.
+#     a DEV dependency whose fix is a vitest major bump deferred to specs/20260920-ts-stack-migration.
 #
 # So CVE audits live where they can be judged per stack, and they are honest about the tier:
 #   quality-node.yml  `pnpm audit --prod --audit-level high`   (mvp + production)

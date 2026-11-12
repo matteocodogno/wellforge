@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Derive this checkout's isolation identity — see docs/adr/0002-per-worktree-databases.md.
+# Derive this checkout's isolation identity — see docs/adr/20260920-per-worktree-databases.md.
 #
 # A git worktree isolates the CHECKOUT and nothing else: two worktrees resolve a database
 # name, a host port and a compose project to the same object. This script turns the one

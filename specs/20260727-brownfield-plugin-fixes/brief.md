@@ -1,5 +1,5 @@
 ---
-id: 002
+id: 20260727
 slug: brownfield-plugin-fixes
 rigor: spike
 status: done
