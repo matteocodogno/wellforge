@@ -28,3 +28,4 @@ wellforge-plugin/evals/results/
 
 # Local Claude session outputs — never part of the repo.
 Claude outputs/
+notes.md
