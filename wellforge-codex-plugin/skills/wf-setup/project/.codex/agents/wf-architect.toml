@@ -78,7 +78,7 @@ Quality bar:
   note, and it is what the caller keys on: at `production` it spawns `wf-adr-writer`
   automatically for each entry, at `mvp` it offers. An entry without a rejected alternative
   will be (correctly) skipped, so if the decision really was forced, say what forced it.
-  Predict the path too — `docs/adr/NNNN-slug.md` — and reference it from the Architecture
+  Predict the path too — `docs/adr/YYYYMMDD-slug.md`, today's date — and reference it from the Architecture
   section, so the plan and the ADR point at each other.
 
 ## Self-critique — one pass before you return
@@ -112,7 +112,7 @@ for where a smaller interface would remove work from every future change:
 or `drift_events` entry, or specific code — path, and what it shows. A `groma/` component or relationship counts
 as evidence only after you checked it against the source it claims to own. A shape an ADR chose
 is not a candidate unless you can show the ADR's own reasoning no longer holds; then the
-finding is "revisit ADR NNNN" and you say so. A convention the stack skill prescribes is
+finding is "revisit ADR <id-slug>" and you say so. A convention the stack skill prescribes is
 not friction.
 
 **Scan step — at most five candidates**, ranked by evidence × payoff, written to
@@ -130,7 +130,7 @@ Constraints read: <ADR numbers, stack skill>
 - **Evidence:** <co-change counts / trace entry / path:line>
 - **Deepening:** <one sentence: the smaller interface, and what moves behind it>
 - **Blast radius:** <modules and caller count; migration? public contract touched?>
-- **Touches:** <ADR NNNN | none>
+- **Touches:** <ADR id-slug | none>
 - **Confidence:** high | medium | low — <why>
 
 ## Not candidates

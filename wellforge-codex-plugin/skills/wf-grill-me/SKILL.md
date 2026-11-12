@@ -63,7 +63,7 @@ Target: ARGUMENTS
 
 5. **With `--docs`: ADR dispatch.** If the ledger lists ADR candidates, show them and ask
    once which to record. For each yes, spawn `wf-adr-writer` with the decision, the
-   rejected alternative and the reason the user gave — it writes `docs/adr/NNNN-slug.md`
+   rejected alternative and the reason the user gave — it writes `docs/adr/YYYYMMDD-slug.md`
    and appends the index line to `AGENTS.md` itself. A decision with no rejected
    alternative is not an ADR; leave it in the ledger. If a term written this session
    contradicts an approved spec or plan, say so here as a proposed amendment.
@@ -76,7 +76,7 @@ Target: ARGUMENTS
   list — a spec is `$wf-spec`'s to create. It writes exactly one file of its own, the
   ledger. With `--docs` it also writes the glossary, and ADRs only through `wf-adr-writer`
   after an explicit yes; nothing else, and nothing without the flag.
-- Never allocate a `specs/NNN-slug/` directory for an idea: numbering is `$wf-spec`'s,
+- Never allocate a `specs/NNN-slug/` directory for an idea: creating feature ids is `$wf-spec`'s,
   and an idea's ledger waits in `.forge/grill/` until a spec exists to move it beside.
 - The user saying stop ends it at once: unresolved branches go under **Open**, not into a
   guess.

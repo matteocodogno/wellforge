@@ -21,7 +21,7 @@ Before looking for problems, read what was decided on purpose:
 
 - The ADR index in `AGENTS.md`, and the ADRs that touch the scope. **A shape an ADR chose
   is not a candidate** unless the evidence below shows the ADR's own reasoning no longer
-  holds — and then the finding is "revisit ADR NNNN", stated as that.
+  holds — and then the finding is "revisit ADR <id-slug>", stated as that.
 - The stack skill for this project (module layout, boundary rules — Spring Modulith
   boundaries, the Hono layering). A convention the stack skill prescribes is not friction.
 - `.claude/context/glossary.md` if present (`domain-modeling` skill): the domain's concepts

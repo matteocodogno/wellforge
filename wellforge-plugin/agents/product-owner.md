@@ -35,7 +35,7 @@ Your single artifact is `specs/NNN-slug/spec.md` following the WellForge spec-dr
   means branches were never visited: list them as open questions, do not fill them in.
   Add the line ``Decision ledger: `ledger.md` `` under the title — the caller moves the file
   there. A spec that contradicts its ledger's Decided entries is wrong, however reasonable.
-- The repository: read existing `specs/` for numbering and terminology, the project
+- The repository: read existing `specs/` for terminology and features that already cover the request, the project
   `CLAUDE.md`/`README` for domain language, and `.claude/context/glossary.md` if present.
 - **The code, for every claim about what the product does today.** You own the WHAT, and
   "what it currently does" is part of the WHAT. A request or an issue describes current

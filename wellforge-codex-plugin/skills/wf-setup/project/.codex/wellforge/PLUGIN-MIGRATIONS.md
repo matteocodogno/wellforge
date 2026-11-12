@@ -32,6 +32,15 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.62.2 — the last prompts that still predicted a sequential ADR number
+
+`/wellforge:plan` and the architect predicted an ADR path as "the next free 4-digit number",
+the counter 2.62.0 retired; they now predict `docs/adr/YYYYMMDD-slug.md`. `/wellforge:grill-me`,
+`/wellforge:improve-architecture` and the product-owner lose their last counter wording.
+Prompt text only. **Nothing to do on upgrade.**
+
+---
+
 ## 2.62.1 — the migration notes ship with the plugin
 
 This file moved from the wellforge repo's `docs/` into the plugin, so `/wellforge:upgrade`

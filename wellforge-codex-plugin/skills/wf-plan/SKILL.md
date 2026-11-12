@@ -57,8 +57,8 @@ Target spec: ARGUMENTS
    - **`mvp`** → list them and offer. The tier trades ceremony for speed, and this is
      ceremony with a real cost.
 
-   The ADR path is **predictable**: `docs/adr/NNNN-slug.md`, NNNN being the next free
-   4-digit number. Reference it back from the plan's Architecture section by that path in
+   The ADR path is **predictable**: `docs/adr/YYYYMMDD-slug.md`, the date the ADR is
+   written (today) — never a next-free counter, which collides across parallel branches. Reference it back from the plan's Architecture section by that path in
    the same pass, so plan and ADR point at each other rather than the ADR being a file
    nobody finds.
 
