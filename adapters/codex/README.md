@@ -46,7 +46,7 @@ prunes only those.
 The same output, installed once instead of generated into every project:
 
 ```bash
-codex plugin marketplace add matteocodogno/wellforge --ref plugin-v2.61.1
+codex plugin marketplace add matteocodogno/wellforge --ref plugin-v2.62.0
 # install WellForge from that marketplace, then in each project:
 $wf-setup            # or: $wf-setup --hooks  (see below)
 ```
