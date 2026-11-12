@@ -27,9 +27,9 @@ CI quality gates (`.github/workflows/` + `gates/`). What it does and why:
 ## Versions
 
 - Latest tags: `v0.12.1` (template series, PEP440 — what copier resolves), `gates-v15` (gate
-  workflow pin series), `plugin-v2.62.1` (plugin series) and `cli-v1.5.2` (the `wellforge`
+  workflow pin series), `plugin-v2.62.2` (plugin series) and `cli-v1.5.2` (the `wellforge`
   CLI + its Homebrew formula) — four series, the last three invisible to copier by design;
-  plugin `2.62.1`, CLI `1.5.2`. This is the one line that states current versions:
+  plugin `2.62.2`, CLI `1.5.2`. This is the one line that states current versions:
   `check-docs.py` asserts it against `plugin.json`, `scripts/wellforge` and the Formula, and
   `release-cli.sh` rewrites it. Every other version in the docs is history.
 - The four series move independently and never share a commit's tag. Read

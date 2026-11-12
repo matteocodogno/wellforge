@@ -1,4 +1,4 @@
-# WellForge — Codex plugin 2.62.1
+# WellForge — Codex plugin 2.62.2
 
 **Generated** by `adapters/codex/generate.py --package` from `wellforge-plugin/` — do not
 edit; change the plugin and regenerate. CI fails if this tree differs from a fresh run.
@@ -6,7 +6,7 @@ edit; change the plugin and regenerate. CI fails if this tree differs from a fre
 Install, then run `$wf-setup` once in each project (agents, scripts, AGENTS.md block):
 
 ```bash
-codex plugin marketplace add matteocodogno/wellforge --ref plugin-v2.62.1
+codex plugin marketplace add matteocodogno/wellforge --ref plugin-v2.62.2
 ```
 
 See [`adapters/codex/README.md`](../adapters/codex/README.md) for what is covered and what
