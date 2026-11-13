@@ -49,6 +49,10 @@ between "nothing to do" and "nobody wrote it down".
 - **Action:** scaffolded projects get the file with template `v0.13.0` (`/wellforge:upgrade`);
   adopted ones with `/wellforge:adopt` → "Release runbook". Without the file, the command
   works as before and says so.
+- **CI note:** the `plugin-v2.63.0` tag's CI is red in one job, `generated-gates
+  (pulumi-gcp-ts)`, from a stale mise checksum for Pulumi 3.275.0 — outside the plugin, whose
+  content is unaffected. Fixed in template `v0.13.1` (exact Pulumi pin); the tag was kept, not
+  re-cut, because it was already published.
 
 ---
 
