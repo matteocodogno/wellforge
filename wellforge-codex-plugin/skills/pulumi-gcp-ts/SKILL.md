@@ -75,7 +75,7 @@ The `pulumi-gcp-ts` template mirrors these — keep them in sync.
 |---|---|---|
 | Runtime | Node | 22 |
 | Package manager | pnpm | 10 |
-| IaC engine | Pulumi CLI | 3 |
+| IaC engine | Pulumi CLI | 3.274.1 (exact) |
 | Pulumi SDK | `@pulumi/pulumi` | ^3.145.0 |
 | GCP provider | `@pulumi/gcp` | ^8.13.0 |
 | Policy (CrossGuard) | `@pulumi/policy` | ^1.21.0 |

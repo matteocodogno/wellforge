@@ -4,7 +4,7 @@
 [tools]
 node = "22"
 pnpm = "10"
-pulumi = "3"
+pulumi = "3.274.1"  # exact: a floating "3" broke `mise install` on 3.275.0 (stale checksum)
 
 [env]
 # Project-level non-sensitive env vars only — secrets go in .mise.local.toml.

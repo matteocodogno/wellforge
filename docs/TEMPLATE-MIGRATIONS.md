@@ -23,6 +23,21 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## v0.13.1 — `pulumi-gcp-ts`: the Pulumi CLI is pinned to an exact version
+
+**Action (pulumi-gcp-ts only): none beyond the update.** `mise.toml` now pins
+`pulumi = "3.274.1"` instead of `"3"`. The floating major resolved to 3.275.0, whose release
+asset was re-uploaded after mise's checksum metadata was cached, so `mise install` failed
+with a checksum mismatch in every project generated from this preset — and in WellForge's
+own CI, which left `v0.13.0` red. An exact pin keeps a new Pulumi release from breaking an
+install that worked yesterday; bump it deliberately, like any other pinned tool.
+
+- If you already pinned Pulumi yourself, keep your line when copier shows the conflict.
+- `hono-react` and `spring-kotlin-react`: nothing changes.
+- `v0.13.0` is otherwise identical; prefer `v0.13.1` for pulumi projects.
+
+---
+
 ## v0.13.0 — every project gets a release runbook, `RELEASING.md`
 
 **Action: review one new file.** `copier update` adds `RELEASING.md` at the root: the
