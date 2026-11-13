@@ -51,11 +51,14 @@ spawn is the deliverable.
 
 AskUserQuestion (batch): which layers to adopt. **In add-layers mode, offer only the layers
 NOT already in `adoption.json`'s `layers`** (and don't re-offer the core) — e.g. an adopted
-project that skipped release earlier sees just "Release management" here.
+project that skipped release earlier sees just "Release management" here. One exception:
+`release` is in `layers` but the project has no `RELEASING.md` (adopted before plugin 2.63.0)
+→ offer **"Release runbook"**, which runs only Stage 5 step 7.
 - **Workflow + AI-readiness** (always on first adoption; the core — skipped when re-running)
 - **Quality gates in CI** (needs GitHub Actions + interface prerequisites, see stage 3)
-- **Release management** (release-it: version + CHANGELOG from Conventional Commits — stage 5;
-  offer only if the project has no release tool already, and pair it with commit-lint)
+- **Release management** (release-it: version + CHANGELOG from Conventional Commits, plus the
+  project's `RELEASING.md` runbook — stage 5; pair it with commit-lint. A project that already
+  has a release tool gets the runbook only, describing that tool — see stage 5 step 1)
 - **Connections** (GitHub settings, MCP, environments — the `connections` skill)
 - **mise toolchain** (offer only if the project doesn't already pin tools another way;
   never fight an existing working setup)
@@ -156,8 +159,11 @@ Commits (the `release` task / `/wellforge:release`). Additive; never destructive
 1. **Never run two release tools — detect an existing one FIRST.** Look for
    `.releaserc*`/`release.config.*` (semantic-release), `.changeset/` (Changesets),
    `.versionrc*`/`standard-version`, a release GitHub Action, or a maintained `CHANGELOG.md`
-   with real history. If ANY exists: **STOP this stage**, report it, and do NOT add release-it
-   (offer to document their existing process in AGENTS.md instead). Never fight a working setup.
+   with real history. If ANY exists: do NOT add release-it — never fight a working setup.
+   Skip to step 7 and write `RELEASING.md` with a **`## Release`** section describing THEIR
+   tool: the preview command (its dry-run, if it has one) and the release command, as the
+   team runs them. `/wellforge:release` then drives their tool with the same preview →
+   confirm → release discipline. Record the tool in the hand-off summary.
 2. **Version source — git tags (default).** release-it reads the latest `vX.Y.Z` tag as the
    base and computes the bump from the commits. If there are NO release tags yet but a
    manifest carries a version (`package.json`/`pom.xml`/…), use that as the starting version;
@@ -182,6 +188,23 @@ Commits (the `release` task / `/wellforge:release`). Additive; never destructive
    conventional going forward (historical commits stay as-is; the first notes start clean at
    the current tag). **Strongly recommend the commit-lint gate** (Quality-gates layer) so it's
    enforced — say so explicitly. Do NOT run a release during adoption; that's `/wellforge:release`.
+7. **Write `RELEASING.md`** at the root — the project's runbook, which `/wellforge:release`
+   loads in every harness and which the team owns from here on. Same shape as a scaffold's:
+   a short header (generic procedure is WellForge's, this file is the project's; commands go
+   in `.release-it.json` hooks), then `## Before`, `## After`, `## Never`, and `## Release`
+   only from step 1. Fill it from the project, not from a template:
+   - Ask once (batched): what does the team check before releasing, what does it do by hand
+     after a tag (deploy, publish, verify, announce), and what must never happen?
+   - Each answer that is **a command** goes into `.release-it.json` as a hook
+     (`before:init` for a check, `after:release` for an action) — with release-it present —
+     and is NOT repeated in the file. A hook runs for every release; a line here only when
+     an agent reads it. Without release-it (step 1), it stays a line in the file.
+   - Each answer that needs **judgement** is a line in the file, saying who does it.
+   - Nothing to say for a section → keep it with one `(none yet — e.g. …)` line, so the team
+     sees where things go.
+   Add one line to the project's `AGENTS.md`: releases follow `RELEASING.md` — so a harness
+   or a person that never runs `/wellforge:release` still finds it. Never overwrite an
+   existing `RELEASING.md`: if one exists, report it and leave it.
 
 ## Stage 5b — Reusable template extraction (if chosen)
 
@@ -199,7 +222,8 @@ its own git history, not in this project's tree. Record `template-extraction` in
    adoption must be a single revertable diff. In add-layers mode, name only what was added,
    e.g. `chore: adopt WellForge release management`.
 2. Summary table: layer / added files / status (incl. measured baseline vs central
-   target, the release version source + files synced, the gap verdict from Stage 0, the
+   target, the release version source + files synced, what `RELEASING.md` holds and which
+   answers became `.release-it.json` hooks instead, the gap verdict from Stage 0, the
    extracted template's destination + verification result if Stage 5b ran, and any stage
    stopped with reasons — npm migration, Gradle, existing release tool, …).
 3. Suggest the natural next step: `/wellforge:spec <first feature>` — or

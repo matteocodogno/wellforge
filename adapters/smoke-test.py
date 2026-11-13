@@ -24,6 +24,11 @@ either way:
   f. (codex) native config parses — a hook wired to a missing script is a guard that
      and every wired hook script     refuses nothing, and Codex does not say so.
      exists
+  g. project-file contracts survive  — a command that loads a file the PROJECT owns (the
+     the translation                   release runbook) only works in another harness if the
+                                       generated command still names that file. A rewrite
+                                       that drops the paragraph ships a release command
+                                       that silently ignores the team's runbook.
 
 Exit 0 = every assertion passes. Non-zero = the adapter would ship broken; the output names the file.
 """
@@ -333,6 +338,35 @@ def f_native(out, adapter):
     return problems
 
 
+# command → strings its generated counterpart must still contain, in every adapter. Each
+# names a file the project owns and the command reads by path, so the behaviour is the same
+# in every harness only while the generated text keeps naming it.
+PROJECT_FILE_CONTRACTS = {
+    "release": ["RELEASING.md", "## Before", "## After", "## Never"],
+    "adopt": ["RELEASING.md"],
+}
+
+
+def g_project_files(out, spec):
+    problems = []
+    cdir, pattern, name_re = spec["commands"]
+    found = {}
+    for fp in glob.glob(os.path.join(out, cdir, pattern)):
+        m = re.fullmatch(name_re, artifact_stem(fp))
+        if m:
+            found[m.group("name")] = fp
+    for cmd, needles in PROJECT_FILE_CONTRACTS.items():
+        fp = found.get(cmd)
+        if fp is None:
+            problems.append(f"{cmd}: no generated command to check")
+            continue
+        text = open(fp).read()
+        for n in needles:
+            if n not in text:
+                problems.append(f"{os.path.relpath(fp, out)}: lost '{n}'")
+    return problems
+
+
 def d_routing(out, spec, adapter):
     """d. Generated `model:` values == routing × tiers for this tool. Reuses the plugin's
     own drift guard rather than re-deriving the expectation here."""
@@ -421,6 +455,16 @@ def main():
                     print(f"       {e}")
             else:
                 print("  ✓ f. native config parses; every wired hook runs an existing script")
+
+        total += 1
+        problems = g_project_files(out, spec)
+        if problems:
+            failed += 1
+            print(f"  ✗ g. {len(problems)} project-file contract(s) lost in translation:")
+            for e in problems[:20]:
+                print(f"       {e}")
+        else:
+            print(f"  ✓ g. project-file contracts kept ({', '.join(sorted(PROJECT_FILE_CONTRACTS))})")
 
         print()
         if failed:

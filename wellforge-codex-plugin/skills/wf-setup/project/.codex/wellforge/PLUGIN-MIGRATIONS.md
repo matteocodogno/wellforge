@@ -32,6 +32,26 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.63.0 — `/wellforge:release` loads the project's `RELEASING.md`
+
+- `/wellforge:release` reads `RELEASING.md` at the project root: `## Before` checks run
+  before the dry-run, `## After` steps after the tag (each outward-facing one with its own
+  go), `## Never` rules beside the hard ones, and an optional `## Release` section that
+  drives a project's own release tool instead of release-it. The file can add steps and
+  rules, never remove the dry-run, the confirmation or the clean-tree check. Command-only
+  lines are named as candidates for `.release-it.json` hooks.
+- `/wellforge:adopt` writes `RELEASING.md` in the Release management layer — from the team's
+  answers, commands into hooks — and, for a project that already has a release tool, a
+  runbook describing that tool instead of stopping. An adoption that already has the
+  release layer is offered "Release runbook" alone.
+- The same text reaches Codex, Copilot and OpenCode: their generated release commands are
+  checked to still name the file (`adapters/smoke-test.py`, check g).
+- **Action:** scaffolded projects get the file with template `v0.13.0` (`/wellforge:upgrade`);
+  adopted ones with `/wellforge:adopt` → "Release runbook". Without the file, the command
+  works as before and says so.
+
+---
+
 ## 2.62.2 — the last prompts that still predicted a sequential ADR number
 
 `/wellforge:plan` and the architect predicted an ADR path as "the next free 4-digit number",

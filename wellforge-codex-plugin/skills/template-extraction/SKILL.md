@@ -188,6 +188,10 @@ At the destination, produce:
   yet (report it as a gates gap, don't fabricate one).
 - `.release-it.json`: mirror the project's release setup if present; otherwise the contract's
   default (conventional-changelog + bumper for the stack's version files, `npm.publish:false`).
+- `RELEASING.md`: the runbook skeleton — header, `## Before`, `## After`, `## Never` with
+  `(none yet — …)` lines. Never the source project's own steps: hosts, environments and
+  people's names are exactly what the scrub removes. List it in the extracted `copier.yml`
+  under `_skip_if_exists`, so the team that scaffolds from it owns the file.
 
 ### Verify before hand-off (required)
 

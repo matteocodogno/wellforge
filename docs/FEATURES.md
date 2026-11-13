@@ -287,6 +287,12 @@ reusable workflows' `env` blocks and change **only via PR** to this repo:
   bumps `pom.xml` via a Maven hook). Every scaffold ships `.release-it.json` pre-wired:
   dry-run preview → confirm → version bump, `CHANGELOG.md`, `chore(release)` commit, `vX.Y.Z`
   tag, and a GitHub Release with generated notes — one reviewable, revertable release.
+  What is specific to one project lives in its own **`RELEASING.md`**: checks before, steps
+  after the tag (deploy, publish, announce), and rules — owned by the team, never
+  overwritten by `copier update`, created by the scaffold or by `/wellforge:adopt`, and
+  loaded by `/wellforge:release` in every supported harness. It can tighten the procedure,
+  never loosen it; a step that is just a command is pointed at a release-it hook, where it
+  runs for everyone who releases.
 - Projects call the workflows pinned to a `gates-v*` tag — a threshold bump propagates
   by a one-line ref bump, no re-scaffold.
 - Fresh scaffolds don't fail their own gate: modules under 50 lines skip coverage
