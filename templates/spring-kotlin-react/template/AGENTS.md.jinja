@@ -63,6 +63,8 @@ WellForge full-stack monorepo: **Spring Boot 4 Kotlin** backend + **React TypeSc
   has `required_linear_history`. `git log --oneline` is the changelog; `git bisect` stays honest.
 - **Conventional Commits** (`type(scope)!: description`) — CI (`commit messages`) lints every
   commit in a PR, and `mise run release` derives the version + CHANGELOG from them.
+- **Releases** follow `RELEASING.md` — this project's checks before, steps after and rules.
+  Read it before any release, whichever tool runs it (`/wellforge:release` loads it).
 - Run **`mise run git-policy`** once per clone: sets `merge.ff=only` and `pull.rebase=true`
   locally, so `git merge` / `git pull` cannot create a merge commit in the first place.
 

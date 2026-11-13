@@ -1,0 +1,36 @@
+# Releasing
+
+How this project cuts a release. The generic procedure — preview, confirm, release, report —
+is WellForge's: `/wellforge:release` in an agent session, `mise run release` by hand. This
+file holds only what is specific to **this** project. The team owns it: WellForge created it
+once, and `copier update` never overwrites it.
+
+Every agent reads it the same way — `/wellforge:release` loads it in Claude Code, Codex,
+Copilot and OpenCode alike, and `AGENTS.md` points here for anything else.
+
+**Commands go in `.release-it.json`, not here.** A step that is a command — a check, a build,
+a deploy, a publish — belongs in a release-it hook (`before:init`, `after:bump`,
+`after:release`), so it runs whenever anyone releases, with or without an agent. Written
+here, it runs only when an agent reads it. This file is for what needs judgement, and for
+the order a person has to respect.
+
+## Before
+
+<!-- Checked after the preflight, before the dry-run. A failed line stops the release. -->
+
+{% if ci == 'github' %}- The `quality` workflow is green on the commit being released (`gh run list --branch main --limit 1`).
+{% else %}- CI is green on the commit being released.
+{% endif %}
+## After
+
+<!-- Done in order, once the tag and the GitHub Release exist. Each says who does it. -->
+
+- (none yet — e.g. "deploy to staging and check the login flow by hand", "announce in #releases")
+
+## Never
+
+<!-- This project's rules. They only ever make a release stricter, never looser. -->
+
+- Never treat a release as a deployment. A tag versions the infrastructure code; changing
+  real infrastructure is `pulumi preview` then `pulumi up`, per stack, reviewed on its own.
+- (more as the team learns them — e.g. "no release while a prod stack has a pending preview")

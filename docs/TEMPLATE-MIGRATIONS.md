@@ -23,6 +23,24 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## v0.13.0 — every project gets a release runbook, `RELEASING.md`
+
+**Action: review one new file.** `copier update` adds `RELEASING.md` at the root: the
+project's own release steps — `## Before` (checks before the dry-run), `## After` (what
+follows the tag: deploy, publish, verify, announce) and `## Never` (rules) — which
+`/wellforge:release` loads in Claude Code, Codex, Copilot and OpenCode alike. `AGENTS.md`
+gains one line pointing to it.
+
+- It is **yours**: listed in `_skip_if_exists`, so later updates never overwrite it. Fill it
+  in when you next release, or leave the `(none yet — …)` lines.
+- A step that is a command (a check, a deploy, a publish) belongs in a release-it hook in
+  `.release-it.json` (`before:init`, `after:release`), not in the file: a hook runs for
+  everyone who releases, an agent or not. `/wellforge:release` points out lines that should
+  move.
+- Needs plugin 2.63.0 for `/wellforge:release` to read it; an older plugin ignores the file.
+
+---
+
 ## v0.12.1 — new projects pin `gates-v15`
 
 **Action: none required.** The `gates_ref` default moves from `gates-v12` to `gates-v15`, so

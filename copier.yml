@@ -13,6 +13,12 @@
 _subdirectory: "templates/{{ preset }}/template"
 _min_copier_version: "9.0.0"
 
+# Files the PROJECT owns after the first copy: rendered once, never overwritten by
+# `copier update` (an update that re-rendered them would erase what the team wrote, or
+# conflict on every upgrade). Keep this list to files whose whole content is the team's.
+_skip_if_exists:
+  - RELEASING.md
+
 # ── Migrations (Phase 6 lifecycle) ──
 # Per-version migration tasks run by `copier update` when crossing a version boundary.
 # Mechanical steps only (file moves, renames); judgment calls are /wellforge:upgrade's

@@ -58,6 +58,7 @@ sensible defaults so `copier copy --defaults` always produces a valid project.
 | `.wellforge/worktree-id.sh` | **presets with an application database.** POSIX-sh, executable. Derives this checkout's isolation identity from `sha256(git rev-parse --show-toplevel)`: `id`, `suffix`, `port`, `linked`. Read by the `[env]` block and by `db-guard.sh`; the worktree-isolation skill reads it instead of computing its own key |
 | `.wellforge/db-guard.sh` | **presets with an application database.** POSIX-sh, executable. Refuses to act on a database whose name is not this checkout's `WF_DB_NAME`. Wired into `dev`, `test` and every migration task as a `depends` |
 | `.release-it.json` | release-it config: `@release-it/conventional-changelog` (semver bump + CHANGELOG from Conventional Commits) + `@release-it/bumper` (per-service version files); `npm.publish:false`; JVM preset bumps `pom.xml` via a Maven `after:bump` hook. Drives `mise run release` / `/wellforge:release` |
+| `RELEASING.md` | **project-owned** release runbook that `/wellforge:release` loads in every harness: `## Before` (checks before the dry-run), `## After` (steps once the tag exists), `## Never` (rules that only tighten). Commands belong in `.release-it.json` hooks, not here — the file says so. Listed in `copier.yml` `_skip_if_exists`: rendered once, never overwritten by `copier update`. `AGENTS.md` points to it |
 | `README.md` | quickstart: `mise install && mise run dev`, layout table, link to CLAUDE.md |
 
 ## The `plugin` object — written by the command, never a copier answer
