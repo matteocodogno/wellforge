@@ -32,6 +32,17 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.63.1 — the `pulumi-gcp-ts` skill pins the Pulumi CLI exactly
+
+- The skill's pinned-versions table now says Pulumi CLI `3.274.1 (exact)`, matching template
+  `v0.13.1`: a floating `"3"` resolved to 3.275.0, whose re-uploaded asset failed mise's
+  cached checksum and broke `mise install` in every pulumi project. Agents that scaffold or
+  review a Pulumi project now propose the exact pin instead of the floating major.
+- **Action:** none for the plugin. Pulumi projects take the pin with template `v0.13.1`
+  (`/wellforge:upgrade`).
+
+---
+
 ## 2.63.0 — `/wellforge:release` loads the project's `RELEASING.md`
 
 - `/wellforge:release` reads `RELEASING.md` at the project root: `## Before` checks run
