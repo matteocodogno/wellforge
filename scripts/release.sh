@@ -5,6 +5,7 @@
 #   scripts/release.sh plugin   minor --execute                     # bump, check, commit, tag
 #   scripts/release.sh template minor --execute --push              # ...and push main + the tag
 #   scripts/release.sh gates    --execute --push                    # gates: always the next N
+#   ...  --skip-ci                  # tag without a green CI run on HEAD (banner + tag message)
 #
 # The CLI has its own script (release-cli.sh, two commits because of the Formula sha) —
 # `mise run release:cli` runs it. Plugin and template had only a prose checklist in
@@ -15,7 +16,10 @@
 # had changed, that the tag was free, or that the commit carried no other series' tag.
 #
 # What it does, in order, and refuses rather than guesses at each step:
-#   1. preflight  on main, clean tree, level with origin/main, tag free locally AND on origin
+#   1. preflight  on main, clean tree, level with origin/main, tag free locally AND on origin,
+#                 and the `ci` workflow GREEN on HEAD — the only place every preset's own gates
+#                 run. Step 4 is --quick and cannot see them: v0.13.0 and plugin-v2.63.0 were
+#                 cut on a main already red in generated-gates (pulumi-gcp-ts).
 #   2. notes      the migration entry for this version exists (PLUGIN- / TEMPLATE-MIGRATIONS):
 #                 it is written with the change, not at release time, so a missing one is a
 #                 change nobody examined — refused, not stubbed. Gates: something a consumer
@@ -35,7 +39,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 1
 
-SERIES=""; BUMP=""; EXECUTE=0; PUSH=0; SKIP_CHECKS=0; TOUCHED=()
+SERIES=""; BUMP=""; EXECUTE=0; PUSH=0; SKIP_CHECKS=0; SKIP_CI=0; TOUCHED=()
 say() { printf '%s\n' "$*"; }
 step() { printf '\n[%s/6] %s\n' "$1" "$2"; }
 die() {
@@ -56,8 +60,10 @@ while [ $# -gt 0 ]; do
     --execute) EXECUTE=1; shift ;;
     --push) PUSH=1; shift ;;
     # For the script's own test matrix, which cannot afford a full check-all per case.
-    --skip-checks) SKIP_CHECKS=1; shift ;;
-    -h|--help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    # Also skips the CI lookup: the matrix's origin is a local bare repo with no Actions.
+    --skip-checks) SKIP_CHECKS=1; SKIP_CI=1; shift ;;
+    --skip-ci) SKIP_CI=1; shift ;;
+    -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
@@ -100,7 +106,7 @@ case "$SERIES" in plugin) tag="plugin-v$next" ;; gates) tag="gates-v$next" ;; *)
 say "release $SERIES: $cur -> $next   (tag $tag)"
 if [ "$EXECUTE" -eq 0 ]; then
   say "plan only — re-run with --execute (and --push to publish). Steps:"
-  sed -n '17,30p' "$0" | sed 's/^# \{0,1\}/  /'
+  sed -n '18,34p' "$0" | sed 's/^# \{0,1\}/  /'
 fi
 
 # ── 1. preflight ──────────────────────────────────────────────────────────────────────
@@ -114,6 +120,31 @@ git fetch -q origin main 2>/dev/null || die "cannot fetch origin/main"
 git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "tag $tag already exists locally"
 [ -z "$(git ls-remote --tags origin "refs/tags/$tag" 2>/dev/null)" ] || die "tag $tag already exists on origin"
 say "  ok — main, clean, tag $tag free"
+
+# CI on the commit being released. A release commit only bumps version strings, so HEAD's run
+# is the verdict on everything the tag will carry.
+sha="$(git rev-parse HEAD)"
+# A plan reports what --execute would refuse; only --execute refuses.
+cifail() { if [ "$EXECUTE" -eq 1 ]; then die "$*"; else say "  note: --execute would refuse — $*"; fi; }
+if [ "$SKIP_CI" -eq 1 ]; then
+  say "  CI NOT CHECKED (--skip-ci) — the tag message will say so"
+else
+  [ "$(git rev-parse origin/main)" = "$sha" ] \
+    || cifail "HEAD is not on origin yet, so CI has not run on it — push main, wait for CI (gh run watch), then release"
+  command -v gh >/dev/null 2>&1 || cifail "gh is not installed — cannot read CI on HEAD (--skip-ci to tag anyway)"
+  if ! ci="$(gh run list --workflow ci.yml --branch main --commit "$sha" --limit 1 \
+          --json databaseId,status,conclusion --jq '.[0] | "\(.status)|\(.conclusion)|\(.databaseId)"' 2>/dev/null)"; then
+    cifail "cannot read CI from GitHub (gh auth status?) — --skip-ci to tag anyway"
+  else
+  IFS='|' read -r ci_status ci_concl ci_id <<<"$ci"
+  case "$ci_status/$ci_concl" in
+    completed/success) say "  ok — CI green on $(git rev-parse --short HEAD) (run $ci_id)" ;;
+    /*|null/*) cifail "no CI run for $(git rev-parse --short HEAD) on main yet — wait for it (gh run list --branch main)" ;;
+    completed/*) cifail "CI is $ci_concl on $(git rev-parse --short HEAD) — red means no tag. Fix it, or for a transient failure: gh run rerun $ci_id --failed" ;;
+    *) cifail "CI is still $ci_status on $(git rev-parse --short HEAD) — gh run watch $ci_id, then release" ;;
+  esac
+  fi
+fi
 
 # ── 2. migration notes — gates: what changed for the projects that pin it ────────────
 if [ "$SERIES" = gates ]; then
@@ -231,6 +262,7 @@ elif [ "$SERIES" = gates ]; then
 else
   msg="chore(template): release v$next"; tag_msg="template v$next"
 fi
+[ "$SKIP_CI" -eq 1 ] && [ "$SKIP_CHECKS" -eq 0 ] && tag_msg="$tag_msg (CI on the released commit NOT checked: --skip-ci)"
 git add -A -- "${TOUCHED[@]}" || die "git add failed"
 git commit -q -m "$msg" || die "commit failed"
 TOUCHED=()

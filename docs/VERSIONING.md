@@ -21,13 +21,14 @@ mise run check              # scripts/check-all.sh — every self-test, one exit
 mise run check:full         # ...plus one preset's OWN gates on a fresh scaffold
 ```
 
-**Red means no tag.** This is enforced in four places, deliberately overlapping, because the
-first three are all bypassable by one flag:
+**Red means no tag.** This is enforced in five places, deliberately overlapping, because the
+first four are all bypassable by one flag:
 
 | Where | What it does | Bypass |
 |---|---|---|
 | `scripts/release-cli.sh` | runs it before writing anything | `--skip-checks`, which prints a banner and records the skip in the commit body AND the tag |
 | `gates/hooks/pre-push` | runs it when the push carries a `v*` / `plugin-v*` / `gates-v*` / `cli-v*` tag; branch pushes are untouched | `git push --no-verify` |
+| `scripts/release.sh` | refuses `--execute` unless the `ci` workflow is **green on HEAD** on GitHub (HEAD pushed, run completed, success) — its own `check-all.sh` is `--quick` and never runs a preset's gates | `--skip-ci` (or `--skip-checks`), recorded in the tag message |
 | `/wellforge:release` | the procedure's first step | it is a prompt |
 | **`release-guard` in ci.yml** | requires **every** other job green, on tag pushes only | **none** |
 
@@ -402,7 +403,7 @@ Plugin, template and gates releases are cut by `scripts/release.sh`, the CLI by
 `gates/` or in a reusable workflow changed since the last `gates-vN`; its commit moves only
 the AGENTS.md versions line (the `gates_ref` default in `copier.yml` is a template file and
 moves with a template release). `release.sh` plans by default; `--execute` bumps every place the version lives, refuses a
-release with no migration entry, runs `check-all.sh` on the bumped tree, commits, tags and
+release with no migration entry or on a commit whose CI is not green on GitHub, runs `check-all.sh` on the bumped tree, commits, tags and
 asserts the commit carries one tag; `--push` publishes. Its matrix
 (`scripts/tests/release.test.sh`) runs in a throwaway clone against a local bare origin.
 

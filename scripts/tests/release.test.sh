@@ -2,7 +2,7 @@
 # Regression matrix for scripts/release.sh, run in a throwaway clone with a local bare
 # "origin" — nothing here can reach the real remote or tag the real repo.
 #
-# The working tree is overlaid onto the clone (every modified or untracked file), so the
+# The working tree is overlaid onto the clone (every changed, staged or untracked file), so the
 # script under test is the one on disk, not the last committed one.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -26,8 +26,10 @@ git clone -q "$T/origin.git" "$T/w" 2>/dev/null
 W="$T/w"; cd "$W" || exit 1
 git config user.email t@t; git config user.name T; git config commit.gpgsign false; git config tag.gpgsign false
 git config core.hooksPath /dev/null
-( cd "$ROOT" && git ls-files --modified --others --exclude-standard ) | while IFS= read -r f; do
-  [ -f "$ROOT/$f" ] && { mkdir -p "$(dirname "$W/$f")"; cp "$ROOT/$f" "$W/$f"; }
+# Changed vs HEAD (staged OR not — `ls-files --modified` missed staged files) plus untracked;
+# a file deleted in the working tree is deleted in the clone too.
+( cd "$ROOT" && { git diff --name-only HEAD; git ls-files --others --exclude-standard; } ) | sort -u | while IFS= read -r f; do
+  if [ -f "$ROOT/$f" ]; then mkdir -p "$(dirname "$W/$f")"; cp "$ROOT/$f" "$W/$f"; else rm -f -- "$W/$f"; fi
 done
 git add -A >/dev/null; git commit -qm "test: overlay working tree" --allow-empty; git push -q origin main
 
@@ -122,6 +124,36 @@ git fetch -q origin; git reset -q --hard origin/main
 git commit -q --allow-empty -m "chore: other"; git push -q origin main; git reset -q --hard HEAD~1
 out="$(scripts/release.sh template patch --skip-checks 2>&1)"; rc=$?
 expect "$rc" 1 "behind origin/main is refused" "$out"
+
+# 8. CI on HEAD gates --execute — v0.13.0 and plugin-v2.63.0 were cut on a main already red in
+# generated-gates, which step 4's --quick check-all cannot see. A fake gh answers for GitHub.
+git fetch -q origin; git reset -q --hard origin/main
+mkdir -p "$T/bin"
+fakegh() { printf '#!/bin/sh\necho "%s"\n' "$1" > "$T/bin/gh"; chmod +x "$T/bin/gh"; }
+runci() { PATH="$T/bin:$PATH" scripts/release.sh template patch "$@" 2>&1; }
+fakegh "completed|failure|42"
+out="$(runci --execute)"; rc=$?
+expect "$rc" 1 "--execute on a red CI is refused" "$out"
+printf '%s' "$out" | grep -q "gh run rerun 42 --failed" && ok || bad "the refusal names the rerun command" "$out"
+expect "$(git status --porcelain --untracked-files=no)" "" "...and touches nothing"
+expect "$(git tag --points-at HEAD)" "" "...and tags nothing"
+out="$(runci)"
+printf '%s' "$out" | grep -q "would refuse" && ok || bad "a plan on a red CI reports that --execute would refuse" "$out"
+printf '%s' "$out" | grep -q "\[2/6\]" && ok || bad "...and carries on planning" "$out"
+fakegh "in_progress||7"
+out="$(runci --execute)"; rc=$?
+expect "$rc" 1 "--execute while CI is still running is refused" "$out"
+printf '%s' "$out" | grep -q "gh run watch 7" && ok || bad "...naming the run to watch" "$out"
+fakegh ""
+out="$(runci --execute)"; rc=$?
+expect "$rc" 1 "--execute with no CI run for HEAD is refused" "$out"
+fakegh "completed|success|9"
+out="$(runci)"; rc=$?
+printf '%s' "$out" | grep -q "CI green on" && ok || bad "a green CI is reported as such" "$out"
+git commit -q --allow-empty -m "chore: unpushed"
+out="$(runci --execute)"; rc=$?
+expect "$rc" 1 "--execute on a commit not yet on origin is refused (CI never saw it)" "$out"
+git reset -q --hard origin/main
 
 echo
 echo "release.sh: $PASS passed, $FAIL failed"
