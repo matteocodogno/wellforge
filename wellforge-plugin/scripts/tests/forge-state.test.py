@@ -403,6 +403,7 @@ def drifted(r, d):
     # check) and report clean FAILs instead of an AttributeError.
     fs._DIRTY_CACHE.clear()
     getattr(fs, "_CLASS_CACHE", {}).clear()
+    getattr(fs, "_CONTENT_COMMIT_CACHE", {}).clear()
     return fs.compute_drift(d, r)
 
 
@@ -489,6 +490,65 @@ _fm = _fm.replace("status: in-progress", "status: done\ndone: 2026-09-20")
 open(os.path.join(p, "spec.md"), "w").write("---" + _fm + "---" + _body)
 check("closing a production feature leaves the gate passing",
       one(state(r), "001-close")["done_gate"]["passes"], True)
+shutil.rmtree(r, ignore_errors=True)
+
+# The close, COMMITTED. The exemption above held only while `status: done` was uncommitted:
+# once the closing commit landed, `git log -1 -- spec.md` was that commit, newer than
+# tasks.md, and every closed feature read as drifted in /status, /triage and the gate
+# (reported by a user on plugin 2.58.0).
+r, d = drift_fixture()
+open(os.path.join(d, "spec.md"), "w").write(spec_text(status="done", extra="\ndone: 2026-09-20"))
+commit(r, "chore: close 001")
+res = drifted(r, d)
+check("committed close (lifecycle-only commit) is NOT drift", res["drifted"], False)
+
+# ...and stays not-drift through MORE bookkeeping commits on top.
+open(os.path.join(d, "spec.md"), "w").write(spec_text(status="done", extra="\ndone: 2026-09-21"))
+commit(r, "chore: fix done date")
+check("two lifecycle-only commits in a row are still NOT drift", drifted(r, d)["drifted"], False)
+
+# A real requirement change after the close IS drift — the skip must not hide it.
+time.sleep(1.05)
+open(os.path.join(d, "spec.md"), "w").write(
+    spec_text(status="done", extra="\ndone: 2026-09-21", body="\n\n# X\n\nA NEW requirement.\n"))
+commit(r, "feat: change requirement")
+check("a committed body change after the close IS drift", drifted(r, d)["drifted"], True)
+shutil.rmtree(r, ignore_errors=True)
+
+# A content change BEFORE tasks, then a lifecycle commit: no drift (tasks re-synced after).
+r, d = drift_fixture()
+open(os.path.join(d, "spec.md"), "w").write(spec_text(body="\n\n# X\n\nReworded.\n"))
+commit(r, "docs: spec")
+open(os.path.join(d, "tasks.md"), "a").write("- [x] T2: resynced\n")
+commit(r, "docs: tasks resynced")
+open(os.path.join(d, "spec.md"), "w").write(spec_text(status="done", body="\n\n# X\n\nReworded.\n"))
+commit(r, "chore: close")
+check("content → tasks re-sync → committed close: NOT drift", drifted(r, d)["drifted"], False)
+shutil.rmtree(r, ignore_errors=True)
+
+# A content change and a status flip in ONE commit is content: drift if tasks are older.
+r, d = drift_fixture()
+open(os.path.join(d, "spec.md"), "w").write(spec_text(status="done", body="\n\n# X\n\nChanged too.\n"))
+commit(r, "chore: close and edit")
+check("a closing commit that ALSO changes the body IS drift", drifted(r, d)["drifted"], True)
+shutil.rmtree(r, ignore_errors=True)
+
+# The committed close through the gate, end to end.
+r = repo()
+p = feature(r, "001-closed",
+            spec_fm={"id": 1, "slug": "closed", "status": "in-progress", "rigor": "production"},
+            tasks=[True], eval_fm={"spec": "001", "verdict": "PASS", "score": 90})
+trace(r, "001-closed", verdicts={"qe": "PASS", "security": "PASS", "eval": "PASS"})
+commit(r)
+time.sleep(1.05)
+_orig = open(os.path.join(p, "spec.md")).read()
+_fm, _body = _orig.split("---", 2)[1], _orig.split("---", 2)[2]
+_fm = _fm.replace("status: in-progress", "status: done\ndone: 2026-09-20")
+open(os.path.join(p, "spec.md"), "w").write("---" + _fm + "---" + _body)
+commit(r, "chore: close 001")
+_f = one(state(r), "001-closed")
+check("after the closing COMMIT the gate still passes", _f["done_gate"]["passes"], True)
+check("...and the feature reports no drift", _f.get("drift", {}).get("drifted", False), False)
 shutil.rmtree(r, ignore_errors=True)
 
 # ── last_activity: a directory mtime does not move when a file is edited ─────

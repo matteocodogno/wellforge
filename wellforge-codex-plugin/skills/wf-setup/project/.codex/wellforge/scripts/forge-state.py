@@ -296,15 +296,69 @@ def _change_class(path, repo):
         now = open(path, encoding="utf-8", errors="replace").read()
     except OSError:
         return "content"
-    fm_head, body_head = _split_frontmatter(head)
-    fm_now, body_now = _split_frontmatter(now)
-    if body_head != body_now:
+    return _classify(head, now)
+
+
+def _classify(old, new):
+    """clean | lifecycle | content, for two versions of the same artifact."""
+    fm_old, body_old = _split_frontmatter(old)
+    fm_new, body_new = _split_frontmatter(new)
+    if body_old != body_new:
         return "content"
-    a, b = _fm_fields(fm_head), _fm_fields(fm_now)
+    a, b = _fm_fields(fm_old), _fm_fields(fm_new)
     changed = {k for k in set(a) | set(b) if a.get(k) != b.get(k)}
     if not changed:
         return "clean"
     return "lifecycle" if changed <= LIFECYCLE_FIELDS else "content"
+
+
+def _show(repo, rev, rel):
+    """A path's text at a revision, or None when it does not exist there."""
+    try:
+        out = subprocess.run(["git", "-C", repo, "show", f"{rev}:{rel}"],
+                             capture_output=True, text=True, timeout=10)
+    except Exception:  # noqa: BLE001
+        return None
+    return out.stdout if out.returncode == 0 else None
+
+
+_CONTENT_COMMIT_CACHE = {}
+# How far back to look for a commit that changed more than lifecycle fields. A spec with
+# more consecutive bookkeeping-only commits than this is treated as changed at the oldest
+# one examined — the conservative answer (it can report drift, never hide it).
+_CONTENT_COMMIT_DEPTH = 50
+
+
+def _last_content_commit(path, repo):
+    """The newest commit that changed what this artifact ASKS FOR, skipping commits that
+    only touched lifecycle frontmatter.
+
+    The committed half of change_class. `/wellforge:done` writes `status: done` into
+    spec.md and the user commits it: from then on `git log -1 -- spec.md` is the closing
+    commit, newer than tasks.md, and every closed feature read as drifted — in /status,
+    /triage and the done gate — although the exemption held while the edit was uncommitted.
+    A commit that adds or deletes the file, or has no parent, always counts as content.
+    """
+    key = (path, repo)
+    if key in _CONTENT_COMMIT_CACHE:
+        return _CONTENT_COMMIT_CACHE[key]
+    rel = _rel(path, repo)
+    res = None
+    if rel:
+        try:
+            out = subprocess.run(["git", "-C", repo, "log", f"-{_CONTENT_COMMIT_DEPTH}",
+                                  "--format=%H", "--", rel],
+                                 capture_output=True, text=True, timeout=10)
+            shas = out.stdout.split()
+        except Exception:  # noqa: BLE001
+            shas = []
+        for sha in shas:
+            res = sha
+            new, old = _show(repo, sha, rel), _show(repo, f"{sha}^", rel)
+            if new is None or old is None or _classify(old, new) == "content":
+                break
+    _CONTENT_COMMIT_CACHE[key] = res
+    return res
 
 
 def last_change(path, repo):
@@ -322,8 +376,12 @@ def last_change(path, repo):
     cls = change_class(path, repo)
     if cls in ("content", "untracked") and os.path.exists(path):
         return _mtime_utc(path), ("mtime-untracked" if cls == "untracked" else "mtime-dirty")
+    # The committed clock reads the last CONTENT commit — the same rule _newer applies — so
+    # the date reported beside a drift verdict is the date the requirements moved.
+    sha = _last_content_commit(path, repo)
     try:
-        out = subprocess.run(["git", "-C", repo, "log", "-1", "--format=%cI", "--", path],
+        out = subprocess.run(["git", "-C", repo, "log", "-1", "--format=%cI",
+                              *([sha] if sha else []), "--", path],
                              capture_output=True, text=True, timeout=10)
         stamp = out.stdout.strip()
         if stamp:
@@ -472,7 +530,9 @@ def _newer(a_path, b_path, repo, order):
         if os.path.exists(a_path) and os.path.exists(b_path):
             return os.path.getmtime(a_path) > os.path.getmtime(b_path)
         return None
-    a, b = _last_commit(a_path, repo), _last_commit(b_path, repo)
+    # a_path is spec.md / plan.md: its last commit that changed REQUIREMENTS, so a committed
+    # close (`status: done`) is not drift either. b_path is tasks.md, whose every commit counts.
+    a, b = _last_content_commit(a_path, repo), _last_commit(b_path, repo)
     if a and b and a in order and b in order:
         if a == b:
             return False                      # same commit → changed together, not drift
@@ -667,6 +727,7 @@ def _eval_staleness(d, root, specs_dir, has_eval_report):
 def build(specs_dir, runs_dir, feature_filter, root):
     _DIRTY_CACHE.clear()          # see dirty_paths: cached per build, never per process
     _CLASS_CACHE.clear()
+    _CONTENT_COMMIT_CACHE.clear()
     rr = _run_report()
     schema = load_schema()
     # A trace that will not load is reported ONCE, at the top level, not silently dropped:

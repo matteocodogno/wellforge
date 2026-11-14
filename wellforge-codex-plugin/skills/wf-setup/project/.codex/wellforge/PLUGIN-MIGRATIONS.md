@@ -32,6 +32,22 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.63.2 — a committed close no longer reads as spec drift
+
+- `forge-state.py` exempted a lifecycle-only edit to `spec.md` (`status: done`, `done:`,
+  `rigor:` …) only while it was **uncommitted**. Once the closing commit landed,
+  `git log -1 -- spec.md` was that commit, newer than `tasks.md`, so every closed feature
+  showed as drifted in `/wellforge:status` and `/wellforge:triage`, and the done gate failed
+  — inviting a `/wellforge:tasks` re-sync that `/wellforge:done` says not to run.
+- The drift check now dates `spec.md` / `plan.md` by their last commit that changed
+  **content** (the body, or a non-lifecycle frontmatter field), skipping bookkeeping-only
+  commits — the same rule already applied to uncommitted edits. A real requirement change
+  after a close is still drift.
+- **Action:** none. Features that showed false drift after a close read correctly once the
+  plugin is updated; do not re-sync their `tasks.md` for it.
+
+---
+
 ## 2.63.1 — the `pulumi-gcp-ts` skill pins the Pulumi CLI exactly
 
 - The skill's pinned-versions table now says Pulumi CLI `3.274.1 (exact)`, matching template
