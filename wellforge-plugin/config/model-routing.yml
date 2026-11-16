@@ -85,9 +85,10 @@ agents:
 #     ask for one ("consult the advisor before you continue").
 #   - Each call reads the WHOLE transcript at the advisor's rate, uncached. It is cheap
 #     where turns are many and decisions few (a dev agent's task) and dear in a long
-#     main loop. Advisor usage shows in /usage, NOT in run-report.py — until it does,
-#     an advised run's cost is under-reported, so it is not evidence for moving an
-#     agent DOWN a tier.
+#     main loop. run-report.py prices a SUBAGENT's advisor calls into the estimated cost
+#     and `--rework` lists the advised agents; a main-loop advisor shows only in /usage.
+#     An advised agent's rework rate is evidence about tier + advisor, not about the tier
+#     alone, so it is not evidence for moving that agent DOWN a tier.
 #   - An advisor must rank at or above the model it advises: a frontier agent (architect,
 #     evaluator) gets frontier-advising-frontier, at full price, on every call it makes.
 #   - It is the user's own setting (it bills their account), so the plugin never sets it.

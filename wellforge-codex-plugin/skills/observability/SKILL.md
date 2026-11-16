@@ -86,9 +86,19 @@ keep them committed unless the team chooses otherwise. `.events.jsonl` is gitign
   `.events.jsonl` at read time (don't try to fill them inline — you can't read your own
   subagents' token counts reliably mid-run).
 - **Event shape** (one line per subagent completion, written by `trace-subagent.sh`):
-  `{ts, event, model, agent_type, agent_id, session_id, input_tokens, output_tokens}`.
+  `{ts, event, model, agent_type, agent_id, session_id, input_tokens, output_tokens,
+  advisor_calls, advisor_model, advisor_input_tokens, advisor_output_tokens}`.
   Every field except `ts`/`event` is **optional** — the hook records what the harness
   exposes and omits the rest.
+- **Advisor fields** are present only when the subagent consulted an advisor (see
+  `rigor-tiers`). The API keeps advisor tokens OUT of the executor's usage
+  (`usage.iterations[]`, `type: "advisor_message"`, with its own `model`), because they bill
+  at the advisor's rate. So `input_tokens`/`output_tokens` stay the agent's own, and
+  `run-report.py` prices the advisor tokens at `advisor_model` and adds them to the
+  estimated cost. They are summed over the whole subagent transcript, de-duplicated by
+  message id, because Claude Code repeats a message's usage on each of its content-block
+  lines. A call with no token data still counts in `advisor_calls`. The report then shows
+  its tokens as a floor, never as zero.
 - **`plugin_version`** is the plugin that produced the run. Traces outlive the plugin that
   wrote them: the agent roster, the tier rules, the done gate and this very schema all move
   with the plugin, so a trace read a year later needs to say which rules it was produced
@@ -218,6 +228,13 @@ The semantic trace (who ran, verdicts, drift) is **exact**. The token/cost layer
 - It **cannot see the main orchestrating loop** — most of the consumption — because only
   subagents trigger the hook.
 - It **ignores cache read/write tokens**, which dominate cost on cache-heavy sessions.
+- It sees **subagents' advisor calls only**. A main-loop advisor (the `spike` tier, the
+  orchestrating session) is invisible, as the main loop is. `run-report.py --rework` lists
+  the advised agents, because their rework rate reflects tier + advisor, not the tier alone.
+  It is not evidence for moving them down a tier. The advisor-token parsing follows the
+  API's documented shape and has not yet been checked against a real Claude Code transcript
+  that contains an advisor call. Verify it on the first advised run before trusting the
+  numbers.
 - Rates come from `config/model-pricing.yml` — the single table, no embedded copy. If it
   can't be read, the report says cost is unavailable rather than guessing; if a model id
   matches no key, the default rate is used and the run is flagged as inexact. The rates

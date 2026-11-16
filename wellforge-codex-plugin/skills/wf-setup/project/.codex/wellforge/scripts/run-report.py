@@ -120,10 +120,17 @@ def attribute(events, runs):
 
 
 def totals(evts, pricing):
-    """Sum an already-attributed list of events → (in, out, cost|None, n, exact_rates)."""
+    """Sum an already-attributed list of events → (in, out, cost|None, n, exact_rates).
+
+    `in`/`out` are the EXECUTOR's tokens (the agent's own model). The cost also includes
+    advisor sub-inferences, priced at the ADVISOR's model: the API keeps them out of the
+    executor's usage because they bill at a different rate, and leaving them out of the cost
+    is how "mid agent + frontier advisor" would read as cheaper than it is.
+    """
     tok_in = tok_out = 0
     cost = 0.0
     all_exact = True
+    unit = (pricing or {}).get("unit_tokens", 1_000_000)
     for e in evts:
         ti = e.get("input_tokens") or 0
         to = e.get("output_tokens") or 0
@@ -132,9 +139,33 @@ def totals(evts, pricing):
         rate, exact = price_for(e.get("model"), pricing)
         all_exact = all_exact and exact
         if rate and pricing:
-            unit = pricing.get("unit_tokens", 1_000_000)
             cost += ti / unit * rate["input"] + to / unit * rate["output"]
+        ai = e.get("advisor_input_tokens") or 0
+        ao = e.get("advisor_output_tokens") or 0
+        if ai or ao:
+            arate, aexact = price_for(e.get("advisor_model"), pricing)
+            all_exact = all_exact and aexact
+            if arate and pricing:
+                cost += ai / unit * arate["input"] + ao / unit * arate["output"]
     return tok_in, tok_out, (round(cost, 4) if pricing else None), len(evts), all_exact
+
+
+def advisor_totals(evts):
+    """Advisor consultations in an attributed list of events → {calls, input_tokens,
+    output_tokens, tokens_known}. `tokens_known` is False when some call carried no token
+    data (an older harness): the tokens are then a floor, not a total."""
+    calls = ti = to = 0
+    known = True
+    for e in evts:
+        n = e.get("advisor_calls") or 0
+        if not n:
+            continue
+        calls += n
+        if e.get("advisor_input_tokens") is None and e.get("advisor_output_tokens") is None:
+            known = False
+        ti += e.get("advisor_input_tokens") or 0
+        to += e.get("advisor_output_tokens") or 0
+    return {"calls": calls, "input_tokens": ti, "output_tokens": to, "tokens_known": known}
 
 
 def load_budgets(path=None):
@@ -148,7 +179,12 @@ def load_budgets(path=None):
         return None
 
 
-def rework(runs):
+def _agent_name(agent_type):
+    """`wellforge:backend-dev` (a plugin agent's type) → `backend-dev` (the trace's name)."""
+    return (agent_type or "").split(":")[-1].lower()
+
+
+def rework(runs, attributed=None):
     """Rework rounds per feature and per agent — the evidence model-routing.yml asks for.
 
     A REWORK ROUND is a run whose `qe` or `security` verdict is FAIL: work that had to be
@@ -161,6 +197,11 @@ def rework(runs):
 
     Deliberately NOT inferred: whether the rework was the agent's fault. A failing AC and a
     failing implementation both land here, and separating them is judgement, not counting.
+
+    Also reported, when token events are given: ADVISOR CALLS per agent. An agent that was
+    advised ran at "its tier + a frontier advisor", so its rework rate is not evidence about
+    its tier alone — a low rate there does not justify moving it down, and its advisor cost
+    belongs in the comparison (model-routing.yml).
     """
     by_feature, by_agent, repeats = {}, {}, {}
     for r in runs:
@@ -181,7 +222,15 @@ def rework(runs):
         for a, n in seen.items():
             if n > 1:
                 repeats[a] = repeats.get(a, 0) + (n - 1)
-    return {"by_feature": by_feature, "by_agent": by_agent, "repeat_dispatches": repeats}
+    advised = {}
+    for r in runs:
+        for e in (attributed or {}).get(r.get("run_id"), []):
+            n = e.get("advisor_calls") or 0
+            if n:
+                a = _agent_name(e.get("agent_type")) or "(unknown agent)"
+                advised[a] = advised.get(a, 0) + n
+    return {"by_feature": by_feature, "by_agent": by_agent, "repeat_dispatches": repeats,
+            "advisor_calls_by_agent": advised}
 
 
 def budget_report(report, runs, budgets, attributed=None):
@@ -430,6 +479,7 @@ def main():
     report = []
     for r in runs:
         ti, to, cost, n, exact = totals(attributed.get(r.get("run_id"), []), pricing)
+        adv = advisor_totals(attributed.get(r.get("run_id"), []))
         drift_open = [d for d in r.get("drift_events", []) if not d.get("resolved")]
         entry = {
             "run_id": r.get("run_id"), "command": r.get("command"), "feature": r.get("feature"),
@@ -438,6 +488,9 @@ def main():
             "verdicts": r.get("verdicts", {}), "drift_open": len(drift_open),
             "input_tokens": ti, "output_tokens": to, "est_cost_usd": cost, "events": n,
             "cost_rates_exact": exact,
+            "advisor_calls": adv["calls"], "advisor_input_tokens": adv["input_tokens"],
+            "advisor_output_tokens": adv["output_tokens"],
+            "advisor_tokens_known": adv["tokens_known"],
             "terse": bool(r.get("terse", False)),
         }
 
@@ -463,7 +516,7 @@ def main():
     if args.budget:
         envelope["budget"] = budget_report(report, runs, load_budgets(args.budgets), attributed)
     if args.rework:
-        envelope["rework"] = rework(runs)
+        envelope["rework"] = rework(runs, attributed)
 
     if args.json:
         print(json.dumps(envelope, indent=2))
@@ -483,6 +536,11 @@ def main():
         print(f"    verdicts: {v} · {toks}{drift}")
         if downgrade:
             print(downgrade)
+        if x["advisor_calls"]:
+            atok = (f"{x['advisor_input_tokens']}/{x['advisor_output_tokens']} tok"
+                    + ("" if x["advisor_tokens_known"] else ", some calls without token data"))
+            print(f"    advisor: {x['advisor_calls']} call(s) · {atok} — in the est. cost, "
+                  f"at the advisor's rate")
         if "output_tokens_saved" in x:
             print(
                 f"    terse: saved ~{x['output_tokens_saved']} output tok "
@@ -529,6 +587,9 @@ def main():
         if rw["by_agent"]:
             print("  by agent: " + ", ".join(f"{a}={n}" for a, n in
                                              sorted(rw["by_agent"].items(), key=lambda kv: -kv[1])))
+        if rw.get("advisor_calls_by_agent"):
+            print("  advised (rework there reflects tier + advisor, not the tier alone): " +
+                  ", ".join(f"{a}×{n}" for a, n in sorted(rw["advisor_calls_by_agent"].items())))
         if rw["repeat_dispatches"]:
             print("  re-dispatched within one run: " +
                   ", ".join(f"{a}×{n}" for a, n in sorted(rw["repeat_dispatches"].items())))

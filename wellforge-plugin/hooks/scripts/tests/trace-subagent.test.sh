@@ -89,6 +89,50 @@ check "transcript-path missing file" \
   '{"agent_type":"qe","transcript_path":"/nonexistent/nope.jsonl"}' \
   '.agent_type=="qe" and (has("input_tokens")|not)'
 
+# ── 4b. advisor sub-inferences ────────────────────────────────────────────────
+# The API reports advisor tokens in usage.iterations[] (type "advisor_message", own model)
+# and NOT in the top-level usage. Claude Code writes one transcript line per content block
+# and repeats the message's usage on each — this transcript does exactly that, so a hook
+# that sums per line reports 2 calls and 2× the tokens instead of 1.
+ADV="$TMPROOT/advisor.jsonl"
+ITS='"iterations":[{"type":"message","input_tokens":40,"output_tokens":10},{"type":"advisor_message","model":"claude-opus-5-5","input_tokens":823,"output_tokens":1612},{"type":"message","input_tokens":60,"output_tokens":90}]'
+{
+  printf '%s\n' '{"type":"assistant","message":{"id":"m0","model":"claude-sonnet-5-5","content":[{"type":"text","text":"start"}],"usage":{"input_tokens":5,"output_tokens":5}}}'
+  printf '%s\n' "{\"type\":\"assistant\",\"message\":{\"id\":\"m1\",\"model\":\"claude-sonnet-5-5\",\"content\":[{\"type\":\"server_tool_use\",\"id\":\"srv1\",\"name\":\"advisor\",\"input\":{}}],\"usage\":{\"input_tokens\":100,\"output_tokens\":100,$ITS}}}"
+  printf '%s\n' "{\"type\":\"assistant\",\"message\":{\"id\":\"m1\",\"model\":\"claude-sonnet-5-5\",\"content\":[{\"type\":\"advisor_tool_result\",\"tool_use_id\":\"srv1\"}],\"usage\":{\"input_tokens\":100,\"output_tokens\":100,$ITS}}}"
+  printf '%s\n' '{"type":"assistant","message":{"id":"m2","model":"claude-sonnet-5-5","content":[{"type":"text","text":"done"}],"usage":{"input_tokens":300,"output_tokens":400}}}'
+} > "$ADV"
+check "advisor: one call, de-duplicated across split lines" \
+  "$(jq -cn --arg tp "$ADV" '{agent_type:"backend-dev", transcript_path:$tp}')" \
+  '.advisor_calls==1 and .advisor_model=="claude-opus-5-5"
+   and .advisor_input_tokens==823 and .advisor_output_tokens==1612
+   and .input_tokens==300 and .output_tokens==400 and .model=="claude-sonnet-5-5"'
+
+# The last usage line itself carries iterations: the executor count must be the message's
+# top-level total, never the last iteration (which the old recursive search returned).
+ADV_LAST="$TMPROOT/advisor-last.jsonl"
+printf '%s\n' "{\"type\":\"assistant\",\"message\":{\"id\":\"m9\",\"model\":\"claude-sonnet-5-5\",\"content\":[{\"type\":\"server_tool_use\",\"id\":\"srv9\",\"name\":\"advisor\",\"input\":{}}],\"usage\":{\"input_tokens\":100,\"output_tokens\":100,$ITS}}}" > "$ADV_LAST"
+check "advisor on the last line: executor tokens are the top-level total" \
+  "$(jq -cn --arg tp "$ADV_LAST" '{agent_type:"qe", transcript_path:$tp}')" \
+  '.input_tokens==100 and .output_tokens==100 and .advisor_input_tokens==823'
+
+check "advisor: inline payload iterations" \
+  "{\"agent_type\":\"frontend-dev\",\"model\":\"claude-sonnet-5-5\",\"usage\":{\"input_tokens\":100,\"output_tokens\":100,$ITS}}" \
+  '.advisor_calls==1 and .advisor_input_tokens==823 and .input_tokens==100'
+
+# A call whose usage carries no iterations (an older harness): the call is still counted,
+# the tokens stay absent — an honest "unknown", never a zero, and the model stays in its
+# own field (the IFS trap: empty middle fields must not shift it).
+ADV_NOTOK="$TMPROOT/advisor-notok.jsonl"
+printf '%s\n' '{"type":"assistant","message":{"id":"m3","content":[{"type":"server_tool_use","id":"srv3","name":"advisor","input":{}}],"usage":{"input_tokens":7,"output_tokens":8}}}' > "$ADV_NOTOK"
+check "advisor: call without token data" \
+  "$(jq -cn --arg tp "$ADV_NOTOK" '{agent_type:"qe", transcript_path:$tp}')" \
+  '.advisor_calls==1 and (has("advisor_input_tokens")|not) and (has("advisor_model")|not)'
+
+check "no advisor: no advisor keys" \
+  '{"agent_type":"qe","usage":{"input_tokens":1,"output_tokens":2}}' \
+  '(has("advisor_calls")|not) and (has("advisor_input_tokens")|not)'
+
 # ── 5. non-numeric tokens must not crash ──────────────────────────────────────
 # `--argjson in "n/a"` aborted the whole jq invocation, and with stderr discarded the event
 # vanished silently. The count degrades to an absent key; everything else survives.

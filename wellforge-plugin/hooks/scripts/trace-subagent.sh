@@ -48,17 +48,70 @@ read_usage() {
       # last line carrying a usage object
       last=$(grep -F '"usage"' "$tp" 2>/dev/null | tail -1)
       if [ -n "$last" ]; then
-        IN=$(echo "$last"  | jq -r '(.. | objects | select(has("input_tokens")).input_tokens) // empty' 2>/dev/null | tail -1)
-        OUT=$(echo "$last" | jq -r '(.. | objects | select(has("output_tokens")).output_tokens) // empty' 2>/dev/null | tail -1)
+        # The message's TOP-LEVEL usage first. A recursive search for `input_tokens` would
+        # also descend into `usage.iterations[]` and, with `tail -1`, return the last
+        # ITERATION — with an advisor in the session that can be the advisor's own
+        # sub-inference, booked at the executor's model. The recursive search stays only as
+        # the fallback for a shape this hook has not seen, and skips typed iterations.
+        IN=$(echo "$last"  | jq -r '(.message.usage.input_tokens // .usage.input_tokens //
+             ([.. | objects | select(has("input_tokens") and (has("type")|not)).input_tokens] | last)) // empty' 2>/dev/null)
+        OUT=$(echo "$last" | jq -r '(.message.usage.output_tokens // .usage.output_tokens //
+             ([.. | objects | select(has("output_tokens") and (has("type")|not)).output_tokens] | last)) // empty' 2>/dev/null)
         MODEL=$(echo "$last" | jq -r '(.message.model // .model // empty)' 2>/dev/null)
       fi
     fi
   fi
 }
 
+# Advisor sub-inferences (Claude Code's advisor tool). The API reports them in
+# `usage.iterations[]` as `type: "advisor_message"` entries with their own `model`, and does
+# NOT roll them into the top-level usage — they bill at the advisor's rate. Without this,
+# "mid agent + frontier advisor" reads as cheaper than it is in run-report.py.
+#
+# Unlike the executor tokens above (last usage line only — a known under-count), advisor
+# calls are summed over the WHOLE transcript: they are few, and a consultation in the middle
+# of a task is the one the last line never shows. Claude Code writes one transcript line per
+# content block and repeats the message's usage on each, so iterations are de-duplicated by
+# message id and calls are counted by their unique server_tool_use id — summing per line
+# would multiply every advisor call by the number of blocks in its message.
+# Sets ADV_CALLS / ADV_IN / ADV_OUT / ADV_MODEL as globals (same reason as read_identity).
+ADVISOR_JQ='
+  [ .[] | select(type=="object") ] as $lines
+  | ([ $lines[] | {id: (.message.id // .uuid // null),
+                   it: [ (.message.usage // .usage // {}) | .iterations[]?
+                         | select(type=="object" and .type=="advisor_message") ]} ]
+     | group_by(.id) | map(if .[0].id == null then .[] else .[0] end) | map(.it[])) as $its
+  | ([ $lines[] | .message.content[]?
+       | select(type=="object" and .type=="server_tool_use" and .name=="advisor") | .id ]
+     | unique | length) as $blocks
+  | { calls: ([$blocks, ($its|length)] | max),
+      in:  ([ $its[] | .input_tokens  | numbers ] | add),
+      out: ([ $its[] | .output_tokens | numbers ] | add),
+      model: ([ $its[] | .model | strings ] | last) }
+  | "\(.calls)\t\(.in // "-")\t\(.out // "-")\t\(.model // "-")"'
+read_advisor() {
+  local tp row
+  row=$(echo "$INPUT" | jq -r '[ . ] | '"$ADVISOR_JQ" 2>/dev/null)
+  if [ "${row%%$'\t'*}" = "0" ] || [ -z "$row" ]; then
+    tp=$(echo "$INPUT" | jq -r '(.transcript_path // empty)' 2>/dev/null)
+    if [ -n "$tp" ] && [ -f "$tp" ]; then
+      # Only lines that can carry advisor data; jq -s on a whole transcript is the slow path.
+      row=$(grep -F '"advisor' "$tp" 2>/dev/null | jq -s -r "$ADVISOR_JQ" 2>/dev/null)
+    fi
+  fi
+  # Every field is non-empty ("-" stands for absent), so the IFS-collapsing trap described
+  # above cannot shift a later value into an earlier field.
+  IFS=$'\t' read -r ADV_CALLS ADV_IN ADV_OUT ADV_MODEL <<< "${row:-0}"
+  [ "$ADV_IN" = "-" ] && ADV_IN=""; [ "$ADV_OUT" = "-" ] && ADV_OUT=""
+  [ "$ADV_MODEL" = "-" ] && ADV_MODEL=""
+  [ "${ADV_CALLS:-0}" = "0" ] && { ADV_CALLS=""; ADV_IN=""; ADV_OUT=""; ADV_MODEL=""; }
+}
+
 IN=""; OUT=""; MODEL=""; ATYPE=""; AID=""; SID=""
+ADV_CALLS=""; ADV_IN=""; ADV_OUT=""; ADV_MODEL=""
 read_usage
 read_identity
+read_advisor
 
 RUNS_DIR="$PROJECT_DIR/.forge/runs"
 mkdir -p "$RUNS_DIR" 2>/dev/null || exit 0
@@ -83,11 +136,15 @@ mkdir -p "$RUNS_DIR" 2>/dev/null || exit 0
 jq -cn --arg ts "$TS" --arg model "$MODEL" \
   --arg atype "$ATYPE" --arg aid "$AID" --arg sid "$SID" \
   --arg in "${IN:-}" --arg out "${OUT:-}" \
+  --arg acalls "${ADV_CALLS:-}" --arg ain "${ADV_IN:-}" --arg aout "${ADV_OUT:-}" \
+  --arg amodel "${ADV_MODEL:-}" \
   'def nz: if . == "" then null else . end;
    def num: if . == "" then null else (tonumber? // null) end;
    {ts:$ts, event:"subagent_stop",
     model:($model|nz), agent_type:($atype|nz), agent_id:($aid|nz), session_id:($sid|nz),
-    input_tokens:($in|num), output_tokens:($out|num)}
+    input_tokens:($in|num), output_tokens:($out|num),
+    advisor_calls:($acalls|num), advisor_model:($amodel|nz),
+    advisor_input_tokens:($ain|num), advisor_output_tokens:($aout|num)}
    | with_entries(select(.value != null))' \
   >> "$RUNS_DIR/.events.jsonl" 2>/dev/null
 

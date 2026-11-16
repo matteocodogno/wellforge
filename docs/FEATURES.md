@@ -327,8 +327,9 @@ calibrated by the pilot (too cheap causes rework loops — the OpEx trap). Secur
 escalate to frontier for regulated projects. A complex feature escalates through the
 **advisor** first, where the tool has one: the dev agents stay on mid and consult a frontier
 advisor at decision points (`claude --advisor opus`); re-running them at frontier is the
-fallback. Each advisor call re-reads the whole transcript, and `run-report.py` doesn't count
-those tokens yet.
+fallback. Each advisor call re-reads the whole transcript. `run-report.py` prices a
+subagent's advisor tokens at the advisor's rate and lists the advised agents under
+`--rework`. A main-loop advisor shows only in `/usage`.
 
 **Observability (run traces).** Every multi-agent run (`implement`/`orchestrate`/`eval`)
 writes an auditable trace to `.forge/runs/<run_id>.json` — which agents ran, for which

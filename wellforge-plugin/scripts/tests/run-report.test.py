@@ -238,5 +238,33 @@ rr.attribute([], runs2)
 check("rework/attribute run over coerced traces", True, True)
 _sh.rmtree(d, ignore_errors=True)
 
+# Advisor sub-inferences: billed at the ADVISOR's rate, absent from the executor's usage.
+# A report that drops them makes "sonnet + opus advisor" look like plain sonnet — the OpEx
+# trap model-routing.yml warns about, in the direction of looking cheap.
+adv = ev("10:05", 1_000_000, 0, "wellforge:backend-dev", model="claude-sonnet-5-5")
+adv.update({"advisor_calls": 2, "advisor_model": "claude-opus-5-5",
+            "advisor_input_tokens": 1_000_000, "advisor_output_tokens": 0})
+check("executor tokens exclude the advisor's", rr.totals([adv], PRICING)[:2], (1_000_000, 0))
+check("cost = sonnet input + opus input (2.00 + 5.00)", rr.totals([adv], PRICING)[2], 7.0)
+check("advisor totals", rr.advisor_totals([adv]),
+      {"calls": 2, "input_tokens": 1_000_000, "output_tokens": 0, "tokens_known": True})
+
+nodata = ev("10:06", 1, 1, "qe")
+nodata["advisor_calls"] = 1
+check("a call with no token data is counted, tokens flagged as a floor",
+      rr.advisor_totals([adv, nodata])["calls"], 3)
+check("tokens_known false when any call lacked token data",
+      rr.advisor_totals([adv, nodata])["tokens_known"], False)
+check("no advisor → zero calls, tokens known",
+      rr.advisor_totals([ev("10:05", 1, 1)]), {"calls": 0, "input_tokens": 0,
+                                                "output_tokens": 0, "tokens_known": True})
+
+# Rework names the advised agents, normalised from the plugin-prefixed agent_type.
+adv_runs = [_mkrun("r-adv", "001-x", "mvp", {"qe": "FAIL"}, ["backend-dev"])]
+adv_runs[0]["run_id"] = "r-adv"
+rw_adv = rr.rework(adv_runs, {"r-adv": [adv]})
+check("rework: advisor calls by agent", rw_adv["advisor_calls_by_agent"], {"backend-dev": 2})
+check("rework without events: empty advised map", rr.rework(adv_runs)["advisor_calls_by_agent"], {})
+
 print(f"\nrun-report: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)
