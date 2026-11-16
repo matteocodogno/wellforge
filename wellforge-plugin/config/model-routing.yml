@@ -64,10 +64,33 @@ agents:
 # implementation both land in the same count, and separating them is judgement. The metric
 # names a candidate; a human decides.
 #
-# Escalation: for a genuinely complex feature, run the dev agents at frontier instead of
-# mid. The mechanism is the agent frontmatter (fixed per run), so escalation is a
-# deliberate human/orchestrator choice — flag it in the plan, then run the harder model —
-# not silent per-task auto-routing. Honest about the seam.
+# Escalation — a genuinely complex feature needs frontier judgment in the dev agents, and
+# frontmatter `model:` is fixed per run, so the map above cannot give it per feature. Two
+# routes, preferred first; either way it is a deliberate human/orchestrator choice — flag
+# it in the plan — never silent per-task auto-routing.
+#
+#   1. ADVISOR (where the tool has one) — keep the dev agents at mid; run the session with
+#      a frontier advisor. In Claude Code: `claude --advisor opus` for one session, or
+#      `advisorModel: "opus"` in the user's settings. Subagents inherit the advisor and
+#      consult it at decision points (choosing an approach, a recurring error, before
+#      calling a task done), so the frontier model reads the hard moments and mid writes
+#      the bulk. Nothing here changes: the agent → tier map, the frontmatter and
+#      `check-routing.py` stay as they are — the advisor is session config, not routing.
+#   2. RE-RUN AT FRONTIER — where there is no advisor (other tools; Bedrock, Google's Agent
+#      Platform or Foundry; a session with feature-flag fetching off, e.g.
+#      DISABLE_TELEMETRY), run the dev agents at frontier instead of mid.
+#
+# The advisor's seams, so nobody reads it as free:
+#   - The model decides when to consult it; nothing forces or caps a call. A prompt can
+#     ask for one ("consult the advisor before you continue").
+#   - Each call reads the WHOLE transcript at the advisor's rate, uncached. It is cheap
+#     where turns are many and decisions few (a dev agent's task) and dear in a long
+#     main loop. Advisor usage shows in /usage, NOT in run-report.py — until it does,
+#     an advised run's cost is under-reported, so it is not evidence for moving an
+#     agent DOWN a tier.
+#   - An advisor must rank at or above the model it advises: a frontier agent (architect,
+#     evaluator) gets frontier-advising-frontier, at full price, on every call it makes.
+#   - It is the user's own setting (it bills their account), so the plugin never sets it.
 #
 # Rigor tiers (see the `rigor-tiers` skill) do NOT re-tier agents — frontmatter `model:` is
 # fixed per agent, so the same agent can't run at two tiers. Tiers save cost by COMPOSITION:

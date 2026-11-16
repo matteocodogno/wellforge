@@ -324,7 +324,11 @@ its revert criterion in the policy file. This drives OpEx down without lowering
 quality where it counts — the paper's "intelligent model routing." A drift guard
 (`check-routing.py`) keeps each agent's frontmatter in sync with the policy; tiers are
 calibrated by the pilot (too cheap causes rework loops — the OpEx trap). Security reviews
-escalate to frontier for regulated projects.
+escalate to frontier for regulated projects. A complex feature escalates through the
+**advisor** first, where the tool has one: the dev agents stay on mid and consult a frontier
+advisor at decision points (`claude --advisor opus`); re-running them at frontier is the
+fallback. Each advisor call re-reads the whole transcript, and `run-report.py` doesn't count
+those tokens yet.
 
 **Observability (run traces).** Every multi-agent run (`implement`/`orchestrate`/`eval`)
 writes an auditable trace to `.forge/runs/<run_id>.json` — which agents ran, for which
