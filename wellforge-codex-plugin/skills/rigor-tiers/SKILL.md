@@ -94,9 +94,27 @@ applies it to itself):
 - **`production`** — "Effort: full. Reason carefully about trade-offs, edge/error/failure
   modes; verification is adversarial. Thoroughness over speed."
 
-This is a nudge, not a hard budget — honest about the seam. Where a tool exposes a real
-thinking-budget parameter, a future `model-tiers.yml`-style mapping could bind these levels to
-it; until then the directive is the mechanism.
+The cue is a nudge, not a hard budget. The hard budget is a separate lever, bound per
+**model tier**, not per rigor tier:
+
+- **Each agent's real effort level** comes from `reasoning_effort` in
+  `config/model-tiers.yml`, per tool. In Claude Code it is `effort:` in the agent's
+  frontmatter: `high` for the frontier agents, `medium` for mid and cheap. Codex emits
+  `model_reasoning_effort` from the same map. `check-routing.py` fails CI if an agent
+  disagrees with the map.
+- **Why per model tier.** Frontmatter is fixed per agent, the same seam as `model:`. A
+  subagent on a model other than the session's does not inherit the session's effort. It
+  falls back to its model's default (`medium` on the 5.5 models). So without the binding,
+  the architect and evaluator ran at `medium` whenever the session wasn't on Opus.
+- **Why the rigor tier adds no hard level.** `mvp` dispatches only mid agents, which already
+  run at `medium`, and `spike` dispatches none. The main loop's effort is the user's own
+  `/effort` setting. Claude Code can override effort per dispatch (the Agent tool's `effort`
+  parameter, v2.1.292+), and that is the lever to use if rework evidence ever says
+  production dev agents need more than `medium`. Raising it is a cost decision with the
+  same evidence standard as re-tiering a model (`model-routing.yml`), not a default.
+
+The text cue stays. It is what every tool can carry, and it steers *how* the model spends
+its budget at a given level.
 
 ## Resolving the tier and terse at dispatch — the Step 0 every command runs
 

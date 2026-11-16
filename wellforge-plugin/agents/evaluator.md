@@ -15,6 +15,7 @@ tools:
   - Bash
   - Write
 model: opus
+effort: high
 color: purple
 ---
 

@@ -12,6 +12,7 @@ tools:
   - Glob
   - Write
 model: sonnet
+effort: medium
 color: cyan
 ---
 

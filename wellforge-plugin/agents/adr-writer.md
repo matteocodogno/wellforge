@@ -15,6 +15,7 @@ tools:
   - Glob
   - Bash
 model: haiku
+effort: medium
 color: cyan
 ---
 

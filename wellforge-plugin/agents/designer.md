@@ -7,6 +7,7 @@ description: >
   derivation. Can drive the running app with Playwright to audit current UI. Trigger
   phrases: "design the UX for", "act as designer", "map the screens for".
 model: sonnet
+effort: medium
 color: pink
 # The designer produces design.md (Write), audits the running app (Playwright MCP) and can
 # start the visual companion's local server (Bash), so Write and Bash CANNOT be withheld.

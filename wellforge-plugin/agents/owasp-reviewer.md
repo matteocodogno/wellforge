@@ -13,6 +13,7 @@ tools:
   - Grep
   - Bash
 model: sonnet
+effort: medium
 color: red
 ---
 

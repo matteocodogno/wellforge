@@ -13,6 +13,7 @@ tools:
   - Write
   - Bash
 model: opus
+effort: high
 color: blue
 ---
 

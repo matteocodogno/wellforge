@@ -69,12 +69,26 @@ tools:
       mid:      gpt-5.4
       cheap:    gpt-5.4-mini
 
-# Reasoning effort per tier, for tools whose agents take one besides the model. Codex emits it
-# as each custom agent's `model_reasoning_effort`. Not read by check-routing.py: it is a
-# property of the tier, not a second routing policy, and the tier assignment is still the
-# only thing a PR to model-routing.yml changes.
+# Reasoning effort per tier, for tools whose agents take one besides the model. It is a
+# property of the tier, not a second routing policy: the tier assignment is still the only
+# thing a PR to model-routing.yml changes. check-routing.py verifies each agent's emitted
+# value against this map, for every tool listed here.
+#   codex  — the adapter emits it as each custom agent's `model_reasoning_effort`.
+#   claude — the hand-written `effort:` frontmatter in agents/*.md (check-routing.py is the
+#            drift guard, as for `model:`). It matters because a subagent on a model other
+#            than the session's does NOT inherit the session effort: it runs at its model's
+#            default, which is `medium` for Opus/Sonnet/Haiku 5.5. Without this the
+#            architect and evaluator ran at medium whenever the session was not Opus.
+#            mid stays `medium`, the default it already ran at. cheap is `medium` too, not
+#            codex's `low`: adr-writer's haiku trial (model-routing.yml) is judged on its
+#            output, and changing its model and its effort at once would make the result
+#            impossible to attribute. Revisit with the trial.
 reasoning_effort:
   codex:
     frontier: high
     mid:      medium
     cheap:    low
+  claude:
+    frontier: high
+    mid:      medium
+    cheap:    medium
