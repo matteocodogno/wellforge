@@ -298,6 +298,22 @@ code → QE). See [`self-critique`](../self-critique/SKILL.md) for the per-artif
 changes content only: it never sets `status:`, never checks a box, and never replaces the
 gate, QE or the evaluator — those stay independent, which is the whole point of them.
 
+## Advisor before the plan locks
+
+The technical approach locks when the user approves it: `plan.md` at `production`, and at
+`mvp` the `## Architecture notes` in `tasks.md`, because that tier has no plan. A wrong
+approach that gets through that gate costs a whole implementation. So, **if an advisor tool
+is available**, the author consults it once, **after** the self-critique pass and **before**
+handing the artifact to the gate. Ask it a concrete question: *is this the right approach
+for the spec, and what will break it?* Apply what holds up against the code. Where the
+advice conflicts with what you can see in the code, raise the conflict in the hand-over and
+don't follow the advice blindly.
+
+The advisor never approves. Its review is not the human gate and not evidence for one. Like
+self-critique, it changes content only. Without an advisor, this step doesn't exist and
+nothing waits for it. Whether to run one at all is set per tier in
+[`rigor-tiers`](../rigor-tiers/SKILL.md).
+
 ## Drift rule
 
 The spec is the source of truth. If implementation reveals the spec/plan is wrong:

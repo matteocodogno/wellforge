@@ -157,6 +157,27 @@ that is the system working, not a failure of the pass.
 - **Not a reason to skip a stage.** The human gates, the drift rule, QE and the eval run
   exactly as before. Fewer stages come only from a declared rigor tier ([`rigor-tiers`](../rigor-tiers/SKILL.md)).
 
+## The advisor — a second opinion before "done"
+
+This pass can't catch what you couldn't see while writing. An advisor is a different model
+reading the whole transcript, so it can. **If an advisor tool is available**, consult it
+once, **after** this pass and **before** you report implemented work as done (code → QE).
+Ask it something concrete: *does this meet the task's ACs, and what did I miss?* At `spike`,
+where this pass is off, the main loop consults it once before reporting the spike's
+findings. The plan-level moment belongs to [`spec-driven`](../spec-driven/SKILL.md), so it
+isn't repeated here.
+
+It follows the same rules as the pass. It runs once, never in a loop. It changes content
+only. It never approves, and it is never evidence: QE and the evaluator judge the work as if
+it had not happened. Add one line under the self-critique line so the reviewer sees what
+changed:
+
+```
+Advisor: consulted — 1 applied (missing 404 path on GET /reports/:id), 1 declined (suggested a cache; out of scope per spec).
+```
+
+No advisor → omit the line. Nothing waits for one.
+
 Related: [`spec-driven`](../spec-driven/SKILL.md) (the artifacts and their formats), [`rigor-tiers`](../rigor-tiers/SKILL.md) (the tier gating
 and the effort cue this pass sits beside), [`systematic-debugging`](../systematic-debugging/SKILL.md) (the rule the code
 checklist's corner-cut item enforces), [`frontend-design`](../frontend-design/SKILL.md) (its Pass 2 is this pass for

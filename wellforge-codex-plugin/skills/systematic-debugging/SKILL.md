@@ -148,6 +148,13 @@ contaminates the evidence about what actually fixed it. Verify the target test g
 
 - **Attempt 1–2 fails** → return to Phase 1 with what you just learned. The new evidence is
   the point; don't re-run the same hypothesis harder.
+- **Attempt 2 fails, and an advisor tool is available** → consult it **before** attempt 3.
+  This is the "same error twice" moment: the last attempt before the stop, and the one most
+  likely to be a guess. Ask it something specific: *what do both failures have in common, is
+  my hypothesis wrong, or is the design?* Don't ask it for a fix to try. If it says the
+  design is wrong, that is the architecture stop arriving early: take it now instead of
+  spending attempt 3. The advice does **not** reset the counter. Attempt 3 is still the
+  last, and the stop below still applies.
 - **3 attempts failed → STOP. Do not attempt a fourth.** Three failures is not bad luck, it's
   a signal: the architecture is wrong, not the hypothesis. The tell is that each fix reveals a
   new problem *somewhere else*, or that the "real" fix would need a large refactor.
