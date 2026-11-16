@@ -97,4 +97,6 @@ agents:
 #   spike — no agents at all; the main loop builds on the session model. This file is unused.
 #   mvp   — mid agents only; the orchestrator simply never spawns the frontier agents
 #           (architect, evaluator). The map below = the `production` tier.
+#   (spike and mvp recommend a frontier ADVISOR on a mid session to get that judgment
+#    back — the `rigor-tiers` skill owns that rule.)
 #   production — the full map below.

@@ -41,6 +41,7 @@ real. The failure mode this design exists to prevent: a spike silently becoming 
 | Human gates | 0 (autonomous; human reviews the result) | 1 (spec approval) | 2 (spec + plan) |
 | Spec ceremony | one `brief.md` | `spec.md` + `tasks.md` (plan folded into tasks) | spec + plan + design + tasks |
 | Models | inherits the session model (no per-agent routing) | mid agents only — frontier architect/evaluator are NOT spawned | full `model-routing.yml` |
+| Advisor | **recommended** — mid session + frontier advisor | **recommended** — mid session + frontier advisor | only to escalate a complex feature (`model-routing.yml`) |
 | Quality gates | lint + typecheck + build, **advisory** | + smoke tests + SAST-high **blocking**; coverage advisory | full 80% coverage + SAST + eval |
 | Eval (LM-judge) | off | off | on — the gate into `done` |
 | Effort cue | minimal (bias to speed) | moderate (pragmatic) | full (deliberate) — see below |
@@ -50,6 +51,27 @@ real. The failure mode this design exists to prevent: a spike silently becoming 
 `mvp` gets cheaper not by re-tiering agents (frontmatter `model:` is fixed per agent) but by
 **composition** — it simply never spawns the frontier agents (architect, evaluator). See
 `config/model-routing.yml`.
+
+### The advisor — judgment back for `spike` and `mvp`, without the agents
+
+Both cheap tiers give up judgment on purpose: `spike` has no architect because it has no
+agents, and `mvp` never spawns the architect or the evaluator. An **advisor** puts that
+judgment back where it matters. The session runs on a mid model, and a frontier model
+reviews it at the decision points: choosing an approach, a recurring error, before calling
+a task done. In Claude Code: `claude --model sonnet --advisor opus`. Subagents inherit the
+advisor, so at `mvp` the dev agents get it too.
+
+- **Recommended, never required or set by WellForge.** It is the user's own setting and it
+  bills their account. A tier never fails, blocks or changes behaviour because there is no
+  advisor. Where the tool has none (see `model-routing.yml` for where it doesn't exist), the
+  tier runs as it always has.
+- **It does not replace a gate.** An advisor's review is a second opinion inside the
+  session. It is not the architect's plan, the human approval gate, QE or the eval. `mvp`
+  still has no plan stage and `spike` still has no gates that block.
+- **It is not free.** Each call re-reads the whole transcript, uncached, at the frontier
+  rate. That is the right trade for a mid session with many routine turns and few
+  decisions. At `production` the frontier agents already run, so the advisor is only the
+  escalation route `model-routing.yml` describes, not a default.
 
 ## Effort cue — how hard to think, gated by tier
 
