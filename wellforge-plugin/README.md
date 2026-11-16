@@ -105,6 +105,7 @@ enforces its gate whoever writes `status: done`.
 | `agents/evaluator.md` | Evaluator — LM-judge, rubric-scored verdict (non-deterministic half) |
 | `agents/owasp-reviewer.md` | Specialist: OWASP Top 10 security review |
 | `agents/adr-writer.md` | Specialist: Architecture Decision Record writer |
+| `agents/scout.md` | Specialist: read-only codebase map (cited facts) for the architect, cheap tier |
 | `hooks/hooks.json` | 7 lifecycle hooks |
 | `hooks/scripts/session-start.sh` | Injects git state + domain glossary at session start |
 | `hooks/scripts/pre-bash-guard.sh` | Blocks recursive deletion from root/home, SQL nukes, pipe-to-shell, force push / `reset --hard` / force branch delete, and commands naming a secret file |

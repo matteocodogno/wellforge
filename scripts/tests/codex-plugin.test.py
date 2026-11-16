@@ -191,7 +191,10 @@ def main():
         case("install.sh succeeds from a subdirectory", r.returncode == 0, r.stdout + r.stderr)
         agents = [f for f in os.listdir(os.path.join(repo, ".codex", "agents"))
                   if f.startswith("wf-")]
-        case("installs the 10 agents", len(agents) == 10, agents)
+        # Counted from the plugin, not hard-coded: a new agent is not a broken install.
+        n_agents = len([f for f in os.listdir(os.path.join(ROOT, "wellforge-plugin", "agents"))
+                    if f.endswith(".md")])
+        case(f"installs all {n_agents} plugin agents", len(agents) == n_agents, agents)
         wf = os.path.join(repo, ".codex", "wellforge")
         case("installs $WF: forge-state.py, the rubric, VERSION",
              os.path.isfile(os.path.join(wf, "scripts", "forge-state.py"))

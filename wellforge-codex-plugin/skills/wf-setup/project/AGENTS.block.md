@@ -9,7 +9,7 @@ authority; load them before touching a spec or a task list.
   feature stands), `$wf-spec`, `$wf-plan`, `$wf-tasks`, `$wf-implement`, `$wf-orchestrate`,
   `$wf-done`, `$wf-doctor` — 23 in all, `/skills` lists them. A WellForge text
   that says `/wellforge:x` means `$wf-x`.
-- **Agents** are Codex custom agents installed by `$wf-setup`: `wf-adr-writer`, `wf-architect`, `wf-backend-dev`, `wf-designer`, `wf-devops`, `wf-evaluator`, `wf-frontend-dev`, `wf-owasp-reviewer`, `wf-product-owner`, `wf-quality-engineer`. To dispatch one, spawn the
+- **Agents** are Codex custom agents installed by `$wf-setup`: `wf-adr-writer`, `wf-architect`, `wf-backend-dev`, `wf-designer`, `wf-devops`, `wf-evaluator`, `wf-frontend-dev`, `wf-owasp-reviewer`, `wf-product-owner`, `wf-quality-engineer`, `wf-scout`. To dispatch one, spawn the
   custom agent of that name. Subagents share this checkout, so a batch of ≥2 implementation
   agents runs **sequentially** (worktree-isolation Fallback).
 - **Enforced by hooks** (from the plugin, or `.codex/hooks.json` after `$wf-setup --hooks`; trust them once via `/hooks`): destructive shell commands and secret files are

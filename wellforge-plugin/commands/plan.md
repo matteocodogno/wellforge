@@ -19,7 +19,9 @@ Target spec: $ARGUMENTS
 3. **Explore before designing.** Investigate the actual codebase: existing modules this
    feature touches, established patterns (check stack skills and `docs/adr/`), current
    data model, existing API conventions. The plan must fit the codebase as it is, not an
-   idealized one. Delegate broad exploration to an Explore agent if the surface is large.
+   idealized one. If the surface is large, spawn `wellforge:scout` with the spec path
+   first. It returns a cited map of the code in scope, read on the cheap tier. The map is
+   leads, not truth: before a plan decision rests on a claim, open the cited lines.
 
 4. **Write `specs/NNN-slug/plan.md`** with `status: draft`:
    - Architecture: components touched/added and why this shape; reference existing ADRs

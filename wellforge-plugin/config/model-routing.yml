@@ -32,12 +32,22 @@ agents:
   quality-engineer: { tier: mid, why: "runs gates + writes tests (test-gen is paper's cheaper tier); judgment backstopped by the eval" }
   adr-writer:       { tier: cheap, why: "documents a decision already made, from a caller's brief — template filling; the first agent on cheap (2.60.0), check /usage before moving others" }
   owasp-reviewer:   { tier: mid, why: "OWASP checklist review; OVERRIDE to frontier for regulated/high-risk projects (PII, public sector, financial)" }
+  scout:            { tier: cheap, why: "read-only codebase map as cited facts, verified by the architect who consumes it — breadth reading moved off frontier; a trial, see below" }
 
-  # cheap — adr-writer only, AS A TRIAL (2.60.0). The rework metric below cannot judge it: it
+  # cheap — scout, AS A SECOND TRIAL. It exists to take breadth reading off the architect:
+  # Haiku reads widely, Opus reasons over a cited map instead of re-reading the files. Its
+  # output never reaches a gate unverified — the architect confirms each claim a decision
+  # rests on and reports `Scout map: relied on N, M wrong or missing`. Revert (to mid, or
+  # drop the scout step) when those reports show the architect re-doing the exploration
+  # anyway, or when a plan has to be amended (drift) because of a claim the map got wrong
+  # and the architect relied on. Like adr-writer it never passes through QE, so the rework
+  # metric cannot judge it; the Scout map lines in the architect's returns can.
+  #
+  # cheap — adr-writer, AS A TRIAL (2.60.0). The rework metric below cannot judge it: it
   # never passes through QE or security, so its rework rate is zero at any model. Its output
   # is judged by the human who reviews the ADR and the index line it appends. Revert it to
   # mid the first time one of those has to be rewritten for substance (a wrong failure shape,
-  # a rule the decision did not make) rather than wording. Every other agent stays off cheap:
+  # a rule the decision did not make) rather than wording. Every agent besides these two stays off cheap:
   # they are substantive enough that haiku would cause rework loops (false economy).
 
 # ── What "evidence" means, concretely ───────────────────────────────────────────────

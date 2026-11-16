@@ -154,6 +154,7 @@ two specialists):
 | `evaluator` (LM-judge) | `eval-report.md` scored verdict | judges only, never fixes; distinct from QE — the gate into `done` (§5) |
 | `owasp-reviewer` (specialist) | OWASP Top 10 review (jOOQ/Drizzle/React-aware) | scheduled in parallel with QE when the plan flags the feature security-sensitive, or on QE recommendation |
 | `adr-writer` (specialist) | MADR-format ADRs | invoked by caller on architect's OR a dev agent's ADR candidates |
+| `scout` (specialist) | cited codebase map, read-only, cheap tier | spawned before the architect (plan, orchestrate, improve-architecture); its map is leads the architect verifies |
 
 Agents run non-interactively: they cannot ask the user anything (questions become
 `## Open questions`) and can never set `approved` — approval physically lives in the
@@ -319,7 +320,8 @@ PR-governed like every threshold; per-feature `eval.md` may raise floors, never 
 PR-governed policy (`config/model-routing.yml`) assigns each agent a tier — **frontier**
 (opus) for the highest judgment (architect, the LM-judge evaluator), **mid** (sonnet) for
 structured writing and implementation (PO, designer, FE/BE dev, devops, QE), and **cheap**
-(haiku) for genuinely mechanical surfaces — today only `adr-writer`, as a recorded trial with
+(haiku) for genuinely mechanical surfaces — today `adr-writer` and `scout` (the read-only
+code map the architect verifies instead of re-reading files), each a recorded trial with
 its revert criterion in the policy file. This drives OpEx down without lowering
 quality where it counts — the paper's "intelligent model routing." A drift guard
 (`check-routing.py`) keeps each agent's frontmatter in sync with the policy; tiers are

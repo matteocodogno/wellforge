@@ -72,6 +72,12 @@ duplicate logic — a lead to verify in the code, not a finding. Say whether the
 an uncurated first scan, since a scan names files, not responsibilities. This command never
 edits `groma/` by hand; if the map is stale, say so and let the user refresh it.
 
+**The code map** — for a scope wider than a couple of modules, spawn `wellforge:scout`
+with the scope. It returns cited facts about the modules, their patterns and their tests,
+read on the cheap tier. Hand it to the architect labelled *scout map — leads to verify*,
+next to the git evidence. The architect still reads the code it judges; the map only tells
+it where to look.
+
 **A young repository has no history to read.** Fewer than ~30 commits in scope → say so,
 skip co-change, and let the architect work from the code alone, with lower confidence.
 

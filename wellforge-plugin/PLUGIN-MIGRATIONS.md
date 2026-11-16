@@ -32,6 +32,17 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.64.0 — a `scout` agent maps the code before the architect
+
+- **Claude Code projects: nothing to do.** The `scout` agent ships with the plugin.
+  `/wellforge:plan`, `/wellforge:orchestrate` and `/wellforge:improve-architecture` spawn it
+  before the architect works on existing code.
+- **Codex projects: re-run `$wf-setup`** (needs a human, once). It copies the agents into
+  `.codex/agents/`, so a project set up before this release has no `wf-scout.toml`, and the
+  three skills above would ask for an agent that isn't there. `$wf-setup` is idempotent.
+- No `.forge/` schema change. The SubagentStop events gained optional advisor fields in
+  the same release. Older events still read correctly and nothing needs rewriting.
+
 ## 2.63.2 — a committed close no longer reads as spec drift
 
 - `forge-state.py` exempted a lifecycle-only edit to `spec.md` (`status: done`, `done:`,

@@ -64,7 +64,13 @@ session_injection:
   # routing logic, the feature needs a command a user can type, and it was kept to a
   # command with no skill (the method lives in the architect's body, which costs nothing
   # here). Five features landed today for a net +877 chars (~220 tokens per session).
-  max_chars: 20417
+  #
+  # 2026-11-16: 20,417 → 20,251 (-166), with the `scout` agent added (148 chars). Paid for
+  # by `adr-writer` (470 → 156): its old description listed the decision kinds and the
+  # callers, routing text for an agent that callers spawn BY NAME. What a user types ("write
+  # an ADR for …") stayed. Same reasoning holds for `scout`: spawned by name, so no trigger
+  # phrases at all.
+  max_chars: 20251
 
   # Estimated tokens = chars / 4. Stated, not implied: the true count is tokenizer-specific
   # (Claude 4.7+ uses a different one than earlier models), so the CHARACTER count is what

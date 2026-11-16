@@ -255,7 +255,7 @@ lane for throwaway prototypes. All commands live in `.github/prompts/` (invoke a
 Switch the chat-mode picker to a `wf-*` role for focused work: `wf-product-owner` (spec),
 `wf-architect` (plan), `wf-designer` (UX), `wf-frontend-dev` / `wf-backend-dev` (build),
 `wf-devops` (CI/infra), `wf-quality-engineer` (verify), `wf-evaluator` (LM-judge),
-`wf-owasp-reviewer` (security), `wf-adr-writer` (decision records).
+`wf-owasp-reviewer` (security), `wf-adr-writer` (decision records), `wf-scout` (code map).
 NOTE: Copilot runs ONE chat mode at a time — it cannot spawn parallel subagents, so
 orchestration is sequential (switch modes yourself as the flow progresses).
 

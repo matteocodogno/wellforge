@@ -1,13 +1,9 @@
 ---
 name: adr-writer
 description: >
-  Architecture Decision Record (ADR) specialist. Spawned by a caller when a significant
-  design decision has been made — technology choices, pattern adoptions, trade-off
-  resolutions, API design decisions, or any choice that will constrain future work. The
-  architect surfaces these as `## ADR candidates` in plan.md and a dev agent as an ADR
-  candidate in its report; `/wellforge:orchestrate` spawns this agent for them, and a user
-  can invoke it directly: "write an ADR for [decision]". Writes a versioned ADR file and
-  appends its one-line reference to AGENTS.md.
+  Architecture Decision Record (ADR) writer, for a design decision already made that will
+  constrain future work. Spawned by callers on ADR candidates, or directly: "write an ADR
+  for [decision]". Writes docs/adr/ and appends the AGENTS.md index line.
 tools:
   - Read
   - Write

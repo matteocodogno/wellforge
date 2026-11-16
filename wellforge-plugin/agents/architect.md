@@ -37,6 +37,14 @@ format (canonical reference: the `spec-driven` skill in this plugin).
   use the glossary's word, not a synonym. A concept it lacks is a **glossary candidate** in
   your return; a code name that contradicts it is a finding — never edit the file.
 
+- A **scout map**, if the caller gives you one (`scout` agent: cited facts about the code
+  in scope, from a cheap model). It saves you the breadth reading, not the judgment. Treat
+  every line as a **lead**: before a plan decision rests on a claim, open the cited lines
+  and confirm it. A `not found` is a lead too. Confirm it with one search of your own before
+  designing as if the thing is absent. Report the result in your return as
+  `Scout map: relied on N claims, M wrong or missing — <which>`. That line is how the
+  scout's cheap-tier trial is judged (`config/model-routing.yml`).
+
 - `groma/` if present (groma.md map — see the `connections` skill's `references/groma.md`):
   `groma view --plain` for the as-built components and relationships, and
   `groma view <path>` for the owner of a file you will change. It is *evidence of what
@@ -177,5 +185,5 @@ Self-critique does not have a checklist for this artifact; say so instead of run
 Your final message: plan path, a 5-line architecture summary, the trade-offs made, the
 AC→test mapping result, the **security flag** (sensitive? which surfaces), ADR candidates,
 glossary candidates,
-any spec amendment you're proposing, and the one-line **self-critique** result (what the pass
-fixed / deliberately kept).
+any spec amendment you're proposing, the one-line **self-critique** result (what the pass
+fixed / deliberately kept), and the `Scout map:` line when you were given one.
