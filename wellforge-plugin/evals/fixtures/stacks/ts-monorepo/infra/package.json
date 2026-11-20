@@ -1,0 +1,1 @@
+{ "name": "@shop/infra", "private": true, "dependencies": { "@pulumi/pulumi": "^3.137.0", "@pulumi/gcp": "^8.5.0" } }

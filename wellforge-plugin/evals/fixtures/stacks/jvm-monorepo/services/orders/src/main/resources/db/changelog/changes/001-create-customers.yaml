@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-customers
+      author: shop
+      changes:
+        - createTable:
+            tableName: customers
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true } }
+              - column: { name: email, type: varchar(320), constraints: { nullable: false } }
