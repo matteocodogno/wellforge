@@ -1,14 +1,14 @@
 ---
 name: hono-ts-backend
 description: >
-  Hono + TypeScript backend — best practices and scaffolding a new service (the **TypeScript
-  / Node backend path**). Use when building or reviewing Hono TS APIs, or scaffolding a new
-  **TypeScript / Node / all-TS** backend service: "new backend service", "scaffold a
-  service", "bootstrap a TS API", "new microservice" in a TS/Node project. FIRST confirm the
-  target stack — for a **JVM / Spring Boot / Kotlin** service use the `springboot-scaffold`
-  skill instead; this skill is TypeScript-only. Covers pnpm/tsx/Biome setup, Hono routing,
-  Zod validation, Effect TS error handling, Drizzle ORM + PostgreSQL, OpenAPI, Docker.
-  Trigger for any Hono TS task — even "add a route", "create middleware", "set up validation".
+  Hono + TypeScript backend best practices (the **TypeScript / Node backend path**). Trigger
+  for ANY change to a Hono TS API, however small, BEFORE editing an existing service: "add an
+  endpoint", "add a route", "create middleware", "set up validation" — and for reviewing one,
+  or scaffolding a new **TypeScript / Node / all-TS** backend service: "new backend service",
+  "scaffold a service", "bootstrap a TS API", "new microservice". FIRST confirm the target
+  stack — for a **JVM / Spring Boot / Kotlin** service use `springboot-scaffold`
+  instead; this skill is TypeScript-only. Covers pnpm/tsx/Biome setup, Hono routing, Zod
+  validation, Effect TS error handling, Drizzle ORM + PostgreSQL, OpenAPI, Docker.
 ---
 
 # Hono with TypeScript — Best Practices

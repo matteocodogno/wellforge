@@ -141,6 +141,15 @@ Load a stack skill only in repos matching some project marker (e.g. a `build.gra
   decision if (a) a skill-trigger eval suite is built, turning routing cost from unmeasurable
   into measurable, or (b) the separate-plugin option (Option D) becomes cheap enough to adopt.
 
+**Update 2026-11-20 — trigger (a) is met.** A skill-routing eval suite now exists:
+`wellforge-plugin/evals/route-*` (seven cases, tag `routing`; see the evals README). The
+decision stands until someone proposes a shorter description; that proposal is now judged by
+running those cases against it instead of by argument. Its first pass also showed the risk
+this ADR names is not only about *length*: `hono-ts-backend` and `kotlin-springboot` kept
+every trigger phrase and still mis-routed small edits, because those phrases sat at the end.
+Reordering them (same length) fixed both. Where a phrase sits counts as much as whether it
+is there.
+
 ## Compliance notes
 
 Not applicable — this decision has no data-protection, residency, or audit-trail impact.

@@ -176,6 +176,55 @@ whole session with `target: trace`; at the answer with `target: last_message` (t
 | `owasp-pass-with-notes` | "PASS WITH NOTES" is recorded as `PASS`, notes kept, no third verdict |
 | `spec-from-ledger` | `/wellforge:spec --ledger` treats a grilling ledger as the interview: decided items land in the spec, a delegated one stays marked, the open question stays open, the ledger moves beside the spec — and nothing is re-asked |
 | `orchestrate-hands-po-the-ledger` | `/wellforge:orchestrate --ledger` hands the **product-owner agent** the ledger path, and the spec that agent writes carries the user's decisions; it stops at the first human gate |
+| `route-*` (7 cases, tag `routing`) | a plain request — no skill named — selects the right **stack skill**, and across the JVM/TypeScript and app/infra boundaries does *not* select its neighbour. See [Routing cases](#routing-cases) |
+
+### Routing cases
+
+A skill's body is read only after the skill is chosen, so whether the five stack skills keep
+their long, trigger-phrase-rich descriptions was a cost measured on one side only (tokens,
+ratcheted by `config/budget.yml`) and not at all on the other (mis-routing) —
+`docs/adr/20260920-keep-full-stack-skill-descriptions.md`. These cases are that other side.
+
+| Case | Repository | Request | Must load | Must not load |
+|---|---|---|---|---|
+| `route-hono-add-route` | TS | add a `/health` endpoint | `hono-ts-backend` | `kotlin-springboot` |
+| `route-ts-new-service` | TS | scaffold a new `billing` service | `hono-ts-backend` | `springboot-scaffold` |
+| `route-jvm-new-service` | JVM | the same words | `springboot-scaffold` | `hono-ts-backend` |
+| `route-kotlin-migration` | JVM | add a nullable column migration | `kotlin-springboot` | `hono-ts-backend` |
+| `route-react-form` | TS | a sign-up form | `react-ts-vite` | — |
+| `route-pulumi-bucket` | TS | an uploads bucket with versioning | `pulumi-gcp-ts` | `hono-ts-backend` |
+| `route-mise-pin-node` | TS | pin Node, add a test task | `mise` | — |
+
+- **Two stack fixtures, not the spec project:** `fixtures/stacks/ts-monorepo` (Hono API, React
+  web app, Pulumi infra, `mise.toml` — so app vs infra is a real choice) and
+  `fixtures/stacks/jvm-monorepo` (Maven, Spring Boot + Kotlin, Liquibase). The two
+  `*-new-service` cases send identical words to each; only the repository decides.
+- **Graders match the Skill call's input** (`"skill":"wellforge:<name>"`), never the bare
+  name: the session's skill listing and other skills' bodies contain every one of these
+  names in prose. A negative grader is `match: not_contains` on the same pattern.
+- **`allowed_tools` adds Write and Edit, `max_turns: 8`:** selection happens in the first
+  turns. (Bash is not listed, yet the traces under `check-all.sh`'s `--allow-tools Bash
+  Write Edit` show Bash calls — so do not rely on `allowed_tools` to withhold an operator
+  grant.) The
+  first draft was read-only, and the model noticed ("I can't make this change here") — a
+  confound for a test of what it would load to do the work. Measured 2026-11-20: all seven
+  at `--runs 1 --ablation none` cost **$2.27** (97 s at `-j 4`).
+- **Every case earns its place** — the 2026-11-20 `with-without` pass scored each one lower
+  without the plugin (0.0–0.5 vs 0.5–1.0).
+- **What they found on their first day (2026-11-20).** `route-hono-add-route` scored 0.5 in
+  7 of 7 runs: for a small edit to an existing Hono service the model wrote the route
+  directly and never loaded `hono-ts-backend`, although its description said "even 'add a
+  route'". `route-kotlin-migration` had the same shape intermittently (3 of 7). Both
+  descriptions led with the big task (scaffolding, "writing or reviewing code") and left the
+  small-task triggers in a trailing sentence. The fix moved them up front — "ANY change …
+  however small, BEFORE editing an existing service" — at the same length (the budget
+  ratchet did not move). After it: Hono 5/5, Kotlin 3/3, and the JVM/TS disambiguation held
+  (`route-jvm-new-service` 3/3, `route-ts-new-service` 2/2). **Lesson for the next
+  description:** a small-task trigger at the end of a description is read as an afterthought.
+  Put "however small" and the small-task phrases first.
+- **Run them before changing any stack skill's `description`:**
+  `mise run check -- --eval-case 'route-*' --eval-runs 1`. A shorter description that keeps
+  these green is a saving; one that turns one red is the cost the ADR could not see.
 
 **Only cases that distinguish the plugin stay.** On 2026-11-10 the suite ran with the
 no-plugin baseline arm, and five cases scored the same or better WITHOUT the plugin — a
