@@ -57,20 +57,135 @@ def price_for(model, pricing):
     return pricing.get("default"), False
 
 
-def load_events(runs_dir):
+def _event_lines(runs_dir):
     path = os.path.join(runs_dir, ".events.jsonl")
-    out = []
     if not os.path.exists(path):
-        return out
+        return
     for line in open(path):
         line = line.strip()
         if not line:
             continue
         try:
-            out.append(json.loads(line))
+            e = json.loads(line)
         except json.JSONDecodeError:
             continue
+        if isinstance(e, dict):
+            yield e
+
+
+# `.events.jsonl` carries two kinds of line: token events from the SubagentStop hook (no
+# `event` key on the oldest ones, `subagent_stop` since) and `session_start` markers from the
+# SessionStart hook. Only the first kind is a token event; counting a session marker as one
+# would turn a run with no token data into a "measured" run that cost $0.
+TOKEN_EVENTS = (None, "subagent_stop")
+
+
+def load_events(runs_dir):
+    return [e for e in _event_lines(runs_dir) if e.get("event") in TOKEN_EVENTS]
+
+
+def load_sessions(runs_dir):
+    """Every Claude Code session id this project has seen: the SessionStart markers, plus
+    the session ids the SubagentStop hook recorded (older traces have only those)."""
+    return sorted({e["session_id"] for e in _event_lines(runs_dir)
+                   if isinstance(e.get("session_id"), str) and e["session_id"]})
+
+
+# ── Measured cost: Claude Code's own per-request cost, exported over OpenTelemetry ──────
+# otel-sink.py writes one file per session; run-report reads only the sessions this project
+# recorded, so another project's spend on the same machine never lands here.
+def otel_spool():
+    if os.environ.get("WF_OTEL_SPOOL"):
+        return os.environ["WF_OTEL_SPOOL"]
+    base = os.environ.get("XDG_STATE_HOME") or os.path.join(os.path.expanduser("~"), ".local", "state")
+    return os.path.join(base, "wellforge", "otel")
+
+
+def load_otel(spool, session_ids):
+    """`api_request` records for the given sessions, de-duplicated by request id (an
+    exporter retry re-sends a batch, and a doubled request is a doubled cost)."""
+    out, seen = [], set()
+    if not spool or not os.path.isdir(spool):
+        return out
+    for sid in session_ids:
+        safe = "".join(c for c in sid if c.isalnum() or c in "-_")[:80]
+        path = os.path.join(spool, f"{safe}.jsonl")
+        if not safe or not os.path.exists(path):
+            continue
+        for line in open(path):
+            try:
+                q = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(q, dict) or q.get("event.name") != "api_request":
+                continue
+            key = q.get("request_id") or (q.get("session.id"), q.get("event.timestamp"), q.get("cost_usd"))
+            if key in seen:
+                continue
+            seen.add(key)
+            # OTel stamps milliseconds ("…:37.150Z"); traces stamp seconds ("…:37Z"). As strings
+            # "…37.150Z" sorts BEFORE "…37Z", so compare on the same resolution.
+            ts = q.get("event.timestamp") or ""
+            q["ts"] = (ts[:19] + "Z") if len(ts) >= 19 else ts
+            out.append(q)
     return out
+
+
+def attribute_otel(reqs, runs, attributed):
+    """Assign each measured request to at most ONE run → ({run_id: [reqs]}, outside, ambiguous).
+
+    A subagent's request carries the `agent_id` the SubagentStop hook also recorded, and that
+    hook event is already attributed to a run — so the join is exact, even across parallel
+    runs whose windows overlap. Everything else (the main loop, or a subagent whose stop event
+    was lost) falls back to the run window, narrowed by agent name, and is left unattributed
+    when that still matches several runs. Same rule as `attribute`: an honest gap, never a
+    request counted in two runs.
+
+    `outside` are requests in no run's window — work done outside any workflow command, which
+    is real spend but nobody's run. `ambiguous` matched several runs and could not be split.
+    """
+    by_run = {r.get("run_id"): [] for r in runs}
+    agent_run = {}
+    for run_id, evts in (attributed or {}).items():
+        for e in evts:
+            if e.get("agent_id"):
+                agent_run[e["agent_id"]] = run_id
+    outside, ambiguous = [], []
+    for q in reqs:
+        aid = q.get("agent_id")
+        if aid and agent_run.get(aid) in by_run:
+            by_run[agent_run[aid]].append(q)
+            continue
+        cands = [r for r in runs if _in_window(q, r)]
+        if len(cands) > 1 and aid:
+            name = _agent_name(q.get("agent.name") or q.get("agent_type"))
+            narrowed = [r for r in cands if name and name in _agents_of(r)]
+            if len(narrowed) == 1:
+                cands = narrowed
+        if len(cands) == 1:
+            by_run[cands[0].get("run_id")].append(q)
+        elif cands:
+            ambiguous.append(q)
+        else:
+            outside.append(q)
+    return by_run, outside, ambiguous
+
+
+def measured(reqs):
+    """Sum measured requests → {cost_usd, main_usd, subagent_usd, requests, tokens…}."""
+    def num(v):
+        return v if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
+    t = {"cost_usd": 0.0, "main_usd": 0.0, "subagent_usd": 0.0, "requests": len(reqs),
+         "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "cache_creation_tokens": 0}
+    for q in reqs:
+        c = num(q.get("cost_usd"))
+        t["cost_usd"] += c
+        t["subagent_usd" if q.get("agent_id") else "main_usd"] += c
+        for k in ("input_tokens", "output_tokens", "cache_read_tokens", "cache_creation_tokens"):
+            t[k] += num(q.get(k))
+    for k in ("cost_usd", "main_usd", "subagent_usd"):
+        t[k] = round(t[k], 4)
+    return t
 
 
 def _in_window(e, run):
@@ -257,15 +372,24 @@ def budget_report(report, runs, budgets, attributed=None):
         pct = round(spent / ceiling * 100)
         return ("over" if pct > 100 else "within"), pct
 
+    # A run's spend is its MEASURED cost when Claude Code exported one (cost_source "otel"),
+    # else the trace estimate. `basis` says which, so a ceiling compared against an
+    # undercount is never read as a ceiling compared against the bill.
+    def spend(x):
+        if x.get("cost_source") == "otel":
+            return x.get("cost_usd") or 0.0, True, "otel"
+        has = bool(x.get("events")) and x.get("est_cost_usd") is not None
+        return (x.get("est_cost_usd") or 0.0), has, ("estimate" if has else None)
+
     per_run = []
     for x in report:
         tier = x.get("rigor") or "production"
         ceiling = (tiers.get(tier) or {}).get("cost_per_run_usd")
-        measured = bool(x.get("events")) and x.get("est_cost_usd") is not None
-        st, pct = state(x.get("est_cost_usd") or 0.0, ceiling, measured)
+        spent, has, basis = spend(x)
+        st, pct = state(spent, ceiling, has)
         per_run.append({"run_id": x["run_id"], "feature": x.get("feature"), "tier": tier,
-                        "spent_usd": x.get("est_cost_usd"), "ceiling_usd": ceiling,
-                        "pct": pct, "state": st})
+                        "spent_usd": round(spent, 4) if has else x.get("est_cost_usd"),
+                        "ceiling_usd": ceiling, "pct": pct, "state": st, "basis": basis})
 
     # Per feature: spend, and the agent that consumed the most. OUTPUT tokens are the honest
     # proxy for consumption — input is mostly context the agent did not choose, output is
@@ -274,10 +398,13 @@ def budget_report(report, runs, budgets, attributed=None):
     run_feature = {x["run_id"]: (x.get("feature") or "(none)") for x in report}
     for x in report:
         f = x.get("feature") or "(none)"
-        e = feats.setdefault(f, {"spent": 0.0, "events": 0, "runs": 0, "by_agent": {}})
-        e["spent"] += x.get("est_cost_usd") or 0.0
-        e["events"] += x.get("events") or 0
+        e = feats.setdefault(f, {"spent": 0.0, "events": 0, "runs": 0, "by_agent": {}, "bases": set()})
+        spent, has, basis = spend(x)
+        e["spent"] += spent
+        e["events"] += 1 if has else 0
         e["runs"] += 1
+        if basis:
+            e["bases"].add(basis)
     for run_id, evts in attributed.items():
         f = run_feature.get(run_id)
         if f is None or f not in feats:
@@ -293,10 +420,12 @@ def budget_report(report, runs, budgets, attributed=None):
         ceiling = (tiers.get(tier) or {}).get("cost_per_feature_usd")
         st, pct = state(e["spent"], ceiling, bool(e["events"]))
         top = max(e["by_agent"].items(), key=lambda kv: kv[1], default=(None, 0))
+        basis = (None if not e["bases"] else
+                 e["bases"].pop() if len(e["bases"]) == 1 else "mixed")
         per_feature.append({
             "feature": f, "tier": tier, "spent_usd": round(e["spent"], 4),
             "ceiling_usd": ceiling, "pct": pct, "state": st, "runs": e["runs"],
-            "token_events": e["events"],
+            "token_events": e["events"], "basis": basis,
             "top_agent": top[0], "top_agent_output_tokens": top[1] or None,
         })
     return {"advisory_only": budgets.get("advisory_only", True),
@@ -449,6 +578,9 @@ def main():
     ap.add_argument("--rework", action="store_true",
                     help="QE/security fail rounds per feature and per agent — the re-tiering evidence")
     ap.add_argument("--budgets", default=None, help="path to rigor-budgets.yml")
+    ap.add_argument("--otel-spool", default=otel_spool(),
+                    help="where otel-sink.py writes measured cost (default: the sink's own default)")
+    ap.add_argument("--no-otel", action="store_true", help="ignore measured cost; estimate only")
     args = ap.parse_args()
 
     if not os.path.isdir(args.runs_dir):
@@ -476,10 +608,16 @@ def main():
     # double-count the attribution exists to prevent.
     attributed, unattributed = attribute(events, all_runs)
 
+    # Measured cost, when the developer turned on the OTel export (skills/observability).
+    # Read only this project's sessions, attributed over ALL runs for the same reason as above.
+    reqs = [] if args.no_otel else load_otel(args.otel_spool, load_sessions(args.runs_dir))
+    otel_by_run, otel_outside, otel_ambiguous = attribute_otel(reqs, all_runs, attributed)
+
     report = []
     for r in runs:
         ti, to, cost, n, exact = totals(attributed.get(r.get("run_id"), []), pricing)
         adv = advisor_totals(attributed.get(r.get("run_id"), []))
+        m = measured(otel_by_run.get(r.get("run_id"), []))
         drift_open = [d for d in r.get("drift_events", []) if not d.get("resolved")]
         entry = {
             "run_id": r.get("run_id"), "command": r.get("command"), "feature": r.get("feature"),
@@ -492,6 +630,15 @@ def main():
             "advisor_output_tokens": adv["output_tokens"],
             "advisor_tokens_known": adv["tokens_known"],
             "terse": bool(r.get("terse", False)),
+            # Measured (OTel) beside the estimate, never instead of it: est_cost_usd keeps its
+            # meaning for every consumer that already reads it.
+            "cost_source": "otel" if m["requests"] else ("estimate" if n else "none"),
+            "cost_usd": m["cost_usd"] if m["requests"] else None,
+            "cost_main_usd": m["main_usd"] if m["requests"] else None,
+            "cost_subagent_usd": m["subagent_usd"] if m["requests"] else None,
+            "otel_requests": m["requests"],
+            "cache_read_tokens": m["cache_read_tokens"],
+            "cache_creation_tokens": m["cache_creation_tokens"],
         }
 
         # US-5 / AC-5.1 (compute half): a terse run gets paired with a non-terse control and
@@ -512,7 +659,13 @@ def main():
 
     envelope = {"runs": report,
                 "unattributed_events": len(unattributed),
-                "cost_estimated": pricing is not None}
+                "cost_estimated": pricing is not None,
+                # True when ANY measured request was found for this project's sessions.
+                "cost_measured": bool(reqs),
+                # Measured spend no run owns: work outside every workflow command, and
+                # requests whose window matched several runs (never split, never doubled).
+                "otel_outside_runs_usd": measured(otel_outside)["cost_usd"],
+                "otel_ambiguous_usd": measured(otel_ambiguous)["cost_usd"]}
     if args.budget:
         envelope["budget"] = budget_report(report, runs, load_budgets(args.budgets), attributed)
     if args.rework:
@@ -534,6 +687,9 @@ def main():
         print(f"{x['run_id']}")
         print(f"    {x['command']} · {x['result']} · agents: {', '.join(x['agents'])}")
         print(f"    verdicts: {v} · {toks}{drift}")
+        if x["cost_source"] == "otel":
+            print(f"    measured: ${x['cost_usd']:.4f} over {x['otel_requests']} request(s) — "
+                  f"main ${x['cost_main_usd']:.4f} · subagents ${x['cost_subagent_usd']:.4f}")
         if downgrade:
             print(downgrade)
         if x["advisor_calls"]:
@@ -559,16 +715,17 @@ def main():
         if not b:
             print("\nbudget: config/rigor-budgets.yml not found — nothing to compare against")
         else:
-            print("\nBUDGET (advisory — never blocks; compared against ESTIMATED cost, which"
-                  "\n        undercounts: subagent-only, no main loop, no cache)")
-            print(f"  {'FEATURE':28} {'TIER':11} {'SPENT':>8} {'CEIL':>7} {'USE':>6}  TOP CONSUMER")
+            print("\nBUDGET (advisory — never blocks; BASIS otel = Claude Code's own measured cost,"
+                  "\n        estimate = the trace estimate, which undercounts: subagent-only, no"
+                  "\n        main loop, no cache)")
+            print(f"  {'FEATURE':28} {'TIER':11} {'SPENT':>8} {'CEIL':>7} {'USE':>6}  {'BASIS':8} TOP CONSUMER")
             for f in b["per_feature"]:
                 pct = f"{f['pct']}%" if f["pct"] is not None else "—"
                 mark = " ⚠ OVER" if f["state"] == "over" else ("  (no token data)" if f["state"] == "unknown" else "")
                 top = f["top_agent"] or "—"
                 print(f"  {f['feature'][:28]:28} {f['tier']:11} "
                       f"{(f['spent_usd'] if f['spent_usd'] is not None else 0):>8.4f} "
-                      f"{(f['ceiling_usd'] or 0):>7.2f} {pct:>6}  {top}{mark}")
+                      f"{(f['ceiling_usd'] or 0):>7.2f} {pct:>6}  {(f.get('basis') or '—'):8} {top}{mark}")
             over = [f for f in b["per_feature"] if f["state"] == "over"]
             unknown = [f for f in b["per_feature"] if f["state"] == "unknown"]
             if unknown:
@@ -596,9 +753,17 @@ def main():
         print("  This is the evidence config/model-routing.yml asks for before re-tiering an agent.")
 
     print(f"\n{len(report)} runs. Trajectory/verdicts/drift above are exact.")
-    print("Tokens are PARTIAL — captured from subagent stops only; the main orchestrating")
-    print("loop and cache tokens (which dominate cost) are NOT visible to WellForge.")
-    print("For real session cost run  /usage  (Claude Code), not these numbers.")
+    if envelope["cost_measured"]:
+        print("`measured` is Claude Code's own per-request cost (OpenTelemetry): main loop and")
+        print("cache included. Runs without it fall back to the PARTIAL trace estimate.")
+        if envelope["otel_outside_runs_usd"] or envelope["otel_ambiguous_usd"]:
+            print(f"Measured but in no run: ${envelope['otel_outside_runs_usd']:.4f} outside every "
+                  f"run window, ${envelope['otel_ambiguous_usd']:.4f} matching several runs (not split).")
+    else:
+        print("Tokens are PARTIAL — captured from subagent stops only; the main orchestrating")
+        print("loop and cache tokens (which dominate cost) are NOT visible to WellForge.")
+        print("For measured cost, turn on the OTel export (skills/observability, \"Measured")
+        print("cost\"); until then, real session cost is  /usage  in Claude Code.")
     return 0
 
 

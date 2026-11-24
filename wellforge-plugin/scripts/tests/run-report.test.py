@@ -266,5 +266,93 @@ rw_adv = rr.rework(adv_runs, {"r-adv": [adv]})
 check("rework: advisor calls by agent", rw_adv["advisor_calls_by_agent"], {"backend-dev": 2})
 check("rework without events: empty advised map", rr.rework(adv_runs)["advisor_calls_by_agent"], {})
 
+# ── Measured cost (OTel) ─────────────────────────────────────────────────────────────
+# Shapes from a real Claude Code 2.1.322 export, reduced to what otel-sink.py keeps.
+def req(ts, cost, agent_id=None, agent_name=None, rid=None, cache_read=0):
+    q = {"event.name": "api_request", "ts": ts, "cost_usd": cost, "input_tokens": 2,
+         "output_tokens": 10, "cache_read_tokens": cache_read, "cache_creation_tokens": 0}
+    if agent_id:
+        q["agent_id"] = agent_id
+        q["agent.name"] = agent_name or "backend-dev"
+    if rid:
+        q["request_id"] = rid
+    return q
+
+
+# 11. agent_id joins a subagent's requests to the run its SubagentStop event belongs to —
+#     exactly, even when the two parallel runs' windows overlap and the names would not split.
+runs = [run("be", "backend-dev", "10:00", "10:10"), run("fe", "frontend-dev", "10:01", "10:09")]
+hook = {"be": [dict(ev("10:05", 1, 1, "wellforge:backend-dev"), agent_id="A1")],
+        "fe": [dict(ev("10:06", 1, 1, "wellforge:frontend-dev"), agent_id="A2")]}
+reqs = [req("10:04", 0.30, "A1", "wellforge:backend-dev"), req("10:05", 0.20, "A2", "wellforge:frontend-dev"),
+        req("10:05", 0.50)]  # main loop, inside BOTH windows
+by, outside, amb = rr.attribute_otel(reqs, runs, hook)
+check("agent_id joins be", [q["cost_usd"] for q in by["be"]], [0.30])
+check("agent_id joins fe", [q["cost_usd"] for q in by["fe"]], [0.20])
+check("main loop in two windows → ambiguous, not doubled", ([q["cost_usd"] for q in amb], outside), ([0.50], []))
+
+# 12. A subagent whose stop event was lost: window + agent name (plugin prefix stripped).
+by, _, amb = rr.attribute_otel([req("10:05", 0.40, "A9", "wellforge:frontend-dev")], runs, {})
+check("lost stop event → narrowed by agent.name", ([q["cost_usd"] for q in by["fe"]], amb), ([0.40], []))
+
+# 13. Sequential runs: the main loop is attributed by window; work outside every run is outside.
+seq = [run("r1", "backend-dev", "10:00", "10:10"), run("r2", "qe", "11:00", "11:10")]
+by, outside, amb = rr.attribute_otel([req("10:02", 0.1), req("11:05", 0.2), req("12:00", 0.7)], seq, {})
+check("sequential main loop by window", ([q["cost_usd"] for q in by["r1"]], [q["cost_usd"] for q in by["r2"]]),
+      ([0.1], [0.2]))
+check("outside every run", [q["cost_usd"] for q in outside], [0.7])
+
+# 14. measured(): main vs subagent split, cache tokens counted, garbage cost ignored.
+m = rr.measured([req("10:00", 0.25, "A1", cache_read=1000), req("10:01", 0.75), dict(req("10:02", 0), cost_usd="x")])
+check("measured split", (m["cost_usd"], m["main_usd"], m["subagent_usd"], m["cache_read_tokens"], m["requests"]),
+      (1.0, 0.75, 0.25, 1000, 3))
+
+# 15. End to end through main(): session markers select the spool files, OTel ms timestamps
+#     compare correctly against second-resolution windows, a retried batch is not doubled,
+#     another project's session is never read, and the budget uses the measured basis.
+with tempfile.TemporaryDirectory() as d:
+    runs_dir, spool = os.path.join(d, "runs"), os.path.join(d, "spool")
+    os.makedirs(runs_dir)
+    os.makedirs(spool)
+    trace = {"schema": "wellforge-run/v3", "run_id": "2026-11-24T10-00-00Z-implement-001-x",
+             "command": "implement", "feature": "001-x", "rigor": "mvp", "result": "complete",
+             "started": "2026-11-24T10:00:00Z", "finished": "2026-11-24T10:00:37Z",
+             "agents": [{"agent": "backend-dev"}], "verdicts": {}}
+    json.dump(trace, open(os.path.join(runs_dir, trace["run_id"] + ".json"), "w"))
+    with open(os.path.join(runs_dir, ".events.jsonl"), "w") as f:
+        f.write(json.dumps({"ts": "2026-11-24T09:59:00Z", "event": "session_start", "session_id": "S1"}) + "\n")
+        f.write(json.dumps({"ts": "2026-11-24T10:00:30Z", "event": "subagent_stop", "session_id": "S1",
+                            "agent_type": "wellforge:backend-dev", "agent_id": "A1",
+                            "model": "claude-sonnet-5", "input_tokens": 100, "output_tokens": 50}) + "\n")
+    rec = {"event.name": "api_request", "session.id": "S1", "model": "claude-sonnet-5"}
+    with open(os.path.join(spool, "S1.jsonl"), "w") as f:
+        for line in (dict(rec, **{"event.timestamp": "2026-11-24T10:00:00.500Z", "cost_usd": 1.5,
+                                  "request_id": "q1"}),                 # FIRST second: "…00.500Z" < "…00Z" as strings
+                     dict(rec, **{"event.timestamp": "2026-11-24T10:00:10.000Z", "cost_usd": 2.0,
+                                  "request_id": "q2", "agent_id": "A1", "agent.name": "wellforge:backend-dev"}),
+                     dict(rec, **{"event.timestamp": "2026-11-24T10:00:10.000Z", "cost_usd": 2.0,
+                                  "request_id": "q2", "agent_id": "A1"}),  # exporter retry
+                     dict(rec, **{"event.timestamp": "2026-11-24T10:00:20.000Z", "event.name": "subagent_completed"})):
+            f.write(json.dumps(line) + "\n")
+    json.dump({"event.name": "api_request", "session.id": "OTHER", "event.timestamp": "2026-11-24T10:00:05Z",
+               "cost_usd": 99.0}, open(os.path.join(spool, "OTHER.jsonl"), "w"))
+    import subprocess
+    out = subprocess.run([sys.executable, os.path.join(HERE, "..", "run-report.py"), "--runs-dir", runs_dir,
+                          "--otel-spool", spool, "--json", "--budget"], capture_output=True, text=True)
+    env = json.loads(out.stdout)
+    r0 = env["runs"][0]
+    check("e2e measured cost (retry de-duplicated, other session ignored)", r0["cost_usd"], 3.5)
+    check("e2e source + split", (r0["cost_source"], r0["cost_main_usd"], r0["cost_subagent_usd"]), ("otel", 1.5, 2.0))
+    check("e2e the session marker is not a token event", r0["events"], 1)
+    check("e2e envelope", (env["cost_measured"], env["otel_outside_runs_usd"]), (True, 0.0))
+    pf = env["budget"]["per_feature"][0]
+    check("e2e budget on the measured basis", (pf["basis"], pf["spent_usd"], pf["state"]), ("otel", 3.5, "within"))
+    out = subprocess.run([sys.executable, os.path.join(HERE, "..", "run-report.py"), "--runs-dir", runs_dir,
+                          "--otel-spool", spool, "--json", "--budget", "--no-otel"], capture_output=True, text=True)
+    env = json.loads(out.stdout)
+    check("--no-otel falls back to the estimate",
+          (env["runs"][0]["cost_source"], env["cost_measured"], env["budget"]["per_feature"][0]["basis"]),
+          ("estimate", False, "estimate"))
+
 print(f"\nrun-report: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

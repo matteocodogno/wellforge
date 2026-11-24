@@ -211,6 +211,17 @@ should carry `extraKnownMarketplaces.wellforge` and `enabledPlugins["wellforge@w
 already has the plugin and does nothing at all for anyone who does not, with no error either
 way. Fix: `/wellforge:upgrade` (scaffolded) or re-run `/wellforge:adopt` (adopted).
 
+**Cost source** — informational, never a WARN: measured cost is a per-developer opt-in.
+`wfpy "$WF/scripts/otel-sink.py" status; echo $?` and whether `.forge/runs/.events.jsonl`
+holds a `session_start` marker. Report one of:
+
+- `cost: measured (OTel sink up)` — exit 0;
+- `cost: measured, sink down` — markers exist, exit 1: the next session restarts it, so only
+  sessions since it stopped are unmeasured;
+- `cost: estimate only (partial)` — no markers: point at the observability skill's
+  "Measured cost" for the five-line user-settings block. Never write that block yourself —
+  it goes in the developer's user settings, and Claude Code ignores it at project scope.
+
 **Git policy** — `git config merge.ff` (want `only`), `pull.rebase` (want `true`), and
 whether `gates/hooks/commit-msg` is installed in `.git/hooks/`. On FAIL:
 `./scripts/setup-git-policy.sh` (or `mise run git-policy` in a generated project).

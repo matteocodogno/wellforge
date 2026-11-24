@@ -18,8 +18,11 @@ Every multi-agent run leaves an auditable trace. Two layers:
    verdicts, drift. One JSON file per run.
 2. **Token events** (best-effort) — appended by the `trace-subagent` hook on each
    subagent completion, when the harness exposes usage. Raw, machine, transient.
+3. **Measured cost** (opt-in, per developer) — Claude Code's own per-request cost,
+   exported over OpenTelemetry to a local sink. See "Measured cost" below.
 
-`run-report.py` (in the plugin) joins them: per-run summary + token/cost estimate.
+`run-report.py` (in the plugin) joins them: per-run summary + measured cost where there is
+one, the token estimate where there is not.
 
 ## Layout (inside the project)
 
@@ -28,7 +31,9 @@ Every multi-agent run leaves an auditable trace. Two layers:
 ├── manifest.json          # (scaffolded projects) template provenance — unrelated
 └── runs/
     ├── 2026-06-24T10-44-00Z-implement-001-user-auth.json   # semantic run trace (committable audit trail)
-    └── .events.jsonl                                        # raw token events (gitignored, transient)
+    └── .events.jsonl                                        # raw token events + session markers (gitignored, transient)
+
+~/.local/state/wellforge/otel/<session-id>.jsonl             # measured cost, per session (outside the project)
 ```
 
 `.forge/runs/` is created on first run. The semantic `*.json` files are the audit trail —
@@ -203,10 +208,11 @@ producer's).
 
 ## Consumers
 
-- **`--json` envelope**: `{"runs": [...], "unattributed_events": N, "cost_estimated": bool}`.
-  It is an object, not a bare list, because the two honesty signals have to travel with the
-  data: how many token events could not be attributed to one run, and whether costs were
-  priced at all. Consumers read `runs`.
+- **`--json` envelope**: `{"runs": [...], "unattributed_events": N, "cost_estimated": bool,
+  "cost_measured": bool, "otel_outside_runs_usd": X, "otel_ambiguous_usd": Y}`.
+  It is an object, not a bare list, because the honesty signals have to travel with the
+  data: how many token events could not be attributed to one run, whether costs were
+  priced at all, and whether any were measured. Consumers read `runs`.
 - **`run-report.py`** (`<plugin>/scripts/run-report.py`; resolve `<plugin>` as
   `/wellforge:doctor` does — `${CLAUDE_PLUGIN_ROOT}` is substituted for HOOKS only and is
   NOT exported to the Bash tool) — summarizes
@@ -218,7 +224,60 @@ producer's).
   the right agents run in order, did QE run, was verification skipped) instead of scoring
   trajectory neutral-when-blind.
 
-## Honest limits — tokens/cost are NOT real cost
+## Measured cost — OpenTelemetry (opt-in)
+
+Claude Code prices every API call itself and exports it as the `api_request` OTel log
+event: `cost_usd`, input/output/cache tokens, `model`, `query_source`, and — on a
+subagent's calls — `agent_id` and `agent.name`. That is the bill, request by request: main
+loop and cache included. WellForge reads it instead of estimating it.
+
+**Turning it on** is per developer, in the **user** settings (`~/.claude/settings.json`) or
+the launch environment — never the project's `.claude/settings.json`: Claude Code ignores
+telemetry variables set at project scope (verified 2026-11-24, Claude Code 2.1.322), so a
+repo cannot redirect anyone's telemetry. WellForge never writes this block for you:
+
+```json
+{ "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL": "http/json",
+    "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT": "http://127.0.0.1:14318/v1/logs",
+    "WF_OTEL_SINK": "1" } }
+```
+
+Logs-only variables, so an existing metrics export (an org collector) is left alone.
+`WF_OTEL_SINK=1` is the marker the SessionStart hook reads: hooks never see `OTEL_*`.
+
+**What happens then.** In a WellForge project, SessionStart (1) appends a `session_start`
+marker with the session id to `.events.jsonl`, and (2) starts `scripts/otel-sink.py` unless
+one already answers: a stdlib OTLP/HTTP-JSON receiver on `127.0.0.1:14318`
+(`WF_OTEL_PORT`), writing one file per session under `~/.local/state/wellforge/otel/`
+(`WF_OTEL_SPOOL`), exiting after 12 h idle (`WF_OTEL_IDLE_EXIT`). It keeps `api_request`
+and `subagent_completed` only, and only an **allowlist** of fields — Claude Code puts the
+user's e-mail and account ids on every record, and prompt/response text on some; none of
+that is written. Protobuf is refused with 415: the protocol must be `http/json`.
+
+**Attribution** (`run-report.py`), over this project's recorded sessions only:
+
+- a subagent's request → the run its SubagentStop event belongs to, joined on `agent_id`:
+  exact, even across parallel runs with overlapping windows;
+- anything else (the main loop, a subagent whose stop event was lost) → the run window,
+  narrowed by agent name; a request that still matches several runs is **ambiguous** and
+  counted in none (`otel_ambiguous_usd`), never in two;
+- a request in no run's window is real spend outside every workflow command
+  (`otel_outside_runs_usd`).
+
+Per run: `cost_source` (`otel` | `estimate` | `none`), `cost_usd` with its
+`cost_main_usd` / `cost_subagent_usd` split, and cache tokens. `est_cost_usd` stays, with
+its old meaning. Budgets (`--budget`) compare the measured cost when there is one and say
+which `basis` they used — this is what makes `config/rigor-budgets.yml` calibratable.
+
+## Honest limits — the ESTIMATE is not real cost
+
+Everything below is about the trace **estimate** — what a run reports when no measured cost
+was exported for it (`cost_source: estimate`). Measured cost has one limit of its own: it
+covers only sessions run with the export on, so a feature built partly without it reads
+`basis: mixed`.
 
 The semantic trace (who ran, verdicts, drift) is **exact**. The token/cost layer is
 **structurally a large under-count** and must never be presented as real cost:
@@ -240,7 +299,6 @@ The semantic trace (who ran, verdicts, drift) is **exact**. The token/cost layer
   matches no key, the default rate is used and the run is flagged as inexact. The rates
   themselves are refreshed from the `claude-api` skill's model table, never from memory.
 
-So treat the trace as an **audit trail**, not a cost meter. For real session cost, the
-agent CLI's own accounting is authoritative — `/usage` in Claude Code. WellForge does not
-try to reproduce it (a losing game against the tool's exact numbers); it reports what ran,
-clearly labels tokens as partial, and points to `/usage`.
+So treat the estimate as an **audit trail**, not a cost meter. Without the OTel export the
+agent CLI's own accounting is authoritative — `/usage` in Claude Code; with it, WellForge
+reads that same accounting per request instead of reproducing it.

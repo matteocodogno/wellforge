@@ -634,6 +634,10 @@ jobs:
       # its own — a wrong cost estimate still prints a number.
       - uses: astral-sh/setup-uv@v7
       - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/run-report.test.py
+      # Measured cost: the local OTel sink keeps an ALLOWLIST of fields (Claude Code puts the
+      # user's e-mail on every record), and SessionStart starts it only on WF_OTEL_SINK=1.
+      - run: python3 wellforge-plugin/scripts/tests/otel-sink.test.py
+      - run: wellforge-plugin/hooks/scripts/tests/session-start.test.sh
       # forge-state is what status/triage/done/promote read instead of re-deriving feature
       # state with the model. It is the one place that state is computed, so it is the one
       # place it can regress — every status, tier, drift case and verdict kind is pinned.

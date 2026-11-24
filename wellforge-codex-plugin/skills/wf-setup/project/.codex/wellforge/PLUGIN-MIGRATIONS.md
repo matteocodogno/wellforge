@@ -32,6 +32,20 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.65.0 — measured cost from Claude Code's OpenTelemetry export
+
+- **Projects: nothing to do.** Without the opt-in, nothing changes: `run-report.py` reports
+  the estimate as before, and every existing `--json` field keeps its meaning. New fields
+  sit beside them (`cost_source`, `cost_usd`, `cost_measured`, `basis` under `--budget`).
+- **Developers who want measured cost: add the env block** from the observability skill's
+  "Measured cost" to their **user** settings (`~/.claude/settings.json`), once per machine.
+  A project's `.claude/settings.json` cannot do it: Claude Code ignores telemetry variables
+  at project scope.
+- `.events.jsonl` gains `session_start` lines when the opt-in is on. It is already
+  gitignored in every template; readers older than this release would count those lines as
+  token events with no tokens, so update the plugin before turning the export on.
+- **Codex projects: nothing to do.** The sink and the hook change are Claude Code only.
+
 ## 2.64.1 — stack skills load for small edits too
 
 - **Claude Code and Codex projects: nothing to do.** The `hono-ts-backend` and

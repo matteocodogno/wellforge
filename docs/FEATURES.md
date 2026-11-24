@@ -339,7 +339,11 @@ tasks, their outcomes, drift events, and verdicts. A `SubagentStop` hook adds be
 token telemetry; `run-report.py` joins them and estimates cost from a central price table.
 `/wellforge:status` surfaces recent runs + cost; the `evaluator` reads traces for real
 **trajectory** evidence (closing the eval harness's blind spot). The audit trail (who/what/
-verdict/drift) is exact; the cost layer is an estimate, honestly labelled.
+verdict/drift) is exact; the cost layer is an estimate, honestly labelled — unless the
+developer turns on Claude Code's OpenTelemetry export (a user-settings block): then a local
+sink records Claude Code's own per-request cost, and `run-report.py` reports **measured**
+cost per run — main loop and cache included, subagents joined on `agent_id` — and budgets
+compare against it.
 
 ## 6. Project lifecycle
 

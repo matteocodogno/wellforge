@@ -142,8 +142,9 @@ End with a one-line summary: counts per phase (e.g. "1 done · 1 implementing ·
 ## Observability (when `.forge/runs/` exists)
 
 For a single-feature detail view, add `--budget --rework` to that call and show one line:
-spend vs the tier ceiling with the top consumer, and any rework rounds. Advisory — and a
-feature with no token data reports *unknown*, never "under budget".
+spend vs the tier ceiling with the top consumer and the `basis` (`otel` measured,
+`estimate`, or `mixed`), and any rework rounds. Advisory — and a feature with no cost data
+reports *unknown*, never "under budget".
 
 Two scripts, two questions — keep them apart. `forge-state.py` answers *what state is each
 feature in* (the section above); `run-report.py` answers *what happened in each run*:
@@ -156,9 +157,10 @@ If the project has run traces, append a short **Runs** section from the report s
 wfpy "$WF/scripts/run-report.py" --json [--feature <slug>]
 ```
 
-It returns `{"runs": [...], "unattributed_events": N, "cost_estimated": bool}`; each entry
-in `runs` has `command`, `result`, `agents`, `verdicts`, `input_tokens`, `output_tokens`,
-`est_cost_usd`, `drift_open`, `terse`. When `cost_estimated` is false the pricing table
+It returns `{"runs": [...], "unattributed_events": N, "cost_estimated": bool,
+"cost_measured": bool, …}`; each entry in `runs` has `command`, `result`, `agents`,
+`verdicts`, `input_tokens`, `output_tokens`, `est_cost_usd`, `cost_source`, `cost_usd`,
+`drift_open`, `terse`. When `cost_estimated` is false the pricing table
 could not be read — show tokens without a cost rather than a zero. Render each run as: the agent
 trajectory (`a → b → c`), the verdicts, and any open drift. **These are exact.**
 
@@ -176,15 +178,22 @@ yet) — same omit-when-empty convention as the rest of this section; never prin
 placeholder or a "no control found" line. This is **subagent output only** (Risk R1 in the
 terse-mode plan) — never state or imply it measures the main loop's savings.
 
-**Cost/tokens — do NOT present them as real cost.** WellForge captures only a fraction of
-subagent tokens; it cannot see the main orchestrating loop or cache tokens, which dominate.
-The figure is structurally a small under-count (often by 10×+). So:
+**Cost — read `cost_source` per run, and never mix the two kinds.**
 
-- Show captured tokens only as `tok (partial)`, and the dollar figure only as a faint
-  lower bound if at all — never as "the cost".
-- End the section with: **"For real session cost run `/usage` (Claude Code) — WellForge's
-  numbers are partial subagent tokens only."**
-- The value of this section is the **audit trail** (who ran, verdicts, drift), not cost.
+- `cost_source: "otel"` — **measured**: Claude Code's own per-request cost, main loop and
+  cache included (observability skill, "Measured cost"). Show `$<cost_usd> measured`, with
+  the `cost_main_usd` / `cost_subagent_usd` split. This one IS the cost of that run.
+- `cost_source: "estimate"` — WellForge captured only a fraction of subagent tokens; it
+  cannot see the main loop or cache tokens, which dominate, so the figure is a large
+  under-count (often 10×+). Show tokens only as `tok (partial)` and the dollar figure only
+  as a faint lower bound if at all — never as "the cost".
+- `cost_source: "none"` — no cost data; say nothing about cost for that run.
+- When `cost_measured` is false, end the section with: **"For real session cost run
+  `/usage` (Claude Code), or turn on the OTel export (observability skill) — WellForge's
+  numbers are partial subagent tokens only."** When it is true, mention
+  `otel_outside_runs_usd` / `otel_ambiguous_usd` once if either is non-zero: measured spend
+  no run owns.
+- The value of this section is still the **audit trail** (who ran, verdicts, drift) first.
 - Omit the whole section if there are no traces.
 
 ## Hard rules

@@ -120,15 +120,18 @@ the rule is checkable, not recalled.
    wfpy "$WF/scripts/run-report.py" --json --budget
    ```
 
-   → "spent $X of a $Y `<tier>` ceiling (Z%), top consumer `<agent>`". Budgets are
-   **advisory** (`config/rigor-budgets.yml`, `advisory_only: true`) — this surfaces, it
-   never blocks, per the surface-never-ship rule.
+   → "spent $X of a $Y `<tier>` ceiling (Z%, `<basis>`), top consumer `<agent>`". Budgets
+   are **advisory** (`config/rigor-budgets.yml`, `advisory_only: true`) — this surfaces, it
+   never blocks, per the surface-never-ship rule. `basis: otel` is measured cost (the
+   observability skill's "Measured cost"); `estimate` is the partial trace estimate, so an
+   `estimate` feature that is over is over by at least that much, and one that is within
+   proves nothing. Say which.
 
    **`state: "unknown"` is not a finding and must not be reported as one.** It means no
-   token events were captured for that feature, which is the normal state when the
-   SubagentStop hook never fired. Listing it under "over budget" would turn missing data
-   into an accusation. Mention the count once in the footer instead: *"N features have no
-   cost data."*
+   cost data exists for that feature — neither a measured request nor a token event —
+   which is the normal state without the OTel export. Listing it under "over budget" would
+   turn missing data into an accusation. Mention the count once in the footer instead:
+   *"N features have no cost data."*
 
 7. **Rework hotspots** [`rework.by_agent[agent] >= hotspot_rounds`]. Same call with
    `--rework`; the threshold and window live in `config/rigor-budgets.yml`

@@ -26,8 +26,12 @@ import shutil
 # repo-maintenance tools for THIS repository and are deliberately not shipped: a generated
 # project has no plugin README to check against, and shipping them would invite someone to
 # run a guard that cannot pass.
+#
+# otel-sink.py is the Claude Code OTel receiver: the doctor asks it `status`, and in a tool
+# whose agent exports no Claude Code telemetry that answer is simply "estimate only".
 SCRIPTS = ("forge-state.py", "run-report.py", "security-triggers.py",
-           "migrate-ids.py")  # imports forge-state.py from its own directory
+           "migrate-ids.py",  # imports forge-state.py from its own directory
+           "otel-sink.py")
 
 # Plugin-root files the prompts cite as $WF/<name>.
 ROOT_FILES = ("PLUGIN-MIGRATIONS.md",)

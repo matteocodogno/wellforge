@@ -917,6 +917,36 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 41 — Measured cost from OpenTelemetry (added 2026-11-24)
+
+`rigor-budgets.yml` admitted its own basis was useless: `est_cost_usd` undercounts by
+construction and every trace in this repo priced at $0, so no ceiling could ever be
+calibrated. Claude Code already prices every request itself and exports it over OTel.
+
+- ☑ **The granularity question, measured before building** (Claude Code 2.1.322, a Haiku
+  session spawning one subagent, a local OTLP receiver): each `api_request` log event
+  carries `cost_usd`, input/output/cache tokens, `model`, `query_source`, and on a
+  subagent's calls `agent_id` + `agent.name` — the same `agent_id` the SubagentStop hook
+  records. Per-subagent attribution is exact, and the main loop is visible for the first
+  time.
+- ☑ **Where the switch can live, measured too.** Telemetry variables are honoured from the
+  launch env, `--settings` and user settings, and **ignored at project scope** even in a
+  trusted repo; hooks see `CLAUDE_CODE_*` but never `OTEL_*`. Hence a per-developer opt-in
+  block in user settings, with `WF_OTEL_SINK=1` as the marker the hook can read. WellForge
+  never writes it.
+- ☑ **`scripts/otel-sink.py`** — stdlib OTLP/HTTP-JSON receiver on 127.0.0.1:14318, one
+  file per session, an allowlist of fields (the export carries the user's e-mail on every
+  record), 12 h idle exit. Started by SessionStart, which also records the session id in
+  `.events.jsonl` — already gitignored, so no template change.
+- ☑ **`run-report.py`** — `cost_source` / `cost_usd` (main vs subagent split) per run,
+  joined on `agent_id`, else run window; ambiguous and outside-any-run spend reported, never
+  split or doubled. `--budget` uses the measured basis and names it.
+- ☑ 31 sink cases, 13 hook cases, 15 new run-report cases (one mutation-checked: OTel's
+  millisecond timestamps sort before a trace's second-resolution `started`).
+- ☐ **Calibrate `rigor-budgets.yml`** from `basis: otel` runs, once a few features have run
+  end to end with the export on. The Codex adapter has its own OTel (`[otel]` in
+  `config.toml`) and is not wired.
+
 ## Phase 40 — The Codex adapter (added 2026-10-30)
 
 `MULTI-TOOL-SUPPORT.md` filed Codex as Tier 2 — "hooks ✗ minimal, subagents ~ limited",
