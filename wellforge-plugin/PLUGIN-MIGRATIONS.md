@@ -32,6 +32,15 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.64.1 — stack skills load for small edits too
+
+- **Claude Code and Codex projects: nothing to do.** The `hono-ts-backend` and
+  `kotlin-springboot` skill descriptions now lead with small-task triggers ("add a route",
+  "create a migration"). They ship with the plugin, and the Codex package is regenerated
+  in the same release.
+- The new `route-*` prompt evals live in the plugin repo only and ship nothing to a project.
+- No `.forge/` schema change.
+
 ## 2.64.0 — a `scout` agent maps the code before the architect
 
 - **Claude Code projects: nothing to do.** The `scout` agent ships with the plugin.
