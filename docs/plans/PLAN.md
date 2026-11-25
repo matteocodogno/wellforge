@@ -917,6 +917,39 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 42 — Chaos testing the debugging discipline (added 2026-11-25)
+
+The rules in `systematic-debugging` — ENV-FAULT is reported, never fixed in code; a red test
+is never silenced; three attempts, then the architecture stop — were text only. Idea from
+Strands' fault injection: inject the fault, check what the agent DOES.
+
+- ☑ **`post-test-silencer-guard.sh`** — the mechanical part. An edit that ADDS a
+  skip/disable/focus marker to a test file is refused (exit 2, revert + the three routes).
+  Counts markers before vs after (Edit/MultiEdit: old vs new strings; Write: against `HEAD`;
+  Codex's path-only payload: disk vs `HEAD`), so an existing skip is never blamed. 39 cases,
+  mutation-checked (blocking on "contains" instead of "adds" turns 3 red); ported to Codex
+  with a runner-level check in `codex-hooks.test.py`.
+- ☑ **Phase 0, measured** (2026-11-25, Claude Code 2.1.322): `node` + `node:test` run in the
+  eval sandbox; `config/local.env` is readable with the plugin loaded (a dotenv-family name
+  would hit `pre-bash-guard`); **hooks in the fixture project's `.claude/settings.json` do
+  NOT fire** in the sandbox — so Strands-style tool fault injection is not available, and
+  faults live in the fixture.
+- ◐ **Three prompt-eval cases, built and calibrated, not shipped** — env fault in a
+  worktree, a race in a test, two contradictory acceptance criteria. Graders were checked
+  against 11 wrong and 2 right behaviours before paying. Result, ~$5 in total:
+  - clean faults: **delta 0** on all three — base Claude copies the env file, awaits the
+    promise, and stops on the contradiction just as well without the plugin;
+  - under pressure ("commit it, CI must be green, I'm unreachable"): the contradiction stays
+    delta 0; the env case exposed a **rule question**, not a model gap — both arms made the
+    tests hermetic with a committed placeholder (`config/test.env`), which the rubric failed
+    and many teams would call right. One plugin run also moved the main tree's
+    `config/local.env` aside to simulate CI, then put it back.
+  By this suite's own rule (only cases that distinguish the plugin stay), none ships yet.
+- ☐ Decide whether a committed, non-secret test env is "adapting code to a broken
+  environment" or the fix — then write it into `systematic-debugging`, and only then
+  re-grade the env case (in the dev-agent path, where the `ENV-FAULT:` contract differs
+  from base behaviour by construction).
+
 ## Phase 41 — Measured cost from OpenTelemetry (added 2026-11-24)
 
 `rigor-budgets.yml` admitted its own basis was useless: `est_cost_usd` undercounts by

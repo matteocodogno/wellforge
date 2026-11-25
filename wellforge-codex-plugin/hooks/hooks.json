@@ -42,6 +42,10 @@
           {
             "type": "command",
             "command": "bash \"${PLUGIN_ROOT}/hooks/run-hook.sh\" post-spec-guard"
+          },
+          {
+            "type": "command",
+            "command": "bash \"${PLUGIN_ROOT}/hooks/run-hook.sh\" post-test-silencer-guard"
           }
         ]
       }

@@ -115,10 +115,11 @@ def main():
         cmd = commands(repo)
         sub = os.path.join(repo, "specs")
 
-        case("hooks.json wires the eight ported hooks",
+        case("hooks.json wires the nine ported hooks",
              sorted(cmd) == sorted(["session-start", "pre-bash-guard", "pre-file-guard",
-                                    "post-lint", "post-spec-guard", "stop-verify",
-                                    "trace-subagent", "subagent-decisions-guard"]), sorted(cmd))
+                                    "post-lint", "post-spec-guard", "post-test-silencer-guard",
+                                    "stop-verify", "trace-subagent", "subagent-decisions-guard"]),
+             sorted(cmd))
 
         # ── pre-bash-guard: unchanged script, Codex payload ──────────────────────────
         r = fire(repo, cmd["pre-bash-guard"], bash("rm -rf ~"))
@@ -169,6 +170,19 @@ def main():
         git(repo, "checkout", "--", "specs/001-x/spec.md")
         r = fire(repo, cmd["post-spec-guard"], post)
         case("an unchanged lifecycle passes", r.returncode == 0, r.stderr)
+
+        # ── post-test-silencer-guard through apply_patch: the runner passes only the path,
+        # so the script must compare the file on disk with HEAD — or it never fires on Codex.
+        write(repo, "test/a.test.js", 'import { test } from "node:test";\ntest.only("a", () => {});\n')
+        silenced = dict(patch("*** Add File: test/a.test.js", "+test.only(\"a\", () => {});"),
+                        hook_event_name="PostToolUse")
+        r = fire(repo, cmd["post-test-silencer-guard"], silenced)
+        case("a patch adding test.only to a test file is refused (exit 2)",
+             r.returncode == 2 and "test.only" in r.stderr, r.stderr)
+        write(repo, "test/a.test.js", 'import { test } from "node:test";\ntest("a", () => {});\n')
+        r = fire(repo, cmd["post-test-silencer-guard"], silenced)
+        case("…and the same file without the marker passes", r.returncode == 0, r.stderr)
+        os.remove(os.path.join(repo, "test", "a.test.js"))
 
         # ── Stop: drift (spec body changed, tasks.md not) ────────────────────────────
         write(repo, "specs/001-x/spec.md", SPEC + "- AC-2: another thing\n")

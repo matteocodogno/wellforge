@@ -101,6 +101,7 @@ The workflow, the agents, the skills, MCP **and** local enforcement. What differ
 | pre-file-guard (secret files) | `PreToolUse` `apply_patch` | ~ the **write** half: the runner extracts every path a patch adds, updates, moves or deletes and runs the guard once per path. Codex has no Read tool — it reads through the shell — so the **read** half is pre-bash-guard's command-text check, as on OpenCode; a read through an MCP tool is not covered |
 | post-lint | `PostToolUse` `apply_patch` | ✓ unchanged script, per patched file |
 | post-spec-guard (lifecycle gates) | `PostToolUse` `apply_patch` | ✓ unchanged — the `status: done` gate and the raise-only `rigor:` rule are **mechanism** here, as on Claude Code (not prompt promises, as on Copilot/OpenCode) |
+| post-test-silencer-guard (no skipped red tests) | `PostToolUse` `apply_patch` | ✓ unchanged script, per patched file — the runner passes only the path, so the script compares the file on disk with `HEAD` |
 | stop-verify (spec drift, compile) | `Stop` | ✓ unchanged; exit 2 makes Codex continue the turn with the reason, `stop_hook_active` stops the loop |
 | session-start | `SessionStart` | ✓ plain stdout becomes developer context, as on Claude Code |
 | subagent-decisions-guard (`DECISIONS:` in dev/devops reports) | `SubagentStop` (`^wf-` agents) | ~ unchanged script; it reads `last_assistant_message` or the Claude transcript shape, and fails open when neither is there — so on Codex it enforces only if the payload carries the final message (unverified) |

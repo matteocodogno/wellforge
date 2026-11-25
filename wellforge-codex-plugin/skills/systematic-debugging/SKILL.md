@@ -189,6 +189,10 @@ where that rule gets tested, so it extends:
 Every one of these destroys the evidence as well as hiding the bug. If a test itself is
 genuinely wrong, that's a spec or plan question — route it, don't delete it.
 
+The skip/disable/focus part is **mechanical**: `post-test-silencer-guard.sh` refuses an edit
+that adds one to a test file and asks for the revert. The rest — a raised timeout, a retry,
+a swallowed exception — no regex can judge, and stays yours.
+
 ## Red flags — you have stopped debugging and started guessing
 
 "Quick fix now, investigate later" · "let me just try changing X" · "it's probably X" ·

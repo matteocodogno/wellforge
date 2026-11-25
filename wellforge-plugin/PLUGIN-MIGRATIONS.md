@@ -32,6 +32,18 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.66.0 — a red test is never silenced, mechanically
+
+- **Projects: nothing to do.** A new `PostToolUse` hook, `post-test-silencer-guard.sh`,
+  refuses an edit to a test file that ADDS a skip / disable / focus marker (`it.skip`,
+  `.only`, `xit`, `@Disabled`, `@Ignore`, `@pytest.mark.skip`, `t.Skip` …) and asks for the
+  revert. It only fires in WellForge projects, and only on a rise in the count: a skip that
+  was already there is never blamed on the edit next to it.
+- **If you need a skip on purpose** (quarantining a known-broken test), make that edit
+  yourself; the guard asks the agent to hand it back to you rather than do it.
+- **Codex projects: nothing to do** beyond the usual plugin update — the hook is ported
+  (`PostToolUse` `apply_patch`, compared on disk against `HEAD`).
+
 ## 2.65.0 — measured cost from Claude Code's OpenTelemetry export
 
 - **Projects: nothing to do.** Without the opt-in, nothing changes: `run-report.py` reports

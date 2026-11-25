@@ -68,7 +68,8 @@ _IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
 # The hooks the runner wires, and the plugin scripts they need. notify and pre-compact-backup
 # are deliberately absent — see the README's hook table for why.
 HOOK_SCRIPTS = ("session-start", "pre-bash-guard", "pre-file-guard", "post-lint",
-                "post-spec-guard", "stop-verify", "trace-subagent", "subagent-decisions-guard")
+                "post-spec-guard", "post-test-silencer-guard", "stop-verify", "trace-subagent",
+                "subagent-decisions-guard")
 
 _AGENT_NAMES = []   # set in main(); lowercase agent ids (== filenames)
 
@@ -370,7 +371,8 @@ def wf_hooks(cmd):
             {"matcher": "^apply_patch$", "hooks": [h("pre-file-guard")]},
         ],
         "PostToolUse": [
-            {"matcher": "^apply_patch$", "hooks": [h("post-lint"), h("post-spec-guard")]},
+            {"matcher": "^apply_patch$", "hooks": [h("post-lint"), h("post-spec-guard"),
+                                                  h("post-test-silencer-guard")]},
         ],
         "Stop": [{"hooks": [h("stop-verify", timeout=300)]}],
         # Only WellForge's own agents; Codex's built-in explorer/worker are not pipeline stages.

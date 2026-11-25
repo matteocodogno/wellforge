@@ -10,7 +10,8 @@
     "PostToolUse": [
       { "matcher": "Write|Edit|MultiEdit|NotebookEdit", "hooks": [
         { "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-lint.sh" },
-        { "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-spec-guard.sh" }
+        { "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-spec-guard.sh" },
+        { "type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-test-silencer-guard.sh" }
       ] }
     ],
     "Notification": [
