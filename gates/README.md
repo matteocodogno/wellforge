@@ -36,6 +36,39 @@ fail their own gate); the skip is printed as a CI notice, never silent.
 | `/.github/workflows/commit-lint.yml` | reusable Conventional Commits gate (`workflow_call`) |
 | `/.github/workflows/linear-history.yml` | reusable linear-history gate (`workflow_call`) — no merge commits in the PR range |
 | `/.github/workflows/heartbeat-report.yml` | reusable heartbeat reporter (`workflow_call`) — dedup-issue manager (see below) |
+| `/.github/workflows/ui-slop.yml` | reusable **advisory** UI-slop gate (`workflow_call`, inputs: `working-directory`, `changed-only`) — see below |
+
+## UI slop gate (advisory)
+
+The tells that make an interface read as generated rather than designed — off-grid spacing
+(`mt-[13px]`), hue gradients, glows, gradient text, emoji icons, hype copy, 800–900 weights,
+tracked uppercase labels, idle `animate-pulse`, `transition-all`. Twenty signs, each paired
+with its fix and grouped by the pass that fixes it (spacing → color → icons → copy → type →
+motion).
+
+| Path | What |
+|---|---|
+| `wellforge-plugin/config/slop-signs.yml` | the catalogue — single source of truth |
+| `wellforge-plugin/scripts/slop-check.py` | the scanner (tested: every sign fires on a sloppy fixture, none on a clean one built from near misses) |
+| `/.github/workflows/ui-slop.yml` | reusable workflow: warning annotations on the PR diff + a summary table |
+
+- **Advisory, at every tier.** Every sign has a legitimate use somewhere (a loading skeleton
+  pulses, a brand may own a gradient), so findings never fail the job. It fails only when the
+  check cannot run — an unreadable catalogue or a git error is not a clean screen. A
+  deliberate choice is kept with a `slop-ok: <reason>` comment on its line.
+- **The catalogue lives in the plugin, not here** — the one gate that does. The designer and
+  frontend-dev run the same scanner in-session (`$WF/scripts/slop-check.py`), and a
+  scaffolded project has no `gates/`; keeping one file in the plugin and having the workflow
+  read it from the gates checkout avoids a second, mirrored copy (the rubric's cost).
+- Changes like a threshold: by PR, with the false positive or miss that motivated it, and a
+  fixture line pinning it in `slop-check.test.py`.
+- It scans `.tsx .jsx .vue .svelte .astro .html .htm .css .scss` (and their `.jinja`
+  templates); HTML and single-file components get the style rules too, since they carry
+  their own `<style>` — which is also what makes a saved snapshot of a live site checkable.
+- This repo's CI also runs it `--strict` over `templates/`: a preset that ships slop puts it
+  in every project.
+- Not yet wired into the generated `quality.yml`: that waits for the first `gates-v*` tag
+  that contains the workflow.
 
 ## Eval gate (LM-judge — opt-in)
 

@@ -37,6 +37,7 @@ gates make a repository safe to point agents at.
 | `linear-history.yml` | No merge commits in the PR range ([`git-policy`](../git-policy/SKILL.md)) |
 | `quality-eval.yml` | Opt-in LM-judge against the central rubric; needs `ANTHROPIC_API_KEY` |
 | `heartbeat-report.yml` | Deduplicated tracking issue for scheduled runs ([`heartbeat`](../heartbeat/SKILL.md)) |
+| `ui-slop.yml` | **Advisory** UI-slop scan (`config/slop-signs.yml` via `scripts/slop-check.py`): annotations + summary, never red on findings ([`frontend-design`](../frontend-design/SKILL.md)) |
 
 ### When the owasp-reviewer runs — `config/security-triggers.yml`
 

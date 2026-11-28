@@ -1,0 +1,13 @@
+.hero {
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  padding: 13px 24px;
+  gap: 16px;
+  transition: all 200ms;
+}
+
+.hero h1 {
+  font-weight: 900;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+}

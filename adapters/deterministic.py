@@ -31,14 +31,15 @@ import shutil
 # whose agent exports no Claude Code telemetry that answer is simply "estimate only".
 SCRIPTS = ("forge-state.py", "run-report.py", "security-triggers.py",
            "migrate-ids.py",  # imports forge-state.py from its own directory
-           "otel-sink.py")
+           "otel-sink.py",
+           "slop-check.py")  # the designer's audit and frontend-dev's re-check (ui-slop gate)
 
 # Plugin-root files the prompts cite as $WF/<name>.
 ROOT_FILES = ("PLUGIN-MIGRATIONS.md",)
 
 # Configs the prompts and skills cite by path.
 CONFIGS = ("security-triggers.yml", "rigor-budgets.yml", "model-pricing.yml",
-           "spec-frontmatter.schema.json")
+           "spec-frontmatter.schema.json", "slop-signs.yml")
 
 # The Claude-only preamble, as commands/*.md carry it. Matched loosely (the comment wording
 # changes more often than the code) but anchored on both assignments, so a partial match

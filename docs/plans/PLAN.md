@@ -917,6 +917,32 @@ cached table (a cache checking a cache): every base rate matched, six older/reti
 were added so an old id in a trace is not priced at a fifth of its cost, and the
 not-modelled multipliers are now named with their sizes.
 
+## Phase 43 — The UI-slop check (added 2026-11-28)
+
+`frontend-design` named the looks that dominate generated UI, but naming them was text only:
+nothing looked at a screen. Idea from unslop (heydamir/unslop, CC BY 4.0): a catalogue of
+signs, each paired with its fix and grouped by the pass that fixes it.
+
+- ☑ **`config/slop-signs.yml` + `scripts/slop-check.py`** — 20 signs across spacing, color,
+  icons, copy, type and motion, written for the default stack (Tailwind utilities and
+  Mantine props like `variant="gradient"`, `fw={900}`) as well as plain CSS and HTML.
+  Off-grid spacing is judged by value (multiples of 4, 2 allowed), not by "is arbitrary";
+  copy rules only fire inside visible text, so `unlockAccount` and `() => unlock()` are not
+  hype. HTML and single-file components get the style rules too — which is what makes a
+  saved snapshot of a live site checkable. 126 cases: every sign fires on a sloppy fixture,
+  none on a clean one built from near misses.
+- ☑ **`ui-slop.yml`, advisory at every tier** — warning annotations on the PR diff and a
+  summary table; red only when the check cannot run. `ui-slop-callable` in `ci.yml` calls
+  it the way a project would. The catalogue is the one gate config that lives in the plugin:
+  the in-session check and CI read the same file, with no mirror to keep in sync.
+- ☑ **The presets ship clean** — `ci.yml` runs the check `--strict` over `templates/`.
+- ☐ Wire `ui-slop.yml` into the generated `quality.yml` — needs a `gates-v*` tag first.
+- ☐ The redline loop: the designer audits a screen (code, or a live site from its URL) and
+  hands the findings to the orchestrator; frontend-dev applies them pass by pass; the check
+  re-runs. The designer still writes no code.
+- Found on first run: `site/index.html` (wellforge.dev) carries 10 signs — gradient text, hue
+  gradients, 800 weights, tracked uppercase. Not changed here.
+
 ## Phase 42 — Chaos testing the debugging discipline (added 2026-11-25)
 
 The rules in `systematic-debugging` — ENV-FAULT is reported, never fixed in code; a red test

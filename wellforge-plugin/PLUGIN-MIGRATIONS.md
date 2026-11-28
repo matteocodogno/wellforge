@@ -32,6 +32,16 @@ between "nothing to do" and "nobody wrote it down".
 
 ---
 
+## 2.67.0 — an advisory UI-slop check
+
+- **Projects: nothing to do.** New `scripts/slop-check.py` + `config/slop-signs.yml` ship
+  with the plugin (and with the Codex, Copilot and OpenCode adapters' deterministic layer);
+  the `frontend-design` skill's quality floor now runs it. It reads UI files and writes
+  nothing. A line that keeps a deliberate sign can carry a `slop-ok: <reason>` comment;
+  nothing requires one.
+- The matching CI gate, `ui-slop.yml`, is not called by a generated `quality.yml` yet — it
+  becomes available to projects with the first `gates-v*` tag that contains it.
+
 ## 2.66.0 — a red test is never silenced, mechanically
 
 - **Projects: nothing to do.** A new `PostToolUse` hook, `post-test-silencer-guard.sh`,

@@ -164,6 +164,18 @@ jobs:
     name: reusable gate callable with default gates-ref
     uses: ./.github/workflows/commit-lint.yml
 
+  # The advisory UI-slop gate, called the way a project calls it (default gates-ref), over
+  # the sloppy fixtures. It must RUN and stay green on findings: a reusable advisory gate
+  # that turns red on a judgement call is no longer advisory, and one whose checkout or
+  # script path is wrong would only fail in a downstream project. changed-only is off so
+  # the scan is deterministic whatever the push touched.
+  ui-slop-callable:
+    name: advisory ui-slop gate runs and stays green on findings
+    uses: ./.github/workflows/ui-slop.yml
+    with:
+      working-directory: wellforge-plugin/scripts/tests/fixtures/slop/sloppy
+      changed-only: false
+
   # The assertion below belongs conceptually with gate-callable, but cannot live IN it: a job
   # that is a `uses:` reusable-workflow call takes no `steps:`. Hence a sibling job.
   #
@@ -648,6 +660,11 @@ jobs:
       # Which paths pull in a security review. Glob matching looks right and silently
       # misses `migrations/001.sql` when the pattern says `**/` — a miss nobody sees.
       - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/security-triggers.test.py
+      # The UI-slop catalogue: every sign fires on the sloppy fixture, none on a clean one
+      # built from near misses, and the exit stays 0 on findings (advisory). Then the presets'
+      # own UI must scan clean: a template that ships slop puts it in every project.
+      - run: uv run --with pyyaml python wellforge-plugin/scripts/tests/slop-check.test.py
+      - run: uv run --with pyyaml python wellforge-plugin/scripts/slop-check.py templates --strict
       # The GATE scripts themselves: run-eval.py turns a judge's JSON into a PASS/FAIL and
       # check-jacoco.py turns a coverage report into one. gates/README.md has claimed
       # "tested: pass/fail/floor" since it was written and no test file existed — meanwhile
@@ -1067,6 +1084,7 @@ jobs:
       - scaffold
       - services-selftest
       - terse-mode-fixtures
+      - ui-slop-callable
       - worktree-isolation
     steps:
       - name: Every job must be green

@@ -127,6 +127,8 @@ enforces its gate whoever writes `status: done`.
 | `config/security-triggers.yml` | Path globs + substrings whose presence in a batch dispatches the owasp-reviewer; `always_at_tier: [production]` |
 | `config/rigor-budgets.yml` | Advisory per-tier cost/wall-clock ceilings + the rework thresholds — surfaced by triage, never blocking |
 | `scripts/security-triggers.py` | Evaluates those triggers against `touch:` ∪ `git diff` — what implement/orchestrate call before QE |
+| `config/slop-signs.yml` | The UI-slop catalogue — 20 signs (off-grid spacing, hue gradients, glows, emoji icons, hype copy, heavy weights, idle motion), each with its fix, grouped by the pass that fixes it |
+| `scripts/slop-check.py` | Scans UI files (or a saved HTML snapshot) against that catalogue; text / `--json` / GitHub annotations / markdown. Advisory: exit 0 on findings (`--strict` for a hard stop), 2 when it cannot run. Also the `ui-slop.yml` gate |
 | `PLUGIN-MIGRATIONS.md` | Project-side changes per plugin minor — ships with the plugin; read by `/wellforge:upgrade`, reported by `/wellforge:doctor` |
 | `config/model-pricing.yml` | Per-model price table for run-report cost estimates |
 

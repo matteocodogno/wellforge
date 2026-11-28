@@ -135,6 +135,12 @@ Then, at implementation time:
   reduce` kills or shortens every non-essential transition.
 - **Responsive to 360px.** The signature element degrades gracefully or is dropped at small
   widths — it never causes horizontal scroll.
+- **Scan for slop: run the check, don't trust your memory.** `<plugin>/scripts/slop-check.py
+  <ui dir>` (resolve `<plugin>` and run it with pyyaml as `/wellforge:doctor` does — the
+  Bash tool gets no `${CLAUDE_PLUGIN_ROOT}`) lists the generated-UI tells — off-grid
+  spacing, hue gradients, glows, emoji icons, hype copy, 800–900 weights, idle motion —
+  with each one's fix, in pass order; `--json` for a list to hand on. Advisory, as the CI `ui-slop` gate is: a finding is a question, and a
+  deliberate choice is kept with a `slop-ok: <reason>` comment on its line.
 
 ## CSS pitfalls in this stack
 

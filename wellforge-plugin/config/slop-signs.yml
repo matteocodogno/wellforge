@@ -1,0 +1,187 @@
+# The UI-slop catalogue — the tells that make an interface read as generated, not designed.
+#
+# Read by scripts/slop-check.py (in-session, by the designer and frontend-dev) and by the
+# advisory `ui-slop.yml` gate (in CI). ADVISORY BY DESIGN: every sign below has a legitimate
+# use somewhere (a loading skeleton pulses, a brand may own a gradient), so a finding is a
+# question for the designer, never a red build. Acknowledge a deliberate one on its line with
+# a `slop-ok` comment and the reason — `{/* slop-ok: live status dot */}`.
+#
+# Each sign names its fix, because a finding without a fix is just an accusation. Signs are
+# grouped by the pass that fixes them, in the order a redline review applies them
+# (spacing → color → icons → copy → type → details → motion): spacing first because every
+# other judgement changes once the rhythm is right.
+#
+# The catalogue's shape — signs grouped by pass, each paired with its fix — is adapted from
+# unslop by Damir Sokolovsky (https://github.com/heydamir/unslop, CC BY 4.0). The rules,
+# patterns and wording here are WellForge's own and cover the default stack (Mantine +
+# Tailwind) as well as plain CSS and HTML.
+#
+# Fields:
+#   id        stable identifier, cited in findings and `slop-ok` comments
+#   group     the pass that fixes it
+#   files     markup | style | all   (markup = tsx jsx vue svelte astro html; style = css scss)
+#   pattern   Python regex, matched per line
+#   require   optional second regex the SAME line must also match
+#   check     optional post-filter: `off_grid` keeps only px values that are not a multiple of 4
+#   ignore_case  optional, default false
+#   sign / fix  what was found, what to do instead
+
+version: 1
+
+signs:
+  # ── spacing ───────────────────────────────────────────────────────────────────────────
+  - id: off-grid-spacing
+    group: spacing
+    files: markup
+    pattern: '\b-?(?:m|p|gap|space|inset|top|right|bottom|left|h|w|min-h|min-w|max-h|max-w|size)[trblxyse]?-\[(\d+(?:\.\d+)?)px\]'
+    check: off_grid
+    sign: one-off pixel value off the 4px grid
+    fix: a step from the spacing scale (a multiple of 4; 2 only to nudge inside a small control)
+
+  - id: off-grid-spacing-css
+    group: spacing
+    files: style
+    pattern: '^\s*(?:margin|padding|gap|row-gap|column-gap)(?:-[a-z]+)?\s*:[^;]*?\b(\d+(?:\.\d+)?)px'
+    check: off_grid
+    sign: margin, padding or gap off the 4px grid
+    fix: a spacing token that is a multiple of 4
+
+  # ── color ─────────────────────────────────────────────────────────────────────────────
+  - id: hue-gradient
+    group: color
+    files: markup
+    pattern: '\bbg-(?:gradient|linear|radial|conic)-to-|\bvariant=["'']gradient["'']|\bgradient=\{\{'
+    sign: hue-to-hue gradient on a surface or control
+    fix: one neutral surface; the accent only where it means something (a tone shift inside one neutral is fine)
+
+  - id: hue-gradient-css
+    group: color
+    files: style
+    pattern: '\b(?:linear|radial|conic)-gradient\('
+    sign: gradient background
+    fix: a flat surface from the neutral ramp, unless this is a tone shift inside one neutral
+
+  - id: gradient-text
+    group: color
+    files: all
+    pattern: '\bbg-clip-text\b|background-clip\s*:\s*text|-webkit-text-fill-color\s*:\s*transparent'
+    sign: gradient text
+    fix: solid text in the primary text role
+
+  - id: colored-glow
+    group: color
+    files: all
+    pattern: '\bshadow-\[0_0_|\bdrop-shadow-\[|\bshadow-(?:purple|violet|indigo|fuchsia|pink|rose|blue|sky|cyan|teal|emerald|green|lime|amber|orange)-\d{2,3}|text-shadow\s*:\s*0(?:px)?\s+0(?:px)?\s+\d'
+    sign: colored glow or halo
+    fix: depth from surface steps and hairlines; on light themes a small neutral shadow
+
+  - id: blur-blob
+    group: color
+    files: markup
+    pattern: '\bblur-(?:2xl|3xl)\b|\bblur-\[\d{2,}px\]'
+    sign: blurred color blob behind content
+    fix: remove it; a plain background or one real product visual
+
+  - id: glass-card
+    group: color
+    files: markup
+    pattern: '\bbackdrop-blur(?:-\w+)?\b'
+    require: '\bbg-white/\d+|\bbg-black/\d+|\bborder-white/\d+'
+    sign: glass card (translucent fill + backdrop blur)
+    fix: a plain raised surface with a hairline border
+
+  # ── icons ─────────────────────────────────────────────────────────────────────────────
+  - id: emoji-icon
+    group: icons
+    files: markup
+    # Pictographs and the symbol/dingbat blocks — the 🚀 ✨ 🔥 💰 ⚠️ family. Excludes the
+    # arrows and the plain check marks (✓ ✔), which are typography, not decoration.
+    pattern: '[\U0001F300-\U0001FAFF☀-⛿✨⭐⬆⬇⤴⤵‼⁉]'
+    sign: emoji used as an icon or decoration
+    fix: one line-icon set at one size and stroke (the project's set; otherwise lucide), in the text role's color — or nothing
+
+  # ── copy ──────────────────────────────────────────────────────────────────────────────
+  - id: hype-copy
+    group: copy
+    files: markup
+    ignore_case: true
+    # Only inside visible text: after a tag's `>` (not an arrow's `=>`) or a quote — so an
+    # identifier like `unlockAccount` or a call `() => unlock()` is not copy.
+    pattern: '(?:(?<!=)>|["''`])[^<>"''`{}]*\b(?:supercharge[sd]?|seamless(?:ly)?|unlock(?:s|ing)?|revolutioni[sz]e[sd]?|game[- ]chang(?:er|ing)|effortless(?:ly)?|next[- ]gen(?:eration)?|ai[- ]powered|magic(?:al|ally)?)\b'
+    sign: hype word in interface copy
+    fix: say what the product actually does, for whom, with this product's own nouns
+
+  - id: exclamation-copy
+    group: copy
+    files: markup
+    pattern: '(?<!=)>[^<>{}]*\w!+\s*<|["''][^"''<>{}]{2,}\w!!+["'']'
+    sign: exclamation mark in interface text
+    fix: a plain statement; no `!` in labels, headlines or toasts
+
+  - id: greeting-headline
+    group: copy
+    files: markup
+    ignore_case: true
+    pattern: '(?:(?<!=)>|["''`])[^<>"''`]*\bwelcome back\b'
+    sign: greeting headline
+    fix: the title names the context — the page, the account, or the period
+
+  - id: wordy-placeholder
+    group: copy
+    files: markup
+    pattern: '\bplaceholder=["''][^"'']*(?:\.\.\.|…)["'']'
+    sign: wordy placeholder (`Search anything...`)
+    fix: the short label — `Search`
+
+  # ── type ──────────────────────────────────────────────────────────────────────────────
+  - id: heavy-weight
+    group: type
+    files: markup
+    pattern: '\bfont-(?:extrabold|black)\b|\bfw=\{?["'']?(?:800|900)\b'
+    sign: weight 800–900
+    fix: 400 and 500 (600 for rare emphasis); hierarchy from size and color, not weight
+
+  - id: heavy-weight-css
+    group: type
+    files: style
+    pattern: '\bfont-weight\s*:\s*(?:800|900|extra-?bold|black)\b'
+    sign: weight 800–900
+    fix: 400 and 500 (600 for rare emphasis); hierarchy from size and color
+
+  - id: tracked-uppercase
+    group: type
+    files: markup
+    pattern: '\buppercase\b|\btt=["'']uppercase["'']'
+    require: '\btracking-(?:wide|wider|widest|\[)|\blts=|letter-?spacing'
+    sign: uppercase label with wide tracking (`PAID THIS MONTH`)
+    fix: sentence case at normal tracking
+
+  - id: tight-small-text
+    group: type
+    files: markup
+    pattern: '\btracking-(?:tight|tighter)\b'
+    require: '\btext-(?:xs|sm)\b'
+    sign: negative letter spacing on small text
+    fix: zero or slightly positive tracking; tight tracking is for large display text only
+
+  # ── motion ────────────────────────────────────────────────────────────────────────────
+  - id: idle-animation
+    group: motion
+    files: markup
+    pattern: '\banimate-(?:pulse|ping|bounce)\b'
+    sign: pulsing, pinging or bouncing element
+    fix: static — unless it is a loading skeleton or a genuinely live indicator (mark it `slop-ok`)
+
+  - id: transition-all
+    group: motion
+    files: all
+    pattern: '\btransition-all\b|\btransition\s*:\s*all\b'
+    sign: transition on every property
+    fix: transition only color, background, opacity and transform
+
+  - id: hover-lift
+    group: motion
+    files: markup
+    pattern: '\bhover:(?:scale-1[0-9]{2}|-translate-y-)'
+    sign: hover that scales up or lifts the element
+    fix: a color or surface step on hover; at most a tiny scale-down on press

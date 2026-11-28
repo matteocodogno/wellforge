@@ -13,10 +13,12 @@ this directory.
 | `wellforge/scripts/security-triggers.py` | generated prompts and skills |
 | `wellforge/scripts/migrate-ids.py` | generated prompts and skills |
 | `wellforge/scripts/otel-sink.py` | generated prompts and skills |
+| `wellforge/scripts/slop-check.py` | generated prompts and skills |
 | `wellforge/config/security-triggers.yml` | generated prompts and skills |
 | `wellforge/config/rigor-budgets.yml` | generated prompts and skills |
 | `wellforge/config/model-pricing.yml` | generated prompts and skills |
 | `wellforge/config/spec-frontmatter.schema.json` | generated prompts and skills |
+| `wellforge/config/slop-signs.yml` | generated prompts and skills |
 | `wellforge/PLUGIN-MIGRATIONS.md` | generated prompts and skills |
 
 `forge-state.py` loads `run-report.py` from this same directory at runtime — they are one

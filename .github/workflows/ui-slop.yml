@@ -1,0 +1,94 @@
+# Reusable ADVISORY gate — the tells that make a UI read as generated rather than designed:
+# off-grid spacing, hue gradients, glows, emoji icons, hype copy, 800–900 weights, idle
+# animation. Catalogue: wellforge-plugin/config/slop-signs.yml; scanner:
+# wellforge-plugin/scripts/slop-check.py — the same pair the designer and frontend-dev run
+# in-session, so CI and the session judge by one list.
+#
+# Advisory by design: every sign has a legitimate use somewhere, so findings surface as
+# warning annotations on the PR diff and a job summary table, and the job stays green. A
+# deliberate choice is kept with a `slop-ok: <reason>` comment on its line. The job only
+# fails when the check itself cannot run (unreadable catalogue, git failure) — an empty
+# answer resting on missing input must not look like a clean screen.
+#
+# Consume it pinned, like every other gate:
+#   jobs:
+#     ui-slop:
+#       uses: matteocodogno/wellforge/.github/workflows/ui-slop.yml@gates-vN
+#       with: { working-directory: frontend }
+name: ui-slop
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to scan (the frontend app root)
+        required: false
+        type: string
+        default: .
+      changed-only:
+        description: On a pull request, scan only the files the PR changes (elsewhere the whole directory)
+        required: false
+        type: boolean
+        default: true
+      gates-repo:
+        required: false
+        type: string
+        default: matteocodogno/wellforge
+      gates-ref:
+        required: false
+        type: string
+        # EMPTY, resolved to github.job_workflow_sha — the exact commit of THIS workflow, so
+        # the catalogue always matches the gate version the caller pinned.
+        default: ''
+
+jobs:
+  ui-slop:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0          # --diff-base needs the merge base
+
+      - name: Checkout gate configs
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ inputs.gates-repo }}
+          ref: ${{ inputs.gates-ref || github.job_workflow_sha }}
+          path: .wellforge-gates
+
+      - name: Verify gate files resolved
+        run: |
+          set -euo pipefail
+          ref="${{ inputs.gates-ref || github.job_workflow_sha }}"
+          missing=0
+          for f in wellforge-plugin/scripts/slop-check.py wellforge-plugin/config/slop-signs.yml; do
+            [ -f ".wellforge-gates/$f" ] || { echo "::error::gate file missing at ref ${ref}: $f"; missing=1; }
+          done
+          if [ "$missing" = "1" ]; then
+            echo "::error::The gates checkout (${{ inputs.gates-repo }}@${ref}) does not contain this gate's files. Pass gates-ref explicitly, matching the tag you call this workflow with."
+            exit 1
+          fi
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Scan for UI slop (advisory)
+        env:
+          WD: ${{ inputs.working-directory }}
+          CHANGED_ONLY: ${{ inputs.changed-only && github.event_name == 'pull_request' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          gates="$GITHUB_WORKSPACE/.wellforge-gates/wellforge-plugin"
+          check=(uv run -q --with pyyaml python "$gates/scripts/slop-check.py"
+                 --config "$gates/config/slop-signs.yml" "$WD")
+          # fetch-depth: 0 above already holds the base commit; no second fetch, which with a
+          # --depth would turn this full clone shallow and break the merge base.
+          if [ "$CHANGED_ONLY" = "true" ]; then
+            check+=(--diff-base "$BASE_SHA")
+          fi
+          # Annotations on the diff, then the same findings as a table in the job summary.
+          # Both runs exit 0 on findings; a non-zero exit is the check failing to run.
+          "${check[@]}" --format github
+          "${check[@]}" --format markdown >> "$GITHUB_STEP_SUMMARY"
