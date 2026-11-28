@@ -6,7 +6,7 @@
 
 <p align="center"><b>idea → a building, CI-gated, AI-ready repo → in minutes, not hours</b></p>
 
-<p align="center"><b><a href="https://matteocodogno.github.io/wellforge/">🌐 matteocodogno.github.io/wellforge</a></b>
+<p align="center"><b><a href="https://wellforge.dev">🌐 wellforge.dev</a></b>
 &nbsp;·&nbsp; <a href="docs/QUICKSTART.md">Quickstart</a>
 &nbsp;·&nbsp; <a href="docs/INSTALLATION.md">Install</a>
 &nbsp;·&nbsp; <a href="docs/FEATURES.md">Features</a></p>
